@@ -62,10 +62,95 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
         try:
             # Setup fonts
-            font = ImageFont.load_default()
-            draw.text((70, bar_y + 4), "NEW EPISODE", font=font, fill=(255, 255, 255, 255))
+            font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+            try:
+                font = ImageFont.truetype(font_path, 12)
+            except Exception:
+                font = ImageFont.load_default()
+
+            # Measure text "NEW EPISODE"
+            text = "NEW EPISODE"
+            try:
+                left, top, right, bottom = font.getbbox(text)
+                text_w = right - left
+                text_h = bottom - top
+            except Exception:
+                text_w, text_h = 90, 10
+                left, top = 0, 0
+
+            # Setup tracker logo properties
+            logo_w, logo_h = 16, 16
+            logo_gap = 4
+            text_gap = 6
+            
+            draw_mal = False
+            draw_al = False
+            if tracker in ["both", "mal+anilist"]:
+                draw_mal = True
+                draw_al = True
+            elif tracker == "mal":
+                draw_mal = True
+            elif tracker == "anilist":
+                draw_al = True
+
+            assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
+            resample_filter = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
+
+            mal_logo_img = None
+            al_logo_img = None
+            
+            if draw_mal:
+                logo_path = os.path.join(assets_dir, "mal_logo.png")
+                if os.path.exists(logo_path):
+                    try:
+                        mal_logo_img = Image.open(logo_path).resize((logo_w, logo_h))
+                    except Exception as e:
+                        logging.error("Failed to load MAL logo image: %s", e)
+            
+            if draw_al:
+                logo_path = os.path.join(assets_dir, "anilist_logo.png")
+                if os.path.exists(logo_path):
+                    try:
+                        al_logo_img = Image.open(logo_path).resize((logo_w, logo_h))
+                    except Exception as e:
+                        logging.error("Failed to load AniList logo image: %s", e)
+
+            # Calculate total width
+            total_logo_w = 0
+            if mal_logo_img and al_logo_img:
+                total_logo_w = logo_w + logo_gap + logo_w
+            elif mal_logo_img or al_logo_img:
+                total_logo_w = logo_w
+                
+            total_w = total_logo_w + text_gap + text_w if total_logo_w > 0 else text_w
+            block_x = (w - total_w) / 2
+            bar_center_y = bar_y + bar_h / 2
+
+            # Paste logo(s)
+            curr_x = block_x
+            if mal_logo_img and al_logo_img:
+                overlay.paste(mal_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)))
+                curr_x += logo_w + logo_gap
+                overlay.paste(al_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)), al_logo_img)
+                text_x = block_x + total_logo_w + text_gap
+            elif mal_logo_img:
+                overlay.paste(mal_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)))
+                text_x = block_x + logo_w + text_gap
+            elif al_logo_img:
+                overlay.paste(al_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)), al_logo_img)
+                text_x = block_x + logo_w + text_gap
+            else:
+                text_x = block_x
+
+            # Draw text "NEW EPISODE"
+            tx = text_x - left
+            ty = bar_center_y - text_h / 2 - top
+            draw.text((tx, ty), text, font=font, fill=(255, 255, 255, 255))
+
+            # Composite and convert
             combined = Image.alpha_composite(img, overlay)
             final_img = combined.convert("RGB")
+
         except Exception as ex:
             logging.error("Failed to dynamically draw overlay: %s. Falling back to solid white bar.", ex)
             # Fallback to drawing a solid, high-contrast white bar covering the bottom 10%
