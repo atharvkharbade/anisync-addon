@@ -56,8 +56,8 @@ async def serve_modified_poster(user_id: str, media_id: str):
         draw = ImageDraw.Draw(overlay)
 
         # Draw translucent black bar covering the bottom 10% (35px height, from y=315 to 350)
-        bar_h = 20
-        bar_y = h - 20 # y=315
+        bar_h = 35
+        bar_y = h - bar_h # y=315
         draw.rectangle([(0, bar_y), (w, h)], fill=(0, 0, 0, 255)) # Solid black
 
         try:
