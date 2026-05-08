@@ -22,6 +22,7 @@ class PersistentAsyncClient(httpx.AsyncClient):
         except Exception as e:
             logging.error("Failed to cleanly close shared connection pool: %s", e)
 
+
 def init_client():
     global _client
     if _client is None:
@@ -35,11 +36,22 @@ def init_client():
             logging.info("Initialized shared persistent connection pool with proxy: %s", proxy)
         else:
             logging.info("Initialized shared persistent connection pool (Direct Connection).")
-    # Globally patch httpx.AsyncClient
-    httpx.AsyncClient = lambda *args, **kwargs: _client
+
+
+def get_client() -> httpx.AsyncClient:
+    global _client
+    if _client is None:
+        init_client()
+    return _client
+
 
 async def close_client():
     global _client
     if _client is not None:
         await _client._real_close()
         _client = None
+
+
+import contextvars
+correlation_id_var = contextvars.ContextVar("correlation_id", default=None)
+
