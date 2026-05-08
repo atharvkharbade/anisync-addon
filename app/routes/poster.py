@@ -103,7 +103,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 logo_path = os.path.join(assets_dir, "mal_logo.png")
                 if os.path.exists(logo_path):
                     try:
-                        mal_logo_img = Image.open(logo_path).resize((logo_w, logo_h))
+                        mal_logo_img = Image.open(logo_path).convert("RGBA").resize((logo_w, logo_h), resample_filter)
                     except Exception as e:
                         logging.error("Failed to load MAL logo image: %s", e)
             
@@ -111,7 +111,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 logo_path = os.path.join(assets_dir, "anilist_logo.png")
                 if os.path.exists(logo_path):
                     try:
-                        al_logo_img = Image.open(logo_path).resize((logo_w, logo_h))
+                        al_logo_img = Image.open(logo_path).convert("RGBA").resize((logo_w, logo_h), resample_filter)
                     except Exception as e:
                         logging.error("Failed to load AniList logo image: %s", e)
 
@@ -129,12 +129,12 @@ async def serve_modified_poster(user_id: str, media_id: str):
             # Paste logo(s)
             curr_x = block_x
             if mal_logo_img and al_logo_img:
-                overlay.paste(mal_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)))
+                overlay.paste(mal_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)), mal_logo_img)
                 curr_x += logo_w + logo_gap
                 overlay.paste(al_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)), al_logo_img)
                 text_x = block_x + total_logo_w + text_gap
             elif mal_logo_img:
-                overlay.paste(mal_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)))
+                overlay.paste(mal_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)), mal_logo_img)
                 text_x = block_x + logo_w + text_gap
             elif al_logo_img:
                 overlay.paste(al_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)), al_logo_img)
