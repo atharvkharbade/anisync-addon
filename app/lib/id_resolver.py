@@ -1,20 +1,87 @@
 import logging
 from typing import Optional
+from datetime import datetime, timedelta
+import asyncio
 
 import httpx
 
-from app.services.db import cache_ids, get_cached_ids, get_cached_ids_by_mal, get_cached_ids_by_anilist
+from app.services.http import get_client
+from app.services.db import db, cache_ids, get_cached_ids, get_cached_ids_by_mal, get_cached_ids_by_anilist
 
 ARM_API    = "https://arm.haglund.dev/api/v2/ids"
 ANIZP_API  = "https://api.ani.zip/mappings"
 FRIBB_API  = "https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-full.json"
 TIMEOUT    = 8
 
+_fribb_lock = asyncio.Lock()
+
+
+async def ensure_fribb_mappings(client: httpx.AsyncClient):
+    """
+    Ensures that the fribb_mappings collection has been populated and updated
+    within the last 24 hours. Does an atomic swap to avoid query disruption.
+    """
+    now = datetime.utcnow()
+    try:
+        meta = db.fribb_meta.find_one({"key": "last_updated"})
+        if meta and (now - meta["timestamp"]) < timedelta(hours=24):
+            return
+    except Exception as e:
+        logging.error("Failed to query Fribb metadata: %s", e)
+
+    async with _fribb_lock:
+        # Re-check metadata inside the lock
+        try:
+            meta = db.fribb_meta.find_one({"key": "last_updated"})
+            if meta and (now - meta["timestamp"]) < timedelta(hours=24):
+                return
+        except Exception:
+            pass
+
+        logging.info("Updating local Fribb mappings database cache...")
+        try:
+            resp = await client.get(FRIBB_API, timeout=15)
+            resp.raise_for_status()
+            entries = resp.json()
+
+            docs = []
+            for entry in entries:
+                kitsu_id = entry.get("kitsu_id")
+                mal_id = entry.get("mal_id")
+                anilist_id = entry.get("anilist_id")
+                if kitsu_id is not None:
+                    docs.append({
+                        "kitsu_id": int(kitsu_id),
+                        "mal_id": str(mal_id) if mal_id is not None else None,
+                        "anilist_id": str(anilist_id) if anilist_id is not None else None,
+                    })
+
+            if docs:
+                temp_coll = db.get_collection("fribb_mappings_temp")
+                temp_coll.drop()
+                temp_coll.insert_many(docs)
+                temp_coll.create_index("kitsu_id")
+                temp_coll.create_index("mal_id")
+                temp_coll.create_index("anilist_id")
+                
+                # Swap collections atomically
+                temp_coll.rename("fribb_mappings", dropTarget=True)
+
+                db.fribb_meta.update_one(
+                    {"key": "last_updated"},
+                    {"$set": {"timestamp": datetime.utcnow()}},
+                    upsert=True
+                )
+                logging.info("Successfully updated Fribb mappings with %d entries.", len(docs))
+        except Exception as e:
+            logging.error("Failed to update Fribb mappings cache: %s", e)
+
 
 async def _try_arm(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional[str], Optional[str]]:
     resp = await client.get(
         ARM_API,
         params={"source": "kitsu", "id": kitsu_id, "include": "anilist,myanimelist"},
+        timeout=TIMEOUT,
     )
     resp.raise_for_status()
     data = resp.json()
@@ -26,7 +93,7 @@ async def _try_arm(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional[s
 
 
 async def _try_anizp(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional[str], Optional[str]]:
-    resp = await client.get(ANIZP_API, params={"kitsu_id": kitsu_id})
+    resp = await client.get(ANIZP_API, params={"kitsu_id": kitsu_id}, timeout=TIMEOUT)
     resp.raise_for_status()
     mappings   = resp.json().get("mappings", {})
     mal_id     = str(mappings["mal_id"])     if mappings.get("mal_id")     else None
@@ -37,15 +104,16 @@ async def _try_anizp(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional
 
 
 async def _try_fribb(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional[str], Optional[str]]:
-    resp = await client.get(FRIBB_API)
-    resp.raise_for_status()
-    kid = int(kitsu_id)
-    for entry in resp.json():
-        if entry.get("kitsu_id") == kid:
-            mal_id     = str(entry["mal_id"])     if entry.get("mal_id")     else None
-            anilist_id = str(entry["anilist_id"]) if entry.get("anilist_id") else None
-            if mal_id or anilist_id:
-                return mal_id, anilist_id
+    await ensure_fribb_mappings(client)
+    try:
+        kid = int(kitsu_id)
+        doc = db.fribb_mappings.find_one({"kitsu_id": kid})
+        if doc:
+            mal_id     = doc.get("mal_id")
+            anilist_id = doc.get("anilist_id")
+            return mal_id, anilist_id
+    except Exception as e:
+        logging.error("Error looking up kitsu_id in Fribb mappings: %s", e)
     return None, None
 
 
@@ -67,18 +135,18 @@ async def resolve(kitsu_id: str) -> tuple[Optional[str], Optional[str]]:
         ("Fribb",  _try_fribb),
     ]
 
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        for name, fn in resolvers:
-            try:
-                mal_id, anilist_id = await fn(client, kitsu_id)
-                if mal_id or anilist_id:
-                    logging.info("Resolved via %s: kitsu=%s → mal=%s anilist=%s", name, kitsu_id, mal_id, anilist_id)
-                    cache_ids(kitsu_id, mal_id, anilist_id)
-                    return mal_id, anilist_id
-                else:
-                    logging.warning("%s: no data for kitsu_id=%s, trying next", name, kitsu_id)
-            except Exception as e:
-                logging.warning("%s failed for kitsu_id=%s: %s, trying next", name, kitsu_id, e)
+    client = get_client()
+    for name, fn in resolvers:
+        try:
+            mal_id, anilist_id = await fn(client, kitsu_id)
+            if mal_id or anilist_id:
+                logging.info("Resolved via %s: kitsu=%s → mal=%s anilist=%s", name, kitsu_id, mal_id, anilist_id)
+                cache_ids(kitsu_id, mal_id, anilist_id)
+                return mal_id, anilist_id
+            else:
+                logging.warning("%s: no data for kitsu_id=%s, trying next", name, kitsu_id)
+        except Exception as e:
+            logging.warning("%s failed for kitsu_id=%s: %s, trying next", name, kitsu_id, e)
 
     logging.error("All resolvers failed for kitsu_id=%s", kitsu_id)
     return None, None
@@ -97,14 +165,14 @@ async def search_kitsu_by_title(title: str) -> Optional[str]:
             "Accept": "application/vnd.api+json",
             "Content-Type": "application/vnd.api+json",
         }
-        async with httpx.AsyncClient(timeout=8) as client:
-            resp = await client.get(url, params=params, headers=headers)
-            if resp.status_code == 200:
-                data = resp.json().get("data", [])
-                if data:
-                    kitsu_id = str(data[0]["id"])
-                    logging.info("Found kitsu_id=%s via Kitsu title search for '%s'", kitsu_id, title)
-                    return kitsu_id
+        client = get_client()
+        resp = await client.get(url, params=params, headers=headers, timeout=8)
+        if resp.status_code == 200:
+            data = resp.json().get("data", [])
+            if data:
+                kitsu_id = str(data[0]["id"])
+                logging.info("Found kitsu_id=%s via Kitsu title search for '%s'", kitsu_id, title)
+                return kitsu_id
     except Exception as e:
         logging.warning("Kitsu title search failed for '%s': %s", title, e)
     return None
@@ -130,19 +198,20 @@ async def fetch_anime_info_by_mal_id(mal_id: str) -> tuple[Optional[str], Option
     }
     """
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            resp = await client.post(
-                "https://graphql.anilist.co",
-                json={"query": query, "variables": {"idMal": int(mal_id)}}
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                media = data.get("data", {}).get("Media", {})
-                if media:
-                    anilist_id = str(media["id"])
-                    titles = media.get("title", {})
-                    title = titles.get("english") or titles.get("userPreferred") or titles.get("romaji")
-                    return title, anilist_id
+        client = get_client()
+        resp = await client.post(
+            "https://graphql.anilist.co",
+            json={"query": query, "variables": {"idMal": int(mal_id)}},
+            timeout=TIMEOUT,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            media = data.get("data", {}).get("Media", {})
+            if media:
+                anilist_id = str(media["id"])
+                titles = media.get("title", {})
+                title = titles.get("english") or titles.get("userPreferred") or titles.get("romaji")
+                return title, anilist_id
     except Exception as e:
         logging.warning("fetch_anime_info_by_mal_id: AniList query failed for mal_id=%s: %s", mal_id, e)
 
@@ -150,15 +219,16 @@ async def fetch_anime_info_by_mal_id(mal_id: str) -> tuple[Optional[str], Option
     from config import Config
     if Config.MAL_CLIENT_ID:
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-                resp = await client.get(
-                    f"https://api.myanimelist.net/v2/anime/{mal_id}",
-                    headers={"X-MAL-CLIENT-ID": Config.MAL_CLIENT_ID},
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    title = data.get("title")
-                    return title, None
+            client = get_client()
+            resp = await client.get(
+                f"https://api.myanimelist.net/v2/anime/{mal_id}",
+                headers={"X-MAL-CLIENT-ID": Config.MAL_CLIENT_ID},
+                timeout=TIMEOUT,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                title = data.get("title")
+                return title, None
         except Exception as e:
             logging.warning("fetch_anime_info_by_mal_id: public MAL fetch failed for mal_id=%s: %s", mal_id, e)
 
@@ -183,19 +253,20 @@ async def fetch_anime_info_by_anilist_id(anilist_id: str) -> tuple[Optional[str]
     }
     """
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            resp = await client.post(
-                "https://graphql.anilist.co",
-                json={"query": query, "variables": {"id": int(anilist_id)}}
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                media = data.get("data", {}).get("Media", {})
-                if media:
-                    mal_id = str(media["idMal"]) if media.get("idMal") else None
-                    titles = media.get("title", {})
-                    title = titles.get("english") or titles.get("userPreferred") or titles.get("romaji")
-                    return title, mal_id
+        client = get_client()
+        resp = await client.post(
+            "https://graphql.anilist.co",
+            json={"query": query, "variables": {"id": int(anilist_id)}},
+            timeout=TIMEOUT,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            media = data.get("data", {}).get("Media", {})
+            if media:
+                mal_id = str(media["idMal"]) if media.get("idMal") else None
+                titles = media.get("title", {})
+                title = titles.get("english") or titles.get("userPreferred") or titles.get("romaji")
+                return title, mal_id
     except Exception as e:
         logging.warning("fetch_anime_info_by_anilist_id: AniList query failed for anilist_id=%s: %s", anilist_id, e)
 
@@ -216,36 +287,35 @@ async def resolve_mal_to_kitsu(mal_id: str) -> Optional[str]:
     if cached and cached.get("kitsu_id"):
         return str(cached["kitsu_id"])
 
+    client = get_client()
+
     # Try ARM API
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            resp = await client.get(
-                ARM_API,
-                params={"source": "myanimelist", "id": mal_id, "include": "kitsu,anilist"},
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
-                anilist_id = str(data["anilist"]) if data.get("anilist") else None
-                if kitsu_id:
-                    cache_ids(kitsu_id, mal_id, anilist_id)
-                    return kitsu_id
+        resp = await client.get(
+            ARM_API,
+            params={"source": "myanimelist", "id": mal_id, "include": "kitsu,anilist"},
+            timeout=TIMEOUT,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
+            anilist_id = str(data["anilist"]) if data.get("anilist") else None
+            if kitsu_id:
+                cache_ids(kitsu_id, mal_id, anilist_id)
+                return kitsu_id
     except Exception as e:
         logging.warning("ARM mal->kitsu failed for mal_id=%s: %s", mal_id, e)
 
-    # Try Fribb API
+    # Try Fribb mappings collection
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            resp = await client.get(FRIBB_API)
-            if resp.status_code == 200:
-                mid = int(mal_id)
-                for entry in resp.json():
-                    if entry.get("mal_id") == mid:
-                        kitsu_id = str(entry["kitsu_id"]) if entry.get("kitsu_id") else None
-                        anilist_id = str(entry["anilist_id"]) if entry.get("anilist_id") else None
-                        if kitsu_id:
-                            cache_ids(kitsu_id, mal_id, anilist_id)
-                            return kitsu_id
+        await ensure_fribb_mappings(client)
+        doc = db.fribb_mappings.find_one({"mal_id": str(mal_id)})
+        if doc:
+            kitsu_id = str(doc["kitsu_id"]) if doc.get("kitsu_id") else None
+            anilist_id = doc.get("anilist_id")
+            if kitsu_id:
+                cache_ids(kitsu_id, mal_id, anilist_id)
+                return kitsu_id
     except Exception as e:
         logging.warning("Fribb mal->kitsu failed for mal_id=%s: %s", mal_id, e)
 
@@ -278,50 +348,48 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> Optional[str]:
     if cached and cached.get("kitsu_id"):
         return str(cached["kitsu_id"])
 
+    client = get_client()
+
     # Try ARM API
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            resp = await client.get(
-                ARM_API,
-                params={"source": "anilist", "id": anilist_id, "include": "kitsu,myanimelist"},
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
-                mal_id = str(data["myanimelist"]) if data.get("myanimelist") else None
-                if kitsu_id:
-                    cache_ids(kitsu_id, mal_id, anilist_id)
-                    return kitsu_id
+        resp = await client.get(
+            ARM_API,
+            params={"source": "anilist", "id": anilist_id, "include": "kitsu,myanimelist"},
+            timeout=TIMEOUT,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
+            mal_id = str(data["myanimelist"]) if data.get("myanimelist") else None
+            if kitsu_id:
+                cache_ids(kitsu_id, mal_id, anilist_id)
+                return kitsu_id
     except Exception as e:
         logging.warning("ARM anilist->kitsu failed for anilist_id=%s: %s", anilist_id, e)
 
     # Try ani.zip API
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            resp = await client.get(ANIZP_API, params={"anilist_id": anilist_id})
-            if resp.status_code == 200:
-                mappings = resp.json().get("mappings", {})
-                kitsu_id = str(mappings["kitsu_id"]) if mappings.get("kitsu_id") else None
-                mal_id = str(mappings["mal_id"]) if mappings.get("mal_id") else None
-                if kitsu_id:
-                    cache_ids(kitsu_id, mal_id, anilist_id)
-                    return kitsu_id
+        resp = await client.get(ANIZP_API, params={"anilist_id": anilist_id}, timeout=TIMEOUT)
+        if resp.status_code == 200:
+            mappings = resp.json().get("mappings", {})
+            kitsu_id = str(mappings["kitsu_id"]) if mappings.get("kitsu_id") else None
+            mal_id = str(mappings["mal_id"]) if mappings.get("mal_id") else None
+            if kitsu_id:
+                cache_ids(kitsu_id, mal_id, anilist_id)
+                return kitsu_id
     except Exception as e:
         logging.warning("ani.zip anilist->kitsu failed for anilist_id=%s: %s", anilist_id, e)
 
-    # Try Fribb API
+    # Try Fribb mappings collection
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            resp = await client.get(FRIBB_API)
-            if resp.status_code == 200:
-                aid = int(anilist_id)
-                for entry in resp.json():
-                    if entry.get("anilist_id") == aid:
-                        kitsu_id = str(entry["kitsu_id"]) if entry.get("kitsu_id") else None
-                        mal_id = str(entry["mal_id"]) if entry.get("mal_id") else None
-                        if kitsu_id:
-                            cache_ids(kitsu_id, mal_id, anilist_id)
-                            return kitsu_id
+        await ensure_fribb_mappings(client)
+        doc = db.fribb_mappings.find_one({"anilist_id": str(anilist_id)})
+        if doc:
+            kitsu_id = str(doc["kitsu_id"]) if doc.get("kitsu_id") else None
+            mal_id = doc.get("mal_id")
+            if kitsu_id:
+                cache_ids(kitsu_id, mal_id, anilist_id)
+                return kitsu_id
     except Exception as e:
         logging.warning("Fribb anilist->kitsu failed for anilist_id=%s: %s", anilist_id, e)
 
@@ -337,4 +405,3 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> Optional[str]:
         logging.warning("Title fallback failed for anilist_id=%s: %s", anilist_id, e)
 
     return None
-
