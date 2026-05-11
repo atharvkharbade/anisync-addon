@@ -18,7 +18,7 @@ class Config:
 
     # MongoDB
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    MONGO_DB = os.getenv("MONGO_DB", "anime_tracker")
+    MONGO_DB = os.getenv("MONGO_DB", "anisync")
 
     # MAL OAuth
     MAL_CLIENT_ID = os.getenv("MAL_CLIENT_ID", "")
