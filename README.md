@@ -1,12 +1,12 @@
-# 🌟 Anime Tracker — Stremio Sync Addon
+# 🌟 AniSync - MyAnimeList & Anilist tracker
 
-[![GitHub License](https://img.shields.io/github/license/username/anime-tracker?color=blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white)](https://python.org)
 [![Quart Version](https://img.shields.io/badge/quart-0.20.0+-00b4d8.svg)](https://pgjones.gitlab.io/quart/)
 [![Docker Support](https://img.shields.io/badge/docker-ready-2496ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![Stremio Addon](https://img.shields.io/badge/stremio-addon-8a2be2.svg)](https://stremio.com)
 
-**Anime Tracker** is the ultimate, asynchronous Stremio companion that automatically synchronizes your anime streaming progress to **MyAnimeList** and **AniList** in real-time. It natively bridges your tracker watchlists as browsable, interactive catalogs directly inside the Stremio interface.
+**AniSync** is the ultimate, asynchronous Stremio companion that automatically synchronizes your anime streaming progress to **MyAnimeList** and **AniList** in real-time. It natively bridges your tracker watchlists as browsable, interactive catalogs directly inside the Stremio interface.
 
 ---
 
@@ -67,7 +67,7 @@ FLASK_RUN_HOST=yourdomain.com  # Public hostname (no protocol)
 
 # MongoDB
 MONGO_URI=mongodb://mongo:27017
-MONGO_DB=anime_tracker
+MONGO_DB=anisync
 
 # MyAnimeList OAuth Configuration
 # Set the Redirect URI in MAL panel to: https://yourdomain.com/callback
@@ -81,7 +81,7 @@ ANILIST_CLIENT_ID=your_anilist_client_id
 
 ### 2. Spinning Up Services with Docker
 
-Anime Tracker is ready for production out of the box with Docker Compose. Run:
+AniSync is ready for production out of the box with Docker Compose. Run:
 
 ```bash
 docker-compose up -d --build

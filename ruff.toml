@@ -1,4 +1,4 @@
-# Ruff configuration for Anime Tracker
+# Ruff configuration for AniSync
 target-version = "py312"
 line-length = 120
 
