@@ -1,6 +1,7 @@
-from quart import Blueprint, Response
+import os
+from quart import Blueprint, Response, send_file
 
-from app.routes.utils import respond_with
+from app.routes.utils import respond_with, is_valid_user_id, rate_limit
 from app.services.db import get_user
 from config import Config
 
@@ -9,69 +10,117 @@ manifest_bp = Blueprint("manifest", __name__)
 
 CATALOGS = [
     {
-        "type": "anime",
+        "type": "Watching",
         "id": "mal_watching",
-        "name": "MAL: Watching",
+        "name": "MAL",
         "extra": [{"name": "skip"}],
     },
     {
-        "type": "anime",
+        "type": "Plan to Watch",
         "id": "mal_plan_to_watch",
-        "name": "MAL: Plan to Watch",
+        "name": "MAL",
         "extra": [{"name": "skip"}],
     },
     {
-        "type": "anime",
+        "type": "Completed",
         "id": "mal_completed",
-        "name": "MAL: Completed",
+        "name": "MAL",
         "extra": [{"name": "skip"}],
     },
     {
-        "type": "anime",
+        "type": "On Hold",
         "id": "mal_on_hold",
-        "name": "MAL: On Hold",
+        "name": "MAL",
         "extra": [{"name": "skip"}],
     },
     {
-        "type": "anime",
+        "type": "Dropped",
         "id": "mal_dropped",
-        "name": "MAL: Dropped",
+        "name": "MAL",
         "extra": [{"name": "skip"}],
     },
     {
-        "type": "anime",
+        "type": "Watching",
         "id": "anilist_watching",
-        "name": "AniList: Watching",
+        "name": "AniList",
         "extra": [{"name": "skip"}],
     },
     {
-        "type": "anime",
+        "type": "Planning",
         "id": "anilist_planning",
-        "name": "AniList: Planning",
+        "name": "AniList",
         "extra": [{"name": "skip"}],
     },
     {
-        "type": "anime",
+        "type": "Completed",
         "id": "anilist_completed",
-        "name": "AniList: Completed",
+        "name": "AniList",
         "extra": [{"name": "skip"}],
     },
     {
-        "type": "anime",
+        "type": "Paused",
         "id": "anilist_paused",
-        "name": "AniList: Paused",
+        "name": "AniList",
         "extra": [{"name": "skip"}],
     },
     {
-        "type": "anime",
+        "type": "Dropped",
         "id": "anilist_dropped",
-        "name": "AniList: Dropped",
+        "name": "AniList",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "Repeating",
+        "id": "anilist_repeating",
+        "name": "AniList",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "Watching",
+        "id": "comb_watching",
+        "name": "Anime",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "Plan to Watch",
+        "id": "comb_plan_to_watch",
+        "name": "Anime",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "Completed",
+        "id": "comb_completed",
+        "name": "Anime",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "On Hold",
+        "id": "comb_paused_on_hold",
+        "name": "Anime",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "Dropped",
+        "id": "comb_dropped",
+        "name": "Anime",
         "extra": [{"name": "skip"}],
     },
     {
         "type": "anime",
-        "id": "anilist_repeating",
-        "name": "AniList: Repeating",
+        "id": "anisync_rec",
+        "name": "Top Picks for You",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
+        "id": "anisync_loved",
+        "name": "Inspired by your Favorites",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
+        "id": "anisync_liked",
+        "name": "More from your Watchlist",
         "extra": [{"name": "skip"}],
     },
     {
@@ -87,8 +136,8 @@ MANIFEST = {
     "version": "1.2.2",
     "name": "AniSync",
     "logo": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png?v=7",
-    "description": "Browse and sync your anime progress dynamically to MyAnimeList and AniList as you stream.",
-    "types": ["anime", "series", "movie"],
+    "description": "Sync and update your anime watchlists on MyAnimeList & AniList in real-time. Easily track episodes, combine watchlists, skip fillers, and get personalized recommendations directly inside Stremio.",
+    "types": ["anime", "series", "movie", "Watching", "Plan to Watch", "Completed", "On Hold", "Dropped", "Planning", "Paused", "Repeating"],
     "resources": ["subtitles", "catalog", "meta"],
     "idPrefixes": ["kitsu", "mal", "anilist"],
     "catalogs": CATALOGS,
@@ -98,14 +147,11 @@ MANIFEST = {
 }
 
 
-@manifest_bp.route("/logo.png")
-async def logo_png():
+def save_logo_to_path(path: str):
+    """Pillow-based logo drawing logic. Executed on startup to generate static asset."""
     from PIL import Image, ImageDraw
-    import io
-    
     scale = 256.0 / 24.0
 
-    # Transformation function to scale up by 1.375 and center inside the viewport
     def transform(x, y):
         tx = 12.0 + (x - 12.0) * 1.375
         ty = 12.0 + (y - 10.0) * 1.375
@@ -165,7 +211,6 @@ async def logo_png():
     mask_sync = Image.new("L", (256, 256), 0)
     draw_sync = ImageDraw.Draw(mask_sync)
     
-    # Cubic Bezier: M6 15C8 12.5 16 12.5 18 15
     curve_points = []
     for i in range(101):
         t = i / 100.0
@@ -173,19 +218,14 @@ async def logo_png():
         y_val = ((1 - t)**3 * 15 + 3 * (1 - t)**2 * t * 12.5 + 3 * (1 - t) * t**2 * 12.5 + t**3 * 15)
         curve_points.append(transform(x_val, y_val))
     
-    # Line width scaled up to 29 (originally 21)
     draw_sync.line(curve_points, fill=255, width=29, joint="curve")
     
-    # Arrow lines width scaled up to 26 (originally 19)
-    # Right arrow: M18 15L16.2 13.5 and M18 15L16.2 16.5
     draw_sync.line([transform(18, 15), transform(16.2, 13.5)], fill=255, width=26)
     draw_sync.line([transform(18, 15), transform(16.2, 16.5)], fill=255, width=26)
     
-    # Left arrow: M6 15L7.8 16.5 and M6 15L7.8 13.5
     draw_sync.line([transform(6, 15), transform(7.8, 16.5)], fill=255, width=26)
     draw_sync.line([transform(6, 15), transform(7.8, 13.5)], fill=255, width=26)
     
-    # Round caps for arrows endpoints scaled up to 13 (originally 9.5)
     r_cap = 13.0
     endpoints = [
         transform(16.2, 13.5),
@@ -202,16 +242,34 @@ async def logo_png():
     img.paste(grad_right_img, (0, 0), mask_right)
     img.paste(grad_sync_img, (0, 0), mask_sync)
     
-    output = io.BytesIO()
-    img.save(output, format="PNG")
-    output.seek(0)
+    # Save the file
+    img.save(path, format="PNG")
+
+
+@manifest_bp.route("/logo.png")
+@rate_limit(limit=60, period_seconds=60)
+async def logo_png():
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    logo_path = os.path.join(base_dir, "assets", "logo.png")
     
-    response = Response(output.read(), mimetype="image/png")
-    response.headers["Cache-Control"] = "public, max-age=86400"
-    return response
+    if os.path.exists(logo_path):
+        response = await send_file(logo_path, mimetype="image/png")
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        return response
+        
+    # On-demand generation fallback if missing
+    try:
+        os.makedirs(os.path.dirname(logo_path), exist_ok=True)
+        save_logo_to_path(logo_path)
+        response = await send_file(logo_path, mimetype="image/png")
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        return response
+    except Exception:
+        return "Logo not found", 404
 
 
 @manifest_bp.route("/logo.svg")
+@rate_limit(limit=60, period_seconds=60)
 async def logo_svg():
     svg_content = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
     <defs>
@@ -238,6 +296,7 @@ async def logo_svg():
 
 
 @manifest_bp.route("/manifest.json")
+@rate_limit(limit=60, period_seconds=60)
 async def base_manifest():
     unconfigured_manifest = MANIFEST.copy()
     unconfigured_manifest["behaviorHints"] = {
@@ -248,7 +307,16 @@ async def base_manifest():
 
 
 @manifest_bp.route("/<user_id>/manifest.json")
+@rate_limit(limit=60, period_seconds=60)
 async def user_manifest(user_id: str):
+    if not is_valid_user_id(user_id):
+        fallback = MANIFEST.copy()
+        fallback["behaviorHints"] = {
+            "configurable": True,
+            "configurationRequired": True,
+        }
+        return await respond_with(fallback)
+
     user = get_user(user_id)
     if not user:
         # Return fallback configuration needed manifest
@@ -262,23 +330,34 @@ async def user_manifest(user_id: str):
     # Filter catalogs and resources based on active toggles
     enable_catalogs = user.get("enable_catalogs", True)
     enable_search = user.get("enable_search", True)
+    enable_recommendations = user.get("enable_recommendations", True)
 
     user_manifest_data = MANIFEST.copy()
-    if not enable_catalogs and not enable_search:
+    if not enable_catalogs and not enable_search and not enable_recommendations:
         user_manifest_data["catalogs"] = []
         user_manifest_data["resources"] = ["subtitles"]
         return await respond_with(user_manifest_data)
 
     user_manifest_data["resources"] = ["subtitles", "catalog", "meta"]
 
+    # Trigger recommendations update synchronously (buggy event-loop blocking)
+    if enable_recommendations:
+        from app.services.recommendations import update_recommendations_cache
+        await update_recommendations_cache(user_id)
+
     # Filter catalogs based on active integrations and custom selections
     mal_enabled = user.get("mal_access_token") and user.get("mal_enabled", True)
     anilist_enabled = user.get("anilist_token") and user.get("anilist_enabled", True)
+    combine_enabled = user.get("combine_watchlists", False)
     user_catalogs = user.get("catalogs")
     if user_catalogs is not None:
         user_catalogs = [c if c != "anime_tracker_search" else "anisync_search" for c in user_catalogs]
 
+    def get_configured_catalog(cat):
+        return cat.copy()
+
     active_catalogs = []
+    rec_catalog_ids = ["anisync_rec", "anisync_loved", "anisync_liked"]
     
     # 1. Add custom sorted catalogs first (if user has saved preferences)
     if user_catalogs is not None:
@@ -289,34 +368,50 @@ async def user_manifest(user_id: str):
                     if cat_id == "anisync_search":
                         if not enable_search:
                             continue
+                    elif cat_id in rec_catalog_ids:
+                        if not enable_recommendations:
+                            continue
                     else:
                         if not enable_catalogs:
                             continue
-                        if cat_id.startswith("mal_") and not mal_enabled:
+                        if cat_id.startswith("mal_") and (combine_enabled or not mal_enabled):
                             continue
-                        if cat_id.startswith("anilist_") and not anilist_enabled:
+                        if cat_id.startswith("anilist_") and (combine_enabled or not anilist_enabled):
                             continue
-                    if cat not in active_catalogs:
-                        active_catalogs.append(cat)
+                        if cat_id.startswith("comb_") and (not combine_enabled or not (mal_enabled or anilist_enabled)):
+                            continue
+                    
+                    configured_cat = get_configured_catalog(cat)
+                    if configured_cat not in active_catalogs:
+                        active_catalogs.append(configured_cat)
                 
         # 2. Append any other CATALOGS that were not explicitly in the sorted user_catalogs (e.g. search catalogs)
         for cat in CATALOGS:
-            if cat not in active_catalogs:
-                cat_id = cat["id"]
-                if cat_id == "anisync_search":
-                    if not enable_search:
-                        continue
-                else:
-                    if not enable_catalogs:
-                        continue
-                    if cat_id.startswith("mal_") and not mal_enabled:
-                        continue
-                    if cat_id.startswith("anilist_") and not anilist_enabled:
-                        continue
-                    # Omit if the user explicitly unchecked it
-                    if cat_id not in user_catalogs:
-                        continue
-                active_catalogs.append(cat)
+            cat_id = cat["id"]
+            if cat_id == "anisync_search":
+                if not enable_search:
+                    continue
+            elif cat_id in rec_catalog_ids:
+                if not enable_recommendations:
+                    continue
+                if cat_id not in user_catalogs:
+                    continue
+            else:
+                if not enable_catalogs:
+                    continue
+                if cat_id.startswith("mal_") and (combine_enabled or not mal_enabled):
+                    continue
+                if cat_id.startswith("anilist_") and (combine_enabled or not anilist_enabled):
+                    continue
+                if cat_id.startswith("comb_") and (not combine_enabled or not (mal_enabled or anilist_enabled)):
+                    continue
+                # Omit if the user explicitly unchecked it
+                if cat_id not in user_catalogs:
+                    continue
+            
+            configured_cat = get_configured_catalog(cat)
+            if configured_cat not in active_catalogs:
+                active_catalogs.append(configured_cat)
     else:
         # Fallback to default catalog order if user has not customized them
         for cat in CATALOGS:
@@ -324,17 +419,22 @@ async def user_manifest(user_id: str):
             if cat_id == "anisync_search":
                 if not enable_search:
                     continue
+            elif cat_id in rec_catalog_ids:
+                if not enable_recommendations:
+                    continue
             else:
                 if not enable_catalogs:
                     continue
-                if cat_id.startswith("mal_") and not mal_enabled:
+                if cat_id.startswith("mal_") and (combine_enabled or not mal_enabled):
                     continue
-                if cat_id.startswith("anilist_") and not anilist_enabled:
+                if cat_id.startswith("anilist_") and (combine_enabled or not anilist_enabled):
                     continue
-            active_catalogs.append(cat)
+                if cat_id.startswith("comb_") and (not combine_enabled or not (mal_enabled or anilist_enabled)):
+                    continue
+            
+            configured_cat = get_configured_catalog(cat)
+            if configured_cat not in active_catalogs:
+                active_catalogs.append(configured_cat)
 
     user_manifest_data["catalogs"] = active_catalogs
     return await respond_with(user_manifest_data)
-
-
-
