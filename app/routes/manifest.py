@@ -340,10 +340,10 @@ async def user_manifest(user_id: str):
 
     user_manifest_data["resources"] = ["subtitles", "catalog", "meta"]
 
-    # Trigger recommendations update synchronously (buggy event-loop blocking)
+    # Trigger background recommendations update if enabled
     if enable_recommendations:
-        from app.services.recommendations import update_recommendations_cache
-        await update_recommendations_cache(user_id)
+        from app.services.recommendations import trigger_recommendation_update_background
+        trigger_recommendation_update_background(user_id)
 
     # Filter catalogs based on active integrations and custom selections
     mal_enabled = user.get("mal_access_token") and user.get("mal_enabled", True)
