@@ -570,20 +570,47 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     logging.error("Failed to query id_cache for unmatched MAL IDs in combined catalog: %s", e)
 
             # 4. Group into combined items list
+            processed_mal_ids = set()
+            processed_al_ids = set()
             combined_items = []
+
             for mal_item in mal_entries:
                 node = mal_item["node"]
                 mal_id = str(node["id"])
-                combined_items.append({
-                    "tracker": "mal",
-                    "mal_item": mal_item,
-                    "anilist_item": None,
-                    "mal_id": mal_id,
-                    "anilist_id": None,
-                })
+                processed_mal_ids.add(mal_id)
+                
+                al_entry = al_by_mal_id.get(mal_id)
+                if al_entry:
+                    al_id = str(al_entry["media"]["id"])
+                    processed_al_ids.add(al_id)
+                    combined_items.append({
+                        "tracker": "both",
+                        "mal_item": mal_item,
+                        "anilist_item": al_entry,
+                        "mal_id": mal_id,
+                        "anilist_id": al_id,
+                    })
+                else:
+                    combined_items.append({
+                        "tracker": "mal",
+                        "mal_item": mal_item,
+                        "anilist_item": None,
+                        "mal_id": mal_id,
+                        "anilist_id": None,
+                    })
+
             for al_entry in anilist_entries:
                 al_id = str(al_entry["media"]["id"])
+                if al_id in processed_al_ids:
+                    continue
                 id_mal = al_entry["media"].get("idMal")
+                if id_mal and str(id_mal) in processed_mal_ids:
+                    continue
+                
+                processed_al_ids.add(al_id)
+                if id_mal:
+                    processed_mal_ids.add(str(id_mal))
+
                 combined_items.append({
                     "tracker": "anilist",
                     "mal_item": None,
@@ -591,6 +618,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     "mal_id": str(id_mal) if id_mal else None,
                     "anilist_id": al_id,
                 })
+
             current_time = int(time.time())
 
             # Bulk fetch AniList next airing details for combined items that are airing
