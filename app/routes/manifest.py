@@ -275,6 +275,8 @@ async def user_manifest(user_id: str):
     mal_enabled = user.get("mal_access_token") and user.get("mal_enabled", True)
     anilist_enabled = user.get("anilist_token") and user.get("anilist_enabled", True)
     user_catalogs = user.get("catalogs")
+    if user_catalogs is not None:
+        user_catalogs = [c if c != "anime_tracker_search" else "anisync_search" for c in user_catalogs]
 
     active_catalogs = []
     

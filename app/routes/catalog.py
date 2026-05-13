@@ -34,6 +34,29 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
     except Exception as e:
         logging.error("Failed to fetch id_cache in bulk: %s", e)
         mal_to_anilist = {}
+
+    # Resolve any uncached MAL IDs on-the-fly concurrently
+    uncached_mal_ids = [mid for mid in mal_ids if mid not in mal_to_anilist]
+    if uncached_mal_ids:
+        logging.info("Resolving %s uncached MAL IDs in bulk: %s", len(uncached_mal_ids), uncached_mal_ids)
+        from app.lib.id_resolver import resolve_mal_to_kitsu
+        sem = asyncio.Semaphore(15)
+
+        async def resolve_with_sem(mid):
+            async with sem:
+                try:
+                    await resolve_mal_to_kitsu(mid)
+                except Exception as ex:
+                    logging.warning("Failed to resolve uncached MAL ID %s: %s", mid, ex)
+
+        await asyncio.gather(*[resolve_with_sem(mid) for mid in uncached_mal_ids])
+
+        # Re-fetch cache docs after on-demand resolution
+        try:
+            cache_docs = list(id_cache_collection.find({"mal_id": {"$in": mal_ids}}))
+            mal_to_anilist = {doc["mal_id"]: str(doc["anilist_id"]) for doc in cache_docs if doc.get("anilist_id")}
+        except Exception as e:
+            logging.error("Failed to re-fetch id_cache in bulk: %s", e)
         
     anilist_ids = list(mal_to_anilist.values())
     if not anilist_ids:
@@ -55,7 +78,6 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
     """
     try:
         import httpx
-        import asyncio
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
@@ -179,6 +201,9 @@ async def bulk_jikan_filler(items: list[tuple[str, int]]) -> dict[tuple, bool]:
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>.json")
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>/<path:extras>.json")
 async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extras: str = ""):
+    if catalog_id == "anime_tracker_search":
+        catalog_id = "anisync_search"
+
     # We handle 'anime', 'series', and 'movie' catalog types
     if catalog_type not in ["anime", "series", "movie"]:
         return await respond_with({"metas": []})
