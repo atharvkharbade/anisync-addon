@@ -1,4 +1,8 @@
-# 🌟 AniSync - MyAnimeList & AniList Tracker for Stremio
+<p align="center">
+  <img src="docs/images/logo.png" width="120" alt="AniSync Logo" />
+</p>
+
+# AniSync - MyAnimeList & AniList Tracker for Stremio
 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white)](https://python.org)
@@ -6,52 +10,81 @@
 [![Docker Support](https://img.shields.io/badge/docker-ready-2496ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![Stremio Addon](https://img.shields.io/badge/stremio-addon-8a2be2.svg)](https://stremio.com)
 
-**AniSync** is a lightweight companion addon for Stremio. It automatically synchronizes your anime progress to **MyAnimeList** and **AniList** in real-time as you stream, and exposes your watchlists directly inside Stremio as dynamic catalogs.
+**AniSync** automatically synchronizes your anime progress with MyAnimeList and AniList in real-time as you stream, exposing your watchlists as dynamic, beautifully sorted catalog rows directly inside Stremio.
 
 ---
 
-## ✨ Core Features
+## Core Features
 
-### 📺 Watchlist Airing Tags (`[New]`)
-AniSync checks your watchlists against AniList schedules and places a clear `[New]` tag in front of currently airing anime titles whenever a new episode has aired that you haven't watched yet.
-![Airing episode tag indicator](docs/images/watchlist_tags.png)
+### 📺 Poster Badges & Airing Indicators
+Never miss a release. Whenever a new episode drops for a show on your watchlist, AniSync overlays a clean `NEW EPISODE` banner directly on the poster in Stremio. If you connect both trackers, it overlays both MyAnimeList and AniList logos side-by-side on the banner.
+
+![Combined Tracker Poster Badges](docs/images/stremio_poster_badges.png)
+
+### 🗂️ Combined Watchlist Catalogs
+Why choose between MyAnimeList and AniList? Connect both and AniSync merges them into single, clean, deduplicated catalogs in Stremio.
+* **Auto-Merge Progress**: Progress is kept in sync across both trackers, automatically picking whichever progress is higher.
+* **AniList Repeating List Support**: Re-watching a series? AniList's `REPEATING` items are automatically merged into your active Watching catalog.
+
+![Stremio Combined Catalogs](docs/images/stremio_combined_watchlists.png)
+
+### 🤖 Personalized Anime Recommendations
+Get custom anime recommendation rows injected directly into Stremio based on your watch history and tastes. Out of the box, AniSync generates tailored recommendations for you.
+* **Optional Gemini AI Enhancement**: Supercharge these recommendations by adding a Gemini API key in the settings, allowing Gemini to personalize the rows and generate custom themed lists.
+
+![Stremio Recommendations](docs/images/stremio_gemini_recs.png)
 
 ### 🗂️ Smart Three-Tier Watchlist Sorting
 To make your "Currently Watching" watchlist catalog as useful as possible, AniSync automatically sorts and groups your active rows into three distinct tiers:
-1. **Unwatched Airing Shows (Top)**: Airing series with newly released, unwatched episodes float to the absolute top of the row with the `[New]` tag so they are instantly accessible.
+1. **Unwatched Airing Shows (Top)**: Airing series with newly released, unwatched episodes float to the absolute top of the row with the `NEW EPISODE` tag so they are instantly accessible.
 2. **Completed Series (Middle)**: Finished series that you are currently watching are grouped in the middle, sorted by your last watch update.
 3. **Caught-Up Airing Shows (Bottom)**: Shows where you are fully caught up are pushed to the end of the row and sorted chronologically by when their next episode is scheduled to air. This serves as a countdown schedule, putting the soonest-airing shows first.
 
-
 ### 🚫 Episode Filler Indicators (`[Filler]`)
 Using the Jikan (MAL) API, AniSync fetches episode lists and automatically prepends a `[Filler]` tag directly to the episode titles in Stremio's player detail overlay, letting you know exactly which episodes are safe to skip.
-![Inline episode filler tag details](docs/images/episode_filler_tags.png)
 
-* **Dual Account Syncing**: Connect both MyAnimeList and AniList simultaneously, keeping both watchlists updated in real-time as you play.
-* **Draggable Watchlist Catalogs**: Browse your "Currently Watching", "Plan to Watch", "Completed", and other watchlist statuses as rows inside Stremio. You can toggle their visibility and drag-and-drop to reorder them on your dashboard.
+![Inline episode filler tag details](docs/images/stremio_filler_indicators.png)
+
+### ⚙️ Under-the-Hood Architectural Details
 * **Unified Kitsu Bridge**: Automatically maps MAL and AniList watchlists back to standard Kitsu IDs, ensuring stream providers (like Torrentio) find and serve playback links.
 * **Zero-Lag Background Tracking**: Syncs progress asynchronously by listening to Stremio subtitle requests, meaning your player buffering/playback is never affected.
 * **Fast Caching Engine**: Mappings and Jikan filler checks are cached in a local MongoDB instance using bulk page requests, reducing external API calls and keeping catalog loads under 100ms.
-* **Web Configuration Dashboard**: An elegant settings page to link your accounts, toggle features, reorder catalogs, and monitor server diagnostics in real-time.
+* **High-Concurrency Scaling**: Engineered defensively for heavy simultaneous user loads. Employs a globally pooled keep-alive HTTP client registry (preventing socket/port exhaustion under peak load) and runs on a multi-process Uvicorn backend orchestration model.
 
-### 🖥️ Web Configuration Dashboard
-AniSync includes an elegant, responsive web configuration panel to manage your connections, toggle features, and customize catalog arrangements in real-time:
+---
 
-#### 🔐 Sign-in & Authentication
+## 🖥️ Web Configuration Dashboard
+
+AniSync includes a responsive web configuration panel to manage your connections, toggle features, and customize catalog arrangements in real-time:
+
+### 🔐 Secure Sign-in & Authentication
 Connect your MyAnimeList and AniList accounts securely using official OAuth2 sign-in prompts.
+
 ![Web Configuration Sign-in](docs/images/dashboard_login.png)
+![Web Configuration Main Settings](docs/images/dashboard_preferences_accounts.png)
 
-#### 🔗 Account Integrations & Account Management
-Manage active connections dynamically with simple disconnect and tracking toggles.
-![Web Configuration Main Settings](docs/images/dashboard_main.png)
+### ⚙️ Combined Watchlist Settings
+Enable combined catalogs across MyAnimeList and AniList with a single toggle. A built-in guard disables the switch and displays a warning notice if you haven't linked both accounts yet.
 
-#### ⚙️ Custom Tracking Preferences
-Customize unlisted anime auto-syncing, watchlist sorting priority, and episode filler tags.
-![Web Configuration Preferences](docs/images/dashboard_preferences_1.png)
+![Combined Watchlist Warning](docs/images/dashboard_preferences_warning.png)
+![Combined Watchlist Preferences Enabled](docs/images/dashboard_preferences_combined.png)
 
-#### 🗂️ Draggable Catalog Ordering & One-Click Install
-Manage your Stremio rows, drag-and-drop to reorder your catalogs exactly how they should display in Stremio, and copy the manifest URL or click "Direct Install" to install the addon instantly.
-![Web Configuration Catalog Reordering](docs/images/dashboard_preferences_2.png)
+### 🤖 Recommendations & Optional Gemini Settings
+Configure your recommendations settings and optionally link a Gemini API key to personalize and theme the recommendations.
+
+![Gemini AI Settings](docs/images/dashboard_preferences_recs.png)
+
+### 🗂️ Custom Preferences & Sorting
+Fine-tune sorting options, search toggles, and filler tag preferences. Drag-and-drop to reorder your catalogs exactly how they should display in Stremio, and save your setup in real-time.
+
+![Sorting Options](docs/images/dashboard_preferences_sorting.png)
+![Filler and Search Preferences](docs/images/dashboard_preferences_filler.png)
+![Catalog Reordering](docs/images/dashboard_preferences_save.png)
+
+### 📥 One-Click Install
+Copy the manifest URL or click "Direct Install" to install the addon instantly in Stremio.
+
+![One-Click Install](docs/images/dashboard_preferences_warning.png)
 
 ---
 
@@ -62,7 +95,7 @@ If you have the **AnimeKitsu** addon installed, it might override AniSync's meta
 Stremio resolves metadata conflicts by prioritizing whichever addon is **higher in your Stremio installed addons list**. There are two ways to fix this:
 
 ### Option A: Reorder your Addons (Highly Recommended)
-1. Log in to the community-made **[Stremio Addon Manager](https://addon-manager.ad.sc.strem.io/)** using your Stremio credentials.
+1. Log in to the community-made **[Cinebye](https://cinebye.elfhosted.com/)** using your Stremio credentials.
 2. Drag **AniSync** above **AnimeKitsu** in the list to reorder them.
 3. Alternatively, simply uninstall both addons, then **install AniSync first** before reinstalling AnimeKitsu. Stremio will now prioritize our metadata and display the custom tags during playback.
 
@@ -77,14 +110,22 @@ If you prefer to let AnimeKitsu handle all of your catalogs and search, you can 
 graph TD
     Stremio[Stremio Client] -->|1. Subtitle request| SubtitleEP[Subtitles Route]
     SubtitleEP -->|2. Resolve ID| IDResolver[ID Resolver]
-    IDResolver -->|A. Query Cache| MongoDB[(MongoDB id_cache)]
-    IDResolver -->|B. Fallback APIs| ARM[ARM API] & AniZip[ani.zip API] & Fribb[Fribb JSON]
+    IDResolver -->|A. Query Cache| MongoDB[(MongoDB: Local / Atlas)]
+    IDResolver -->|B. Resolve Fallbacks| ConnectionPool[Shared HTTP Connection Pool]
+    
+    ConnectionPool -->|Optional Proxy Tunnel| Proxy[Proxy Server / Gluetun]
+    
+    Proxy --> ARM[ARM API] & AniZip[ani.zip API] & Fribb[Fribb JSON] & Kitsu[Kitsu API] & Jikan[Jikan MAL API]
+    ConnectionPool -->|Direct Connection| ARM & AniZip & Fribb & Kitsu & Jikan
+
     SubtitleEP -->|3. Sync Progress| SyncService[Sync Services]
-    SyncService -->|A. Sync MAL| MAL[MyAnimeList API]
-    SyncService -->|B. Sync AniList| AniList[AniList GraphQL]
+    SyncService --> ConnectionPool
+    
+    Proxy --> MAL[MyAnimeList API] & AniList[AniList GraphQL]
+    ConnectionPool -->|Direct Connection| MAL & AniList
     
     WebUI[Quart Web Config UI] -->|OAuth Flow| Auth[Auth Routes]
-    Auth -->|Store user tokens| MongoUsers[(MongoDB users)]
+    Auth -->|Store user credentials| MongoDB
 ```
 
 ---
@@ -93,10 +134,14 @@ graph TD
 
 ### Prerequisites
 
-- [Docker & Docker Compose](https://docs.docker.com/get-docker/) installed.
-- Developer accounts for:
+#### Global Requirements
+- Developer accounts for external integrations:
   - **MyAnimeList** API Client (Create at [MAL API Config](https://myanimelist.net/apiconfig))
   - **AniList** API Client (Create at [AniList Developer Settings](https://anilist.co/settings/developer))
+
+#### Deployment-Specific Requirements
+- **Option A / B (Docker hosting)**: [Docker & Docker Compose](https://docs.docker.com/get-docker/) installed on your VPS or device.
+- **Option C (Vercel serverless hosting)**: A free cloud database cluster set up on **[MongoDB Atlas](https://www.mongodb.com/products/platform/atlas-database)**.
 
 ### 1. Environment Configuration
 
@@ -150,7 +195,7 @@ docker compose up -d
 ```yaml
 services:
   app:
-    image: ghcr.io/atharvkharbade/anisync:latest
+    image: ghcr.io/atharvkharbade/anisync-addon:latest
     container_name: anisync
     mem_limit: 1g
     memswap_limit: 2g
@@ -212,9 +257,9 @@ If you have cloned the repository and want to build the container from local sou
 
 ### 3. Hosting on Vercel (Serverless / One-Click)
 
-If you prefer serverless hosting over a private server or Docker container, you can deploy AniSync to **Vercel** with a single click.
+If you prefer serverless hosting over a private server or Docker container, you can deploy AniSync to **Vercel**:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fatharvkharbade%2Fanisync&env=SECRET_KEY,FLASK_RUN_HOST,MONGO_URI,MONGO_DB,MAL_CLIENT_ID,MAL_CLIENT_SECRET,ANILIST_CLIENT_ID,PROXY_URL&project-name=anisync&repository-name=anisync)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fatharvkharbade%2Fanisync-addon&env=SECRET_KEY,FLASK_RUN_HOST,MONGO_URI,MONGO_DB,MAL_CLIENT_ID,MAL_CLIENT_SECRET,ANILIST_CLIENT_ID,PROXY_URL&project-name=anisync&repository-name=anisync)
 
 #### Prerequisites for Vercel
 
@@ -248,29 +293,7 @@ When clicking the Deploy button, Vercel will ask you to supply the following env
    - Paste the Manifest URL into the search bar at the bottom left.
    - Click **Install** and approve.
 
----
 
-## 🧪 Development & Quality Control
-
-This project uses `uv` for dependency management. To set up local quality checks:
-
-### Style Linting
-Verify code formatting and styling standards using `ruff`:
-
-```bash
-pip install uv
-uv pip install -r pyproject.toml ruff
-ruff check .
-```
-
-### Code Formatting
-To format imports and files automatically:
-
-```bash
-ruff format .
-```
-
----
 
 ## 📄 License
 
