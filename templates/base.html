@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>AniSync</title>
+    <meta name="description" content="A Stremio addon to update your anime watchlists on MyAnimeList and AniList. Track episodes in real-time, get new episode notifications directly via anime posters, and receive personalized recommendations based on your viewing history.">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.url if request else '' }}">
+    <meta property="og:title" content="AniSync - Stremio Addon">
+    <meta property="og:description" content="A Stremio addon to update your anime watchlists on MyAnimeList and AniList. Track episodes in real-time, get new episode notifications directly via anime posters, and receive personalized recommendations based on your viewing history.">
+    <meta property="og:image" content="{{ request.host_url if request else '' }}logo.png?v=7">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary">
+    <meta property="twitter:url" content="{{ request.url if request else '' }}">
+    <meta property="twitter:title" content="AniSync - Stremio Addon">
+    <meta property="twitter:description" content="A Stremio addon to update your anime watchlists on MyAnimeList and AniList. Track episodes in real-time, get new episode notifications directly via anime posters, and receive personalized recommendations based on your viewing history.">
+    <meta property="twitter:image" content="{{ request.host_url if request else '' }}logo.png?v=7">
+
     <link rel="icon" type="image/png" href="/logo.png?v=7">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -102,7 +118,7 @@
         {% block content %}{% endblock %}
     </div>
 
-    <footer class="text-center py-4 mt-5" style="border-top: 1px solid #1e1e1e; color: #888;">
+    <footer class="text-center py-4 mt-3" style="border-top: 1px solid #1e1e1e; color: #888;">
         <p class="mb-1 text-secondary">AniSync. Elevating your tracking experience.</p>
         <div class="mb-2 d-flex justify-content-center align-items-center gap-3" style="font-size: 0.82rem;">
             <a href="https://github.com/atharvkharbade/anisync" target="_blank" class="github-link d-inline-flex align-items-center gap-1">
