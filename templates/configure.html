@@ -1,6 +1,280 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<style>
+    .rec-section-header {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: #fff;
+        margin-top: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .rec-section-sub {
+        font-size: 0.85rem;
+        color: #888;
+        margin-bottom: 1.5rem;
+    }
+
+    .rec-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: #8c9ba5;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .rec-select {
+        width: 100%;
+        background-color: #0d0d0d;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        color: #fff;
+        font-size: 0.95rem;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%238c9ba5' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 0.75rem;
+        transition: border-color 0.2s, background-color 0.2s;
+        cursor: pointer;
+    }
+
+    .rec-select:hover {
+        background-color: #121212;
+    }
+
+    .rec-select:focus {
+        outline: none;
+        border-color: #02a9ff;
+    }
+
+    .rec-subtext {
+        font-size: 0.75rem;
+        color: #888;
+        margin-top: 0.4rem;
+    }
+
+    /* Dual Range Slider styling */
+    .year-slider-container {
+        position: relative;
+        height: 6px;
+        background: #2a2a2a;
+        border-radius: 3px;
+        margin: 1.5rem 0 1.8rem 0;
+    }
+
+    .year-slider-track {
+        position: absolute;
+        height: 100%;
+        background: #02a9ff;
+        border-radius: 3px;
+    }
+
+    .year-slider-input-group {
+        position: relative;
+        height: 20px;
+        margin-top: -2.35rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .year-slider-input {
+        position: absolute;
+        width: 100%;
+        background: none;
+        pointer-events: none;
+        -webkit-appearance: none;
+        appearance: none;
+        z-index: 2;
+        height: 20px;
+        margin: 0;
+        left: 0;
+    }
+
+    .year-slider-input::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #000;
+        cursor: pointer;
+        pointer-events: auto;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        position: relative;
+        z-index: 10;
+    }
+
+    .year-slider-input::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #000;
+        cursor: pointer;
+        pointer-events: auto;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        position: relative;
+        z-index: 10;
+    }
+
+    /* Genre lists container styling */
+    .genre-scroll-container {
+        height: 200px;
+        overflow-y: auto;
+        border: 1px solid #2a2a2a;
+        background-color: #0d0d0d;
+        border-radius: 8px;
+        padding: 0.5rem;
+    }
+
+    /* Scrollbar styling */
+    .genre-scroll-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .genre-scroll-container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .genre-scroll-container::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 3px;
+    }
+
+    .genre-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #444;
+    }
+
+    .genre-checkbox-label {
+        display: flex;
+        align-items: center;
+        padding: 0.35rem 0.5rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: #bbb;
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    .genre-checkbox-label:hover {
+        background-color: #1a1a1a;
+        color: #fff;
+    }
+
+    .genre-checkbox {
+        margin-right: 0.75rem;
+        width: 1rem;
+        height: 1rem;
+        background-color: #0d0d0d;
+        border: 2px solid #555;
+        border-radius: 3px;
+        cursor: pointer;
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .genre-checkbox:checked {
+        background-color: #fff;
+        border-color: #fff;
+    }
+
+    .genre-checkbox:checked::after {
+        content: "\f00c";
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        font-size: 0.65rem;
+        color: #000;
+        position: absolute;
+    }
+
+    /* Gemini API Input Styling */
+    .gemini-input-wrapper {
+        display: flex;
+        align-items: center;
+        background-color: #0d0d0d;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        transition: border-color 0.2s;
+    }
+
+    .gemini-input-wrapper:focus-within {
+        border-color: #02a9ff;
+    }
+
+    .gemini-icon {
+        color: #02a9ff;
+        margin-right: 0.75rem;
+    }
+
+    .gemini-input {
+        flex-grow: 1;
+        background: transparent;
+        border: none;
+        color: #fff;
+        outline: none;
+        font-size: 0.95rem;
+    }
+
+    .gemini-btn {
+        background: transparent;
+        border: none;
+        color: #888;
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .gemini-btn:hover {
+        color: #fff;
+    }
+
+    .gemini-status-icon {
+        font-size: 1.1rem;
+        margin-left: 0.5rem;
+    }
+
+    .gemini-status-icon.success {
+        color: #28a745;
+    }
+
+    .gemini-status-icon.error {
+        color: #dc3545;
+    }
+
+    .btn-mal, .btn-anilist, .btn-disconnect {
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 0.55rem 1.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease-in-out;
+        border: none;
+        text-decoration: none;
+    }
+    .btn-disconnect {
+        background: rgba(220, 53, 69, 0.08);
+        border: 1px solid rgba(220, 53, 69, 0.35);
+        color: #f38b8b;
+    }
+    .btn-disconnect:hover {
+        background: rgba(220, 53, 69, 0.2);
+        border-color: #e74c3c;
+        color: #fff;
+    }
+</style>
 <div class="row justify-content-center mt-1 mt-sm-2">
     <div class="col-12 col-md-8">
 
@@ -8,14 +282,13 @@
         <div class="mb-3 mb-sm-4">
             <h3 class="fw-bold fs-5 fs-sm-3">
                 {% if user.get('picture') %}
-                    <img src="{{ user['picture'] }}" width="32" height="32"
-                         class="rounded-circle me-2" style="object-fit:cover;"
-                         onerror="this.style.display='none'">
+                <img src="{{ user['picture'] }}" width="32" height="32" class="rounded-circle me-2"
+                    style="object-fit:cover;" onerror="this.style.display='none'">
                 {% endif %}
                 {% if user.get('name') or user.get('anilist_username') %}
-                    Hey, {{ user.get('name') or user.get('anilist_username') }}
+                Hey, {{ user.get('name') or user.get('anilist_username') }}
                 {% else %}
-                    Configure AniSync
+                Configure AniSync
                 {% endif %}
             </h3>
             <p class="text-secondary small mb-0">Manage your tracking connections and preferences below.</p>
@@ -25,57 +298,63 @@
         <div class="card-dark p-3 p-sm-4 mb-3">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <div class="d-flex align-items-center">
-                    <img src="https://myanimelist.net/favicon.ico" width="20" height="20" class="me-2" style="border-radius:4px; vertical-align: middle;">
+                    <img src="https://myanimelist.net/favicon.ico" width="20" height="20" class="me-2"
+                        style="border-radius:4px; vertical-align: middle;">
                     <span class="fw-semibold">MyAnimeList</span>
                 </div>
                 {% if user.get('mal_access_token') %}
-                    <span class="text-success small">
-                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('name') %} as {{ user['name'] }}{% endif %}
-                    </span>
+                <span class="text-success small">
+                    <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('name') %} as {{ user['name']
+                    }}{% endif %}
+                </span>
                 {% else %}
-                    <span class="text-secondary small">
-                        <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
-                    </span>
-                {% endif %}
-            </div>
-
-            <div class="d-flex flex-wrap align-items-center mb-3 gap-2">
-                <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal w-100 w-sm-auto">
-                    <i class="fa-solid fa-right-to-bracket me-2"></i>
-                    {{ 'Reconnect MyAnimeList' if user.get('mal_access_token') else 'Connect MyAnimeList' }}
-                </a>
-                {% if user.get('mal_access_token') %}
-                <a href="{{ url_for('auth.disconnect_mal') }}" class="btn btn-outline-danger w-100 w-sm-auto">
-                    <i class="fa-solid fa-unlink me-2"></i>Disconnect
-                </a>
+                <span class="text-secondary small">
+                    <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
+                </span>
                 {% endif %}
             </div>
 
             {% if user.get('mal_access_token') %}
+            <div class="d-flex gap-2 mb-3">
+                <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal">
+                    <i class="fa-solid fa-rotate me-2"></i>Reconnect
+                </a>
+                <a href="{{ url_for('auth.disconnect_mal') }}" class="btn btn-disconnect">
+                    <i class="fa-solid fa-unlink me-2"></i>Disconnect
+                </a>
+            </div>
+            {% else %}
+            <div class="mb-3">
+                <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i>Connect MyAnimeList
+                </a>
+            </div>
+            {% endif %}
+
+            {% if user.get('mal_access_token') %}
             <form method="POST" action="{{ url_for('ui.configure') }}">
                 <div class="form-check form-switch mb-0">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           id="mal_enabled" name="mal_enabled_check"
-                           {% if user.get('mal_enabled', True) %}checked{% endif %}
-                           onchange="syncAndSubmit(this, 'mal_enabled_hidden', this.form)">
+                    <input class="form-check-input" type="checkbox" role="switch" id="mal_enabled"
+                        name="mal_enabled_check" {% if user.get('mal_enabled', True) %}checked{% endif %}
+                        onchange="syncAndSubmit(this, 'mal_enabled_hidden', this.form)">
                     <label class="form-check-label text-secondary small" for="mal_enabled">
                         MAL tracking enabled
                     </label>
                 </div>
                 <input type="hidden" id="mal_enabled_hidden" name="mal_enabled"
-                       value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
+                    value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
                 <input type="hidden" name="anilist_enabled"
-                       value="{{ 'true' if user.get('anilist_enabled', False) else 'false' }}">
+                    value="{{ 'true' if user.get('anilist_enabled', False) else 'false' }}">
                 <input type="hidden" name="sync_unlisted"
-                       value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
+                    value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
                 <input type="hidden" name="sort_by_new_episodes"
-                       value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
+                    value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
                 <input type="hidden" name="enable_catalogs"
-                       value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
+                    value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
                 <input type="hidden" name="enable_search"
-                       value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
+                    value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
                 <input type="hidden" name="show_filler_tags"
-                       value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                    value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
             </form>
             {% endif %}
         </div>
@@ -84,83 +363,91 @@
         <div class="card-dark p-3 p-sm-4 mb-3">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <div class="d-flex align-items-center">
-                    <img src="https://anilist.co/img/icons/favicon-32x32.png" width="20" height="20" class="me-2" style="border-radius:4px; vertical-align: middle;">
+                    <img src="https://anilist.co/img/icons/favicon-32x32.png" width="20" height="20" class="me-2"
+                        style="border-radius:4px; vertical-align: middle;">
                     <span class="fw-semibold">AniList</span>
                 </div>
                 {% if user.get('anilist_token') %}
-                    <span class="text-success small">
-                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('anilist_username') %} as {{ user['anilist_username'] }}{% endif %}
-                    </span>
+                <span class="text-success small">
+                    <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('anilist_username') %} as {{
+                    user['anilist_username'] }}{% endif %}
+                </span>
                 {% else %}
-                    <span class="text-secondary small">
-                        <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
-                    </span>
-                {% endif %}
-            </div>
-
-            <div class="d-flex flex-wrap align-items-center mb-3 gap-2">
-                <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist w-100 w-sm-auto">
-                    <i class="fa-solid fa-right-to-bracket me-2"></i>
-                    {{ 'Reconnect AniList' if user.get('anilist_token') else 'Connect AniList' }}
-                </a>
-                {% if user.get('anilist_token') %}
-                <a href="{{ url_for('auth.disconnect_anilist') }}" class="btn btn-outline-danger w-100 w-sm-auto">
-                    <i class="fa-solid fa-unlink me-2"></i>Disconnect
-                </a>
+                <span class="text-secondary small">
+                    <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
+                </span>
                 {% endif %}
             </div>
 
             {% if user.get('anilist_token') %}
+            <div class="d-flex gap-2 mb-3">
+                <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist">
+                    <i class="fa-solid fa-rotate me-2"></i>Reconnect
+                </a>
+                <a href="{{ url_for('auth.disconnect_anilist') }}" class="btn btn-disconnect">
+                    <i class="fa-solid fa-unlink me-2"></i>Disconnect
+                </a>
+            </div>
+            {% else %}
+            <div class="mb-3">
+                <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i>Connect AniList
+                </a>
+            </div>
+            {% endif %}
+
+            {% if user.get('anilist_token') %}
             <form method="POST" action="{{ url_for('ui.configure') }}">
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           id="anilist_enabled" name="anilist_enabled_check"
-                           {% if user.get('anilist_enabled', True) %}checked{% endif %}
-                           onchange="syncAndSubmit(this, 'anilist_enabled_hidden', this.form)">
+                    <input class="form-check-input" type="checkbox" role="switch" id="anilist_enabled"
+                        name="anilist_enabled_check" {% if user.get('anilist_enabled', True) %}checked{% endif %}
+                        onchange="syncAndSubmit(this, 'anilist_enabled_hidden', this.form)">
                     <label class="form-check-label text-secondary small" for="anilist_enabled">
                         AniList tracking enabled
                     </label>
                 </div>
                 <input type="hidden" name="mal_enabled"
-                       value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
+                    value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
                 <input type="hidden" id="anilist_enabled_hidden" name="anilist_enabled"
-                       value="{{ 'true' if user.get('anilist_enabled', True) else 'false' }}">
+                    value="{{ 'true' if user.get('anilist_enabled', True) else 'false' }}">
                 <input type="hidden" name="sync_unlisted"
-                       value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
+                    value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
                 <input type="hidden" name="sort_by_new_episodes"
-                       value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
+                    value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
                 <input type="hidden" name="enable_catalogs"
-                       value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
+                    value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
                 <input type="hidden" name="enable_search"
-                       value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
+                    value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
                 <input type="hidden" name="show_filler_tags"
-                       value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                    value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
             </form>
             {% endif %}
         </div>
 
-        <!-- Preferences Card -->
-        <div class="card-dark p-3 p-sm-4 mb-3">
-            <h6 class="fw-semibold mb-3"><i class="fa-solid fa-sliders me-2 text-warning"></i>Preferences</h6>
-            <form method="POST" action="{{ url_for('ui.configure') }}" id="prefs-form">
+        <form method="POST" action="{{ url_for('ui.configure') }}" id="prefs-form">
+            <!-- Preferences Card -->
+            <div class="card-dark p-3 p-sm-4 mb-3">
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-sliders me-2 text-warning"></i>Preferences</h6>
                 <input type="hidden" name="mal_enabled"
-                       value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
+                    value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
                 <input type="hidden" name="anilist_enabled"
-                       value="{{ 'true' if user.get('anilist_enabled', False) else 'false' }}">
+                    value="{{ 'true' if user.get('anilist_enabled', False) else 'false' }}">
                 <input type="hidden" id="sync_unlisted_val" name="sync_unlisted"
-                       value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
+                    value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
                 <input type="hidden" id="sort_by_new_episodes_val" name="sort_by_new_episodes"
-                       value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
+                    value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
                 <input type="hidden" id="enable_catalogs_val" name="enable_catalogs"
-                       value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
+                    value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
                 <input type="hidden" id="enable_search_val" name="enable_search"
-                       value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
+                    value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
                 <input type="hidden" id="show_filler_tags_val" name="show_filler_tags"
-                       value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                    value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
+                    value="{{ 'true' if user.get('combine_watchlists', False) else 'false' }}">
 
                 <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           id="sync_unlisted" {% if user.get('sync_unlisted', False) %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" role="switch" id="sync_unlisted" {% if
+                        user.get('sync_unlisted', False) %}checked{% endif %}>
                     <label class="form-check-label ms-1" for="sync_unlisted">
                         <span class="fw-medium d-block">Sync unlisted anime</span>
                         <span class="text-secondary small d-block">
@@ -170,41 +457,8 @@
                 </div>
 
                 <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           id="enable_catalogs" {% if user.get('enable_catalogs', True) %}checked{% endif %}>
-                    <label class="form-check-label ms-1" for="enable_catalogs">
-                        <span class="fw-medium d-block">Enable Watchlist Catalogs</span>
-                        <span class="text-secondary small d-block">
-                            Expose your watchlist categories inside the app. Disable if you only want progress tracking without extra catalogs.
-                        </span>
-                    </label>
-                </div>
-
-                <div class="form-check form-switch mb-3 ms-sm-4" id="sort-new-container">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           id="sort_by_new_episodes" {% if user.get('sort_by_new_episodes', False) %}checked{% endif %}>
-                    <label class="form-check-label ms-1" for="sort_by_new_episodes">
-                        <span class="fw-medium d-block">Show newly released episodes in front</span>
-                        <span class="text-secondary small d-block">
-                            Adds a [New] tag to currently airing anime for unwatched episodes, and pushes them to the first in watching catalog.
-                        </span>
-                    </label>
-                </div>
-
-                <div class="form-check form-switch mb-3 ms-sm-4" id="show-filler-container">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           id="show_filler_tags" {% if user.get('show_filler_tags', True) %}checked{% endif %}>
-                    <label class="form-check-label ms-1" for="show_filler_tags">
-                        <span class="fw-medium d-block">Show filler tags on episodes</span>
-                        <span class="text-secondary small d-block">
-                            Mark filler episodes with a [Filler] tag inside the episode list.
-                        </span>
-                    </label>
-                </div>
-
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           id="enable_search" {% if user.get('enable_search', True) %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" role="switch" id="enable_search" {% if
+                        user.get('enable_search', True) %}checked{% endif %}>
                     <label class="form-check-label ms-1" for="enable_search">
                         <span class="fw-medium d-block">Enable Search Catalog</span>
                         <span class="text-secondary small d-block">
@@ -213,97 +467,249 @@
                     </label>
                 </div>
 
-                <!-- Catalog Visibility Selector -->
-                {% if user.get('mal_access_token') or user.get('anilist_token') %}
-                <div id="catalog-management-section">
-                    <hr style="border-color: #333; margin: 1.5rem 0;">
-                    <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs Management</h6>
-                    <p class="text-secondary small mb-3">Toggle visibility and **drag-and-drop** to reorder the catalogs exactly as they should appear in your app.</p>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="enable_catalogs" {% if
+                        user.get('enable_catalogs', True) %}checked{% endif %}>
+                    <label class="form-check-label ms-1" for="enable_catalogs">
+                        <span class="fw-medium d-block">Enable Watchlist Catalogs</span>
+                        <span class="text-secondary small d-block">
+                            Expose your watchlist categories inside the app. Disable if you only want progress tracking
+                            without extra catalogs.
+                        </span>
+                    </label>
+                </div>
 
-                    <!-- Hidden input to store ordered comma-separated IDs -->
-                    <input type="hidden" id="sorted_catalogs" name="sorted_catalogs" value="">
+                <!-- Watchlist Sub-Options (only visible when enabled) -->
+                <div id="watchlist-options-container"
+                    style="display: none; border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
+                    class="mb-3">
 
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="sort_by_new_episodes" {% if
+                            user.get('sort_by_new_episodes', False) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="sort_by_new_episodes">
+                            <span class="fw-medium d-block">Show newly released episodes in front</span>
+                            <span class="text-secondary small d-block">
+                                Shows [New Episode] on the anime poster for unwatched episodes, and
+                                pushes them to the front of your watching catalog.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="show_filler_tags" {% if
+                            user.get('show_filler_tags', True) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="show_filler_tags">
+                            <span class="fw-medium d-block">Show filler tags on episodes</span>
+                            <span class="text-secondary small d-block">
+                                Mark filler episodes with a [Filler] tag inside the episode list.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="combine_watchlists" {% if
+                            user.get('combine_watchlists', False) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="combine_watchlists">
+                            <span class="fw-medium d-block">Combine MAL & AniList Catalogs</span>
+                            <span class="text-secondary small d-block">
+                                Merges MAL and AniList watchlists into unified, deduplicated catalogs in Stremio. (AniList's Repeating entries are automatically merged into Watching).
+                            </span>
+                            <span id="combine-warning-text" class="text-warning small d-block mt-1 fw-medium d-none">
+                                <i class="fa-solid fa-circle-info me-1"></i>Connect both MyAnimeList & AniList to enable watchlist combining.
+                            </span>
+                        </label>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Recommendations Card -->
+            <div class="card-dark p-3 p-sm-4 mb-3">
+                <h6 class="fw-semibold mb-3"><i
+                        class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>Recommendations</h6>
+
+                <input type="hidden" id="enable_recommendations_val" name="enable_recommendations"
+                    value="{{ 'true' if user.get('enable_recommendations', True) else 'false' }}">
+                <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
+                    value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="enable_recommendations" {% if
+                        user.get('enable_recommendations', True) %}checked{% endif %}>
+                    <label class="form-check-label ms-1" for="enable_recommendations">
+                        <span class="fw-medium d-block">Enable Recommendations Catalogs</span>
+                        <span class="text-secondary small d-block">
+                            Enable personalized anime recommendations based on your tracking history.
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Recommendations Sub-Options (only visible when enabled) -->
+                <div id="recommendations-options"
+                    style="display: none; border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
+                    class="mb-3">
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                            id="recommendations_filter_watched" {% if user.get('recommendations_filter_watched', True)
+                            %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="recommendations_filter_watched">
+                            <span class="fw-medium d-block">Filter Watched Shows</span>
+                            <span class="text-secondary small d-block">
+                                Exclude shows already in your completed, watching, paused, or dropped lists from
+                                recommendations.
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Gemini AI Section Replica -->
+                    <div id="gemini-key-section" style="margin-top: 1.5rem;">
+                        <label class="rec-label mb-2">Gemini AI (Optional)</label>
+                        <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                            Used to generate personalized, AI-powered explanations for recommended anime based on your unique watch history.
+                        </p>
+
+                        <div class="gemini-input-wrapper position-relative">
+                            <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
+                                value="{{ user.get('gemini_api_key', '') }}"
+                                placeholder="Paste your Gemini API key here">
+                            <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
+                                style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                            <button type="button" class="gemini-btn p-0" id="validate-gemini-btn" title="Validate Key">
+                                <i id="gemini-check-icon"
+                                    class="fa-solid fa-circle-check {% if user.get('gemini_api_key') %}text-success{% else %}text-secondary{% endif %}"
+                                    style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                            </button>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span id="gemini-validation-status" class="small text-secondary">
+                                {% if user.get('gemini_api_key') %}API key saved{% else %}Not verified{% endif %}
+                            </span>
+                            <a href="https://aistudio.google.com/" target="_blank"
+                                class="small text-info text-decoration-none" style="font-size:0.75rem;">
+                                Get your free API key from Google AI Studio <i
+                                    class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Catalogs Management Card -->
+            {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('enable_recommendations', True) %}
+            <div class="card-dark p-3 p-sm-4 mb-3" id="catalog-management-card"
+                 {% if not user.get('mal_access_token') and not user.get('anilist_token') and not user.get('enable_recommendations', True) %}style="display: none;"{% endif %}>
+                <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
+                    Management</h6>
+                <p class="text-secondary small mb-3">Toggle visibility and **drag-and-drop** to reorder the catalogs
+                    exactly as they should appear in your app.</p>
+
+                <!-- Hidden input to store ordered comma-separated IDs -->
+                <input type="hidden" id="sorted_catalogs" name="sorted_catalogs" value="">
 
                 <div id="drag-drop-catalog-list" class="mb-4">
-                    {% 
-                        set default_order = [
-                            ('mal_watching', 'MAL: Watching', 'mal'),
-                            ('mal_plan_to_watch', 'MAL: Plan to Watch', 'mal'),
-                            ('mal_completed', 'MAL: Completed', 'mal'),
-                            ('mal_on_hold', 'MAL: On Hold', 'mal'),
-                            ('mal_dropped', 'MAL: Dropped', 'mal'),
-                            ('anilist_watching', 'AniList: Watching', 'anilist'),
-                            ('anilist_planning', 'AniList: Planning to Watch', 'anilist'),
-                            ('anilist_completed', 'AniList: Completed', 'anilist'),
-                            ('anilist_paused', 'AniList: Paused', 'anilist'),
-                            ('anilist_dropped', 'AniList: Dropped', 'anilist'),
-                            ('anilist_repeating', 'AniList: Repeating', 'anilist')
-                        ]
+                    {%
+                    set default_order = [
+                    ('mal_watching', 'MAL - Watching', 'mal'),
+                    ('mal_plan_to_watch', 'MAL - Plan to Watch', 'mal'),
+                    ('mal_completed', 'MAL - Completed', 'mal'),
+                    ('mal_on_hold', 'MAL - On Hold', 'mal'),
+                    ('mal_dropped', 'MAL - Dropped', 'mal'),
+                    ('anilist_watching', 'AniList - Watching', 'anilist'),
+                    ('anilist_planning', 'AniList - Planning', 'anilist'),
+                    ('anilist_completed', 'AniList - Completed', 'anilist'),
+                    ('anilist_paused', 'AniList - Paused', 'anilist'),
+                    ('anilist_dropped', 'AniList - Dropped', 'anilist'),
+                    ('anilist_repeating', 'AniList - Repeating', 'anilist'),
+                    ('comb_watching', 'Watching', 'combined'),
+                    ('comb_plan_to_watch', 'Plan to Watch', 'combined'),
+                    ('comb_completed', 'Completed', 'combined'),
+                    ('comb_paused_on_hold', 'Paused / On Hold', 'combined'),
+                    ('comb_dropped', 'Dropped', 'combined'),
+                    ('anisync_rec', 'Top Picks', 'rec'),
+                    ('anisync_loved', 'Inspired by your Favorites', 'rec'),
+                    ('anisync_liked', 'More from your Watchlist', 'rec')
+                    ]
                     %}
-                    
+
                     {% set active_user_order = [] %}
-                    
+
                     <!-- 1. Construct user-sorted list first -->
                     {% if user.get('catalogs') is not none %}
-                        {% for sorted_id in user.get('catalogs', []) %}
-                            {% for item_id, item_name, item_source in default_order %}
-                                {% if item_id == sorted_id %}
-                                    {% if (item_source == 'mal' and user.get('mal_access_token')) or (item_source == 'anilist' and user.get('anilist_token')) %}
-                                        {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
-                                    {% endif %}
-                                {% endif %}
-                            {% endfor %}
-                        {% endfor %}
+                    {% for sorted_id in user.get('catalogs', []) %}
+                    {% for item_id, item_name, item_source in default_order %}
+                    {% if item_id == sorted_id %}
+                    {% if (item_source == 'mal' and user.get('mal_access_token')) or 
+                          (item_source == 'anilist' and user.get('anilist_token')) or 
+                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token'))) or 
+                          item_source == 'rec' %}
+                    {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
                     {% endif %}
-                    
+                    {% endif %}
+                    {% endfor %}
+                    {% endfor %}
+                    {% endif %}
+
                     <!-- 2. Append any unselected/new catalogs from the source default order -->
                     {% for item_id, item_name, item_source in default_order %}
-                        {% if (item_source == 'mal' and user.get('mal_access_token')) or (item_source == 'anilist' and user.get('anilist_token')) %}
-                            {% if item_id not in user.get('catalogs', []) %}
-                                {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
-                            {% endif %}
-                        {% endif %}
+                    {% if (item_source == 'mal' and user.get('mal_access_token')) or 
+                          (item_source == 'anilist' and user.get('anilist_token')) or 
+                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token'))) or 
+                          item_source == 'rec' %}
+                    {% if item_id not in user.get('catalogs', []) %}
+                    {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
+                    {% endif %}
+                    {% endif %}
                     {% endfor %}
-                    
+
                     <!-- 3. Render the orderable items -->
                     {% for item_id, item_name, item_source in active_user_order %}
-                    <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded" 
-                         draggable="true" 
-                         data-id="{{ item_id }}"
-                         style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
+                    <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
+                        draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}"
+                        style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
                         <div class="d-flex align-items-center">
                             <i class="fa-solid fa-grip-vertical text-secondary me-3" style="cursor: move;"></i>
                             <div class="form-check mb-0">
-                                <input class="form-check-input catalog-checkbox" type="checkbox" id="cat_{{ item_id }}" name="cat_{{ item_id }}"
-                                       {% if user.get('catalogs') is none or item_id in user.get('catalogs', []) %}checked{% endif %}>
-                                <label class="form-check-label small fw-medium text-light" for="cat_{{ item_id }}" style="user-select: none;">
+                                <input class="form-check-input catalog-checkbox" type="checkbox" id="cat_{{ item_id }}"
+                                    name="cat_{{ item_id }}" {% if user.get('catalogs') is none or item_id in
+                                    user.get('catalogs', []) %}checked{% endif %}>
+                                <label class="form-check-label small fw-medium text-light" for="cat_{{ item_id }}"
+                                    style="user-select: none;">
                                     {{ item_name }}
                                 </label>
                             </div>
                         </div>
-                        <span class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% else %}bg-info text-dark{% endif %}" style="font-size:0.68rem; letter-spacing:0.02em;">
-                            {{ item_source | upper }}
+                        <span
+                            class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'combined' %}bg-success text-white{% else %}bg-warning text-dark{% endif %}"
+                            style="font-size:0.68rem; letter-spacing:0.02em;">
+                            {{ 'RECOMMENDED' if item_source == 'rec' else item_source | upper }}
                         </span>
                     </div>
                     {% endfor %}
                 </div>
-                </div>
-                {% endif %}
+            </div>
+            {% endif %}
 
-                <button type="submit" class="btn btn-outline-light btn-sm px-4 mt-2"
-                        onclick="updateFormValues();">
-                    <i class="fa-solid fa-check me-1"></i>Save Preferences
-                </button>
-            </form>
-        </div>
+            <!-- Unified Save Button -->
+            <button type="submit" class="btn btn-outline-light btn-sm px-4 mt-2 mb-3" onclick="updateFormValues();">
+                <i class="fa-solid fa-check me-1"></i>Save Preferences
+            </button>
+        </form>
 
         <!-- Install Card -->
-        <div class="card-dark p-3 p-sm-4 mb-5">
+        <div class="card-dark p-3 p-sm-4 mb-3">
             <h6 class="fw-semibold mb-1"><i class="fa-solid fa-puzzle-piece me-2 text-info"></i>Install Addon</h6>
-            <p class="text-secondary small mb-3">Copy the manifest URL and paste it into your app, or click "Direct Install".</p>
+            <p class="text-secondary small mb-3">Copy the manifest URL and paste it into your app, or click "Direct
+                Install".</p>
             <div class="input-group mb-3">
-                <input id="manifest_url" type="text" class="form-control manifest-box"
-                       value="{{ manifest_url }}" readonly>
+                <input id="manifest_url" type="text" class="form-control manifest-box" value="{{ manifest_url }}"
+                    readonly>
                 <button class="btn btn-outline-secondary" onclick="copyToClipboard('manifest_url')">
                     <i class="fa-regular fa-copy"></i>
                 </button>
@@ -321,7 +727,7 @@
 <script>
     async function syncAndSubmit(checkbox, hiddenId, form) {
         document.getElementById(hiddenId).value = checkbox.checked ? 'true' : 'false';
-        
+
         showToast("Saving status...", "info");
         try {
             const formData = new FormData(form);
@@ -345,14 +751,14 @@
     }
 
     // Drag and Drop ordering handler
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
         // Handle AJAX form submission for Preferences
         const prefsForm = document.getElementById("prefs-form");
         if (prefsForm) {
-            prefsForm.addEventListener("submit", async function(e) {
+            prefsForm.addEventListener("submit", async function (e) {
                 e.preventDefault();
                 updateFormValues();
-                
+
                 showToast("Saving preferences...", "info");
                 try {
                     const formData = new FormData(prefsForm);
@@ -381,7 +787,7 @@
 
         let draggedItem = null;
 
-        list.addEventListener("dragstart", function(e) {
+        list.addEventListener("dragstart", function (e) {
             draggedItem = e.target.closest(".catalog-order-item");
             if (draggedItem) {
                 draggedItem.classList.add("dragging");
@@ -390,7 +796,7 @@
             }
         });
 
-        list.addEventListener("dragend", function(e) {
+        list.addEventListener("dragend", function (e) {
             if (draggedItem) {
                 draggedItem.classList.remove("dragging");
                 draggedItem.style.opacity = "1";
@@ -400,7 +806,7 @@
             updateSortedInput();
         });
 
-        list.addEventListener("dragover", function(e) {
+        list.addEventListener("dragover", function (e) {
             e.preventDefault();
             const afterElement = getDragAfterElement(list, e.clientY);
             const currentItem = e.target.closest(".catalog-order-item");
@@ -437,26 +843,271 @@
 
         // Handle dynamic show/hide for catalog-dependent settings
         const enableCatalogsCheckbox = document.getElementById("enable_catalogs");
-        const sortNewContainer = document.getElementById("sort-new-container");
-        const showFillerContainer = document.getElementById("show-filler-container");
-        const catalogManagementSection = document.getElementById("catalog-management-section");
+        const watchlistOptionsContainer = document.getElementById("watchlist-options-container");
+        const catalogManagementCard = document.getElementById("catalog-management-card");
+        const enableRecsCheckbox = document.getElementById("enable_recommendations");
+
+        function syncCatalogManagementCardVisibility() {
+            const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
+            const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
+            const enableCatalogs = enableCatalogsCheckbox && enableCatalogsCheckbox.checked;
+            const enableRecs = enableRecsCheckbox && enableRecsCheckbox.checked;
+
+            const shouldShowCard = (enableCatalogs && (malToken || alToken)) || enableRecs;
+            if (catalogManagementCard) {
+                catalogManagementCard.style.display = shouldShowCard ? "block" : "none";
+            }
+        }
 
         function toggleCatalogsDependents() {
-            if (enableCatalogsCheckbox && enableCatalogsCheckbox.checked) {
-                if (sortNewContainer) sortNewContainer.style.display = "block";
-                if (showFillerContainer) showFillerContainer.style.display = "block";
-                if (catalogManagementSection) catalogManagementSection.style.display = "block";
-            } else {
-                if (sortNewContainer) sortNewContainer.style.display = "none";
-                if (showFillerContainer) showFillerContainer.style.display = "none";
-                if (catalogManagementSection) catalogManagementSection.style.display = "none";
-            }
+            const enableCatalogs = enableCatalogsCheckbox && enableCatalogsCheckbox.checked;
+            if (watchlistOptionsContainer) watchlistOptionsContainer.style.display = enableCatalogs ? "block" : "none";
+            syncCatalogManagementCardVisibility();
         }
 
         if (enableCatalogsCheckbox) {
             enableCatalogsCheckbox.addEventListener("change", toggleCatalogsDependents);
             toggleCatalogsDependents(); // Run on initial load
         }
+
+        // Combined watchlist toggle visibility logic
+        const combineCheckbox = document.getElementById("combine_watchlists");
+        function syncCatalogCombinedVisibility(isInitialLoad = false) {
+            const combineEnabled = combineCheckbox && combineCheckbox.checked;
+            const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
+            const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
+
+            const malItems = document.querySelectorAll('.catalog-order-item[data-source="mal"]');
+            const alItems = document.querySelectorAll('.catalog-order-item[data-source="anilist"]');
+            const combItems = document.querySelectorAll('.catalog-order-item[data-source="combined"]');
+
+            malItems.forEach(item => {
+                if (combineEnabled) {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                } else {
+                    if (malToken) {
+                        item.classList.remove("d-none");
+                        if (!isInitialLoad) {
+                            const cb = item.querySelector('.catalog-checkbox');
+                            if (cb) cb.checked = true;
+                        }
+                    }
+                }
+            });
+
+            alItems.forEach(item => {
+                if (combineEnabled) {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                } else {
+                    if (alToken) {
+                        item.classList.remove("d-none");
+                        if (!isInitialLoad) {
+                            const cb = item.querySelector('.catalog-checkbox');
+                            if (cb) cb.checked = true;
+                        }
+                    }
+                }
+            });
+
+            combItems.forEach(item => {
+                if (combineEnabled) {
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad) {
+                        const cb = item.querySelector('.catalog-checkbox');
+                        if (cb) cb.checked = true;
+                    }
+                } else {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                }
+            });
+
+            updateSortedInput();
+        }
+
+        function syncCombineWatchlistsState() {
+            const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
+            const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
+            
+            const malEnabledCheckbox = document.getElementById("mal_enabled");
+            const alEnabledCheckbox = document.getElementById("anilist_enabled");
+            
+            const malActive = malToken && (!malEnabledCheckbox || malEnabledCheckbox.checked);
+            const alActive = alToken && (!alEnabledCheckbox || alEnabledCheckbox.checked);
+            
+            const warningText = document.getElementById("combine-warning-text");
+            
+            if (combineCheckbox) {
+                if (malActive && alActive) {
+                    combineCheckbox.disabled = false;
+                    if (warningText) warningText.classList.add("d-none");
+                } else {
+                    combineCheckbox.disabled = true;
+                    combineCheckbox.checked = false;
+                    if (warningText) warningText.classList.remove("d-none");
+                    syncCatalogCombinedVisibility(true);
+                }
+            }
+        }
+
+        if (combineCheckbox) {
+            combineCheckbox.addEventListener("change", () => syncCatalogCombinedVisibility(false));
+            
+            const malEnabledCheckbox = document.getElementById("mal_enabled");
+            const alEnabledCheckbox = document.getElementById("anilist_enabled");
+            if (malEnabledCheckbox) {
+                malEnabledCheckbox.addEventListener("change", syncCombineWatchlistsState);
+            }
+            if (alEnabledCheckbox) {
+                alEnabledCheckbox.addEventListener("change", syncCombineWatchlistsState);
+            }
+
+            syncCombineWatchlistsState();
+            syncCatalogCombinedVisibility(true); // Run on initial load
+        }
+
+        // Recommendations UI Logic
+        function syncRecCatalogsVisibility(isInitialLoad = false) {
+            const enableRecs = enableRecsCheckbox && enableRecsCheckbox.checked;
+            const optionsDiv = document.getElementById("recommendations-options");
+            if (optionsDiv) {
+                optionsDiv.style.display = enableRecs ? "block" : "none";
+            }
+
+            const recItems = document.querySelectorAll('.catalog-order-item[data-source="rec"]');
+            recItems.forEach(item => {
+                if (enableRecs) {
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad) {
+                        const cb = item.querySelector('.catalog-checkbox');
+                        if (cb) cb.checked = true;
+                    }
+                } else {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                }
+            });
+            updateSortedInput();
+            syncCatalogManagementCardVisibility();
+        }
+
+        if (enableRecsCheckbox) {
+            enableRecsCheckbox.addEventListener("change", () => syncRecCatalogsVisibility(false));
+        }
+
+        const keyInput = document.getElementById("gemini_api_key");
+        const toggleBtn = document.getElementById("toggle-gemini-visibility");
+        if (toggleBtn && keyInput) {
+            toggleBtn.addEventListener("click", function () {
+                if (keyInput.type === "password") {
+                    keyInput.type = "text";
+                    toggleBtn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+                } else {
+                    keyInput.type = "password";
+                    toggleBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+                }
+            });
+        }
+
+        const validateBtn = document.getElementById("validate-gemini-btn");
+        const checkIcon = document.getElementById("gemini-check-icon");
+        const statusSpan = document.getElementById("gemini-validation-status");
+        if (validateBtn && checkIcon && statusSpan && keyInput) {
+            validateBtn.addEventListener("click", async function () {
+                const apiKey = keyInput.value.trim();
+                if (!apiKey) {
+                    statusSpan.textContent = "Key cannot be empty";
+                    statusSpan.className = "small text-danger";
+                    checkIcon.className = "fa-solid fa-circle-check text-danger";
+                    return;
+                }
+                statusSpan.textContent = "Verifying...";
+                statusSpan.className = "small text-info";
+                checkIcon.className = "fa-solid fa-circle-notch fa-spin text-info";
+                validateBtn.disabled = true;
+                try {
+                    const response = await fetch("/gemini/validation", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ api_key: apiKey })
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.status === "success") {
+                        statusSpan.textContent = result.message;
+                        statusSpan.className = "small text-success fw-semibold";
+                        checkIcon.className = "fa-solid fa-circle-check text-success";
+                    } else {
+                        statusSpan.textContent = result.message || "Invalid API key";
+                        statusSpan.className = "small text-danger";
+                        checkIcon.className = "fa-solid fa-circle-xmark text-danger";
+                    }
+                } catch (err) {
+                    statusSpan.textContent = "Verification failed";
+                    statusSpan.className = "small text-danger";
+                    checkIcon.className = "fa-solid fa-circle-xmark text-danger";
+                } finally {
+                    validateBtn.disabled = false;
+                }
+            });
+        }
+
+        if (keyInput && checkIcon && statusSpan) {
+            keyInput.addEventListener("input", function () {
+                checkIcon.className = "fa-solid fa-circle-check text-secondary";
+                statusSpan.textContent = "Not verified";
+                statusSpan.className = "small text-secondary";
+            });
+        }
+
+        // Year Slider Controls
+        const yearMin = document.getElementById('yearMin');
+        const yearMax = document.getElementById('yearMax');
+        const yearMinLabel = document.getElementById('yearMinLabel');
+        const yearMaxLabel = document.getElementById('yearMaxLabel');
+        const track = document.getElementById('yearSliderTrack');
+
+        if (yearMin && yearMax && yearMinLabel && yearMaxLabel && track) {
+            function updateSlider() {
+                const minVal = parseInt(yearMin.value);
+                const maxVal = parseInt(yearMax.value);
+
+                yearMinLabel.textContent = minVal;
+                yearMaxLabel.textContent = maxVal;
+
+                const range = yearMin.max - yearMin.min;
+                const left = ((minVal - yearMin.min) / range) * 100;
+                const right = ((yearMin.max - maxVal) / range) * 100;
+
+                track.style.left = left + '%';
+                track.style.right = right + '%';
+            }
+
+            yearMin.addEventListener('input', () => {
+                if (parseInt(yearMin.value) > parseInt(yearMax.value)) {
+                    yearMin.value = yearMax.value;
+                }
+                updateSlider();
+            });
+
+            yearMax.addEventListener('input', () => {
+                if (parseInt(yearMax.value) < parseInt(yearMin.value)) {
+                    yearMax.value = yearMin.value;
+                }
+                updateSlider();
+            });
+
+            updateSlider();
+        }
+
+        syncRecCatalogsVisibility(true);
 
     });
 
@@ -471,6 +1122,22 @@
             document.getElementById('enable_search').checked ? 'true' : 'false';
         document.getElementById('show_filler_tags_val').value =
             document.getElementById('show_filler_tags').checked ? 'true' : 'false';
+        const combineWatchlistsCheckbox = document.getElementById('combine_watchlists');
+        if (combineWatchlistsCheckbox) {
+            document.getElementById('combine_watchlists_val').value =
+                combineWatchlistsCheckbox.checked ? 'true' : 'false';
+        }
+
+        const enableRecsCheckbox = document.getElementById("enable_recommendations");
+        if (enableRecsCheckbox) {
+            document.getElementById('enable_recommendations_val').value =
+                enableRecsCheckbox.checked ? 'true' : 'false';
+        }
+        const filterWatchedCheckbox = document.getElementById("recommendations_filter_watched");
+        if (filterWatchedCheckbox) {
+            document.getElementById('recommendations_filter_watched_val').value =
+                filterWatchedCheckbox.checked ? 'true' : 'false';
+        }
 
         // Ensure sorted list is accurate
         const list = document.getElementById("drag-drop-catalog-list");
