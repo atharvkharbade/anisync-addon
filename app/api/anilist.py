@@ -3,6 +3,8 @@ from typing import Optional
 
 import httpx
 
+from app.services.http import get_client
+
 ANILIST_URL = "https://graphql.anilist.co"
 TIMEOUT = 10
 
@@ -51,10 +53,11 @@ async def _gql(token: str, query: str, variables: Optional[dict] = None) -> dict
     if variables:
         payload["variables"] = variables
 
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        resp = await client.post(ANILIST_URL, json=payload, headers=headers)
-        resp.raise_for_status()
-        return resp.json()
+    client = get_client()
+    resp = await client.post(ANILIST_URL, json=payload, headers=headers, timeout=TIMEOUT)
+    resp.raise_for_status()
+    return resp.json()
+
 
 
 async def get_viewer(token: str) -> dict:
@@ -86,6 +89,7 @@ query ($userId: Int, $status: MediaListStatus) {
       entries {
         id
         status
+        score
         progress
         updatedAt
         media {
@@ -94,6 +98,7 @@ query ($userId: Int, $status: MediaListStatus) {
           episodes
           format
           description
+          genres
           status
           nextAiringEpisode {
             episode
@@ -147,4 +152,3 @@ async def get_user_anime_list(token: str, user_id: int, status: str = None) -> d
 async def search_anime(token: str, query: str, limit: int = 20) -> list:
     data = await _gql(token, SEARCH_ANIME_QUERY, {"search": query, "limit": limit})
     return data.get("data", {}).get("Page", {}).get("media", [])
-
