@@ -16,6 +16,13 @@
 AniSync checks your watchlists against AniList schedules and places a clear `[New]` tag in front of currently airing anime titles whenever a new episode has aired that you haven't watched yet.
 ![Airing episode tag indicator](docs/images/watchlist_tags.png)
 
+### 🗂️ Smart Three-Tier Watchlist Sorting
+To make your "Currently Watching" watchlist catalog as useful as possible, AniSync automatically sorts and groups your active rows into three distinct tiers:
+1. **Unwatched Airing Shows (Top)**: Airing series with newly released, unwatched episodes float to the absolute top of the row with the `[New]` tag so they are instantly accessible.
+2. **Completed Series (Middle)**: Finished series that you are currently watching are grouped in the middle, sorted by your last watch update.
+3. **Caught-Up Airing Shows (Bottom)**: Shows where you are fully caught up are pushed to the end of the row and sorted chronologically by when their next episode is scheduled to air. This serves as a countdown schedule, putting the soonest-airing shows first.
+
+
 ### 🚫 Episode Filler Indicators (`[Filler]`)
 Using the Jikan (MAL) API, AniSync fetches episode lists and automatically prepends a `[Filler]` tag directly to the episode titles in Stremio's player detail overlay, letting you know exactly which episodes are safe to skip.
 ![Inline episode filler tag details](docs/images/episode_filler_tags.png)
