@@ -412,6 +412,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     or ""
                 )
 
+                if is_new_ep and poster:
+                    import urllib.parse
+                    encoded_url = urllib.parse.quote_plus(poster)
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{mal_id}.jpg?url={encoded_url}&badge=new"
+
                 metas.append({
                     "id": f"mal:{node['id']}",
                     "type": "anime",
@@ -543,6 +548,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     or (media["coverImage"] or {}).get("medium")
                     or ""
                 )
+
+                if is_new_ep and poster:
+                    import urllib.parse
+                    encoded_url = urllib.parse.quote_plus(poster)
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{al_id}.jpg?url={encoded_url}&badge=new"
 
                 metas.append({
                     "id": f"anilist:{al_id}",
