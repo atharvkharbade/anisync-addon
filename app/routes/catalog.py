@@ -415,7 +415,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if is_new_ep and poster:
                     import urllib.parse
                     encoded_url = urllib.parse.quote_plus(poster)
-                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{mal_id}.jpg?url={encoded_url}&badge=new&v=starry15"
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{mal_id}.jpg?url={encoded_url}&badge=new&v=starry16"
 
                 metas.append({
                     "id": f"mal:{node['id']}",
@@ -552,7 +552,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if is_new_ep and poster:
                     import urllib.parse
                     encoded_url = urllib.parse.quote_plus(poster)
-                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{al_id}.jpg?url={encoded_url}&badge=new&v=starry15"
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{al_id}.jpg?url={encoded_url}&badge=new&v=starry16"
 
                 metas.append({
                     "id": f"anilist:{al_id}",
