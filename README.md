@@ -34,6 +34,25 @@ Using the Jikan (MAL) API, AniSync fetches episode lists and automatically prepe
 * **Fast Caching Engine**: Mappings and Jikan filler checks are cached in a local MongoDB instance using bulk page requests, reducing external API calls and keeping catalog loads under 100ms.
 * **Web Configuration Dashboard**: An elegant settings page to link your accounts, toggle features, reorder catalogs, and monitor server diagnostics in real-time.
 
+### 🖥️ Web Configuration Dashboard
+AniSync includes an elegant, responsive web configuration panel to manage your connections, toggle features, and customize catalog arrangements in real-time:
+
+#### 🔐 Sign-in & Authentication
+Connect your MyAnimeList and AniList accounts securely using official OAuth2 sign-in prompts.
+![Web Configuration Sign-in](docs/images/dashboard_login.png)
+
+#### 🔗 Account Integrations & Account Management
+Manage active connections dynamically with simple disconnect and tracking toggles.
+![Web Configuration Main Settings](docs/images/dashboard_main.png)
+
+#### ⚙️ Custom Tracking Preferences
+Customize unlisted anime auto-syncing, watchlist sorting priority, and episode filler tags.
+![Web Configuration Preferences](docs/images/dashboard_preferences_1.png)
+
+#### 🗂️ Draggable Catalog Ordering & One-Click Install
+Manage your Stremio rows, drag-and-drop to reorder your catalogs exactly how they should display in Stremio, and copy the manifest URL or click "Direct Install" to install the addon instantly.
+![Web Configuration Catalog Reordering](docs/images/dashboard_preferences_2.png)
+
 ---
 
 ## ⚠️ Troubleshooting: Metadata Override Conflict (AnimeKitsu Addon)
