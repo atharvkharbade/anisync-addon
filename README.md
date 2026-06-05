@@ -29,7 +29,7 @@ Why choose between MyAnimeList and AniList? Connect both and AniSync merges them
 ![Stremio Combined Catalogs](docs/images/stremio_combined_watchlists.png)
 
 ### 🤖 Personalized Anime Recommendations
-Get custom anime recommendation rows injected directly into Stremio based on your watch history and tastes. Out of the box, AniSync generates tailored recommendations for you.
+Get custom anime recommendation based on your watch history and tastes. Out of the box, AniSync generates tailored recommendations for you.
 * **Optional Gemini AI Enhancement**: Supercharge these recommendations by adding a Gemini API key in the settings, allowing Gemini to personalize the rows and generate custom themed lists.
 
 ![Stremio Recommendations](docs/images/stremio_gemini_recs.png)
@@ -41,15 +41,9 @@ To make your "Currently Watching" watchlist catalog as useful as possible, AniSy
 3. **Caught-Up Airing Shows (Bottom)**: Shows where you are fully caught up are pushed to the end of the row and sorted chronologically by when their next episode is scheduled to air. This serves as a countdown schedule, putting the soonest-airing shows first.
 
 ### 🚫 Episode Filler Indicators (`[Filler]`)
-Using the Jikan (MAL) API, AniSync fetches episode lists and automatically prepends a `[Filler]` tag directly to the episode titles in Stremio's player detail overlay, letting you know exactly which episodes are safe to skip.
+Using the Jikan API, AniSync fetches episode lists and automatically prepends a `[Filler]` tag directly to the episode titles in Stremio's player detail overlay, letting you know exactly which episodes are safe to skip.
 
 ![Inline episode filler tag details](docs/images/stremio_filler_indicators.png)
-
-### ⚙️ Under-the-Hood Architectural Details
-* **Unified Kitsu Bridge**: Automatically maps MAL and AniList watchlists back to standard Kitsu IDs, ensuring stream providers (like Torrentio) find and serve playback links.
-* **Zero-Lag Background Tracking**: Syncs progress asynchronously by listening to Stremio subtitle requests, meaning your player buffering/playback is never affected.
-* **Fast Caching Engine**: Mappings and Jikan filler checks are cached in a local MongoDB instance using bulk page requests, reducing external API calls and keeping catalog loads under 100ms.
-* **High-Concurrency Scaling**: Engineered defensively for heavy simultaneous user loads. Employs a globally pooled keep-alive HTTP client registry (preventing socket/port exhaustion under peak load) and runs on a multi-process Uvicorn backend orchestration model.
 
 ---
 
@@ -84,7 +78,7 @@ Fine-tune sorting options, search toggles, and filler tag preferences. Drag-and-
 ### 📥 One-Click Install
 Copy the manifest URL or click "Direct Install" to install the addon instantly in Stremio.
 
-![One-Click Install](docs/images/dashboard_preferences_warning.png)
+![One-Click Install](docs/images/dashboard_preferences_install.png)
 
 ---
 
@@ -294,6 +288,12 @@ When clicking the Deploy button, Vercel will ask you to supply the following env
    - Click **Install** and approve.
 
 
+
+## ⚠️ Disclaimer
+
+**AniSync** is a tool for synchronizing progress and managing metadata from anime tracking services. It does not host, store, or distribute any media or video content. The developer does not endorse or promote access to copyrighted content. Users are solely responsible for complying with all applicable laws and the terms of service of any addons or services they use with AniSync.
+
+---
 
 ## 📄 License
 
