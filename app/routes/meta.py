@@ -4,7 +4,8 @@ import asyncio
 from quart import Blueprint
 
 from app.services.db import get_user
-from app.routes.utils import respond_with
+from app.routes.utils import respond_with, is_valid_user_id, rate_limit
+from app.services.http import get_client
 from app.lib.id_resolver import resolve, resolve_mal_to_kitsu, resolve_anilist_to_kitsu
 
 meta_bp = Blueprint("meta", __name__)
@@ -19,10 +20,10 @@ async def fetch_anizp_metadata(anilist_id: str = None, mal_id: str = None) -> di
     else:
         return {}
     try:
-        async with httpx.AsyncClient(timeout=8) as client:
-            resp = await client.get(url, params=params)
-            if resp.status_code == 200:
-                return resp.json()
+        client = get_client()
+        resp = await client.get(url, params=params, timeout=8)
+        if resp.status_code == 200:
+            return resp.json()
     except Exception as e:
         logging.warning("Failed to fetch rich metadata from ani.zip: %s", e)
     return {}
@@ -38,15 +39,15 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
         "Accept": "application/vnd.api+json",
         "Content-Type": "application/vnd.api+json",
     }
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        resp = await client.get(url, params=params, headers=headers)
-        if resp.status_code != 200:
-            logging.error("Kitsu API returned status %s for id %s", resp.status_code, kitsu_id)
-            return {}
-        return resp.json()
+    client = get_client()
+    resp = await client.get(url, params=params, headers=headers, timeout=TIMEOUT)
+    if resp.status_code != 200:
+        logging.error("Kitsu API returned status %s for id %s", resp.status_code, kitsu_id)
+        return {}
+    return resp.json()
 
 
-def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None, mal_id: str = None, show_filler_tags: bool = True) -> dict:
+def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None, mal_id: str = None, show_filler_tags: bool = True, loop = None) -> dict:
     data = kitsu_data.get("data", {})
     if not data:
         return {}
@@ -150,12 +151,14 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
                         pair = (str(mal_id), ep_num)
                         if pair not in currently_fetching_pairs:
                             currently_fetching_pairs.add(pair)
-                            try:
-                                loop = asyncio.get_event_loop()
-                                if loop.is_running():
-                                    loop.create_task(background_fetch_and_cache_filler(mal_id, ep_num))
-                            except Exception:
-                                pass
+                            if loop and loop.is_running():
+                                try:
+                                    asyncio.run_coroutine_threadsafe(
+                                        background_fetch_and_cache_filler(mal_id, ep_num),
+                                        loop
+                                    )
+                                except Exception:
+                                    pass
                                 
                 if is_filler:
                     ep_title = f"[Filler] {ep_title}"
@@ -194,12 +197,14 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
                         pair = (str(mal_id), i)
                         if pair not in currently_fetching_pairs:
                             currently_fetching_pairs.add(pair)
-                            try:
-                                loop = asyncio.get_event_loop()
-                                if loop.is_running():
-                                    loop.create_task(background_fetch_and_cache_filler(mal_id, i))
-                            except Exception:
-                                pass
+                            if loop and loop.is_running():
+                                try:
+                                    asyncio.run_coroutine_threadsafe(
+                                        background_fetch_and_cache_filler(mal_id, i),
+                                        loop
+                                    )
+                                except Exception:
+                                    pass
                                 
                 if is_filler:
                     ep_title = f"[Filler] {ep_title}"
@@ -232,8 +237,12 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
 
 
 @meta_bp.route("/<user_id>/meta/<string:meta_type>/<string:meta_id>.json")
+@rate_limit(limit=60, period_seconds=60)
 async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     if meta_type not in ["anime", "series", "movie"]:
+        return await respond_with({"meta": {}})
+
+    if not is_valid_user_id(user_id):
         return await respond_with({"meta": {}})
 
     user = get_user(user_id)
@@ -267,7 +276,6 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         anilist_id = resolved_anilist
 
     try:
-        import asyncio
         tasks = [fetch_kitsu_meta(kitsu_id)]
         if anilist_id or mal_id:
             tasks.append(fetch_anizp_metadata(anilist_id=anilist_id, mal_id=mal_id))
@@ -282,7 +290,52 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             return await respond_with({"meta": {}})
 
         show_filler = user.get("show_filler_tags", True) if user else True
-        meta = map_kitsu_to_stremio(kitsu_data, meta_id, anizp_data, mal_id, show_filler_tags=show_filler)
+        
+        # Offload CPU-bound mapping to worker threads
+        run_loop = asyncio.get_running_loop()
+        meta = await asyncio.to_thread(
+            map_kitsu_to_stremio,
+            kitsu_data,
+            meta_id,
+            anizp_data,
+            mal_id,
+            show_filler_tags=show_filler,
+            loop=run_loop
+        )
+
+        # Look up description in recommendations cache to retain the trace prefix
+        from app.services.recommendations import get_cached_recommendations
+        cache = get_cached_recommendations(user_id)
+        if cache:
+            found_desc = None
+            for key in ["rec_items", "loved_items", "liked_items", "item_items", "genre_1_items", "genre_2_items"]:
+                items = cache.get(key) or []
+                for item in items:
+                    cache_id = item.get("id")
+                    if not cache_id:
+                        continue
+                    # 1. Direct match
+                    if cache_id == meta_id:
+                        found_desc = item.get("description")
+                        break
+                    # 2. Mapped IDs match
+                    c_parts = cache_id.split(":")
+                    if len(c_parts) >= 2:
+                        c_prefix, c_val = c_parts[0], c_parts[1]
+                        if c_prefix == "mal" and mal_id and c_val == str(mal_id):
+                            found_desc = item.get("description")
+                            break
+                        elif c_prefix == "anilist" and anilist_id and c_val == str(anilist_id):
+                            found_desc = item.get("description")
+                            break
+                        elif c_prefix == "kitsu" and kitsu_id and c_val == str(kitsu_id):
+                            found_desc = item.get("description")
+                            break
+                if found_desc:
+                    break
+            if found_desc:
+                meta["description"] = found_desc
+
         return await respond_with({"meta": meta})
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)

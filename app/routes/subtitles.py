@@ -5,7 +5,7 @@ import urllib.parse
 from quart import Blueprint
 
 from app.lib.id_resolver import resolve
-from app.routes.utils import respond_with
+from app.routes.utils import respond_with, is_valid_user_id, rate_limit
 from app.services.db import get_user
 from app.services.anilist_service import sync_anilist
 from app.services.mal_service import sync_mal
@@ -14,7 +14,11 @@ subtitles_bp = Blueprint("subtitles", __name__)
 
 
 @subtitles_bp.route("/<user_id>/subtitles/<string:content_type>/<path:content_id>.json")
+@rate_limit(limit=60, period_seconds=60)
 async def handle_subtitles(user_id: str, content_type: str, content_id: str):
+    if not is_valid_user_id(user_id):
+        return await respond_with({"subtitles": []})
+
     content_id = urllib.parse.unquote(content_id)
 
     # content_id format: "kitsu:KITSU_ID:EPISODE" or
@@ -66,10 +70,17 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
 
     if tasks:
         results = await asyncio.gather(*tasks, return_exceptions=True)
+        any_updated = False
         for r in results:
             if isinstance(r, Exception):
                 logging.error("Sync task error: %s", r)
             else:
                 logging.info("Sync result: %s", r)
+                if getattr(r, "name", None) == "OK":
+                    any_updated = True
+        
+        if any_updated:
+            from app.services.db import invalidate_user_watchlist_cache
+            invalidate_user_watchlist_cache(user_id)
 
     return await respond_with({"subtitles": []})

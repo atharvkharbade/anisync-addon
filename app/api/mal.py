@@ -1,11 +1,14 @@
 import os
 import secrets
+import hashlib
+import base64
 from typing import Optional
 from urllib.parse import urlencode
 
 import httpx
 
 from config import Config
+from app.services.http import get_client
 
 AUTH_URL = "https://myanimelist.net/v1"
 BASE_URL = "https://api.myanimelist.net/v2"
@@ -29,12 +32,13 @@ def _client_secret() -> str:
 # ── PKCE helpers ──────────────────────────────────────────────────────────────
 
 def generate_pkce() -> tuple[str, str]:
+    # Generate high-entropy verifier (43-128 characters)
     verifier = secrets.token_urlsafe(N_BYTES)[:128]
-    return verifier, verifier  # plain method: challenge == verifier
+    # For plain method, challenge is same as verifier
+    return verifier, verifier
 
 
-def get_auth_url(code_challenge: str) -> str:
-    state = secrets.token_urlsafe(16)
+def get_auth_url(code_challenge: str, state: str) -> str:
     params = urlencode({
         "response_type": "code",
         "client_id": _client_id(),
@@ -49,88 +53,94 @@ def get_auth_url(code_challenge: str) -> str:
 # ── Token management ──────────────────────────────────────────────────────────
 
 async def get_access_token(code: str, code_verifier: str) -> dict:
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        resp = await client.post(
-            f"{AUTH_URL}/oauth2/token",
-            data={
-                "client_id": _client_id(),
-                "client_secret": _client_secret(),
-                "grant_type": "authorization_code",
-                "code": code,
-                "code_verifier": code_verifier,
-                "redirect_uri": _redirect_uri(),
-            },
-        )
-        resp.raise_for_status()
-        return resp.json()
+    client = get_client()
+    resp = await client.post(
+        f"{AUTH_URL}/oauth2/token",
+        data={
+            "client_id": _client_id(),
+            "client_secret": _client_secret(),
+            "grant_type": "authorization_code",
+            "code": code,
+            "code_verifier": code_verifier,
+            "redirect_uri": _redirect_uri(),
+        },
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.json()
 
 
 async def refresh_token(refresh_tok: str) -> dict:
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        resp = await client.post(
-            f"{AUTH_URL}/oauth2/token",
-            data={
-                "client_id": _client_id(),
-                "client_secret": _client_secret(),
-                "grant_type": "refresh_token",
-                "refresh_token": refresh_tok,
-            },
-        )
-        resp.raise_for_status()
-        return resp.json()
+    client = get_client()
+    resp = await client.post(
+        f"{AUTH_URL}/oauth2/token",
+        data={
+            "client_id": _client_id(),
+            "client_secret": _client_secret(),
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_tok,
+        },
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.json()
 
 
 async def get_user_details(token: str) -> dict:
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        resp = await client.get(
-            f"{BASE_URL}/users/@me",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-        resp.raise_for_status()
-        return resp.json()
+    client = get_client()
+    resp = await client.get(
+        f"{BASE_URL}/users/@me",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"fields": "id,name,picture"},
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.json()
 
 
 # ── Anime data ────────────────────────────────────────────────────────────────
 
 async def get_anime_details(token: str, anime_id: str) -> dict:
     fields = "id,title,num_episodes,my_list_status{status,num_episodes_watched,start_date,finish_date,is_rewatching}"
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        resp = await client.get(
-            f"{BASE_URL}/anime/{anime_id}",
-            headers={"Authorization": f"Bearer {token}"},
-            params={"fields": fields},
-        )
-        resp.raise_for_status()
-        return resp.json()
+    client = get_client()
+    resp = await client.get(
+        f"{BASE_URL}/anime/{anime_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"fields": fields},
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.json()
 
 
 async def get_user_anime_list(token: str, status: str = "", limit: int = 100, offset: int = 0) -> dict:
-    fields = "id,title,main_picture,num_episodes,status,my_list_status{status,num_episodes_watched,updated_at}"
+    fields = "id,title,main_picture,num_episodes,status,my_list_status{status,score,num_episodes_watched,updated_at},genres"
     params = {"fields": fields, "limit": limit, "offset": offset}
     if status:
         params["status"] = status
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        resp = await client.get(
-            f"{BASE_URL}/users/@me/animelist",
-            headers={"Authorization": f"Bearer {token}"},
-            params=params,
-        )
-        resp.raise_for_status()
-        return resp.json()
+    client = get_client()
+    resp = await client.get(
+        f"{BASE_URL}/users/@me/animelist",
+        headers={"Authorization": f"Bearer {token}"},
+        params=params,
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.json()
 
 
 async def search_anime(token: str, query: str, limit: int = 100, offset: int = 0) -> dict:
     fields = "id,title,main_picture,num_episodes,status,my_list_status{status,num_episodes_watched,updated_at}"
     params = {"q": query, "fields": fields, "limit": limit, "offset": offset}
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        resp = await client.get(
-            f"{BASE_URL}/anime",
-            headers={"Authorization": f"Bearer {token}"},
-            params=params,
-        )
-        resp.raise_for_status()
-        return resp.json()
-
+    client = get_client()
+    resp = await client.get(
+        f"{BASE_URL}/anime",
+        headers={"Authorization": f"Bearer {token}"},
+        params=params,
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.json()
 
 
 async def update_watch_status(
@@ -147,12 +157,12 @@ async def update_watch_status(
     if finish_date:
         body["finish_date"] = finish_date
 
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        resp = await client.put(
-            f"{BASE_URL}/anime/{anime_id}/my_list_status",
-            headers={"Authorization": f"Bearer {token}"},
-            data=body,
-        )
-        resp.raise_for_status()
-        return resp.json()
-
+    client = get_client()
+    resp = await client.put(
+        f"{BASE_URL}/anime/{anime_id}/my_list_status",
+        headers={"Authorization": f"Bearer {token}"},
+        data=body,
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.json()
