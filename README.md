@@ -104,12 +104,6 @@ networks:
     driver: bridge
 ```
 
-### Deploy to Vercel (One-Click)
-
-You can also run AniSync serverless on Vercel paired with a cloud MongoDB Atlas instance:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fatharvkharbade%2Fanisync-addon&env=SECRET_KEY,FLASK_RUN_HOST,MONGO_URI,MONGO_DB,MAL_CLIENT_ID,MAL_CLIENT_SECRET,ANILIST_CLIENT_ID,PROXY_URL&project-name=anisync&repository-name=anisync)
-
 ---
 
 ## ⚠️ Disclaimer
