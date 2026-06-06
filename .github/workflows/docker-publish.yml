@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: atharvkharbade/anisync-stremio
+  IMAGE_NAME: atharvkharbade/anisync-addon
 
 jobs:
   build-and-push:
