@@ -56,7 +56,7 @@ You can easily deploy AniSync using Docker. Create a `.env` file from `.env.exam
 ```yaml
 services:
   app:
-    image: ghcr.io/atharvkharbade/anisync-addon:latest
+    image: ghcr.io/atharvkharbade/anisync-stremio:latest
     container_name: anisync
     mem_limit: 1g
     memswap_limit: 2g
