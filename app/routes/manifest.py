@@ -78,31 +78,31 @@ CATALOGS = [
     {
         "type": "anime",
         "id": "comb_watching",
-        "name": "Anime: Watching",
+        "name": "Watching",
         "extra": [{"name": "skip"}],
     },
     {
         "type": "anime",
         "id": "comb_plan_to_watch",
-        "name": "Anime: Plan to Watch",
+        "name": "Plan to Watch",
         "extra": [{"name": "skip"}],
     },
     {
         "type": "anime",
         "id": "comb_completed",
-        "name": "Anime: Completed",
+        "name": "Completed",
         "extra": [{"name": "skip"}],
     },
     {
         "type": "anime",
         "id": "comb_paused_on_hold",
-        "name": "Anime: On Hold",
+        "name": "On Hold",
         "extra": [{"name": "skip"}],
     },
     {
         "type": "anime",
         "id": "comb_dropped",
-        "name": "Anime: Dropped",
+        "name": "Dropped",
         "extra": [{"name": "skip"}],
     },
     {
