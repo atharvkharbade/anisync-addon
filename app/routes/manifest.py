@@ -133,7 +133,7 @@ CATALOGS = [
 
 MANIFEST = {
     "id": "com.anisync.stremio",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "name": "AniSync",
     "logo": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png?v=7",
     "description": "Sync and update your anime watchlists on MyAnimeList & AniList in real-time. Easily track episodes, combine watchlists, skip fillers, and get personalized recommendations directly inside Stremio.",
