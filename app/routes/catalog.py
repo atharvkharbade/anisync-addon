@@ -5,7 +5,7 @@ import time
 import datetime
 from quart import Blueprint, abort
 
-from app.services.db import get_user
+from app.services.db import get_user, store_user
 from app.routes.utils import respond_with, is_valid_user_id, rate_limit
 from app.api import mal as mal_api
 from app.api import anilist as anilist_api
@@ -511,8 +511,14 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 nonlocal anilist_entries
                 if anilist_enabled and al_status:
                     try:
-                        viewer = await anilist_api.get_viewer(user["anilist_token"])
-                        anilist_uid = viewer["id"]
+                        anilist_uid = user.get("anilist_id")
+                        if anilist_uid:
+                            anilist_uid = int(anilist_uid)
+                        else:
+                            viewer = await anilist_api.get_viewer(user["anilist_token"])
+                            anilist_uid = int(viewer["id"])
+                            user["anilist_id"] = str(anilist_uid)
+                            store_user(user)
                         
                         # Note: we also fetch REPEATING if status is CURRENT (Watching)
                         statuses = [al_status]
@@ -978,12 +984,18 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             return await respond_with({"metas": []})
 
         # Retrieve user's AniList numerical ID first
-        try:
-            viewer = await anilist_api.get_viewer(user["anilist_token"])
-            anilist_uid = viewer["id"]
-        except Exception as e:
-            logging.error("Failed to retrieve AniList viewer ID: %s", e)
-            return await respond_with({"metas": []})
+        anilist_uid = user.get("anilist_id")
+        if anilist_uid:
+            anilist_uid = int(anilist_uid)
+        else:
+            try:
+                viewer = await anilist_api.get_viewer(user["anilist_token"])
+                anilist_uid = int(viewer["id"])
+                user["anilist_id"] = str(anilist_uid)
+                store_user(user)
+            except Exception as e:
+                logging.error("Failed to retrieve AniList viewer ID: %s", e)
+                return await respond_with({"metas": []})
 
         anilist_status = catalog_id.split("anilist_")[1].upper()
         if anilist_status == "WATCHING":

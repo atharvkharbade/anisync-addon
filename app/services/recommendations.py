@@ -7,7 +7,7 @@ from typing import Optional
 
 import httpx
 
-from app.services.db import db, get_user
+from app.services.db import db, get_user, store_user
 from app.services.http import get_client
 from app.api import mal as mal_api
 from app.api import anilist as anilist_api
@@ -1265,8 +1265,14 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
     anilist_items = []
     if user.get("anilist_token") and user.get("anilist_enabled", True):
         try:
-            viewer = await anilist_api.get_viewer(user["anilist_token"])
-            anilist_uid = viewer["id"]
+            anilist_uid = user.get("anilist_id")
+            if anilist_uid:
+                anilist_uid = int(anilist_uid)
+            else:
+                viewer = await anilist_api.get_viewer(user["anilist_token"])
+                anilist_uid = int(viewer["id"])
+                user["anilist_id"] = str(anilist_uid)
+                store_user(user)
             collection = await anilist_api.get_user_anime_list(user["anilist_token"], user_id=anilist_uid)
             for user_list in collection.get("lists", []):
                 anilist_items.extend(user_list.get("entries", []))
