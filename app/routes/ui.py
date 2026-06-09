@@ -1,10 +1,62 @@
 from quart import Blueprint, flash, make_response, redirect, render_template, request, session, url_for
+import datetime
+import asyncio
 
 from app.services.db import get_user, store_user
 from app.routes.utils import rate_limit
 from config import Config
 
 ui_bp = Blueprint("ui", __name__)
+
+
+async def sync_user_profiles_task(user_id: str):
+    from app.services.db import get_user, store_user
+    from app.api import mal as mal_api
+    from app.api import anilist as al_api
+    import logging
+
+    user = get_user(user_id)
+    if not user:
+        return
+
+    updated = False
+    now = datetime.datetime.utcnow()
+
+    # 1. Sync MAL profile details if connected and enabled
+    if user.get("mal_access_token") and user.get("mal_enabled", True):
+        expiry = user.get("mal_expires_at")
+        if expiry and datetime.datetime.utcnow() > expiry:
+            logging.warning("Skipping MAL profile sync - token expired for user %s", user_id)
+        else:
+            try:
+                user_info = await mal_api.get_user_details(user["mal_access_token"])
+                if user_info.get("name"):
+                    user["name"] = user_info["name"]
+                if user_info.get("picture"):
+                    user["mal_picture"] = user_info["picture"]
+                    user["picture"] = user_info["picture"]
+                updated = True
+            except Exception as e:
+                logging.error("Failed to sync MAL profile in background: %s", e)
+
+    # 2. Sync AniList profile details if connected and enabled
+    if user.get("anilist_token") and user.get("anilist_enabled", True):
+        try:
+            viewer = await al_api.get_viewer(user["anilist_token"])
+            if viewer.get("name"):
+                user["anilist_username"] = viewer["name"]
+            if viewer.get("avatar", {}).get("large"):
+                user["anilist_picture"] = viewer["avatar"]["large"]
+                if not user.get("mal_picture"):
+                    user["picture"] = viewer["avatar"]["large"]
+            updated = True
+        except Exception as e:
+            logging.error("Failed to sync AniList profile in background: %s", e)
+
+    if updated:
+        user["last_profile_sync"] = now
+        store_user(user)
+
 
 ANIME_GENRES = [
     "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", 
@@ -47,6 +99,13 @@ async def configure(user_id: str = ""):
         return redirect(url_for("ui.index"))
 
     uid = user["uid"]
+
+    # Time-gated background profile sync (once every 7 days)
+    last_sync = user.get("last_profile_sync")
+    now_check = datetime.datetime.utcnow()
+    if not last_sync or (now_check - last_sync) > datetime.timedelta(days=7):
+        asyncio.create_task(sync_user_profiles_task(uid))
+
     base = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}"
     manifest_url = f"{base}/{uid}/manifest.json"
     manifest_magnet = f"stremio://{Config.REDIRECT_URL}/{uid}/manifest.json"
@@ -119,7 +178,6 @@ async def configure(user_id: str = ""):
             return {"status": "success", "message": "Settings saved successfully."}
         await flash("Settings saved.", "success")
 
-    import datetime
     current_year = datetime.datetime.now().year
     resp = await make_response(
         await _render(

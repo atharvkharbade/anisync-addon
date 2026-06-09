@@ -77,6 +77,7 @@ async def mal_callback():
             "mal_refresh_token": token_data["refresh_token"],
             "mal_expires_at": datetime.utcnow() + timedelta(seconds=token_data["expires_in"]),
             "mal_enabled": existing.get("mal_enabled", True),
+            "last_profile_sync": datetime.utcnow(),
         })
         store_user(existing)
 
@@ -177,6 +178,7 @@ async def anilist_save():
             "anilist_enabled": user.get("anilist_enabled", True),
             "anilist_picture": anilist_picture,
             "picture": anilist_picture or user.get("mal_picture") or user.get("picture") or "",
+            "last_profile_sync": datetime.utcnow(),
         })
         store_user(user)
         return {"ok": True, "username": anilist_username}
