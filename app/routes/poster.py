@@ -83,10 +83,12 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logo_gap = 4
             text_gap = 6
             
-            # Parse tracker parameter
-            trackers = tracker.split("+")
-            draw_mal = "mal" in trackers or "both" in trackers or "mal+anilist" in trackers
-            draw_al = "anilist" in trackers or "both" in trackers or "mal+anilist" in trackers
+            # Parse tracker parameter. Standard URL query parsing decodes '+' as space,
+            # so we replace spaces (and commas) with '+' first before splitting.
+            tracker_clean = tracker.replace(" ", "+").replace(",", "+")
+            trackers = [t.strip() for t in tracker_clean.split("+") if t.strip()]
+            draw_mal = "mal" in trackers or "both" in trackers
+            draw_al = "anilist" in trackers or "both" in trackers
             draw_simkl = "simkl" in trackers
 
             assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")

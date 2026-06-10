@@ -975,11 +975,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 # Determine active trackers
                 trackers = []
-                if item["mal_item"]:
+                if item["mal_item"] and user.get("mal_enabled"):
                     trackers.append("mal")
-                if item["anilist_item"]:
+                if item["anilist_item"] and user.get("anilist_enabled"):
                     trackers.append("anilist")
-                if item["simkl_item"]:
+                if item["simkl_item"] and user.get("simkl_enabled", True) and user.get("simkl_access_token"):
                     trackers.append("simkl")
                 tracker_str = "+".join(trackers)
 
@@ -1027,7 +1027,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if is_new_ep and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
                     m_id_for_url = mal_id if mal_id else (anilist_id if anilist_id else f"simkl_{simkl_id}")
-                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{m_id_for_url}.jpg?url={encoded_url}&badge=new&tracker={tracker_str}&v=newep_graphical_v11"
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{m_id_for_url}_{tracker_str}_v13.jpg?url={encoded_url}&badge=new&tracker={tracker_str}&v=newep_graphical_v13"
 
                 kitsu_id = None
                 if mal_id:
@@ -1205,7 +1205,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 if is_new_ep and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
-                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/simkl_{simkl_id}.jpg?url={encoded_url}&badge=new&tracker=simkl&v=newep_graphical_v11"
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/simkl_{simkl_id}_simkl_v13.jpg?url={encoded_url}&badge=new&tracker=simkl&v=newep_graphical_v13"
 
                 kitsu_id = kitsu_mappings.get(f"simkl:{simkl_id}")
                 stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"simkl:{simkl_id}"
@@ -1354,7 +1354,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 if is_new_ep and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
-                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{mal_id}.jpg?url={encoded_url}&badge=new&tracker=mal&v=newep_graphical_v11"
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{mal_id}_mal_v13.jpg?url={encoded_url}&badge=new&tracker=mal&v=newep_graphical_v13"
 
                 kitsu_id = kitsu_mappings.get(f"mal:{mal_id}")
                 stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"mal:{mal_id}"
@@ -1507,7 +1507,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 if is_new_ep and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
-                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{al_id}.jpg?url={encoded_url}&badge=new&tracker=anilist&v=newep_graphical_v11"
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{al_id}_anilist_v13.jpg?url={encoded_url}&badge=new&tracker=anilist&v=newep_graphical_v13"
 
                 kitsu_id = kitsu_mappings.get(f"anilist:{al_id}")
                 stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"anilist:{al_id}"
