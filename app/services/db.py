@@ -35,6 +35,12 @@ try:
     db.get_collection("fribb_mappings").create_index("anilist_id")
     db.get_collection("jikan_cache").create_index([("mal_id", 1), ("episode", 1)])
     
+    # id_cache indexes
+    db.get_collection("id_cache").create_index("kitsu_id")
+    db.get_collection("id_cache").create_index("mal_id")
+    db.get_collection("id_cache").create_index("anilist_id")
+    db.get_collection("id_cache").create_index("simkl_id")
+    
     # Caching collections indexes
     db.get_collection("user_watchlist_cache").create_index([("uid", 1), ("tracker", 1), ("status", 1)])
     db.get_collection("user_watchlist_cache").create_index("expires_at", expireAfterSeconds=0)
@@ -149,19 +155,36 @@ def get_cached_ids_by_anilist(anilist_id: str) -> Optional[dict]:
         return None
 
 
-def cache_ids(kitsu_id: str, mal_id: Optional[str], anilist_id: Optional[str]):
+def get_cached_ids_by_simkl(simkl_id: str) -> Optional[dict]:
+    try:
+        query = {"$or": [{"simkl_id": str(simkl_id)}]}
+        if str(simkl_id).isdigit():
+            query["$or"].append({"simkl_id": int(simkl_id)})
+            query["$or"].append({"simkl": int(simkl_id)})
+        return id_cache_collection.find_one(query)
+    except Exception:
+        return None
+
+
+def cache_ids(kitsu_id: str, mal_id: Optional[str], anilist_id: Optional[str], simkl_id: Optional[str] = None):
     try:
         doc = {
             "kitsu_id": int(kitsu_id) if kitsu_id else None,
             "mal_id": str(mal_id) if mal_id else None,
             "anilist_id": str(anilist_id) if anilist_id else None,
+            "simkl_id": str(simkl_id) if simkl_id else None,
         }
         # Filter out None kitsu_id
         if doc["kitsu_id"] is None:
             return
         existing = id_cache_collection.find_one({"kitsu_id": doc["kitsu_id"]})
         if existing:
-            id_cache_collection.update_one({"kitsu_id": doc["kitsu_id"]}, {"$set": doc})
+            update_doc = {}
+            for k, v in doc.items():
+                if v is not None:
+                    update_doc[k] = v
+            if update_doc:
+                id_cache_collection.update_one({"kitsu_id": doc["kitsu_id"]}, {"$set": update_doc})
         else:
             id_cache_collection.insert_one(doc)
     except Exception as e:

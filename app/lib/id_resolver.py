@@ -6,7 +6,7 @@ import asyncio
 import httpx
 
 from app.services.http import get_client
-from app.services.db import db, cache_ids, get_cached_ids, get_cached_ids_by_mal, get_cached_ids_by_anilist
+from app.services.db import db, cache_ids, get_cached_ids, get_cached_ids_by_mal, get_cached_ids_by_anilist, get_cached_ids_by_simkl
 
 ARM_API    = "https://arm.haglund.dev/api/v2/ids"
 ANIZP_API  = "https://api.ani.zip/mappings"
@@ -403,5 +403,89 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> Optional[str]:
                 return kitsu_id
     except Exception as e:
         logging.warning("Title fallback failed for anilist_id=%s: %s", anilist_id, e)
+
+    return None
+
+
+async def resolve_simkl_to_kitsu(simkl_id: str) -> Optional[str]:
+    """
+    Returns kitsu_id (str) for a given simkl_id.
+    Checks MongoDB cache first, then queries local watchlist cache, then Simkl API.
+    """
+    if not simkl_id:
+        return None
+    cached = get_cached_ids_by_simkl(simkl_id)
+    if cached and cached.get("kitsu_id"):
+        return str(cached["kitsu_id"])
+
+    # Fallback 1: Local User Watchlist Cache
+    try:
+        # Search in user_watchlist_cache for any document containing this simkl ID
+        simkl_id_int = int(simkl_id) if simkl_id.isdigit() else None
+        query_or = [{"data.anime.ids.simkl": simkl_id}, {"data.ids.simkl": simkl_id}]
+        if simkl_id_int is not None:
+            query_or.extend([
+                {"data.anime.ids.simkl": simkl_id_int},
+                {"data.ids.simkl": simkl_id_int}
+            ])
+        
+        doc = db.user_watchlist_cache.find_one({
+            "tracker": "simkl",
+            "$or": query_or
+        })
+        if doc:
+            items = doc.get("data", [])
+            for item in items:
+                show_obj = item.get("anime") or item.get("show") or item
+                ids = show_obj.get("ids") or {}
+                if str(ids.get("simkl")) == str(simkl_id):
+                    kitsu_id = str(ids.get("kitsu") or "") or None
+                    mal_id = str(ids.get("mal") or "") or None
+                    anilist_id = str(ids.get("anilist") or "") or None
+                    
+                    if not kitsu_id:
+                        if mal_id:
+                            kitsu_id = await resolve_mal_to_kitsu(mal_id)
+                        elif anilist_id:
+                            kitsu_id = await resolve_anilist_to_kitsu(anilist_id)
+                            
+                    if kitsu_id:
+                        cache_ids(kitsu_id, mal_id, anilist_id, simkl_id)
+                        return kitsu_id
+    except Exception as e:
+        logging.warning("Failed to resolve simkl_id=%s via user watchlist cache: %s", simkl_id, e)
+
+    # Fallback 2: Simkl API lookup
+    client = get_client()
+    try:
+        from config import Config
+        url = f"https://api.simkl.com/anime/{simkl_id}"
+        params = {"client_id": Config.SIMKL_CLIENT_ID}
+        headers = {"User-Agent": "AniSync/1.0"}
+        resp = await client.get(url, params=params, headers=headers, timeout=8)
+        if resp.status_code == 200:
+            data = resp.json()
+            ids = data.get("ids") or {}
+            
+            simkl_id_val = str(ids.get("simkl") or simkl_id)
+            kitsu_id = str(ids.get("kitsu") or "") or None
+            mal_id = str(ids.get("mal") or "") or None
+            anilist_id = str(ids.get("anilist") or "") or None
+            
+            if not kitsu_id:
+                if mal_id:
+                    kitsu_id = await resolve_mal_to_kitsu(mal_id)
+                elif anilist_id:
+                    kitsu_id = await resolve_anilist_to_kitsu(anilist_id)
+                else:
+                    title = data.get("title") or data.get("en_title")
+                    if title:
+                        kitsu_id = await search_kitsu_by_title(title)
+            
+            if kitsu_id:
+                cache_ids(kitsu_id, mal_id, anilist_id, simkl_id_val)
+                return kitsu_id
+    except Exception as e:
+        logging.warning("Simkl to kitsu resolution failed for simkl_id=%s: %s", simkl_id, e)
 
     return None
