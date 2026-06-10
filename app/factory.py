@@ -37,6 +37,12 @@ def create_app() -> App:
 
         init_client()
         
+        # Ensure Fribb mappings are populated and schema is up-to-date in the background
+        import asyncio
+        from app.services.http import get_client
+        from app.lib.id_resolver import ensure_fribb_mappings
+        asyncio.create_task(ensure_fribb_mappings(get_client()))
+        
         # Start background task to update popular fallback anime covers automatically
         from app.services.recommendations import trigger_popular_fallbacks_update_background
         trigger_popular_fallbacks_update_background()
