@@ -28,6 +28,18 @@ async def fetch_anizp_metadata(anilist_id: str = None, mal_id: str = None) -> di
         logging.warning("Failed to fetch rich metadata from ani.zip: %s", e)
     return {}
 
+
+async def fetch_cinemeta_metadata(imdb_id: str, media_type: str) -> dict:
+    url = f"https://v3-cinemeta.strem.io/meta/{media_type}/{imdb_id}.json"
+    try:
+        client = get_client()
+        resp = await client.get(url, timeout=8)
+        if resp.status_code == 200:
+            return resp.json().get("meta", {})
+    except Exception as e:
+        logging.warning("Failed to fetch metadata from Cinemeta: %s", e)
+    return {}
+
 KITSU_API_BASE = "https://kitsu.io/api/edge"
 TIMEOUT = 10
 
@@ -47,7 +59,7 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
     return resp.json()
 
 
-def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None, mal_id: str = None, show_filler_tags: bool = True, loop = None) -> dict:
+def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None, mal_id: str = None, show_filler_tags: bool = True, loop = None, cinemeta_data: dict = None) -> dict:
     data = kitsu_data.get("data", {})
     if not data:
         return {}
@@ -59,11 +71,14 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
     anizp_images = anizp_data.get("images", []) if anizp_data else []
     anizp_fanart = None
     anizp_poster = None
+    anizp_logo = None
     for img in anizp_images:
         if img.get("coverType") == "Fanart" and not anizp_fanart:
             anizp_fanart = img.get("url")
         elif img.get("coverType") == "Poster" and not anizp_poster:
             anizp_poster = img.get("url")
+        elif img.get("coverType") in ["Clearlogo", "Logo"] and not anizp_logo:
+            anizp_logo = img.get("url")
 
     poster_data = attributes.get("posterImage") or {}
     poster = anizp_poster or poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or ""
@@ -71,7 +86,15 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
     background = anizp_fanart or cover_data.get("original") or cover_data.get("large") or cover_data.get("medium") or poster
 
     imdb_id = anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None
-    logo = f"https://images.metahub.space/logo/medium/{imdb_id}/img" if imdb_id else None
+    
+    logo = anizp_logo
+    if not logo and cinemeta_data:
+        logo = cinemeta_data.get("logo")
+    if not logo and imdb_id:
+        logo = f"https://images.metahub.space/logo/medium/{imdb_id}/img"
+
+    if cinemeta_data and cinemeta_data.get("background"):
+        background = cinemeta_data.get("background")
 
     average_rating = attributes.get("averageRating")
     rating = str(round(float(average_rating) / 10.0, 1)) if average_rating else None
@@ -218,6 +241,18 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
                     "thumbnail": thumbnail,
                 })
 
+    genres = ["Anime"]
+    if cinemeta_data and cinemeta_data.get("genres"):
+        for g in cinemeta_data["genres"]:
+            if g not in genres:
+                genres.append(g)
+
+    links = []
+    if cinemeta_data and "links" in cinemeta_data:
+        for link in cinemeta_data["links"]:
+            if link.get("category") == "Cast":
+                links.append(link)
+
     meta_obj = {
         "id": meta_id,
         "name": title,
@@ -228,7 +263,8 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
         "releaseInfo": release_info,
         "description": synopsis,
         "videos": videos,
-        "genres": ["Anime"],
+        "genres": genres,
+        "links": links,
     }
     if logo:
         meta_obj["logo"] = logo
@@ -292,6 +328,13 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         if not kitsu_data:
             return await respond_with({"meta": {}})
 
+        imdb_id = anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None
+        cinemeta_data = {}
+        if imdb_id:
+            subtype = (kitsu_data.get("data", {}).get("attributes", {}).get("subtype") or "tv").lower()
+            media_type = "movie" if subtype == "movie" else "series"
+            cinemeta_data = await fetch_cinemeta_metadata(imdb_id, media_type)
+
         show_filler = user.get("show_filler_tags", True) if user else True
         
         # Offload CPU-bound mapping to worker threads
@@ -302,8 +345,9 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             meta_id,
             anizp_data,
             mal_id,
-            show_filler_tags=show_filler,
-            loop=run_loop
+            show_filler,
+            run_loop,
+            cinemeta_data
         )
 
         # Look up description in recommendations cache to retain the trace prefix
