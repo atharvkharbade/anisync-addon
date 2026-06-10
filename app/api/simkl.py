@@ -141,8 +141,8 @@ async def sync_history(
                             "number": 1,
                             "episodes": [
                                 {
-                                    "number": int(episode)
-                                }
+                                    "number": i
+                                } for i in range(1, int(episode) + 1)
                             ]
                         }
                     ]
