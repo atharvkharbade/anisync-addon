@@ -24,7 +24,7 @@ async def background_resolve_external_ids(kitsu_id: Optional[str] = None, mal_id
     """
     Query api.ani.zip in the background and cache external IDs (IMDb, TMDB, TVDB).
     """
-    from app.services.db import id_cache_collection, cache_ids
+    from app.services.db import id_cache_collection, cache_ids, db
     
     query = {}
     if kitsu_id:
@@ -66,6 +66,42 @@ async def background_resolve_external_ids(kitsu_id: Optional[str] = None, mal_id
             tmdb_id = str(mappings.get("themoviedb_id") or "")
             tvdb_id = str(mappings.get("thetvdb_id") or "")
             
+            # Trace relationships on Kitsu if ani.zip returns no external ID mappings
+            if not (imdb_id or tmdb_id or tvdb_id) and k_id:
+                try:
+                    kitsu_url = f"https://kitsu.io/api/edge/anime/{k_id}/media-relationships?include=destination"
+                    kitsu_resp = await client.get(kitsu_url, timeout=8)
+                    if kitsu_resp.status_code == 200:
+                        rel_data = kitsu_resp.json()
+                        dest_ids = []
+                        # 1. Prefer prequel, parent, full_story, etc.
+                        for rel in rel_data.get("data", []):
+                            role = rel.get("attributes", {}).get("role")
+                            if role in ["prequel", "parent", "full_story", "alternative_setting", "main_story"]:
+                                rel_link = rel.get("relationships", {}).get("destination", {}).get("data", {})
+                                if rel_link and rel_link.get("type") == "anime":
+                                    dest_ids.append(str(rel_link.get("id")))
+                        # 2. Try alternative roles
+                        if not dest_ids:
+                            for rel in rel_data.get("data", []):
+                                rel_link = rel.get("relationships", {}).get("destination", {}).get("data", {})
+                                if rel_link and rel_link.get("type") == "anime":
+                                    dest_ids.append(str(rel_link.get("id")))
+
+                        for dest_id in dest_ids:
+                            doc = id_cache_collection.find_one({"kitsu_id": int(dest_id)})
+                            if not doc:
+                                doc = db.fribb_mappings.find_one({"kitsu_id": int(dest_id)})
+                            
+                            if doc and (doc.get("imdb_id") or doc.get("tmdb_id") or doc.get("tvdb_id")):
+                                imdb_id = doc.get("imdb_id") or ""
+                                tmdb_id = doc.get("tmdb_id") or ""
+                                tvdb_id = doc.get("tvdb_id") or ""
+                                logging.info("Resolved external IDs for kitsu=%s via related kitsu=%s: imdb=%s tmdb=%s tvdb=%s", k_id, dest_id, imdb_id, tmdb_id, tvdb_id)
+                                break
+                except Exception as ex:
+                    logging.warning("Failed to resolve via Kitsu relationships for kitsu=%s: %s", k_id, ex)
+
             if k_id:
                 cache_ids(
                     kitsu_id=k_id,
