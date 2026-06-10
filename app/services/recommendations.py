@@ -691,7 +691,7 @@ async def resolve_title_via_kitsu(title: str, rec_year_min: int = 1970, rec_year
                 item_type = "movie" if subtype == "movie" else "series"
                 titles = attrs.get("titles", {})
                 canonical_title = attrs.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or title
-                poster = attrs.get("posterImage", {}).get("large") or attrs.get("posterImage", {}).get("medium") or ""
+                poster = attrs.get("posterImage", {}).get("large") or attrs.get("posterImage", {}).get("medium") or attrs.get("posterImage", {}).get("original") or ""
                 synopsis = attrs.get("synopsis", "")
                 
                 return {
@@ -985,7 +985,7 @@ async def get_recommendations_for_seeds(
                         title = attrs.get("canonicalTitle") or titles.get("en") or titles.get("en_jp")
                         if not is_proper_anime(title):
                             continue
-                        poster = attrs.get("posterImage", {}).get("large") or attrs.get("posterImage", {}).get("medium") or ""
+                        poster = attrs.get("posterImage", {}).get("large") or attrs.get("posterImage", {}).get("medium") or attrs.get("posterImage", {}).get("original") or ""
                         synopsis = attrs.get("synopsis", "")
                         
                         related_items.append({

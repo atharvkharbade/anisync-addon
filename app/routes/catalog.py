@@ -425,7 +425,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                     titles = attrs.get("titles", {})
                     title = attrs.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown"
-                    poster = attrs.get("posterImage", {}).get("large") or attrs.get("posterImage", {}).get("medium") or ""
+                    poster = attrs.get("posterImage", {}).get("large") or attrs.get("posterImage", {}).get("medium") or attrs.get("posterImage", {}).get("original") or ""
                     synopsis = attrs.get("synopsis", "")
                     metas.append({
                         "id": f"kitsu:{item['id']}",
