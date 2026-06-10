@@ -64,7 +64,30 @@ async def mal_callback():
             existing = get_user(uid) or {}
         else:
             existing = find_user_by_mal_id(mal_id) or {}
-            uid = existing.get("uid") or mal_id
+            uid = existing.get("uid")
+            
+            # Migration check: if existing user has prefix, try to strip it
+            from app.services.db import db
+            if uid and (uid.startswith("al_") or uid.startswith("simkl_")):
+                stripped_uid = uid.split("_", 1)[1]
+                if stripped_uid.isdigit() and not db.get_collection("users").find_one({"uid": stripped_uid}):
+                    db.get_collection("users").delete_one({"uid": uid})
+                    from app.services.db import invalidate_user_watchlist_cache
+                    invalidate_user_watchlist_cache(uid)
+                    uid = stripped_uid
+                    existing["uid"] = uid
+            
+            if not uid:
+                if mal_id.isdigit() and not db.get_collection("users").find_one({"uid": mal_id}):
+                    uid = mal_id
+                else:
+                    import secrets
+                    while True:
+                        candidate = str(100000000 + secrets.randbelow(900000000))
+                        if not db.get_collection("users").find_one({"uid": candidate}):
+                            uid = candidate
+                            break
+                            
             session["user"] = {"uid": uid}
             session.permanent = True
 
@@ -167,7 +190,30 @@ async def anilist_save():
             user = get_user(uid) or {}
         else:
             user = find_user_by_anilist_id(anilist_uid) or {}
-            uid = user.get("uid") or f"al_{anilist_uid}"
+            uid = user.get("uid")
+            
+            # Migration check: if existing user has prefix, try to strip it
+            from app.services.db import db
+            if uid and (uid.startswith("al_") or uid.startswith("simkl_")):
+                stripped_uid = uid.split("_", 1)[1]
+                if stripped_uid.isdigit() and not db.get_collection("users").find_one({"uid": stripped_uid}):
+                    db.get_collection("users").delete_one({"uid": uid})
+                    from app.services.db import invalidate_user_watchlist_cache
+                    invalidate_user_watchlist_cache(uid)
+                    uid = stripped_uid
+                    user["uid"] = uid
+            
+            if not uid:
+                if anilist_uid.isdigit() and not db.get_collection("users").find_one({"uid": anilist_uid}):
+                    uid = anilist_uid
+                else:
+                    import secrets
+                    while True:
+                        candidate = str(100000000 + secrets.randbelow(900000000))
+                        if not db.get_collection("users").find_one({"uid": candidate}):
+                            uid = candidate
+                            break
+                            
             session["user"] = {"uid": uid}
             session.permanent = True
 
@@ -296,7 +342,30 @@ async def simkl_callback():
             user = get_user(uid) or {}
         else:
             user = find_user_by_simkl_id(simkl_id) or {}
-            uid = user.get("uid") or f"simkl_{simkl_id}"
+            uid = user.get("uid")
+            
+            # Migration check: if existing user has prefix, try to strip it
+            from app.services.db import db
+            if uid and (uid.startswith("al_") or uid.startswith("simkl_")):
+                stripped_uid = uid.split("_", 1)[1]
+                if stripped_uid.isdigit() and not db.get_collection("users").find_one({"uid": stripped_uid}):
+                    db.get_collection("users").delete_one({"uid": uid})
+                    from app.services.db import invalidate_user_watchlist_cache
+                    invalidate_user_watchlist_cache(uid)
+                    uid = stripped_uid
+                    user["uid"] = uid
+            
+            if not uid:
+                if simkl_id.isdigit() and not db.get_collection("users").find_one({"uid": simkl_id}):
+                    uid = simkl_id
+                else:
+                    import secrets
+                    while True:
+                        candidate = str(100000000 + secrets.randbelow(900000000))
+                        if not db.get_collection("users").find_one({"uid": candidate}):
+                            uid = candidate
+                            break
+                            
             session["user"] = {"uid": uid}
             session.permanent = True
 

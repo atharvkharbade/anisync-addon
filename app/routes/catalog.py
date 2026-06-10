@@ -1,4 +1,5 @@
 import urllib.parse
+from typing import Optional
 import logging
 import asyncio
 import time
@@ -352,7 +353,7 @@ async def background_fetch_and_cache_filler(mal_id: str, episode: int):
         currently_fetching_pairs.discard((str(mal_id), episode))
 
 
-def format_catalog_metas(metas_list: list, user: dict, catalog_type: str) -> list:
+def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalog_id: Optional[str] = None) -> list:
     custom_types_map = {
         "Watching": "anime",
         "Plan to Watch": "anime",
@@ -382,6 +383,11 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str) -> lis
         
         # Apply RPDB poster overlay if configured
         if user and user.get("rpdb_api_key"):
+            if catalog_id == "anisync_search" and not user.get("rpdb_in_search", True):
+                # Skip RPDB poster overlay for search catalog if disabled
+                formatted_metas.append(m_copy)
+                continue
+                
             stremio_id = m_copy.get("id", "")
             kitsu_id = None
             mal_id = None
@@ -472,7 +478,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         try:
             cached = cache_col.find_one({"query": search_query, "offset": offset})
             if cached and cached.get("expires_at") > now:
-                return await respond_with({"metas": format_catalog_metas(cached["metas"], user, catalog_type)})
+                return await respond_with({"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)})
         except Exception as e:
             logging.error("Failed to query kitsu_search_cache: %s", e)
             cached = None
@@ -530,9 +536,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             logging.error("Kitsu search query failed: %s", e)
             if cached:
                 logging.warning("Kitsu search failed, returning expired cache for query '%s': %s", search_query, e)
-                return await respond_with({"metas": format_catalog_metas(cached["metas"], user, catalog_type)})
+                return await respond_with({"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)})
 
-        return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type)})
+        return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)})
 
     # --- Recommendations Catalogs ---
     elif catalog_id in ["anisync_rec", "anisync_loved", "anisync_liked"]:
@@ -566,7 +572,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 
         # Handle pagination skip
         metas = metas[offset: offset + 40]
-        return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type)})
+        return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)})
 
     # --- Combined Watchlists ---
     elif catalog_id.startswith("comb_"):
@@ -1523,4 +1529,4 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             logging.error("AniList catalog load failed for status %s: %s", anilist_status, e)
 
 
-    return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type)})
+    return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)})

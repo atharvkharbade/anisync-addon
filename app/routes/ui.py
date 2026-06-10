@@ -137,6 +137,7 @@ async def configure(user_id: str = ""):
         user["sort_by_new_episodes"] = form.get("sort_by_new_episodes") == "true"
         user["enable_catalogs"] = form.get("enable_catalogs") == "true"
         user["enable_search"] = form.get("enable_search") == "true"
+        user["rpdb_in_search"] = form.get("rpdb_in_search") == "true"
         user["show_filler_tags"] = form.get("show_filler_tags") == "true"
         try:
             user["new_episode_interval"] = int(form.get("new_episode_interval", 24))
@@ -170,7 +171,15 @@ async def configure(user_id: str = ""):
         user["enable_recommendations"] = form.get("enable_recommendations") == "true"
         user["recommendations_filter_watched"] = form.get("recommendations_filter_watched") == "true"
         user["gemini_api_key"] = form.get("gemini_api_key", "").strip()
-        user["rpdb_api_key"] = form.get("rpdb_api_key", "").strip()
+        rpdb_key = form.get("rpdb_api_key", "").strip()
+        user["rpdb_api_key"] = rpdb_key
+        if rpdb_key:
+            from app.services.rpdb import validate_rpdb_api_key
+            user["rpdb_key_valid"] = await validate_rpdb_api_key(rpdb_key)
+            user["rpdb_key_last_checked"] = datetime.datetime.utcnow()
+        else:
+            user["rpdb_key_valid"] = False
+            user["rpdb_key_last_checked"] = None
 
         user["rec_language"] = form.get("rec_language", "en")
         user["rec_popularity"] = form.get("rec_popularity", "balanced")

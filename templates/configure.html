@@ -517,6 +517,8 @@
                     value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
                 <input type="hidden" id="enable_search_val" name="enable_search"
                     value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
+                <input type="hidden" id="rpdb_in_search_val" name="rpdb_in_search"
+                    value="{{ 'true' if user.get('rpdb_in_search', True) else 'false' }}">
                 <input type="hidden" id="show_filler_tags_val" name="show_filler_tags"
                     value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
                 <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
@@ -542,6 +544,26 @@
                             Exposes search catalog useful for searching anime.
                         </span>
                     </label>
+                </div>
+
+                <!-- Search Sub-Options (only visible when enabled) -->
+                <div id="search-options-container"
+                    style="display: none; border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
+                    class="mb-3">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="rpdb_in_search"
+                            {% if user.get('rpdb_in_search', True) and user.get('rpdb_api_key') %}checked{% endif %}
+                            {% if not user.get('rpdb_api_key') %}disabled{% endif %}>
+                        <label class="form-check-label ms-1" for="rpdb_in_search">
+                            <span class="fw-medium d-block">Enable RPDB posters in Search Catalog</span>
+                            <span class="text-secondary small d-block">
+                                Replace standard anime posters with RPDB rating posters in search results.
+                            </span>
+                            <span id="rpdb-search-warning-text" class="text-warning small d-block mt-1 fw-medium {% if user.get('rpdb_api_key') %}d-none{% endif %}">
+                                <i class="fa-solid fa-circle-info me-1"></i>Provide a valid RPDB API key below to enable rating posters.
+                            </span>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="form-check form-switch mb-3">
@@ -604,7 +626,7 @@
                 <div id="rpdb-key-section" style="margin-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
                     <label class="rec-label mb-2"><i class="fa-solid fa-star text-warning me-2"></i>Rating Poster DB (RPDB) (Optional)</label>
                     <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                        Enter your RPDB API key to replace standard anime posters in search results, watchlist catalogs, recommendations, and detail pages with posters showing rating overlays and badges.
+                        Enter your RPDB API key to replace standard anime posters in watchlist catalogs, recommendations, and detail pages with posters showing rating overlays and badges.
                     </p>
 
                     <div class="gemini-input-wrapper position-relative">
@@ -618,14 +640,22 @@
                         </button>
                         <button type="button" class="gemini-btn p-0" id="validate-rpdb-btn" title="Validate Key">
                             <i id="rpdb-check-icon"
-                                class="fa-solid fa-circle-check {% if user.get('rpdb_api_key') %}text-success{% else %}text-secondary{% endif %}"
+                                class="fa-solid {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
                                 style="font-size: 1.1rem; transition: color 0.2s;"></i>
                         </button>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mt-2">
-                        <span id="rpdb-validation-status" class="small text-secondary">
-                            {% if user.get('rpdb_api_key') %}API key saved{% else %}Not verified{% endif %}
+                        <span id="rpdb-validation-status" class="small {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                            {% if user.get('rpdb_api_key') %}
+                                {% if user.get('rpdb_key_valid') == False %}
+                                    Invalid or Expired API Key
+                                {% else %}
+                                    API key saved & verified ✓
+                                {% endif %}
+                            {% else %}
+                                Not verified
+                            {% endif %}
                         </span>
                         <a href="https://ratingposterdb.com/" target="_blank"
                             class="small text-info text-decoration-none" style="font-size:0.75rem;">
@@ -674,6 +704,34 @@
                                 recommendations.
                             </span>
                         </label>
+                    </div>
+
+                    <!-- Genre Exclusions -->
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Movie Genres</label>
+                            <div class="genre-scroll-container">
+                                {% for genre in anime_genres %}
+                                <label class="genre-checkbox-label">
+                                    <input type="checkbox" name="rec_excluded_movie_genres" value="{{ genre }}" class="genre-checkbox"
+                                        {% if genre in user.get('rec_excluded_movie_genres', []) %}checked{% endif %}>
+                                    {{ genre }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Series Genres</label>
+                            <div class="genre-scroll-container">
+                                {% for genre in anime_genres %}
+                                <label class="genre-checkbox-label">
+                                    <input type="checkbox" name="rec_excluded_series_genres" value="{{ genre }}" class="genre-checkbox"
+                                        {% if genre in user.get('rec_excluded_series_genres', []) %}checked{% endif %}>
+                                    {{ genre }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Gemini AI Section Replica -->
@@ -990,6 +1048,57 @@
             toggleCatalogsDependents(); // Run on initial load
         }
 
+        const enableSearchCheckbox = document.getElementById("enable_search");
+        const searchOptionsContainer = document.getElementById("search-options-container");
+        const rpdbKeyEl = document.getElementById("rpdb_api_key");
+        const rpdbInSearchCheckbox = document.getElementById("rpdb_in_search");
+        const rpdbSearchWarningText = document.getElementById("rpdb-search-warning-text");
+
+        let isRpdbKeyValid = "{{ user.get('rpdb_key_valid') }}" !== "False" && "{{ user.get('rpdb_api_key', '') }}" !== "";
+
+        function syncRpdbSearchState() {
+            if (!rpdbInSearchCheckbox) return;
+            const hasRpdbKey = rpdbKeyEl && rpdbKeyEl.value.trim() !== "";
+            const isValid = hasRpdbKey && isRpdbKeyValid;
+            
+            if (isValid) {
+                if (rpdbInSearchCheckbox.disabled) {
+                    // It was disabled, now enabling it
+                    const rpdbVal = document.getElementById("rpdb_in_search_val");
+                    if (rpdbVal && rpdbVal.value !== "false") {
+                        rpdbInSearchCheckbox.checked = true;
+                    } else if (!rpdbVal) {
+                        rpdbInSearchCheckbox.checked = true;
+                    }
+                }
+                rpdbInSearchCheckbox.disabled = false;
+                if (rpdbSearchWarningText) rpdbSearchWarningText.classList.add("d-none");
+            } else {
+                rpdbInSearchCheckbox.disabled = true;
+                rpdbInSearchCheckbox.checked = false;
+                if (rpdbSearchWarningText) rpdbSearchWarningText.classList.remove("d-none");
+            }
+        }
+
+        function toggleSearchDependents() {
+            const enableSearch = enableSearchCheckbox && enableSearchCheckbox.checked;
+            if (searchOptionsContainer) {
+                searchOptionsContainer.style.display = enableSearch ? "block" : "none";
+            }
+            syncRpdbSearchState();
+        }
+
+        if (enableSearchCheckbox) {
+            enableSearchCheckbox.addEventListener("change", toggleSearchDependents);
+        }
+        if (rpdbKeyEl) {
+            rpdbKeyEl.addEventListener("input", function () {
+                isRpdbKeyValid = rpdbKeyEl.value.trim() !== "";
+                toggleSearchDependents();
+            });
+        }
+        toggleSearchDependents(); // Run on initial load
+
         // Combined watchlist toggle visibility logic
         const combineCheckbox = document.getElementById("combine_watchlists");
         function syncCatalogCombinedVisibility(isInitialLoad = false) {
@@ -1261,17 +1370,21 @@
                         rpdbStatusSpan.textContent = result.message;
                         rpdbStatusSpan.className = "small text-success fw-semibold";
                         rpdbCheckIcon.className = "fa-solid fa-circle-check text-success";
+                        isRpdbKeyValid = true;
                     } else {
                         rpdbStatusSpan.textContent = result.message || "Invalid API key";
                         rpdbStatusSpan.className = "small text-danger";
                         rpdbCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                        isRpdbKeyValid = false;
                     }
                 } catch (err) {
                     rpdbStatusSpan.textContent = "Verification failed";
                     rpdbStatusSpan.className = "small text-danger";
                     rpdbCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                    isRpdbKeyValid = false;
                 } finally {
                     validateRpdbBtn.disabled = false;
+                    syncRpdbSearchState();
                 }
             });
         }
@@ -1337,6 +1450,8 @@
             document.getElementById('enable_catalogs').checked ? 'true' : 'false';
         document.getElementById('enable_search_val').value =
             document.getElementById('enable_search').checked ? 'true' : 'false';
+        document.getElementById('rpdb_in_search_val').value =
+            document.getElementById('rpdb_in_search').checked ? 'true' : 'false';
         document.getElementById('show_filler_tags_val').value =
             document.getElementById('show_filler_tags').checked ? 'true' : 'false';
         const combineWatchlistsCheckbox = document.getElementById('combine_watchlists');

@@ -90,7 +90,33 @@ def set_jikan_filler_cache(mal_id: str, episode: int, filler: bool):
 # ── User helpers ──────────────────────────────────────────────────────────────
 
 def get_user(user_id: str) -> Optional[dict]:
-    return users_collection.find_one({"uid": user_id})
+    if not user_id:
+        return None
+    # 1. Try exact match first
+    user = users_collection.find_one({"uid": user_id})
+    if user:
+        return user
+        
+    # 2. Support stripping prefixes (e.g., al_6613976 -> 6613976)
+    if user_id.startswith("al_"):
+        stripped = user_id[3:]
+        user = users_collection.find_one({"uid": stripped})
+        if user:
+            return user
+    elif user_id.startswith("simkl_"):
+        stripped = user_id[6:]
+        user = users_collection.find_one({"uid": stripped})
+        if user:
+            return user
+            
+    # 3. Support adding prefixes (e.g., 6613976 -> al_6613976)
+    if user_id.isdigit():
+        for prefix in ["al_", "simkl_"]:
+            user = users_collection.find_one({"uid": f"{prefix}{user_id}"})
+            if user:
+                return user
+                
+    return None
 
 
 def find_user_by_mal_id(mal_id: str) -> Optional[dict]:
@@ -98,11 +124,19 @@ def find_user_by_mal_id(mal_id: str) -> Optional[dict]:
 
 
 def find_user_by_anilist_id(anilist_id: str) -> Optional[dict]:
-    return users_collection.find_one({"$or": [{"uid": f"al_{anilist_id}"}, {"anilist_id": str(anilist_id)}]})
+    return users_collection.find_one({"$or": [
+        {"uid": f"al_{anilist_id}"},
+        {"uid": str(anilist_id)},
+        {"anilist_id": str(anilist_id)}
+    ]})
 
 
 def find_user_by_simkl_id(simkl_id: str) -> Optional[dict]:
-    return users_collection.find_one({"$or": [{"uid": f"simkl_{simkl_id}"}, {"simkl_id": str(simkl_id)}]})
+    return users_collection.find_one({"$or": [
+        {"uid": f"simkl_{simkl_id}"},
+        {"uid": str(simkl_id)},
+        {"simkl_id": str(simkl_id)}
+    ]})
 
 
 def store_user(user_details: dict) -> bool:
