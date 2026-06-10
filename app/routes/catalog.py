@@ -967,8 +967,113 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         try:
             data_items = await get_cached_simkl_user_anime_list(user_id, user["simkl_access_token"], simkl_status)
 
+            current_time = int(time.time())
+
+            # Fetch AniList next-airing-episode data in bulk for watching/planning lists
+            bulk_details = {}
+            if simkl_status in ["watching", "plantowatch"] and data_items:
+                mal_ids = []
+                for item in data_items:
+                    show_obj = item.get("show") or item.get("anime") or item
+                    ids = show_obj.get("ids") or {}
+                    mal_id = str(ids.get("mal") or "")
+                    if mal_id:
+                        mal_ids.append(mal_id)
+                if mal_ids:
+                    bulk_details = await fetch_anilist_details_in_bulk(mal_ids)
+
+            def compute_simkl_flags(item, mal_id):
+                show_obj = item.get("show") or item.get("anime") or item
+                progress = item.get("watched_episodes_count") or item.get("episodes_watched") or item.get("progress") or 0
+                total = show_obj.get("episodes_count") or show_obj.get("num_episodes") or item.get("total_episodes_count") or 0
+                
+                al_media = bulk_details.get(mal_id) if mal_id else {}
+                next_ep = al_media.get("nextAiringEpisode")
+                next_ep_num = next_ep.get("episode") if next_ep else None
+                next_ep_airing_at = next_ep.get("airingAt") if next_ep else None
+                
+                latest_aired_at = 0
+                latest_aired_num = 0
+                if next_ep_num and next_ep_airing_at:
+                    latest_aired_num = next_ep_num - 1
+                    latest_aired_at = next_ep_airing_at - 604800
+                elif total > 0:
+                    latest_aired_num = total
+                
+                has_unwatched = False
+                if latest_aired_num > 0:
+                    has_unwatched = progress < latest_aired_num
+                else:
+                    has_unwatched = True
+                
+                is_airing = False
+                if al_media:
+                    al_status = al_media.get("status", "")
+                    is_airing = (al_status in ["RELEASING", "NOT_YET_RELEASED"])
+                else:
+                    is_airing = (item.get("not_aired_episodes_count", 0) > 0)
+                
+                is_new_ep = False
+                if is_airing and user.get("sort_by_new_episodes") and latest_aired_num > 0 and progress < latest_aired_num:
+                    if latest_aired_at > 0:
+                        time_since_air = current_time - latest_aired_at
+                        if time_since_air <= 604800:
+                            is_new_ep = True
+                    else:
+                        is_new_ep = True
+                
+                return is_new_ep, has_unwatched, latest_aired_at, latest_aired_num
+
+            if user.get("sort_by_new_episodes") and simkl_status in ["watching", "plantowatch"]:
+                def get_simkl_priority(item):
+                    show_obj = item.get("show") or item.get("anime") or item
+                    ids = show_obj.get("ids") or {}
+                    mal_id = str(ids.get("mal") or "") or None
+                    
+                    is_new_ep, has_unwatched, latest_aired_at, _ = compute_simkl_flags(item, mal_id)
+                    
+                    al_media = bulk_details.get(mal_id) if mal_id else {}
+                    is_airing = False
+                    if al_media:
+                        al_status = al_media.get("status", "")
+                        is_airing = (al_status in ["RELEASING", "NOT_YET_RELEASED"])
+                    else:
+                        is_airing = (item.get("not_aired_episodes_count", 0) > 0)
+                    
+                    next_ep = al_media.get("nextAiringEpisode")
+                    airing_at = next_ep.get("airingAt") if next_ep else None
+                    if not airing_at:
+                        airing_at = 2**31 - 1
+                        
+                    updated_ts = 0
+                    last_watched_str = item.get("last_watched_at")
+                    if last_watched_str:
+                        try:
+                            s = last_watched_str.replace("Z", "").replace("T", " ")
+                            s = s.split(".")[0]
+                            dt = datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+                            updated_ts = int(dt.timestamp())
+                        except Exception:
+                            pass
+                    
+                    if is_airing and is_new_ep:
+                        group_idx = 0
+                        secondary_sort = (airing_at, -updated_ts)
+                    elif not is_airing:
+                        group_idx = 1
+                        secondary_sort = (-updated_ts, 0)
+                    else:
+                        group_idx = 2
+                        secondary_sort = (airing_at, -updated_ts)
+                        
+                    return (group_idx, *secondary_sort)
+
+                sorted_data_items = sorted(data_items, key=get_simkl_priority)
+                paged_data_items = sorted_data_items[offset: offset + 40]
+            else:
+                paged_data_items = data_items[offset: offset + 40]
+
             # Build meta items
-            paged_data_items = data_items[offset: offset + 40]
             for item in paged_data_items:
                 if "show" in item and isinstance(item["show"], dict):
                     show_obj = item["show"]
@@ -979,6 +1084,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 
                 show_ids = show_obj.get("ids") or {}
                 simkl_id = str(show_ids.get("simkl") or "")
+                mal_id = str(show_ids.get("mal") or "") or None
 
                 progress = item.get("episodes_watched") or item.get("progress") or 0
                 total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
@@ -986,6 +1092,14 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
                 if poster and not poster.startswith("http"):
                     poster = f"https://simkl.in/posters/{poster}_m.jpg"
+
+                is_new_ep = False
+                if simkl_status in ["watching", "plantowatch"]:
+                    is_new_ep, _, _, _ = compute_simkl_flags(item, mal_id)
+
+                if is_new_ep and poster:
+                    encoded_url = urllib.parse.quote_plus(poster)
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/simkl_{simkl_id}.jpg?url={encoded_url}&badge=new&tracker=simkl&v=newep_graphical_v11"
 
                 metas.append({
                     "id": f"simkl:{simkl_id}",
