@@ -429,7 +429,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     synopsis = attrs.get("synopsis", "")
                     metas.append({
                         "id": f"kitsu:{item['id']}",
-                        "type": catalog_type,
+                        "type": item_type,
                         "name": title,
                         "poster": poster,
                         "description": synopsis[:200] + "..." if len(synopsis) > 200 else synopsis,
@@ -494,11 +494,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 
         # Handle pagination skip
         metas = metas[offset: offset + 40]
-        # Ensure that the item type matches the catalog type so Stremio doesn't filter them out
         formatted_metas = []
         for m in metas:
             m_copy = m.copy()
-            m_copy["type"] = catalog_type
+            if m_copy.get("type") not in ["series", "movie"]:
+                m_copy["type"] = "series"
             formatted_metas.append(m_copy)
         return await respond_with({"metas": formatted_metas})
 
@@ -888,6 +888,13 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 sorted_items = sorted(combined_items, key=get_default_updated_ts)
                 paged_items = sorted_items[offset: offset + 40]
 
+            # Resolve Kitsu IDs in bulk
+            from app.lib.id_resolver import bulk_resolve_to_kitsu
+            mal_ids = [str(x["mal_id"]) for x in paged_items if x["mal_id"]]
+            anilist_ids = [str(x["anilist_id"]) for x in paged_items if x["anilist_id"]]
+            simkl_ids = [str(x["simkl_id"]) for x in paged_items if x["simkl_id"]]
+            kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, anilist_ids=anilist_ids, simkl_ids=simkl_ids)
+
             # Build meta items
             for item in paged_items:
                 mal_id = item["mal_id"]
@@ -909,12 +916,15 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 name = ""
                 poster = ""
 
+                is_movie = False
                 if item["anilist_item"]:
                     media = item["anilist_item"]["media"]
                     progress = item["anilist_item"].get("progress", 0)
                     total_eps = media.get("episodes") or "?"
                     name = media["title"]["userPreferred"] or media["title"]["english"] or ""
                     poster = (media.get("coverImage") or {}).get("large") or (media.get("coverImage") or {}).get("medium") or ""
+                    if media.get("format") == "MOVIE":
+                        is_movie = True
                 
                 if not name and item["mal_item"]:
                     node = item["mal_item"]["node"]
@@ -922,6 +932,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     total_eps = node.get("num_episodes") or "?"
                     name = node.get("title", "")
                     poster = poster or node.get("main_picture", {}).get("large") or node.get("main_picture", {}).get("medium") or ""
+                    if node.get("media_type") == "movie":
+                        is_movie = True
                 
                 if not name and item["simkl_item"]:
                     show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
@@ -933,6 +945,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     if simkl_poster and not simkl_poster.startswith("http"):
                         simkl_poster = f"https://simkl.in/posters/{simkl_poster}_m.jpg"
                     poster = poster or simkl_poster
+                    if show_obj.get("anime_type") == "movie" or show_obj.get("type") == "movie":
+                        is_movie = True
 
                 is_new_ep = False
                 if comb_status in ["watching", "plan_to_watch"]:
@@ -943,11 +957,20 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     m_id_for_url = mal_id if mal_id else (anilist_id if anilist_id else f"simkl_{simkl_id}")
                     poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{m_id_for_url}.jpg?url={encoded_url}&badge=new&tracker={tracker_str}&v=newep_graphical_v11"
 
-                stremio_id = f"mal:{mal_id}" if mal_id else (f"anilist:{anilist_id}" if anilist_id else f"simkl:{simkl_id}")
+                kitsu_id = None
+                if mal_id:
+                    kitsu_id = kitsu_mappings.get(f"mal:{mal_id}")
+                if not kitsu_id and anilist_id:
+                    kitsu_id = kitsu_mappings.get(f"anilist:{anilist_id}")
+                if not kitsu_id and simkl_id:
+                    kitsu_id = kitsu_mappings.get(f"simkl:{simkl_id}")
+
+                stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mal_id}" if mal_id else (f"anilist:{anilist_id}" if anilist_id else f"simkl:{simkl_id}"))
+                stremio_type = "movie" if is_movie else "series"
 
                 metas.append({
                     "id": stremio_id,
-                    "type": catalog_type,
+                    "type": stremio_type,
                     "name": name,
                     "poster": poster,
                     "description": (
@@ -1073,6 +1096,17 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             else:
                 paged_data_items = data_items[offset: offset + 40]
 
+            # Resolve Kitsu IDs in bulk
+            from app.lib.id_resolver import bulk_resolve_to_kitsu
+            simkl_ids = []
+            for item in paged_data_items:
+                show_obj = item.get("show") or item.get("anime") or item
+                show_ids = show_obj.get("ids") or {}
+                simkl_id = str(show_ids.get("simkl") or "")
+                if simkl_id:
+                    simkl_ids.append(simkl_id)
+            kitsu_mappings = await bulk_resolve_to_kitsu(simkl_ids=simkl_ids)
+
             # Build meta items
             for item in paged_data_items:
                 if "show" in item and isinstance(item["show"], dict):
@@ -1101,9 +1135,15 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     encoded_url = urllib.parse.quote_plus(poster)
                     poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/simkl_{simkl_id}.jpg?url={encoded_url}&badge=new&tracker=simkl&v=newep_graphical_v11"
 
+                kitsu_id = kitsu_mappings.get(f"simkl:{simkl_id}")
+                stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"simkl:{simkl_id}"
+
+                simkl_media_type = show_obj.get("anime_type") or show_obj.get("type") or "series"
+                stremio_type = "movie" if simkl_media_type == "movie" else "series"
+
                 metas.append({
-                    "id": f"simkl:{simkl_id}",
-                    "type": catalog_type,
+                    "id": stremio_id,
+                    "type": stremio_type,
                     "name": name,
                     "poster": poster,
                     "description": (
@@ -1219,6 +1259,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             else:
                 paged_data_items = data_items[offset: offset + 40]
 
+            # Resolve Kitsu IDs in bulk
+            from app.lib.id_resolver import bulk_resolve_to_kitsu
+            mal_ids = [str(item["node"]["id"]) for item in paged_data_items]
+            kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids)
+
             # ── Build meta items ──────────────────────────────────────────────
             for item in paged_data_items:
                 node = item["node"]
@@ -1239,9 +1284,15 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     encoded_url = urllib.parse.quote_plus(poster)
                     poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{mal_id}.jpg?url={encoded_url}&badge=new&tracker=mal&v=newep_graphical_v11"
 
+                kitsu_id = kitsu_mappings.get(f"mal:{mal_id}")
+                stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"mal:{mal_id}"
+
+                mal_media_type = (node.get("media_type") or "tv").lower()
+                stremio_type = "movie" if mal_media_type == "movie" else "series"
+
                 metas.append({
-                    "id": f"mal:{node['id']}",
-                    "type": catalog_type,
+                    "id": stremio_id,
+                    "type": stremio_type,
                     "name": name,
                     "poster": poster,
                     "description": (
@@ -1359,6 +1410,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             # Paginate the full sorted list
             paged_entries = entries[offset: offset + 40]
 
+            # Resolve Kitsu IDs in bulk
+            from app.lib.id_resolver import bulk_resolve_to_kitsu
+            anilist_ids = [str(entry["media"]["id"]) for entry in paged_entries]
+            kitsu_mappings = await bulk_resolve_to_kitsu(anilist_ids=anilist_ids)
+
             # ── Build meta items ──────────────────────────────────────────────
             for entry in paged_entries:
                 media = entry["media"]
@@ -1381,9 +1437,15 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     encoded_url = urllib.parse.quote_plus(poster)
                     poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{al_id}.jpg?url={encoded_url}&badge=new&tracker=anilist&v=newep_graphical_v11"
 
+                kitsu_id = kitsu_mappings.get(f"anilist:{al_id}")
+                stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"anilist:{al_id}"
+
+                al_media_format = (media.get("format") or "tv").lower()
+                stremio_type = "movie" if al_media_format == "movie" else "series"
+
                 metas.append({
-                    "id": f"anilist:{al_id}",
-                    "type": catalog_type,
+                    "id": stremio_id,
+                    "type": stremio_type,
                     "name": name,
                     "poster": poster,
                     "description": (
@@ -1409,10 +1471,13 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
     formatted_metas = []
     for m in metas:
         m_copy = m.copy()
-        if m_copy.get("type") in custom_types_map:
-            m_copy["type"] = custom_types_map[m_copy["type"]]
-        elif catalog_type in custom_types_map:
-            m_copy["type"] = custom_types_map[catalog_type]
+        if m_copy.get("type") not in ["series", "movie"]:
+            if m_copy.get("type") in custom_types_map:
+                m_copy["type"] = custom_types_map[m_copy["type"]]
+            elif catalog_type in custom_types_map:
+                m_copy["type"] = custom_types_map[catalog_type]
+            else:
+                m_copy["type"] = "series"
         formatted_metas.append(m_copy)
 
     return await respond_with({"metas": formatted_metas})
