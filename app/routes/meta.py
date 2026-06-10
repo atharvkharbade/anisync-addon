@@ -6,7 +6,7 @@ from quart import Blueprint
 from app.services.db import get_user
 from app.routes.utils import respond_with, is_valid_user_id, rate_limit
 from app.services.http import get_client
-from app.lib.id_resolver import resolve, resolve_mal_to_kitsu, resolve_anilist_to_kitsu
+from app.lib.id_resolver import resolve, resolve_mal_to_kitsu, resolve_anilist_to_kitsu, resolve_simkl_to_kitsu
 
 meta_bp = Blueprint("meta", __name__)
 
@@ -261,6 +261,9 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     elif meta_id.startswith("anilist:"):
         anilist_id = meta_id.split(":")[1]
         kitsu_id = await resolve_anilist_to_kitsu(anilist_id)
+    elif meta_id.startswith("simkl:"):
+        simkl_id = meta_id.split(":")[1]
+        kitsu_id = await resolve_simkl_to_kitsu(simkl_id)
     elif meta_id.startswith("kitsu:"):
         kitsu_id = meta_id.split(":")[1]
 

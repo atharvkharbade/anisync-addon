@@ -169,7 +169,7 @@ MANIFEST = {
     "description": "Sync and update your anime watchlists on MyAnimeList, AniList, and Simkl in real-time. Easily track episodes, combine watchlists, skip fillers, and get personalized recommendations directly inside Stremio.",
     "types": ["anime", "series", "movie"],
     "resources": ["subtitles", "catalog", "meta"],
-    "idPrefixes": ["kitsu", "mal", "anilist"],
+    "idPrefixes": ["kitsu", "mal", "anilist", "simkl"],
     "catalogs": CATALOGS,
     "behaviorHints": {
         "configurable": True,
