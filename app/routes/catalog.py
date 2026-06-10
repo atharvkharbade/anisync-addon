@@ -929,7 +929,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     progress = max(progress, simkl_progress)
                     total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
                     name = show_obj.get("title", "")
-                    poster = poster or show_obj.get("poster") or show_obj.get("poster_image") or ""
+                    simkl_poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
+                    if simkl_poster and not simkl_poster.startswith("http"):
+                        simkl_poster = f"https://simkl.in/posters/{simkl_poster}_m.jpg"
+                    poster = poster or simkl_poster
 
                 is_new_ep = False
                 if comb_status in ["watching", "plan_to_watch"]:
@@ -981,6 +984,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
                 name = show_obj.get("title", "")
                 poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
+                if poster and not poster.startswith("http"):
+                    poster = f"https://simkl.in/posters/{poster}_m.jpg"
 
                 metas.append({
                     "id": f"simkl:{simkl_id}",
