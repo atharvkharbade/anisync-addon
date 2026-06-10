@@ -776,7 +776,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if item.get("anilist_item"):
                     progress = max(progress, item["anilist_item"].get("progress", 0))
                 if item.get("simkl_item"):
-                    simkl_progress = item["simkl_item"].get("episodes_watched") or item["simkl_item"].get("progress") or 0
+                    simkl_progress = item["simkl_item"].get("watched_episodes_count") or item["simkl_item"].get("episodes_watched") or item["simkl_item"].get("progress") or 0
                     progress = max(progress, simkl_progress)
 
                 # Airing calculations using AniList data
@@ -925,7 +925,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 
                 if not name and item["simkl_item"]:
                     show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
-                    simkl_progress = item["simkl_item"].get("episodes_watched") or item["simkl_item"].get("progress") or 0
+                    simkl_progress = item["simkl_item"].get("watched_episodes_count") or item["simkl_item"].get("episodes_watched") or item["simkl_item"].get("progress") or 0
                     progress = max(progress, simkl_progress)
                     total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
                     name = show_obj.get("title", "")
@@ -1086,7 +1086,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 simkl_id = str(show_ids.get("simkl") or "")
                 mal_id = str(show_ids.get("mal") or "") or None
 
-                progress = item.get("episodes_watched") or item.get("progress") or 0
+                progress = item.get("watched_episodes_count") or item.get("episodes_watched") or item.get("progress") or 0
                 total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
                 name = show_obj.get("title", "")
                 poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
