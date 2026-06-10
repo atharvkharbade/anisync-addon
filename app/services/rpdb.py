@@ -131,7 +131,47 @@ def get_rpdb_poster_url(
         except Exception as e:
             logging.error("Failed to query id_cache for RPDB resolution: %s", e)
             
-    # Trigger background mappings resolution if we lack external IDs
+    # Check fribb_mappings next (offline database with 15k+ entries)
+    if not (imdb_id or tmdb_id or tvdb_id):
+        from app.services.db import db
+        fribb_query = []
+        if kitsu_id:
+            try:
+                fribb_query.append({"kitsu_id": int(kitsu_id)})
+            except (ValueError, TypeError):
+                pass
+        if mal_id:
+            fribb_query.append({"mal_id": str(mal_id)})
+        if anilist_id:
+            fribb_query.append({"anilist_id": str(anilist_id)})
+        if simkl_id:
+            fribb_query.append({"simkl_id": str(simkl_id)})
+            if str(simkl_id).isdigit():
+                fribb_query.append({"simkl_id": int(simkl_id)})
+                
+        if fribb_query:
+            try:
+                doc = db.fribb_mappings.find_one({"$or": fribb_query})
+                if doc:
+                    imdb_id = doc.get("imdb_id")
+                    tmdb_id = doc.get("tmdb_id")
+                    tvdb_id = doc.get("tvdb_id")
+                    # If we found mappings, write them back to id_cache so they are merged/cached
+                    if imdb_id or tmdb_id or tvdb_id:
+                        from app.services.db import cache_ids
+                        cache_ids(
+                            kitsu_id=kitsu_id or doc.get("kitsu_id"),
+                            mal_id=mal_id or doc.get("mal_id"),
+                            anilist_id=anilist_id or doc.get("anilist_id"),
+                            simkl_id=simkl_id or doc.get("simkl_id"),
+                            imdb_id=imdb_id,
+                            tmdb_id=tmdb_id,
+                            tvdb_id=tvdb_id
+                        )
+            except Exception as e:
+                logging.error("Failed to query fribb_mappings for RPDB: %s", e)
+
+    # Trigger background mappings resolution if we still lack external IDs
     if not (imdb_id or tmdb_id or tvdb_id):
         # We need kitsu_id, mal_id, or anilist_id to resolve mappings
         if kitsu_id or mal_id or anilist_id:

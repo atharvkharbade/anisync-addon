@@ -22,19 +22,31 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
     within the last 24 hours. Does an atomic swap to avoid query disruption.
     """
     now = datetime.utcnow()
+    force_rebuild = False
     try:
-        meta = db.fribb_meta.find_one({"key": "last_updated"})
-        if meta and (now - meta["timestamp"]) < timedelta(hours=24):
-            return
+        # Check if we need to force rebuild to upgrade old schema lacking external IDs
+        if db.fribb_mappings.count_documents({}) > 0:
+            if db.fribb_mappings.count_documents({"imdb_id": {"$exists": True}}) == 0:
+                logging.info("Forcing rebuild of Fribb mappings to upgrade schema (adding imdb_id, tmdb_id, tvdb_id)")
+                force_rebuild = True
+    except Exception as e:
+        logging.error("Failed to check Fribb mappings schema status: %s", e)
+
+    try:
+        if not force_rebuild:
+            meta = db.fribb_meta.find_one({"key": "last_updated"})
+            if meta and (now - meta["timestamp"]) < timedelta(hours=24):
+                return
     except Exception as e:
         logging.error("Failed to query Fribb metadata: %s", e)
 
     async with _fribb_lock:
         # Re-check metadata inside the lock
         try:
-            meta = db.fribb_meta.find_one({"key": "last_updated"})
-            if meta and (now - meta["timestamp"]) < timedelta(hours=24):
-                return
+            if not force_rebuild:
+                meta = db.fribb_meta.find_one({"key": "last_updated"})
+                if meta and (now - meta["timestamp"]) < timedelta(hours=24):
+                    return
         except Exception:
             pass
 
@@ -47,13 +59,29 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
             docs = []
             for entry in entries:
                 kitsu_id = entry.get("kitsu_id")
-                mal_id = entry.get("mal_id")
-                anilist_id = entry.get("anilist_id")
                 if kitsu_id is not None:
+                    mal_id = entry.get("mal_id")
+                    anilist_id = entry.get("anilist_id")
+                    simkl_id = entry.get("simkl_id")
+                    imdb_id = entry.get("imdb_id")
+                    tvdb_id = entry.get("tvdb_id")
+                    
+                    tmdb_id = None
+                    tmdb_obj = entry.get("themoviedb_id")
+                    if tmdb_obj:
+                        if isinstance(tmdb_obj, dict):
+                            tmdb_id = tmdb_obj.get("tv") or tmdb_obj.get("movie")
+                        else:
+                            tmdb_id = tmdb_obj
+
                     docs.append({
                         "kitsu_id": int(kitsu_id),
                         "mal_id": str(mal_id) if mal_id is not None else None,
                         "anilist_id": str(anilist_id) if anilist_id is not None else None,
+                        "simkl_id": str(simkl_id) if simkl_id is not None else None,
+                        "imdb_id": str(imdb_id) if imdb_id else None,
+                        "tmdb_id": str(tmdb_id) if tmdb_id is not None else None,
+                        "tvdb_id": str(tvdb_id) if tvdb_id is not None else None,
                     })
 
             if docs:
@@ -63,6 +91,8 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
                 temp_coll.create_index("kitsu_id")
                 temp_coll.create_index("mal_id")
                 temp_coll.create_index("anilist_id")
+                temp_coll.create_index("simkl_id")
+                temp_coll.create_index("imdb_id")
                 
                 # Swap collections atomically
                 temp_coll.rename("fribb_mappings", dropTarget=True)
