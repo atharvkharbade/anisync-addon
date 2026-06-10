@@ -170,16 +170,48 @@ async def configure(user_id: str = ""):
         user["catalogs"] = enabled_list
         user["enable_recommendations"] = form.get("enable_recommendations") == "true"
         user["recommendations_filter_watched"] = form.get("recommendations_filter_watched") == "true"
-        user["gemini_api_key"] = form.get("gemini_api_key", "").strip()
+        gemini_key = form.get("gemini_api_key", "").strip()
         rpdb_key = form.get("rpdb_api_key", "").strip()
+        
+        user["gemini_api_key"] = gemini_key
         user["rpdb_api_key"] = rpdb_key
+
+        rpdb_task = None
+        gemini_task = None
+        
         if rpdb_key:
             from app.services.rpdb import validate_rpdb_api_key
-            user["rpdb_key_valid"] = await validate_rpdb_api_key(rpdb_key)
-            user["rpdb_key_last_checked"] = datetime.datetime.utcnow()
+            rpdb_task = validate_rpdb_api_key(rpdb_key)
         else:
             user["rpdb_key_valid"] = False
             user["rpdb_key_last_checked"] = None
+            
+        if gemini_key:
+            gemini_task = check_gemini_api_key_valid(gemini_key)
+        else:
+            user["gemini_key_valid"] = False
+            
+        if rpdb_task or gemini_task:
+            tasks = []
+            if rpdb_task:
+                tasks.append(rpdb_task)
+            if gemini_task:
+                tasks.append(gemini_task)
+                
+            results = await asyncio.gather(*tasks)
+            
+            idx = 0
+            if rpdb_task:
+                rpdb_valid = results[idx]
+                user["rpdb_key_valid"] = rpdb_valid
+                user["rpdb_key_last_checked"] = datetime.datetime.utcnow()
+                idx += 1
+            if gemini_task:
+                gemini_valid = results[idx][0]
+                user["gemini_key_valid"] = gemini_valid
+        else:
+            user["rpdb_key_valid"] = False
+            user["gemini_key_valid"] = False
 
         user["rec_language"] = form.get("rec_language", "en")
         user["rec_popularity"] = form.get("rec_popularity", "balanced")
@@ -203,9 +235,32 @@ async def configure(user_id: str = ""):
         if user["enable_recommendations"]:
             from app.services.recommendations import trigger_recommendation_update_background
             trigger_recommendation_update_background(uid, force=True)
-        if request.headers.get("Accept") == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return {"status": "success", "message": "Settings saved successfully."}
-        await flash("Settings saved.", "success")
+
+        validation_failed_msg = []
+        if rpdb_key and not user.get("rpdb_key_valid", False):
+            validation_failed_msg.append("Invalid RPDB API key")
+        if gemini_key and not user.get("gemini_key_valid", False):
+            validation_failed_msg.append("Invalid Gemini API key")
+
+        if validation_failed_msg:
+            msg_str = " & ".join(validation_failed_msg)
+            if request.headers.get("Accept") == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return {
+                    "status": "warning",
+                    "message": f"Preferences saved, but: {msg_str}",
+                    "rpdb_valid": user.get("rpdb_key_valid", False),
+                    "gemini_valid": user.get("gemini_key_valid", False)
+                }
+            await flash(f"Preferences saved, but: {msg_str}", "warning")
+        else:
+            if request.headers.get("Accept") == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return {
+                    "status": "success",
+                    "message": "Preferences saved successfully!",
+                    "rpdb_valid": user.get("rpdb_key_valid", False),
+                    "gemini_valid": user.get("gemini_key_valid", False)
+                }
+            await flash("Preferences saved.", "success")
 
     current_year = datetime.datetime.now().year
     resp = await make_response(
@@ -222,29 +277,36 @@ async def configure(user_id: str = ""):
     return resp
 
 
-@ui_bp.route("/gemini/validation", methods=["POST"])
-@rate_limit(limit=10, period_seconds=60)
-async def validate_gemini_key():
+async def check_gemini_api_key_valid(api_key: str) -> tuple[bool, str]:
     import httpx
-    data = await request.get_json() or {}
-    api_key = data.get("api_key", "").strip()
     if not api_key:
-        return {"status": "error", "message": "Key cannot be empty"}, 400
+        return False, "Key cannot be empty"
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
         payload = {"contents": [{"parts": [{"text": "Hello, respond with OK if you read this."}]}]}
         async with httpx.AsyncClient(timeout=5) as client:
             resp = await client.post(url, json=payload)
             if resp.status_code == 200:
-                return {"status": "success", "message": "API key is valid ✓"}
+                return True, "API key is valid ✓"
             else:
                 try:
                     error_msg = resp.json().get("error", {}).get("message", "Invalid API key")
                 except Exception:
                     error_msg = "Invalid API key"
-                return {"status": "error", "message": error_msg}, 400
+                return False, error_msg
     except Exception as e:
-        return {"status": "error", "message": f"Validation failed: {str(e)}"}, 500
+        return False, f"Validation failed: {str(e)}"
+
+
+@ui_bp.route("/gemini/validation", methods=["POST"])
+@rate_limit(limit=10, period_seconds=60)
+async def validate_gemini_key():
+    data = await request.get_json() or {}
+    api_key = data.get("api_key", "").strip()
+    is_valid, msg = await check_gemini_api_key_valid(api_key)
+    if is_valid:
+        return {"status": "success", "message": msg}
+    return {"status": "error", "message": msg}, 400
 
 
 @ui_bp.route("/rpdb/validation", methods=["POST"])

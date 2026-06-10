@@ -751,14 +751,22 @@
                             </button>
                             <button type="button" class="gemini-btn p-0" id="validate-gemini-btn" title="Validate Key">
                                 <i id="gemini-check-icon"
-                                    class="fa-solid fa-circle-check {% if user.get('gemini_api_key') %}text-success{% else %}text-secondary{% endif %}"
+                                    class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
                                     style="font-size: 1.1rem; transition: color 0.2s;"></i>
                             </button>
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span id="gemini-validation-status" class="small text-secondary">
-                                {% if user.get('gemini_api_key') %}API key saved{% else %}Not verified{% endif %}
+                            <span id="gemini-validation-status" class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                {% if user.get('gemini_api_key') %}
+                                    {% if user.get('gemini_key_valid') == False %}
+                                        Invalid Gemini API key
+                                    {% else %}
+                                        API key saved & verified ✓
+                                    {% endif %}
+                                {% else %}
+                                    Not verified
+                                {% endif %}
                             </span>
                             <a href="https://aistudio.google.com/" target="_blank"
                                 class="small text-info text-decoration-none" style="font-size:0.75rem;">
@@ -947,8 +955,60 @@
                         }
                     });
                     const result = await response.json();
-                    if (result.status === 'success') {
-                        showToast("Preferences saved successfully!", "success");
+                    if (result.status === 'success' || result.status === 'warning') {
+                        if (result.status === 'success') {
+                            showToast("Preferences saved successfully!", "success");
+                        } else {
+                            showToast(result.message || "Saved with validation warnings", "warning");
+                        }
+
+                        // Update RPDB status dynamically
+                        const rpdbKeyVal = document.getElementById("rpdb_api_key").value.trim();
+                        const rpdbCheckIcon = document.getElementById("rpdb-check-icon");
+                        const rpdbStatusSpan = document.getElementById("rpdb-validation-status");
+                        if (rpdbCheckIcon && rpdbStatusSpan) {
+                            if (rpdbKeyVal) {
+                                if (result.rpdb_valid) {
+                                    rpdbCheckIcon.className = "fa-solid fa-circle-check text-success";
+                                    rpdbStatusSpan.className = "small text-success fw-medium";
+                                    rpdbStatusSpan.textContent = "API key saved & verified ✓";
+                                    isRpdbKeyValid = true;
+                                } else {
+                                    rpdbCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                                    rpdbStatusSpan.className = "small text-danger";
+                                    rpdbStatusSpan.textContent = "Invalid or Expired API Key";
+                                    isRpdbKeyValid = false;
+                                }
+                            } else {
+                                rpdbCheckIcon.className = "fa-solid fa-circle-check text-secondary";
+                                rpdbStatusSpan.className = "small text-secondary";
+                                rpdbStatusSpan.textContent = "Not verified";
+                                isRpdbKeyValid = false;
+                            }
+                            syncRpdbSearchState();
+                        }
+
+                        // Update Gemini status dynamically
+                        const geminiKeyVal = document.getElementById("gemini_api_key").value.trim();
+                        const geminiCheckIcon = document.getElementById("gemini-check-icon");
+                        const geminiStatusSpan = document.getElementById("gemini-validation-status");
+                        if (geminiCheckIcon && geminiStatusSpan) {
+                            if (geminiKeyVal) {
+                                if (result.gemini_valid) {
+                                    geminiCheckIcon.className = "fa-solid fa-circle-check text-success";
+                                    geminiStatusSpan.className = "small text-success fw-medium";
+                                    geminiStatusSpan.textContent = "API key saved & verified ✓";
+                                } else {
+                                    geminiCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                                    geminiStatusSpan.className = "small text-danger";
+                                    geminiStatusSpan.textContent = "Invalid Gemini API key";
+                                }
+                            } else {
+                                geminiCheckIcon.className = "fa-solid fa-circle-check text-secondary";
+                                geminiStatusSpan.className = "small text-secondary";
+                                geminiStatusSpan.textContent = "Not verified";
+                            }
+                        }
                     } else {
                         showToast(result.message || "Failed to save preferences", "error");
                     }
