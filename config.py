@@ -37,6 +37,10 @@ class Config:
     ANILIST_CLIENT_ID = os.getenv("ANILIST_CLIENT_ID", "")
     ANILIST_CLIENT_SECRET = os.getenv("ANILIST_CLIENT_SECRET", "")
 
+    # Simkl OAuth
+    SIMKL_CLIENT_ID = os.getenv("SIMKL_CLIENT_ID", "749cbca8c56af4464eb3504e8c3cdb8c6f1ab3e8546a02a792dba421a77fbd2d")
+    SIMKL_CLIENT_SECRET = os.getenv("SIMKL_CLIENT_SECRET", "7bab200ffcb2ef2c0963d5886544c2fd4c68ffeb0b6813c7e1ee446b9ec202f2")
+
     if DEBUG:
         PROTOCOL = "http"
         REDIRECT_URL = f"{FLASK_HOST}:{FLASK_PORT}"

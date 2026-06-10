@@ -83,27 +83,23 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logo_gap = 4
             text_gap = 6
             
-            draw_mal = False
-            draw_al = False
-            if tracker in ["both", "mal+anilist"]:
-                draw_mal = True
-                draw_al = True
-            elif tracker == "mal":
-                draw_mal = True
-            elif tracker == "anilist":
-                draw_al = True
+            # Parse tracker parameter
+            trackers = tracker.split("+")
+            draw_mal = "mal" in trackers or "both" in trackers or "mal+anilist" in trackers
+            draw_al = "anilist" in trackers or "both" in trackers or "mal+anilist" in trackers
+            draw_simkl = "simkl" in trackers
 
             assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
             resample_filter = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
 
-            mal_logo_img = None
-            al_logo_img = None
+            logos = []
             
             if draw_mal:
                 logo_path = os.path.join(assets_dir, "mal_logo.png")
                 if os.path.exists(logo_path):
                     try:
                         mal_logo_img = Image.open(logo_path).convert("RGBA").resize((logo_w, logo_h), resample_filter)
+                        logos.append(mal_logo_img)
                     except Exception as e:
                         logging.error("Failed to load MAL logo image: %s", e)
             
@@ -112,35 +108,32 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 if os.path.exists(logo_path):
                     try:
                         al_logo_img = Image.open(logo_path).convert("RGBA").resize((logo_w, logo_h), resample_filter)
+                        logos.append(al_logo_img)
                     except Exception as e:
                         logging.error("Failed to load AniList logo image: %s", e)
 
+            if draw_simkl:
+                logo_path = os.path.join(assets_dir, "simkl_logo.png")
+                if os.path.exists(logo_path):
+                    try:
+                        simkl_logo_img = Image.open(logo_path).convert("RGBA").resize((logo_w, logo_h), resample_filter)
+                        logos.append(simkl_logo_img)
+                    except Exception as e:
+                        logging.error("Failed to load Simkl logo image: %s", e)
+
             # Calculate total width
-            total_logo_w = 0
-            if mal_logo_img and al_logo_img:
-                total_logo_w = logo_w + logo_gap + logo_w
-            elif mal_logo_img or al_logo_img:
-                total_logo_w = logo_w
-                
-            total_w = total_logo_w + text_gap + text_w if total_logo_w > 0 else text_w
+            total_logos_w = len(logos) * logo_w + (len(logos) - 1) * logo_gap if logos else 0
+            total_w = total_logos_w + text_gap + text_w if total_logos_w > 0 else text_w
             block_x = (w - total_w) / 2
             bar_center_y = bar_y + bar_h / 2
 
             # Paste logo(s)
             curr_x = block_x
-            if mal_logo_img and al_logo_img:
-                overlay.paste(mal_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)), mal_logo_img)
+            for logo in logos:
+                overlay.paste(logo, (int(curr_x), int(bar_center_y - logo_h / 2)), logo)
                 curr_x += logo_w + logo_gap
-                overlay.paste(al_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)), al_logo_img)
-                text_x = block_x + total_logo_w + text_gap
-            elif mal_logo_img:
-                overlay.paste(mal_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)), mal_logo_img)
-                text_x = block_x + logo_w + text_gap
-            elif al_logo_img:
-                overlay.paste(al_logo_img, (int(curr_x), int(bar_center_y - logo_h / 2)), al_logo_img)
-                text_x = block_x + logo_w + text_gap
-            else:
-                text_x = block_x
+                
+            text_x = block_x + total_logos_w + text_gap if total_logos_w > 0 else block_x
 
             # Draw text "NEW EPISODE"
             tx = text_x - left

@@ -6,8 +6,9 @@ from quart import Blueprint, flash, redirect, render_template, request, session,
 
 from app.api import anilist as al_api
 from app.api import mal as mal_api
+from app.api import simkl as simkl_api
 from app.routes.utils import log_error, rate_limit
-from app.services.db import get_user, store_user, find_user_by_mal_id, find_user_by_anilist_id
+from app.services.db import get_user, store_user, find_user_by_mal_id, find_user_by_anilist_id, find_user_by_simkl_id
 from config import Config
 
 auth_bp = Blueprint("auth", __name__)
@@ -204,7 +205,7 @@ async def disconnect_mal():
         user.pop("mal_picture", None)
 
         from app.services.db import invalidate_user_watchlist_cache
-        if not user.get("anilist_token"):
+        if not user.get("anilist_token") and not user.get("simkl_access_token"):
             user.pop("picture", None)
             session.pop("user", None)
             store_user(user)
@@ -212,7 +213,7 @@ async def disconnect_mal():
             await flash("Disconnected from MyAnimeList and logged out.", "info")
             return redirect(url_for("ui.index"))
         else:
-            user["picture"] = user.get("anilist_picture", "")
+            user["picture"] = user.get("anilist_picture") or user.get("simkl_avatar") or ""
             store_user(user)
             invalidate_user_watchlist_cache(user_session["uid"])
             await flash("Disconnected from MyAnimeList.", "info")
@@ -235,7 +236,7 @@ async def disconnect_anilist():
         user.pop("anilist_picture", None)
 
         from app.services.db import invalidate_user_watchlist_cache
-        if not user.get("mal_access_token"):
+        if not user.get("mal_access_token") and not user.get("simkl_access_token"):
             user.pop("picture", None)
             session.pop("user", None)
             store_user(user)
@@ -243,10 +244,117 @@ async def disconnect_anilist():
             await flash("Disconnected from AniList and logged out.", "info")
             return redirect(url_for("ui.index"))
         else:
-            user["picture"] = user.get("mal_picture", "")
+            user["picture"] = user.get("mal_picture") or user.get("simkl_avatar") or ""
             store_user(user)
             invalidate_user_watchlist_cache(user_session["uid"])
             await flash("Disconnected from AniList.", "info")
             return redirect(url_for("ui.configure"))
 
     return redirect(url_for("ui.index"))
+
+
+# ── Simkl OAuth ─────────────────────────────────────────────────────────────
+
+@auth_bp.route("/authorize-simkl")
+@rate_limit(limit=10, period_seconds=60)
+async def authorize_simkl():
+    redirect_uri = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/simkl-callback"
+    simkl_url = (
+        f"https://simkl.com/oauth/authorize"
+        f"?client_id={Config.SIMKL_CLIENT_ID}"
+        f"&redirect_uri={redirect_uri}"
+        f"&response_type=code"
+    )
+    return redirect(simkl_url)
+
+
+@auth_bp.route("/simkl-callback")
+@rate_limit(limit=10, period_seconds=60)
+async def simkl_callback():
+    if not (code := request.args.get("code")):
+        await flash("Invalid callback. Please try again.", "warning")
+        return redirect(url_for("ui.index"))
+
+    try:
+        token = await simkl_api.get_access_token(code)
+        if not token:
+            await flash("Failed to retrieve access token from Simkl.", "danger")
+            return redirect(url_for("ui.index"))
+
+        user_info = await simkl_api.get_user_details(token)
+        simkl_id = str(user_info.get("account", {}).get("id") or user_info.get("user", {}).get("ids", {}).get("simkl") or "")
+        if not simkl_id:
+            await flash("Failed to retrieve Simkl user ID.", "danger")
+            return redirect(url_for("ui.index"))
+
+        simkl_username = user_info.get("user", {}).get("name") or ""
+        simkl_avatar = user_info.get("user", {}).get("avatar") or ""
+
+        user_session = session.get("user")
+        if user_session:
+            uid = user_session["uid"]
+            user = get_user(uid) or {}
+        else:
+            user = find_user_by_simkl_id(simkl_id) or {}
+            uid = user.get("uid") or f"simkl_{simkl_id}"
+            session["user"] = {"uid": uid}
+            session.permanent = True
+
+        user.update({
+            "uid": uid,
+            "simkl_id": simkl_id,
+            "simkl_access_token": token,
+            "simkl_username": simkl_username,
+            "simkl_avatar": simkl_avatar,
+            "simkl_enabled": user.get("simkl_enabled", True),
+            "picture": simkl_avatar or user.get("mal_picture") or user.get("anilist_picture") or user.get("picture") or "",
+            "last_profile_sync": datetime.utcnow(),
+        })
+        store_user(user)
+
+        # Invalidate watchlist cache so it re-fetches with Simkl items included
+        from app.services.db import invalidate_user_watchlist_cache
+        invalidate_user_watchlist_cache(uid)
+
+        await flash("Connected to Simkl!", "success")
+        return redirect(url_for("ui.configure"))
+
+    except Exception as e:
+        log_error("SIMKL_CALLBACK", str(e))
+        await flash("Failed to connect to Simkl.", "danger")
+        return redirect(url_for("ui.index"))
+
+
+@auth_bp.route("/disconnect-simkl")
+@rate_limit(limit=10, period_seconds=60)
+async def disconnect_simkl():
+    user_session = session.get("user")
+    if not user_session:
+        return redirect(url_for("ui.index"))
+
+    user = get_user(user_session["uid"])
+    if user:
+        user.pop("simkl_access_token", None)
+        user.pop("simkl_username", None)
+        user.pop("simkl_avatar", None)
+        user.pop("simkl_id", None)
+
+        from app.services.db import invalidate_user_watchlist_cache
+        if not user.get("mal_access_token") and not user.get("anilist_token"):
+            user.pop("picture", None)
+            session.pop("user", None)
+            store_user(user)
+            invalidate_user_watchlist_cache(user_session["uid"])
+            await flash("Disconnected from Simkl and logged out.", "info")
+            return redirect(url_for("ui.index"))
+        else:
+            user["picture"] = user.get("mal_picture") or user.get("anilist_picture") or ""
+            store_user(user)
+            invalidate_user_watchlist_cache(user_session["uid"])
+            await flash("Disconnected from Simkl.", "info")
+            return redirect(url_for("ui.configure"))
+
+    return redirect(url_for("ui.index"))
+
+
+

@@ -9,6 +9,7 @@ from app.services.db import get_user, store_user
 from app.routes.utils import respond_with, is_valid_user_id, rate_limit
 from app.api import mal as mal_api
 from app.api import anilist as anilist_api
+from app.api import simkl as simkl_api
 from app.services.http import get_client
 from config import Config
 
@@ -96,6 +97,42 @@ async def get_cached_anilist_user_anime_list(user_id: str, token: str, anilist_u
     except Exception as e:
         if cached:
             logging.warning("AniList API failed, returning expired cache for user %s: %s", user_id, e)
+            return cached["data"]
+        raise e
+
+
+async def get_cached_simkl_user_anime_list(user_id: str, token: str, status: str) -> list:
+    from app.services.db import db
+    now = datetime.datetime.utcnow()
+    cache_col = db.get_collection("user_watchlist_cache")
+    try:
+        cached = cache_col.find_one({"uid": user_id, "tracker": "simkl", "status": status})
+        if cached and cached.get("expires_at") > now:
+            return cached["data"]
+    except Exception as e:
+        logging.error("Failed to query user_watchlist_cache (Simkl): %s", e)
+        cached = None
+
+    try:
+        collection = await simkl_api.get_user_anime_list(token, status=status)
+        try:
+            cache_col.update_one(
+                {"uid": user_id, "tracker": "simkl", "status": status},
+                {"$set": {
+                    "uid": user_id,
+                    "tracker": "simkl",
+                    "status": status,
+                    "data": collection,
+                    "expires_at": now + datetime.timedelta(minutes=5)
+                }},
+                upsert=True
+            )
+        except Exception as e:
+            logging.error("Failed to write user_watchlist_cache (Simkl): %s", e)
+        return collection
+    except Exception as e:
+        if cached:
+            logging.warning("Simkl API failed, returning expired cache for user %s: %s", user_id, e)
             return cached["data"]
         raise e
 
@@ -469,8 +506,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
     elif catalog_id.startswith("comb_"):
         mal_enabled = user.get("mal_access_token") and user.get("mal_enabled", True)
         anilist_enabled = user.get("anilist_token") and user.get("anilist_enabled", True)
+        simkl_enabled = user.get("simkl_access_token") and user.get("simkl_enabled", True)
         
-        if not mal_enabled and not anilist_enabled:
+        if not mal_enabled and not anilist_enabled and not simkl_enabled:
             return await respond_with({"metas": []})
 
         comb_status = catalog_id.split("comb_")[1]
@@ -478,26 +516,33 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         # Map combined status to individual tracker statuses
         mal_status = None
         al_status = None
+        simkl_status = None
         if comb_status == "watching":
             mal_status = "watching"
             al_status = "CURRENT"
+            simkl_status = "watching"
         elif comb_status == "plan_to_watch":
             mal_status = "plan_to_watch"
             al_status = "PLANNING"
+            simkl_status = "plantowatch"
         elif comb_status == "completed":
             mal_status = "completed"
             al_status = "COMPLETED"
+            simkl_status = "completed"
         elif comb_status == "paused_on_hold":
             mal_status = "on_hold"
             al_status = "PAUSED"
+            simkl_status = "hold"
         elif comb_status == "dropped":
             mal_status = "dropped"
             al_status = "DROPPED"
+            simkl_status = "dropped"
 
         try:
-            # Fetch MAL and AniList lists in parallel
+            # Fetch lists in parallel
             mal_entries = []
             anilist_entries = []
+            simkl_entries = []
 
             async def fetch_mal():
                 nonlocal mal_entries
@@ -520,7 +565,6 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             user["anilist_id"] = str(anilist_uid)
                             store_user(user)
                         
-                        # Note: we also fetch REPEATING if status is CURRENT (Watching)
                         statuses = [al_status]
                         if al_status == "CURRENT":
                             statuses.append("REPEATING")
@@ -535,7 +579,15 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     except Exception as ex:
                         logging.error("Combined: Failed to fetch AniList list for %s: %s", al_status, ex)
 
-            await asyncio.gather(fetch_mal(), fetch_al())
+            async def fetch_simkl():
+                nonlocal simkl_entries
+                if simkl_enabled and simkl_status:
+                    try:
+                        simkl_entries = await get_cached_simkl_user_anime_list(user_id, user["simkl_access_token"], simkl_status)
+                    except Exception as ex:
+                        logging.error("Combined: Failed to fetch Simkl list for %s: %s", simkl_status, ex)
+
+            await asyncio.gather(fetch_mal(), fetch_al(), fetch_simkl())
 
             # 1. Match AniList entries and MAL entries
             al_by_mal_id = {}
@@ -548,7 +600,36 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if id_mal:
                     al_by_mal_id[str(id_mal)] = entry
 
-            # 2. Bulk resolve missing MAL IDs for AniList entries using MongoDB id_cache
+            # 2. Match Simkl entries
+            simkl_by_mal_id = {}
+            simkl_by_al_id = {}
+            simkl_by_kitsu_id = {}
+            simkl_by_simkl_id = {}
+
+            def get_simkl_ids(item) -> dict:
+                if "show" in item and isinstance(item["show"], dict):
+                    return item["show"].get("ids") or {}
+                elif "anime" in item and isinstance(item["anime"], dict):
+                    return item["anime"].get("ids") or {}
+                return item.get("ids") or {}
+
+            for entry in simkl_entries:
+                ids = get_simkl_ids(entry)
+                simkl_id = str(ids.get("simkl") or "")
+                mal_id = str(ids.get("mal") or "")
+                al_id = str(ids.get("anilist") or "")
+                kitsu_id = str(ids.get("kitsu") or "")
+
+                if simkl_id:
+                    simkl_by_simkl_id[simkl_id] = entry
+                if mal_id:
+                    simkl_by_mal_id[mal_id] = entry
+                if al_id:
+                    simkl_by_al_id[al_id] = entry
+                if kitsu_id:
+                    simkl_by_kitsu_id[kitsu_id] = entry
+
+            # 3. Bulk resolve missing MAL IDs for AniList entries using MongoDB id_cache
             missing_mal_ids_al_ids = [str(entry["media"]["id"]) for entry in anilist_entries if not entry["media"].get("idMal")]
             if missing_mal_ids_al_ids:
                 try:
@@ -562,7 +643,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 except Exception as e:
                     logging.error("Failed to query id_cache for missing MAL IDs in combined catalog: %s", e)
 
-            # 3. Bulk resolve missing AniList IDs for unmatched MAL entries
+            # 4. Bulk resolve missing AniList IDs for unmatched MAL entries
             unmatched_mal_ids = [str(item["node"]["id"]) for item in mal_entries if str(item["node"]["id"]) not in al_by_mal_id]
             if unmatched_mal_ids:
                 try:
@@ -575,9 +656,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 except Exception as e:
                     logging.error("Failed to query id_cache for unmatched MAL IDs in combined catalog: %s", e)
 
-            # 4. Group into combined items list
+            # 5. Group into combined items list
             processed_mal_ids = set()
             processed_al_ids = set()
+            processed_simkl_ids = set()
             combined_items = []
 
             for mal_item in mal_entries:
@@ -586,43 +668,76 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 processed_mal_ids.add(mal_id)
                 
                 al_entry = al_by_mal_id.get(mal_id)
-                if al_entry:
-                    al_id = str(al_entry["media"]["id"])
+                al_id = str(al_entry["media"]["id"]) if al_entry else None
+                if al_id:
                     processed_al_ids.add(al_id)
-                    combined_items.append({
-                        "tracker": "both",
-                        "mal_item": mal_item,
-                        "anilist_item": al_entry,
-                        "mal_id": mal_id,
-                        "anilist_id": al_id,
-                    })
-                else:
-                    combined_items.append({
-                        "tracker": "mal",
-                        "mal_item": mal_item,
-                        "anilist_item": None,
-                        "mal_id": mal_id,
-                        "anilist_id": None,
-                    })
+
+                simkl_entry = simkl_by_mal_id.get(mal_id)
+                if not simkl_entry and al_id:
+                    simkl_entry = simkl_by_al_id.get(al_id)
+                
+                simkl_id = None
+                if simkl_entry:
+                    simkl_id = str(get_simkl_ids(simkl_entry).get("simkl") or "")
+                    if simkl_id:
+                        processed_simkl_ids.add(simkl_id)
+
+                combined_items.append({
+                    "mal_item": mal_item,
+                    "anilist_item": al_entry,
+                    "simkl_item": simkl_entry,
+                    "mal_id": mal_id,
+                    "anilist_id": al_id,
+                    "simkl_id": simkl_id,
+                })
 
             for al_entry in anilist_entries:
                 al_id = str(al_entry["media"]["id"])
                 if al_id in processed_al_ids:
                     continue
-                id_mal = al_entry["media"].get("idMal")
-                if id_mal and str(id_mal) in processed_mal_ids:
-                    continue
                 
                 processed_al_ids.add(al_id)
-                if id_mal:
-                    processed_mal_ids.add(str(id_mal))
+                id_mal = al_entry["media"].get("idMal")
+                mal_id = str(id_mal) if id_mal else None
+                if mal_id:
+                    processed_mal_ids.add(mal_id)
+
+                simkl_entry = simkl_by_al_id.get(al_id)
+                if not simkl_entry and mal_id:
+                    simkl_entry = simkl_by_mal_id.get(mal_id)
+
+                simkl_id = None
+                if simkl_entry:
+                    simkl_id = str(get_simkl_ids(simkl_entry).get("simkl") or "")
+                    if simkl_id:
+                        processed_simkl_ids.add(simkl_id)
 
                 combined_items.append({
-                    "tracker": "anilist",
                     "mal_item": None,
                     "anilist_item": al_entry,
-                    "mal_id": str(id_mal) if id_mal else None,
+                    "simkl_item": simkl_entry,
+                    "mal_id": mal_id,
                     "anilist_id": al_id,
+                    "simkl_id": simkl_id,
+                })
+
+            for simkl_item in simkl_entries:
+                ids = get_simkl_ids(simkl_item)
+                simkl_id = str(ids.get("simkl") or "")
+                if not simkl_id or simkl_id in processed_simkl_ids:
+                    continue
+
+                processed_simkl_ids.add(simkl_id)
+                mal_id = str(ids.get("mal") or "") or None
+                al_id = str(ids.get("anilist") or "") or None
+
+                combined_items.append({
+                    "mal_item": None,
+                    "anilist_item": None,
+                    "simkl_item": simkl_item,
+                    "mal_id": mal_id,
+                    "anilist_id": al_id,
+                    "simkl_id": simkl_id,
                 })
 
             current_time = int(time.time())
@@ -636,42 +751,44 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # Helper to compute flags for combined items
             def compute_comb_flags(item):
-                tracker = item["tracker"]
                 is_new_ep = False
                 latest_aired_at = 0
                 next_airing_at = 2**31 - 1
                 
                 # Check status/airing state first
                 is_airing = False
-                if tracker in ["both", "anilist"]:
+                if item.get("anilist_item"):
                     al_media = item["anilist_item"].get("media", {})
                     al_status_str = al_media.get("status", "")
                     is_airing = (al_status_str in ["RELEASING", "NOT_YET_RELEASED"])
-                elif tracker == "mal":
+                elif item.get("mal_item"):
                     mal_status_str = item["mal_item"]["node"].get("status", "")
                     is_airing = (mal_status_str in ["currently_airing", "not_yet_aired"])
-                
+                elif item.get("simkl_item"):
+                    show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
+                    simkl_status_str = show_obj.get("status", "")
+                    is_airing = (simkl_status_str in ["airing", "currently airing"])
+
                 # Extract progress
                 progress = 0
-                if tracker == "both":
-                    mal_progress = item["mal_item"].get("my_list_status", {}).get("num_episodes_watched", 0)
-                    al_progress = item["anilist_item"].get("progress", 0)
-                    progress = max(mal_progress, al_progress)
-                elif tracker == "mal":
-                    progress = item["mal_item"].get("my_list_status", {}).get("num_episodes_watched", 0)
-                elif tracker == "anilist":
-                    progress = item["anilist_item"].get("progress", 0)
+                if item.get("mal_item"):
+                    progress = max(progress, item["mal_item"].get("my_list_status", {}).get("num_episodes_watched", 0))
+                if item.get("anilist_item"):
+                    progress = max(progress, item["anilist_item"].get("progress", 0))
+                if item.get("simkl_item"):
+                    simkl_progress = item["simkl_item"].get("episodes_watched") or item["simkl_item"].get("progress") or 0
+                    progress = max(progress, simkl_progress)
 
                 # Airing calculations using AniList data
                 next_ep_num = None
                 next_ep_airing_at = None
                 
-                if tracker in ["both", "anilist"]:
+                if item.get("anilist_item"):
                     next_ep = item["anilist_item"].get("media", {}).get("nextAiringEpisode")
                     if next_ep:
                         next_ep_num = next_ep.get("episode")
                         next_ep_airing_at = next_ep.get("airingAt")
-                elif tracker == "mal" and item["mal_id"]:
+                elif item.get("mal_id"):
                     al_media = bulk_details.get(item["mal_id"]) or {}
                     next_ep = al_media.get("nextAiringEpisode")
                     if next_ep:
@@ -686,13 +803,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 if is_airing and user.get("sort_by_new_episodes") and latest_aired_num > 0 and progress < latest_aired_num:
                     time_since_air = current_time - latest_aired_at
-                    # Global 7-day window
                     if time_since_air <= 604800:
                         is_new_ep = True
 
                 return is_new_ep, latest_aired_at, next_airing_at
 
-            # ── Sorting ───────────────────────────────────────────────────────
+            # Sorting
             if user.get("sort_by_new_episodes") and comb_status in ["watching", "plan_to_watch"]:
                 def parse_mal_updated_at(updated_str):
                     if not updated_str:
@@ -711,31 +827,36 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     # Determine combined updatedAt
                     mal_updated_ts = 0
                     al_updated_ts = 0
+                    simkl_updated_ts = 0
                     if item["mal_item"]:
                         mal_updated_ts = parse_mal_updated_at(item["mal_item"].get("my_list_status", {}).get("updated_at", ""))
                     if item["anilist_item"]:
                         al_updated_ts = item["anilist_item"].get("updatedAt") or 0
-                    updated_ts = max(mal_updated_ts, al_updated_ts)
+                    if item["simkl_item"]:
+                        # fallback timestamp
+                        simkl_updated_ts = int(time.time() - 3600)
+                    updated_ts = max(mal_updated_ts, al_updated_ts, simkl_updated_ts)
 
                     # Determine airing state
                     is_airing = False
-                    if item["tracker"] in ["both", "anilist"]:
+                    if item.get("anilist_item"):
                         al_status_str = item["anilist_item"].get("media", {}).get("status", "")
                         is_airing = (al_status_str in ["RELEASING", "NOT_YET_RELEASED"])
-                    elif item["tracker"] == "mal":
+                    elif item.get("mal_item"):
                         mal_status_str = item["mal_item"]["node"].get("status", "")
                         is_airing = (mal_status_str in ["currently_airing", "not_yet_aired"])
+                    elif item.get("simkl_item"):
+                        show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
+                        simkl_status_str = show_obj.get("status", "")
+                        is_airing = (simkl_status_str in ["airing", "currently airing"])
 
                     if is_airing and is_new_ep:
-                        # Group 0: Airing with new episodes (first)
                         group_idx = 0
                         secondary_sort = (next_airing_at, -updated_ts)
                     elif not is_airing:
-                        # Group 1: Completed airing anime
                         group_idx = 1
                         secondary_sort = (-updated_ts, 0)
                     else:
-                        # Group 2: Airing with no new episodes (sorted ascending by next airing time)
                         group_idx = 2
                         secondary_sort = (next_airing_at, -updated_ts)
                         
@@ -767,54 +888,48 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 sorted_items = sorted(combined_items, key=get_default_updated_ts)
                 paged_items = sorted_items[offset: offset + 40]
 
-            # ── Build meta items ──────────────────────────────────────────────
+            # Build meta items
             for item in paged_items:
-                tracker = item["tracker"]
                 mal_id = item["mal_id"]
                 anilist_id = item["anilist_id"]
+                simkl_id = item["simkl_id"]
 
-                # Extract progress and title/poster
+                # Determine active trackers
+                trackers = []
+                if item["mal_item"]:
+                    trackers.append("mal")
+                if item["anilist_item"]:
+                    trackers.append("anilist")
+                if item["simkl_item"]:
+                    trackers.append("simkl")
+                tracker_str = "+".join(trackers)
+
                 progress = 0
                 total_eps = "?"
                 name = ""
                 poster = ""
 
-                if tracker == "both":
-                    mal_progress = item["mal_item"].get("my_list_status", {}).get("num_episodes_watched", 0)
-                    al_progress = item["anilist_item"].get("progress", 0)
-                    progress = max(mal_progress, al_progress)
-                    total_eps = item["anilist_item"].get("media", {}).get("episodes") or item["mal_item"]["node"].get("num_episodes") or "?"
-                    
+                if item["anilist_item"]:
                     media = item["anilist_item"]["media"]
-                    name = media["title"]["userPreferred"] or media["title"]["english"] or item["mal_item"]["node"].get("title", "")
-                    poster = (
-                        (media["coverImage"] or {}).get("large")
-                        or (media["coverImage"] or {}).get("medium")
-                        or item["mal_item"]["node"].get("main_picture", {}).get("large")
-                        or item["mal_item"]["node"].get("main_picture", {}).get("medium")
-                        or ""
-                    )
-                elif tracker == "mal":
-                    node = item["mal_item"]["node"]
-                    progress = item["mal_item"].get("my_list_status", {}).get("num_episodes_watched", 0)
-                    total_eps = node.get("num_episodes") or "?"
-                    name = node.get("title", "")
-                    poster = (
-                        node.get("main_picture", {}).get("large")
-                        or node.get("main_picture", {}).get("medium")
-                        or ""
-                    )
-                elif tracker == "anilist":
-                    entry = item["anilist_item"]
-                    media = entry["media"]
-                    progress = entry.get("progress", 0)
+                    progress = item["anilist_item"].get("progress", 0)
                     total_eps = media.get("episodes") or "?"
                     name = media["title"]["userPreferred"] or media["title"]["english"] or ""
-                    poster = (
-                        (media["coverImage"] or {}).get("large")
-                        or (media["coverImage"] or {}).get("medium")
-                        or ""
-                    )
+                    poster = (media.get("coverImage") or {}).get("large") or (media.get("coverImage") or {}).get("medium") or ""
+                
+                if not name and item["mal_item"]:
+                    node = item["mal_item"]["node"]
+                    progress = max(progress, item["mal_item"].get("my_list_status", {}).get("num_episodes_watched", 0))
+                    total_eps = node.get("num_episodes") or "?"
+                    name = node.get("title", "")
+                    poster = poster or node.get("main_picture", {}).get("large") or node.get("main_picture", {}).get("medium") or ""
+                
+                if not name and item["simkl_item"]:
+                    show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
+                    simkl_progress = item["simkl_item"].get("episodes_watched") or item["simkl_item"].get("progress") or 0
+                    progress = max(progress, simkl_progress)
+                    total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
+                    name = show_obj.get("title", "")
+                    poster = poster or show_obj.get("poster") or show_obj.get("poster_image") or ""
 
                 is_new_ep = False
                 if comb_status in ["watching", "plan_to_watch"]:
@@ -822,10 +937,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 if is_new_ep and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
-                    m_id_for_url = mal_id if mal_id else anilist_id
-                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{m_id_for_url}.jpg?url={encoded_url}&badge=new&tracker={tracker}&v=newep_graphical_v11"
+                    m_id_for_url = mal_id if mal_id else (anilist_id if anilist_id else f"simkl_{simkl_id}")
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{m_id_for_url}.jpg?url={encoded_url}&badge=new&tracker={tracker_str}&v=newep_graphical_v11"
 
-                stremio_id = f"mal:{mal_id}" if mal_id else f"anilist:{anilist_id}"
+                stremio_id = f"mal:{mal_id}" if mal_id else (f"anilist:{anilist_id}" if anilist_id else f"simkl:{simkl_id}")
 
                 metas.append({
                     "id": stremio_id,
@@ -839,6 +954,46 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 })
         except Exception as e:
             logging.error("Combined watchlist catalog load failed for status %s: %s", comb_status, e)
+
+    # --- Simkl Watchlists ---
+    elif catalog_id.startswith("simkl_"):
+        if not user.get("simkl_access_token") or not user.get("simkl_enabled", True):
+            return await respond_with({"metas": []})
+
+        simkl_status = catalog_id.split("simkl_")[1]
+        try:
+            data_items = await get_cached_simkl_user_anime_list(user_id, user["simkl_access_token"], simkl_status)
+
+            # Build meta items
+            paged_data_items = data_items[offset: offset + 40]
+            for item in paged_data_items:
+                if "show" in item and isinstance(item["show"], dict):
+                    show_obj = item["show"]
+                elif "anime" in item and isinstance(item["anime"], dict):
+                    show_obj = item["anime"]
+                else:
+                    show_obj = item
+                
+                show_ids = show_obj.get("ids") or {}
+                simkl_id = str(show_ids.get("simkl") or "")
+
+                progress = item.get("episodes_watched") or item.get("progress") or 0
+                total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
+                name = show_obj.get("title", "")
+                poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
+
+                metas.append({
+                    "id": f"simkl:{simkl_id}",
+                    "type": catalog_type,
+                    "name": name,
+                    "poster": poster,
+                    "description": (
+                        f"Simkl Watchlist - {simkl_status.replace('_', ' ').title()}.\n"
+                        f"Progress: {progress} / {total_eps}."
+                    ),
+                })
+        except Exception as e:
+            logging.error("Simkl catalog load failed for status %s: %s", simkl_status, e)
 
     # --- MAL Watchlists ---
     elif catalog_id.startswith("mal_"):

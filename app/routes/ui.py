@@ -53,6 +53,23 @@ async def sync_user_profiles_task(user_id: str):
         except Exception as e:
             logging.error("Failed to sync AniList profile in background: %s", e)
 
+    # 3. Sync Simkl profile details if connected and enabled
+    if user.get("simkl_access_token") and user.get("simkl_enabled", True):
+        from app.api import simkl as simkl_api
+        try:
+            user_info = await simkl_api.get_user_details(user["simkl_access_token"])
+            simkl_username = user_info.get("user", {}).get("name")
+            simkl_avatar = user_info.get("user", {}).get("avatar")
+            if simkl_username:
+                user["simkl_username"] = simkl_username
+            if simkl_avatar:
+                user["simkl_avatar"] = simkl_avatar
+                if not user.get("mal_picture") and not user.get("anilist_picture"):
+                    user["picture"] = simkl_avatar
+            updated = True
+        except Exception as e:
+            logging.error("Failed to sync Simkl profile in background: %s", e)
+
     if updated:
         user["last_profile_sync"] = now
         store_user(user)
@@ -114,6 +131,7 @@ async def configure(user_id: str = ""):
         form = await request.form
         user["mal_enabled"] = form.get("mal_enabled") == "true"
         user["anilist_enabled"] = form.get("anilist_enabled") == "true"
+        user["simkl_enabled"] = form.get("simkl_enabled") == "true"
         user["combine_watchlists"] = form.get("combine_watchlists") == "true"
         user["sync_unlisted"] = form.get("sync_unlisted") == "true"
         user["sort_by_new_episodes"] = form.get("sort_by_new_episodes") == "true"
@@ -133,6 +151,7 @@ async def configure(user_id: str = ""):
         possible_cats = [
             "mal_watching", "mal_plan_to_watch", "mal_completed", "mal_on_hold", "mal_dropped",
             "anilist_watching", "anilist_planning", "anilist_completed", "anilist_paused", "anilist_dropped", "anilist_repeating",
+            "simkl_watching", "simkl_plantowatch", "simkl_completed", "simkl_hold", "simkl_dropped",
             "comb_watching", "comb_plan_to_watch", "comb_completed", "comb_paused_on_hold", "comb_dropped",
             "anisync_rec", "anisync_loved", "anisync_liked"
         ]

@@ -252,7 +252,7 @@
         color: #dc3545;
     }
 
-    .btn-mal, .btn-anilist, .btn-disconnect {
+    .btn-mal, .btn-anilist, .btn-simkl, .btn-disconnect {
         border-radius: 8px;
         font-weight: 600;
         font-size: 0.85rem;
@@ -274,6 +274,10 @@
         border-color: #e74c3c;
         color: #fff;
     }
+    .bg-simkl {
+        background-color: #e27d00 !important;
+        color: #fff !important;
+    }
 </style>
 <div class="row justify-content-center mt-1 mt-sm-2">
     <div class="col-12 col-md-8">
@@ -285,8 +289,8 @@
                 <img src="{{ user['picture'] }}" width="32" height="32" class="rounded-circle me-2"
                     style="object-fit:cover;" onerror="this.style.display='none'">
                 {% endif %}
-                {% if user.get('name') or user.get('anilist_username') %}
-                Hey, {{ user.get('name') or user.get('anilist_username') }}
+                {% if user.get('name') or user.get('anilist_username') or user.get('simkl_username') %}
+                Hey, {{ user.get('name') or user.get('anilist_username') or user.get('simkl_username') }}
                 {% else %}
                 Configure AniSync
                 {% endif %}
@@ -345,6 +349,8 @@
                     value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
                 <input type="hidden" name="anilist_enabled"
                     value="{{ 'true' if user.get('anilist_enabled', False) else 'false' }}">
+                <input type="hidden" name="simkl_enabled"
+                    value="{{ 'true' if user.get('simkl_enabled', True) else 'false' }}">
                 <input type="hidden" name="sync_unlisted"
                     value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
                 <input type="hidden" name="sort_by_new_episodes"
@@ -410,6 +416,75 @@
                     value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
                 <input type="hidden" id="anilist_enabled_hidden" name="anilist_enabled"
                     value="{{ 'true' if user.get('anilist_enabled', True) else 'false' }}">
+                <input type="hidden" name="simkl_enabled"
+                    value="{{ 'true' if user.get('simkl_enabled', True) else 'false' }}">
+                <input type="hidden" name="sync_unlisted"
+                    value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
+                <input type="hidden" name="sort_by_new_episodes"
+                    value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
+                <input type="hidden" name="enable_catalogs"
+                    value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
+                <input type="hidden" name="enable_search"
+                    value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
+                <input type="hidden" name="show_filler_tags"
+                    value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- Simkl Card -->
+        <div class="card-dark p-3 p-sm-4 mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center">
+                    <img src="https://simkl.com/favicon.ico" width="20" height="20" class="me-2"
+                        style="border-radius:4px; vertical-align: middle;">
+                    <span class="fw-semibold">Simkl</span>
+                </div>
+                {% if user.get('simkl_access_token') %}
+                <span class="text-success small">
+                    <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('simkl_username') %} as {{
+                    user['simkl_username'] }}{% endif %}
+                </span>
+                {% else %}
+                <span class="text-secondary small">
+                    <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
+                </span>
+                {% endif %}
+            </div>
+
+            {% if user.get('simkl_access_token') %}
+            <div class="d-flex gap-2 mb-3">
+                <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-simkl">
+                    <i class="fa-solid fa-rotate me-2"></i>Reconnect
+                </a>
+                <a href="{{ url_for('auth.disconnect_simkl') }}" class="btn btn-disconnect">
+                    <i class="fa-solid fa-unlink me-2"></i>Disconnect
+                </a>
+            </div>
+            {% else %}
+            <div class="mb-3">
+                <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-simkl">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i>Connect Simkl
+                </a>
+            </div>
+            {% endif %}
+
+            {% if user.get('simkl_access_token') %}
+            <form method="POST" action="{{ url_for('ui.configure') }}">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="simkl_enabled"
+                        name="simkl_enabled_check" {% if user.get('simkl_enabled', True) %}checked{% endif %}
+                        onchange="syncAndSubmit(this, 'simkl_enabled_hidden', this.form)">
+                    <label class="form-check-label text-secondary small" for="simkl_enabled">
+                        Simkl tracking enabled
+                    </label>
+                </div>
+                <input type="hidden" name="mal_enabled"
+                    value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
+                <input type="hidden" name="anilist_enabled"
+                    value="{{ 'true' if user.get('anilist_enabled', True) else 'false' }}">
+                <input type="hidden" id="simkl_enabled_hidden" name="simkl_enabled"
+                    value="{{ 'true' if user.get('simkl_enabled', True) else 'false' }}">
                 <input type="hidden" name="sync_unlisted"
                     value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
                 <input type="hidden" name="sort_by_new_episodes"
@@ -432,6 +507,8 @@
                     value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
                 <input type="hidden" name="anilist_enabled"
                     value="{{ 'true' if user.get('anilist_enabled', False) else 'false' }}">
+                <input type="hidden" id="simkl_enabled_val" name="simkl_enabled"
+                    value="{{ 'true' if user.get('simkl_enabled', True) else 'false' }}">
                 <input type="hidden" id="sync_unlisted_val" name="sync_unlisted"
                     value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
                 <input type="hidden" id="sort_by_new_episodes_val" name="sort_by_new_episodes"
@@ -511,12 +588,12 @@
                         <input class="form-check-input" type="checkbox" role="switch" id="combine_watchlists" {% if
                             user.get('combine_watchlists', False) %}checked{% endif %}>
                         <label class="form-check-label ms-1" for="combine_watchlists">
-                            <span class="fw-medium d-block">Combine MAL & AniList Catalogs</span>
+                            <span class="fw-medium d-block">Combine Watchlist Catalogs</span>
                             <span class="text-secondary small d-block">
-                                Merges MAL and AniList watchlists into unified, deduplicated catalogs in Stremio. (AniList's Repeating entries are automatically merged into Watching).
+                                Merges MyAnimeList, AniList, and Simkl watchlists into unified, deduplicated catalogs in Stremio. (AniList's Repeating entries are automatically merged into Watching).
                             </span>
                             <span id="combine-warning-text" class="text-warning small d-block mt-1 fw-medium d-none">
-                                <i class="fa-solid fa-circle-info me-1"></i>Connect both MyAnimeList & AniList to enable watchlist combining.
+                                <i class="fa-solid fa-circle-info me-1"></i>Connect at least two of MyAnimeList, AniList, or Simkl to enable watchlist combining.
                             </span>
                         </label>
                     </div>
@@ -602,9 +679,9 @@
             </div>
 
             <!-- Catalogs Management Card -->
-            {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('enable_recommendations', True) %}
+            {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or user.get('enable_recommendations', True) %}
             <div class="card-dark p-3 p-sm-4 mb-3" id="catalog-management-card"
-                 {% if not user.get('mal_access_token') and not user.get('anilist_token') and not user.get('enable_recommendations', True) %}style="display: none;"{% endif %}>
+                 {% if not user.get('mal_access_token') and not user.get('anilist_token') and not user.get('simkl_access_token') and not user.get('enable_recommendations', True) %}style="display: none;"{% endif %}>
                 <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
                     Management</h6>
                 <p class="text-secondary small mb-3">Toggle visibility and **drag-and-drop** to reorder the catalogs
@@ -627,6 +704,11 @@
                     ('anilist_paused', 'AniList: Paused', 'anilist'),
                     ('anilist_dropped', 'AniList: Dropped', 'anilist'),
                     ('anilist_repeating', 'AniList: Repeating', 'anilist'),
+                    ('simkl_watching', 'Simkl: Watching', 'simkl'),
+                    ('simkl_plantowatch', 'Simkl: Plan to Watch', 'simkl'),
+                    ('simkl_completed', 'Simkl: Completed', 'simkl'),
+                    ('simkl_hold', 'Simkl: On Hold', 'simkl'),
+                    ('simkl_dropped', 'Simkl: Dropped', 'simkl'),
                     ('comb_watching', 'Watching', 'combined'),
                     ('comb_plan_to_watch', 'Plan to Watch', 'combined'),
                     ('comb_completed', 'Completed', 'combined'),
@@ -647,7 +729,8 @@
                     {% if item_id == sorted_id %}
                     {% if (item_source == 'mal' and user.get('mal_access_token')) or 
                           (item_source == 'anilist' and user.get('anilist_token')) or 
-                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token'))) or 
+                          (item_source == 'simkl' and user.get('simkl_access_token')) or 
+                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token'))) or 
                           item_source == 'rec' %}
                     {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
                     {% endif %}
@@ -660,7 +743,8 @@
                     {% for item_id, item_name, item_source in default_order %}
                     {% if (item_source == 'mal' and user.get('mal_access_token')) or 
                           (item_source == 'anilist' and user.get('anilist_token')) or 
-                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token'))) or 
+                          (item_source == 'simkl' and user.get('simkl_access_token')) or 
+                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token'))) or 
                           item_source == 'rec' %}
                     {% if item_id not in user.get('catalogs', []) %}
                     {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
@@ -686,7 +770,7 @@
                             </div>
                         </div>
                         <span
-                            class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'combined' %}bg-success text-white{% else %}bg-warning text-dark{% endif %}"
+                            class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% else %}bg-warning text-dark{% endif %}"
                             style="font-size:0.68rem; letter-spacing:0.02em;">
                             {{ 'RECOMMENDED' if item_source == 'rec' else item_source | upper }}
                         </span>
@@ -850,10 +934,11 @@
         function syncCatalogManagementCardVisibility() {
             const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
             const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
+            const simklToken = "{{ 'true' if user.get('simkl_access_token') else 'false' }}" === "true";
             const enableCatalogs = enableCatalogsCheckbox && enableCatalogsCheckbox.checked;
             const enableRecs = enableRecsCheckbox && enableRecsCheckbox.checked;
 
-            const shouldShowCard = (enableCatalogs && (malToken || alToken)) || enableRecs;
+            const shouldShowCard = (enableCatalogs && (malToken || alToken || simklToken)) || enableRecs;
             if (catalogManagementCard) {
                 catalogManagementCard.style.display = shouldShowCard ? "block" : "none";
             }
@@ -876,9 +961,11 @@
             const combineEnabled = combineCheckbox && combineCheckbox.checked;
             const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
             const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
+            const simklToken = "{{ 'true' if user.get('simkl_access_token') else 'false' }}" === "true";
 
             const malItems = document.querySelectorAll('.catalog-order-item[data-source="mal"]');
             const alItems = document.querySelectorAll('.catalog-order-item[data-source="anilist"]');
+            const simklItems = document.querySelectorAll('.catalog-order-item[data-source="simkl"]');
             const combItems = document.querySelectorAll('.catalog-order-item[data-source="combined"]');
 
             malItems.forEach(item => {
@@ -913,6 +1000,22 @@
                 }
             });
 
+            simklItems.forEach(item => {
+                if (combineEnabled) {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                } else {
+                    if (simklToken) {
+                        item.classList.remove("d-none");
+                        if (!isInitialLoad) {
+                            const cb = item.querySelector('.catalog-checkbox');
+                            if (cb) cb.checked = true;
+                        }
+                    }
+                }
+            });
+
             combItems.forEach(item => {
                 if (combineEnabled) {
                     item.classList.remove("d-none");
@@ -933,17 +1036,25 @@
         function syncCombineWatchlistsState() {
             const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
             const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
+            const simklToken = "{{ 'true' if user.get('simkl_access_token') else 'false' }}" === "true";
             
             const malEnabledCheckbox = document.getElementById("mal_enabled");
             const alEnabledCheckbox = document.getElementById("anilist_enabled");
+            const simklEnabledCheckbox = document.getElementById("simkl_enabled");
             
             const malActive = malToken && (!malEnabledCheckbox || malEnabledCheckbox.checked);
             const alActive = alToken && (!alEnabledCheckbox || alEnabledCheckbox.checked);
+            const simklActive = simklToken && (!simklEnabledCheckbox || simklEnabledCheckbox.checked);
+            
+            let activeCount = 0;
+            if (malActive) activeCount++;
+            if (alActive) activeCount++;
+            if (simklActive) activeCount++;
             
             const warningText = document.getElementById("combine-warning-text");
             
             if (combineCheckbox) {
-                if (malActive && alActive) {
+                if (activeCount >= 2) {
                     combineCheckbox.disabled = false;
                     if (warningText) warningText.classList.add("d-none");
                 } else {
@@ -960,11 +1071,15 @@
             
             const malEnabledCheckbox = document.getElementById("mal_enabled");
             const alEnabledCheckbox = document.getElementById("anilist_enabled");
+            const simklEnabledCheckbox = document.getElementById("simkl_enabled");
             if (malEnabledCheckbox) {
                 malEnabledCheckbox.addEventListener("change", syncCombineWatchlistsState);
             }
             if (alEnabledCheckbox) {
                 alEnabledCheckbox.addEventListener("change", syncCombineWatchlistsState);
+            }
+            if (simklEnabledCheckbox) {
+                simklEnabledCheckbox.addEventListener("change", syncCombineWatchlistsState);
             }
 
             syncCombineWatchlistsState();
@@ -1126,6 +1241,12 @@
         if (combineWatchlistsCheckbox) {
             document.getElementById('combine_watchlists_val').value =
                 combineWatchlistsCheckbox.checked ? 'true' : 'false';
+        }
+
+        const simklEnabledCheckbox = document.getElementById('simkl_enabled');
+        if (simklEnabledCheckbox) {
+            document.getElementById('simkl_enabled_val').value =
+                simklEnabledCheckbox.checked ? 'true' : 'false';
         }
 
         const enableRecsCheckbox = document.getElementById("enable_recommendations");

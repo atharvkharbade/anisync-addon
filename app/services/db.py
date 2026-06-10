@@ -25,6 +25,7 @@ try:
     db.get_collection("users").create_index("uid", unique=True)
     db.get_collection("users").create_index("mal_id")
     db.get_collection("users").create_index("anilist_id")
+    db.get_collection("users").create_index("simkl_id")
     
     db.get_collection("rate_limits").create_index([("ip", 1), ("route", 1), ("timestamp", -1)])
     db.get_collection("rate_limits").create_index("timestamp", expireAfterSeconds=60)
@@ -92,6 +93,10 @@ def find_user_by_mal_id(mal_id: str) -> Optional[dict]:
 
 def find_user_by_anilist_id(anilist_id: str) -> Optional[dict]:
     return users_collection.find_one({"$or": [{"uid": f"al_{anilist_id}"}, {"anilist_id": str(anilist_id)}]})
+
+
+def find_user_by_simkl_id(simkl_id: str) -> Optional[dict]:
+    return users_collection.find_one({"$or": [{"uid": f"simkl_{simkl_id}"}, {"simkl_id": str(simkl_id)}]})
 
 
 def store_user(user_details: dict) -> bool:

@@ -9,6 +9,7 @@ from app.routes.utils import respond_with, is_valid_user_id, rate_limit
 from app.services.db import get_user
 from app.services.anilist_service import sync_anilist
 from app.services.mal_service import sync_mal
+from app.services.simkl_service import sync_simkl
 
 subtitles_bp = Blueprint("subtitles", __name__)
 
@@ -54,9 +55,10 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
 
     mal_enabled = user.get("mal_enabled", False)
     anilist_enabled = user.get("anilist_enabled", False)
+    simkl_enabled = user.get("simkl_enabled", True) and bool(user.get("simkl_access_token"))
     sync_unlisted = user.get("sync_unlisted", False)
 
-    if not mal_enabled and not anilist_enabled:
+    if not mal_enabled and not anilist_enabled and not simkl_enabled:
         return await respond_with({"subtitles": []})
 
     mal_id, anilist_id = await resolve(kitsu_id)
@@ -67,6 +69,8 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
         tasks.append(sync_mal(user, mal_id, episode, sync_unlisted))
     if anilist_enabled and anilist_id and user.get("anilist_token"):
         tasks.append(sync_anilist(user, anilist_id, episode, sync_unlisted))
+    if simkl_enabled and user.get("simkl_access_token"):
+        tasks.append(sync_simkl(user, kitsu_id, mal_id, anilist_id, episode, content_type, sync_unlisted))
 
     if tasks:
         results = await asyncio.gather(*tasks, return_exceptions=True)

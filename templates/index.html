@@ -27,14 +27,14 @@
             </svg>
             <h1 class="fw-bold mb-2 fs-3 fs-sm-1">AniSync</h1>
             <p class="text-secondary mb-4" style="font-size:1.05rem;">
-                Sync your watch progress to <strong class="text-white">MyAnimeList</strong> and
-                <strong class="text-white">AniList</strong> automatically.
+                Sync your watch progress to <strong class="text-white">MyAnimeList</strong>,
+                <strong class="text-white">AniList</strong>, and <strong class="text-white">Simkl</strong> automatically.
             </p>
 
             <div class="text-start mb-4 px-1 px-sm-3">
                 <h6 class="text-info text-uppercase mb-3" style="letter-spacing:.08em;">How it works</h6>
                 <ul class="list-unstyled" style="line-height:2.2;">
-                    <li><i class="fa-solid fa-plug-circle-check text-success me-2"></i>Connect your MyAnimeList or AniList accounts</li>
+                    <li><i class="fa-solid fa-plug-circle-check text-success me-2"></i>Connect your MyAnimeList, AniList, or Simkl accounts</li>
                     <li><i class="fa-solid fa-link text-warning me-2"></i>Install the manifest URL</li>
                     <li><i class="fa-solid fa-film text-info me-2"></i>Stream via built-in catalog search or external Anime Kitsu addon</li>
                     <li><i class="fa-solid fa-chart-line text-primary me-2"></i>Progress syncs automatically in the background</li>
@@ -52,6 +52,10 @@
                 <div class="text-secondary small">or</div>
                 <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist btn-lg px-4 w-100" style="max-width:320px;">
                     <i class="fa-solid fa-right-to-bracket me-2"></i>Sign in with AniList
+                </a>
+                <div class="text-secondary small">or</div>
+                <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-simkl btn-lg px-4 w-100" style="max-width:320px;">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i>Sign in with Simkl
                 </a>
             </div>
         </div>

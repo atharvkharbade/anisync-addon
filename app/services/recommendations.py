@@ -11,6 +11,7 @@ from app.services.db import db, get_user, store_user
 from app.services.http import get_client
 from app.api import mal as mal_api
 from app.api import anilist as anilist_api
+from app.api import simkl as simkl_api
 from app.lib.id_resolver import resolve_mal_to_kitsu, resolve_anilist_to_kitsu, resolve
 
 logger = logging.getLogger(__name__)
@@ -725,11 +726,11 @@ def normalize_user_status(status: Optional[str]) -> str:
         return "watching"
     if s in ["completed"]:
         return "completed"
-    if s in ["on_hold", "paused"]:
+    if s in ["on_hold", "paused", "hold"]:
         return "on_hold"
     if s in ["dropped"]:
         return "dropped"
-    if s in ["plan_to_watch", "planning"]:
+    if s in ["plan_to_watch", "planning", "plantowatch"]:
         return "planning"
     return s
 
@@ -1279,6 +1280,13 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         except Exception as e:
             logger.warning("Failed to fetch AniList user list: %s", e)
 
+    simkl_items = []
+    if user.get("simkl_access_token") and user.get("simkl_enabled", True):
+        try:
+            simkl_items = await simkl_api.get_user_anime_list(user["simkl_access_token"])
+        except Exception as e:
+            logger.warning("Failed to fetch Simkl user list for recommendations: %s", e)
+
     # 2. Extract unique shows and filter watched lists
     merged_shows = {}
     
@@ -1288,13 +1296,14 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         mal_id = str(node.get("id"))
         list_status = item.get("list_status", {})
         status = normalize_user_status(list_status.get("status"))
-        rating = list_status.get("score", 0)
+        rating = list_status.get("score", 0) or 0
         genres = [g.get("name") for g in node.get("genres", []) if g.get("name")]
         
         merged_shows[mal_id] = {
             "title": title,
             "mal_id": mal_id,
             "anilist_id": None,
+            "simkl_id": None,
             "status": status,
             "rating": rating,
             "genres": genres
@@ -1306,7 +1315,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         anilist_id = str(media.get("id"))
         mal_id = str(media.get("idMal")) if media.get("idMal") else None
         status = normalize_user_status(entry.get("status"))
-        rating = entry.get("score", 0)
+        rating = entry.get("score", 0) or 0
         if rating > 10:
             rating = int(rating / 10)
         genres = media.get("genres", []) or []
@@ -1317,13 +1326,14 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 "title": title,
                 "mal_id": mal_id,
                 "anilist_id": anilist_id,
+                "simkl_id": None,
                 "status": status,
                 "rating": rating,
                 "genres": genres
             }
         else:
             merged_shows[key]["anilist_id"] = anilist_id
-            merged_shows[key]["rating"] = max(merged_shows[key]["rating"], rating)
+            merged_shows[key]["rating"] = max(merged_shows[key].get("rating") or 0, rating)
             
             # Status merging: completed/watching/dropped/on_hold override planning
             old_status = merged_shows[key]["status"]
@@ -1338,6 +1348,58 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 if g not in old_genres:
                     old_genres.append(g)
             merged_shows[key]["genres"] = old_genres
+
+    for item in simkl_items:
+        if "show" in item and isinstance(item["show"], dict):
+            show_obj = item["show"]
+        elif "anime" in item and isinstance(item["anime"], dict):
+            show_obj = item["anime"]
+        else:
+            show_obj = item
+
+        show_ids = show_obj.get("ids") or {}
+        simkl_id = str(show_ids.get("simkl") or "")
+        mal_id = str(show_ids.get("mal") or "") or None
+        anilist_id = str(show_ids.get("anilist") or "") or None
+        kitsu_id = str(show_ids.get("kitsu") or "") or None
+
+        title = show_obj.get("title") or ""
+        status = normalize_user_status(item.get("list"))
+        rating = item.get("user_rating", 0) or 0
+        genres = show_obj.get("genres", []) or []
+
+        matched_key = None
+        if mal_id and mal_id in merged_shows:
+            matched_key = mal_id
+        elif anilist_id and f"al_{anilist_id}" in merged_shows:
+            matched_key = f"al_{anilist_id}"
+
+        if matched_key:
+            merged_shows[matched_key]["simkl_id"] = simkl_id
+            merged_shows[matched_key]["rating"] = max(merged_shows[matched_key].get("rating") or 0, rating)
+            
+            old_status = merged_shows[matched_key]["status"]
+            if old_status == "planning" and status != "planning":
+                merged_shows[matched_key]["status"] = status
+            elif old_status != "completed" and status == "completed":
+                merged_shows[matched_key]["status"] = "completed"
+                
+            old_genres = merged_shows[matched_key].get("genres", [])
+            for g in genres:
+                if g not in old_genres:
+                    old_genres.append(g)
+            merged_shows[matched_key]["genres"] = old_genres
+        else:
+            key = mal_id if mal_id else (f"al_{anilist_id}" if anilist_id else (f"kitsu_{kitsu_id}" if kitsu_id else f"simkl_{simkl_id}"))
+            merged_shows[key] = {
+                "title": title,
+                "mal_id": mal_id,
+                "anilist_id": anilist_id,
+                "simkl_id": simkl_id,
+                "status": status,
+                "rating": rating,
+                "genres": genres
+            }
 
     # Watched sets for filtering
     watched_mal_ids = set()

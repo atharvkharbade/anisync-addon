@@ -7,3 +7,4 @@ dist/
 *.egg-info/
 .uv/
 flask_session/
+test_aiometadata/

@@ -77,6 +77,36 @@ CATALOGS = [
     },
     {
         "type": "anime",
+        "id": "simkl_watching",
+        "name": "Simkl: Watching",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
+        "id": "simkl_plantowatch",
+        "name": "Simkl: Plan to Watch",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
+        "id": "simkl_completed",
+        "name": "Simkl: Completed",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
+        "id": "simkl_hold",
+        "name": "Simkl: On Hold",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
+        "id": "simkl_dropped",
+        "name": "Simkl: Dropped",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
         "id": "comb_watching",
         "name": "Watching",
         "extra": [{"name": "skip"}],
@@ -133,10 +163,10 @@ CATALOGS = [
 
 MANIFEST = {
     "id": "com.anisync.stremio",
-    "version": "1.2.3",
+    "version": "1.3.0-beta",
     "name": "AniSync",
     "logo": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png?v=7",
-    "description": "Sync and update your anime watchlists on MyAnimeList & AniList in real-time. Easily track episodes, combine watchlists, skip fillers, and get personalized recommendations directly inside Stremio.",
+    "description": "Sync and update your anime watchlists on MyAnimeList, AniList, and Simkl in real-time. Easily track episodes, combine watchlists, skip fillers, and get personalized recommendations directly inside Stremio.",
     "types": ["anime", "series", "movie"],
     "resources": ["subtitles", "catalog", "meta"],
     "idPrefixes": ["kitsu", "mal", "anilist"],
@@ -348,6 +378,7 @@ async def user_manifest(user_id: str):
     # Filter catalogs based on active integrations and custom selections
     mal_enabled = user.get("mal_access_token") and user.get("mal_enabled", True)
     anilist_enabled = user.get("anilist_token") and user.get("anilist_enabled", True)
+    simkl_enabled = user.get("simkl_access_token") and user.get("simkl_enabled", True)
     combine_enabled = user.get("combine_watchlists", False)
     user_catalogs = user.get("catalogs")
     if user_catalogs is not None:
@@ -378,7 +409,9 @@ async def user_manifest(user_id: str):
                             continue
                         if cat_id.startswith("anilist_") and (combine_enabled or not anilist_enabled):
                             continue
-                        if cat_id.startswith("comb_") and (not combine_enabled or not (mal_enabled or anilist_enabled)):
+                        if cat_id.startswith("simkl_") and (combine_enabled or not simkl_enabled):
+                            continue
+                        if cat_id.startswith("comb_") and (not combine_enabled or not (mal_enabled or anilist_enabled or simkl_enabled)):
                             continue
                     
                     configured_cat = get_configured_catalog(cat)
@@ -403,7 +436,9 @@ async def user_manifest(user_id: str):
                     continue
                 if cat_id.startswith("anilist_") and (combine_enabled or not anilist_enabled):
                     continue
-                if cat_id.startswith("comb_") and (not combine_enabled or not (mal_enabled or anilist_enabled)):
+                if cat_id.startswith("simkl_") and (combine_enabled or not simkl_enabled):
+                    continue
+                if cat_id.startswith("comb_") and (not combine_enabled or not (mal_enabled or anilist_enabled or simkl_enabled)):
                     continue
                 # Omit if the user explicitly unchecked it
                 if cat_id not in user_catalogs:
@@ -429,7 +464,9 @@ async def user_manifest(user_id: str):
                     continue
                 if cat_id.startswith("anilist_") and (combine_enabled or not anilist_enabled):
                     continue
-                if cat_id.startswith("comb_") and (not combine_enabled or not (mal_enabled or anilist_enabled)):
+                if cat_id.startswith("simkl_") and (combine_enabled or not simkl_enabled):
+                    continue
+                if cat_id.startswith("comb_") and (not combine_enabled or not (mal_enabled or anilist_enabled or simkl_enabled)):
                     continue
             
             configured_cat = get_configured_catalog(cat)
