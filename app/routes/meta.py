@@ -383,6 +383,18 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             if found_desc:
                 meta["description"] = found_desc
 
+        # Apply RPDB poster if configured
+        if user.get("rpdb_api_key"):
+            from app.services.rpdb import get_rpdb_poster_url
+            meta["poster"] = get_rpdb_poster_url(
+                user=user,
+                media_type=meta.get("type", "series"),
+                kitsu_id=kitsu_id,
+                mal_id=mal_id,
+                anilist_id=anilist_id,
+                fallback_poster=meta.get("poster")
+            )
+
         return await respond_with({"meta": meta})
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)

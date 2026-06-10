@@ -166,13 +166,16 @@ def get_cached_ids_by_simkl(simkl_id: str) -> Optional[dict]:
         return None
 
 
-def cache_ids(kitsu_id: str, mal_id: Optional[str], anilist_id: Optional[str], simkl_id: Optional[str] = None):
+def cache_ids(kitsu_id: str, mal_id: Optional[str], anilist_id: Optional[str], simkl_id: Optional[str] = None, imdb_id: Optional[str] = None, tmdb_id: Optional[str] = None, tvdb_id: Optional[str] = None):
     try:
         doc = {
             "kitsu_id": int(kitsu_id) if kitsu_id else None,
             "mal_id": str(mal_id) if mal_id else None,
             "anilist_id": str(anilist_id) if anilist_id else None,
             "simkl_id": str(simkl_id) if simkl_id else None,
+            "imdb_id": str(imdb_id) if imdb_id else None,
+            "tmdb_id": str(tmdb_id) if tmdb_id else None,
+            "tvdb_id": str(tvdb_id) if tvdb_id else None,
         }
         # Filter out None kitsu_id
         if doc["kitsu_id"] is None:

@@ -352,6 +352,88 @@ async def background_fetch_and_cache_filler(mal_id: str, episode: int):
         currently_fetching_pairs.discard((str(mal_id), episode))
 
 
+def format_catalog_metas(metas_list: list, user: dict, catalog_type: str) -> list:
+    custom_types_map = {
+        "Watching": "anime",
+        "Plan to Watch": "anime",
+        "Completed": "anime",
+        "On Hold": "anime",
+        "Dropped": "anime",
+        "Planning": "anime",
+        "Paused": "anime",
+        "Repeating": "anime"
+    }
+    
+    from app.services.rpdb import get_rpdb_poster_url
+    import urllib.parse
+    
+    formatted_metas = []
+    for m in metas_list:
+        m_copy = m.copy()
+        item_type = m_copy.get("type")
+        if item_type not in ["series", "movie"]:
+            if item_type in custom_types_map:
+                item_type = custom_types_map[item_type]
+            elif catalog_type in custom_types_map:
+                item_type = custom_types_map[catalog_type]
+            else:
+                item_type = "series"
+        m_copy["type"] = item_type
+        
+        # Apply RPDB poster overlay if configured
+        if user and user.get("rpdb_api_key"):
+            stremio_id = m_copy.get("id", "")
+            kitsu_id = None
+            mal_id = None
+            anilist_id = None
+            simkl_id = None
+            
+            if stremio_id.startswith("kitsu:"):
+                kitsu_id = stremio_id.split(":")[1]
+            elif stremio_id.startswith("mal:"):
+                mal_id = stremio_id.split(":")[1]
+            elif stremio_id.startswith("anilist:"):
+                anilist_id = stremio_id.split(":")[1]
+            elif stremio_id.startswith("simkl:"):
+                simkl_id = stremio_id.split(":")[1]
+                
+            current_poster = m_copy.get("poster", "")
+            is_badge = False
+            badge_query_params = {}
+            badge_base_url = ""
+            
+            # Check if this is a badge redirect poster URL (from serve_modified_poster)
+            if "/poster/" in current_poster and "url=" in current_poster:
+                is_badge = True
+                try:
+                    parsed = urllib.parse.urlparse(current_poster)
+                    badge_base_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+                    badge_query_params = {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query).items()}
+                    current_poster = badge_query_params.get("url", "")
+                except Exception:
+                    is_badge = False
+                    
+            rpdb_poster = get_rpdb_poster_url(
+                user=user,
+                media_type=item_type,
+                kitsu_id=kitsu_id,
+                mal_id=mal_id,
+                anilist_id=anilist_id,
+                simkl_id=simkl_id,
+                fallback_poster=current_poster
+            )
+            
+            if rpdb_poster and rpdb_poster != current_poster:
+                if is_badge:
+                    badge_query_params["url"] = rpdb_poster
+                    m_copy["poster"] = f"{badge_base_url}?{urllib.parse.urlencode(badge_query_params)}"
+                else:
+                    m_copy["poster"] = rpdb_poster
+                    
+        formatted_metas.append(m_copy)
+    return formatted_metas
+
+
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>.json")
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>/<path:extras>.json")
 @rate_limit(limit=60, period_seconds=60)
@@ -390,14 +472,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         try:
             cached = cache_col.find_one({"query": search_query, "offset": offset})
             if cached and cached.get("expires_at") > now:
-                # Ensure the item type matches the catalog type so Stremio doesn't filter them out
-                cached_metas = cached["metas"]
-                formatted_metas = []
-                for m in cached_metas:
-                    m_copy = m.copy()
-                    m_copy["type"] = catalog_type
-                    formatted_metas.append(m_copy)
-                return await respond_with({"metas": formatted_metas})
+                return await respond_with({"metas": format_catalog_metas(cached["metas"], user, catalog_type)})
         except Exception as e:
             logging.error("Failed to query kitsu_search_cache: %s", e)
             cached = None
@@ -455,14 +530,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             logging.error("Kitsu search query failed: %s", e)
             if cached:
                 logging.warning("Kitsu search failed, returning expired cache for query '%s': %s", search_query, e)
-                formatted_metas = []
-                for m in cached["metas"]:
-                    m_copy = m.copy()
-                    m_copy["type"] = catalog_type
-                    formatted_metas.append(m_copy)
-                return await respond_with({"metas": formatted_metas})
+                return await respond_with({"metas": format_catalog_metas(cached["metas"], user, catalog_type)})
 
-        return await respond_with({"metas": metas})
+        return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type)})
 
     # --- Recommendations Catalogs ---
     elif catalog_id in ["anisync_rec", "anisync_loved", "anisync_liked"]:
@@ -496,13 +566,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 
         # Handle pagination skip
         metas = metas[offset: offset + 40]
-        formatted_metas = []
-        for m in metas:
-            m_copy = m.copy()
-            if m_copy.get("type") not in ["series", "movie"]:
-                m_copy["type"] = "series"
-            formatted_metas.append(m_copy)
-        return await respond_with({"metas": formatted_metas})
+        return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type)})
 
     # --- Combined Watchlists ---
     elif catalog_id.startswith("comb_"):
@@ -1459,27 +1523,4 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             logging.error("AniList catalog load failed for status %s: %s", anilist_status, e)
 
 
-    # Map custom types back to standard types for media items so streams/meta function correctly in Stremio
-    custom_types_map = {
-        "Watching": "anime",
-        "Plan to Watch": "anime",
-        "Completed": "anime",
-        "On Hold": "anime",
-        "Dropped": "anime",
-        "Planning": "anime",
-        "Paused": "anime",
-        "Repeating": "anime"
-    }
-    formatted_metas = []
-    for m in metas:
-        m_copy = m.copy()
-        if m_copy.get("type") not in ["series", "movie"]:
-            if m_copy.get("type") in custom_types_map:
-                m_copy["type"] = custom_types_map[m_copy["type"]]
-            elif catalog_type in custom_types_map:
-                m_copy["type"] = custom_types_map[catalog_type]
-            else:
-                m_copy["type"] = "series"
-        formatted_metas.append(m_copy)
-
-    return await respond_with({"metas": formatted_metas})
+    return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type)})

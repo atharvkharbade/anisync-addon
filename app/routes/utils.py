@@ -27,10 +27,10 @@ def get_remote_ip() -> str:
 
 
 def is_valid_user_id(user_id: str) -> bool:
-    """Validate that the user ID follows the MAL (digits) or AniList (al_digits) pattern."""
+    """Validate that the user ID follows the MAL (digits), AniList (al_digits), or Simkl (simkl_digits) pattern."""
     if not user_id:
         return False
-    return bool(re.match(r"^(?:al_)?[0-9]+$", user_id))
+    return bool(re.match(r"^(?:al_|simkl_)?[0-9]+$", user_id))
 
 
 def rate_limit(limit: int, period_seconds: int = 60):

@@ -98,7 +98,18 @@ async def _try_anizp(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional
     mappings   = resp.json().get("mappings", {})
     mal_id     = str(mappings["mal_id"])     if mappings.get("mal_id")     else None
     anilist_id = str(mappings["anilist_id"]) if mappings.get("anilist_id") else None
-    if mal_id or anilist_id:
+    imdb_id    = str(mappings.get("imdb_id")) if mappings.get("imdb_id") else None
+    tmdb_id    = str(mappings.get("themoviedb_id")) if mappings.get("themoviedb_id") else None
+    tvdb_id    = str(mappings.get("thetvdb_id")) if mappings.get("thetvdb_id") else None
+    if mal_id or anilist_id or imdb_id or tmdb_id or tvdb_id:
+        cache_ids(
+            kitsu_id=kitsu_id,
+            mal_id=mal_id,
+            anilist_id=anilist_id,
+            imdb_id=imdb_id,
+            tmdb_id=tmdb_id,
+            tvdb_id=tvdb_id
+        )
         return mal_id, anilist_id
     return None, None
 
@@ -374,8 +385,18 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> Optional[str]:
             mappings = resp.json().get("mappings", {})
             kitsu_id = str(mappings["kitsu_id"]) if mappings.get("kitsu_id") else None
             mal_id = str(mappings["mal_id"]) if mappings.get("mal_id") else None
+            imdb_id = str(mappings.get("imdb_id")) if mappings.get("imdb_id") else None
+            tmdb_id = str(mappings.get("themoviedb_id")) if mappings.get("themoviedb_id") else None
+            tvdb_id = str(mappings.get("thetvdb_id")) if mappings.get("thetvdb_id") else None
             if kitsu_id:
-                cache_ids(kitsu_id, mal_id, anilist_id)
+                cache_ids(
+                    kitsu_id=kitsu_id,
+                    mal_id=mal_id,
+                    anilist_id=anilist_id,
+                    imdb_id=imdb_id,
+                    tmdb_id=tmdb_id,
+                    tvdb_id=tvdb_id
+                )
                 return kitsu_id
     except Exception as e:
         logging.warning("ani.zip anilist->kitsu failed for anilist_id=%s: %s", anilist_id, e)

@@ -170,6 +170,7 @@ async def configure(user_id: str = ""):
         user["enable_recommendations"] = form.get("enable_recommendations") == "true"
         user["recommendations_filter_watched"] = form.get("recommendations_filter_watched") == "true"
         user["gemini_api_key"] = form.get("gemini_api_key", "").strip()
+        user["rpdb_api_key"] = form.get("rpdb_api_key", "").strip()
 
         user["rec_language"] = form.get("rec_language", "en")
         user["rec_popularity"] = form.get("rec_popularity", "balanced")
@@ -233,6 +234,24 @@ async def validate_gemini_key():
                 except Exception:
                     error_msg = "Invalid API key"
                 return {"status": "error", "message": error_msg}, 400
+    except Exception as e:
+        return {"status": "error", "message": f"Validation failed: {str(e)}"}, 500
+
+
+@ui_bp.route("/rpdb/validation", methods=["POST"])
+@rate_limit(limit=10, period_seconds=60)
+async def validate_rpdb_key():
+    data = await request.get_json() or {}
+    api_key = data.get("api_key", "").strip()
+    if not api_key:
+        return {"status": "error", "message": "Key cannot be empty"}, 400
+    try:
+        from app.services.rpdb import validate_rpdb_api_key
+        is_valid = await validate_rpdb_api_key(api_key)
+        if is_valid:
+            return {"status": "success", "message": "API key is valid ✓"}
+        else:
+            return {"status": "error", "message": "Invalid RPDB API key"}, 400
     except Exception as e:
         return {"status": "error", "message": f"Validation failed: {str(e)}"}, 500
 

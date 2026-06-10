@@ -600,6 +600,41 @@
 
                 </div>
 
+                <!-- RPDB Integration Section -->
+                <div id="rpdb-key-section" style="margin-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
+                    <label class="rec-label mb-2"><i class="fa-solid fa-star text-warning me-2"></i>Rating Poster DB (RPDB) (Optional)</label>
+                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                        Enter your RPDB API key to replace standard anime posters in search results, watchlist catalogs, recommendations, and detail pages with posters showing rating overlays and badges.
+                    </p>
+
+                    <div class="gemini-input-wrapper position-relative">
+                        <i class="fa-solid fa-key gemini-icon" style="color: #ffc107;"></i>
+                        <input type="password" id="rpdb_api_key" name="rpdb_api_key" class="gemini-input"
+                            value="{{ user.get('rpdb_api_key', '') }}"
+                            placeholder="Paste your RPDB API key here">
+                        <button type="button" class="gemini-btn" id="toggle-rpdb-visibility"
+                            style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                        <button type="button" class="gemini-btn p-0" id="validate-rpdb-btn" title="Validate Key">
+                            <i id="rpdb-check-icon"
+                                class="fa-solid fa-circle-check {% if user.get('rpdb_api_key') %}text-success{% else %}text-secondary{% endif %}"
+                                style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                        </button>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span id="rpdb-validation-status" class="small text-secondary">
+                            {% if user.get('rpdb_api_key') %}API key saved{% else %}Not verified{% endif %}
+                        </span>
+                        <a href="https://ratingposterdb.com/" target="_blank"
+                            class="small text-info text-decoration-none" style="font-size:0.75rem;">
+                            Get your API key from RatingPosterDB <i
+                                class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
+                        </a>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Recommendations Card -->
@@ -1179,6 +1214,73 @@
                 checkIcon.className = "fa-solid fa-circle-check text-secondary";
                 statusSpan.textContent = "Not verified";
                 statusSpan.className = "small text-secondary";
+            });
+        }
+
+        // RPDB API Key Event Listeners
+        const rpdbKeyInput = document.getElementById("rpdb_api_key");
+        const toggleRpdbBtn = document.getElementById("toggle-rpdb-visibility");
+        if (toggleRpdbBtn && rpdbKeyInput) {
+            toggleRpdbBtn.addEventListener("click", function () {
+                if (rpdbKeyInput.type === "password") {
+                    rpdbKeyInput.type = "text";
+                    toggleRpdbBtn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+                } else {
+                    rpdbKeyInput.type = "password";
+                    toggleRpdbBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+                }
+            });
+        }
+
+        const validateRpdbBtn = document.getElementById("validate-rpdb-btn");
+        const rpdbCheckIcon = document.getElementById("rpdb-check-icon");
+        const rpdbStatusSpan = document.getElementById("rpdb-validation-status");
+        if (validateRpdbBtn && rpdbCheckIcon && rpdbStatusSpan && rpdbKeyInput) {
+            validateRpdbBtn.addEventListener("click", async function () {
+                const apiKey = rpdbKeyInput.value.trim();
+                if (!apiKey) {
+                    rpdbStatusSpan.textContent = "Key cannot be empty";
+                    rpdbStatusSpan.className = "small text-danger";
+                    rpdbCheckIcon.className = "fa-solid fa-circle-check text-danger";
+                    return;
+                }
+                rpdbStatusSpan.textContent = "Verifying...";
+                rpdbStatusSpan.className = "small text-info";
+                rpdbCheckIcon.className = "fa-solid fa-circle-notch fa-spin text-info";
+                validateRpdbBtn.disabled = true;
+                try {
+                    const response = await fetch("/rpdb/validation", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ api_key: apiKey })
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.status === "success") {
+                        rpdbStatusSpan.textContent = result.message;
+                        rpdbStatusSpan.className = "small text-success fw-semibold";
+                        rpdbCheckIcon.className = "fa-solid fa-circle-check text-success";
+                    } else {
+                        rpdbStatusSpan.textContent = result.message || "Invalid API key";
+                        rpdbStatusSpan.className = "small text-danger";
+                        rpdbCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                    }
+                } catch (err) {
+                    rpdbStatusSpan.textContent = "Verification failed";
+                    rpdbStatusSpan.className = "small text-danger";
+                    rpdbCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                } finally {
+                    validateRpdbBtn.disabled = false;
+                }
+            });
+        }
+
+        if (rpdbKeyInput && rpdbCheckIcon && rpdbStatusSpan) {
+            rpdbKeyInput.addEventListener("input", function () {
+                rpdbCheckIcon.className = "fa-solid fa-circle-check text-secondary";
+                rpdbStatusSpan.textContent = "Not verified";
+                rpdbStatusSpan.className = "small text-secondary";
             });
         }
 
