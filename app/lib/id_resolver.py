@@ -489,3 +489,108 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> Optional[str]:
         logging.warning("Simkl to kitsu resolution failed for simkl_id=%s: %s", simkl_id, e)
 
     return None
+
+
+async def bulk_resolve_to_kitsu(mal_ids: list[str] = None, anilist_ids: list[str] = None, simkl_ids: list[str] = None) -> dict:
+    """
+    Returns a dict mapping (mal_id/anilist_id/simkl_id) -> kitsu_id.
+    """
+    resolved = {}
+    from app.services.db import id_cache_collection, db
+    
+    # 1. Query id_cache
+    query_or = []
+    if mal_ids:
+        query_or.append({"mal_id": {"$in": [str(x) for x in mal_ids]}})
+    if anilist_ids:
+        query_or.append({"anilist_id": {"$in": [str(x) for x in anilist_ids]}})
+    if simkl_ids:
+        query_or.append({"simkl_id": {"$in": [str(x) for x in simkl_ids]}})
+        simkl_ints = [int(x) for x in simkl_ids if str(x).isdigit()]
+        if simkl_ints:
+            query_or.append({"simkl_id": {"$in": simkl_ints}})
+            query_or.append({"simkl": {"$in": simkl_ints}})
+            
+    if not query_or:
+        return {}
+        
+    try:
+        docs = list(id_cache_collection.find({"$or": query_or}))
+        for doc in docs:
+            k_id = str(doc.get("kitsu_id") or "")
+            if not k_id:
+                continue
+            if doc.get("mal_id"):
+                resolved[f"mal:{doc['mal_id']}"] = k_id
+            if doc.get("anilist_id"):
+                resolved[f"anilist:{doc['anilist_id']}"] = k_id
+            if doc.get("simkl_id"):
+                resolved[f"simkl:{doc['simkl_id']}"] = k_id
+            if doc.get("simkl"):
+                resolved[f"simkl:{doc['simkl']}"] = k_id
+    except Exception as e:
+        logging.error("bulk_resolve_to_kitsu: id_cache query failed: %s", e)
+        
+    # 2. Check fribb_mappings
+    unresolved_mal = [x for x in (mal_ids or []) if f"mal:{x}" not in resolved]
+    unresolved_al = [x for x in (anilist_ids or []) if f"anilist:{x}" not in resolved]
+    
+    if unresolved_mal or unresolved_al:
+        try:
+            fribb_query = []
+            if unresolved_mal:
+                fribb_query.append({"mal_id": {"$in": [str(x) for x in unresolved_mal]}})
+            if unresolved_al:
+                fribb_query.append({"anilist_id": {"$in": [str(x) for x in unresolved_al]}})
+            if fribb_query:
+                fribb_docs = list(db.fribb_mappings.find({"$or": fribb_query}))
+                for doc in fribb_docs:
+                    k_id = str(doc.get("kitsu_id") or "")
+                    if not k_id:
+                        continue
+                    if doc.get("mal_id"):
+                        resolved[f"mal:{doc['mal_id']}"] = k_id
+                    if doc.get("anilist_id"):
+                        resolved[f"anilist:{doc['anilist_id']}"] = k_id
+        except Exception as e:
+            logging.error("bulk_resolve_to_kitsu: fribb query failed: %s", e)
+            
+    # 3. Individual on-the-fly resolution
+    remaining_mal = [x for x in (mal_ids or []) if f"mal:{x}" not in resolved]
+    remaining_al = [x for x in (anilist_ids or []) if f"anilist:{x}" not in resolved]
+    remaining_simkl = [x for x in (simkl_ids or []) if f"simkl:{x}" not in resolved]
+    
+    if remaining_mal or remaining_al or remaining_simkl:
+        tasks = []
+        for x in remaining_mal:
+            async def resolve_one_mal(val=x):
+                try:
+                    kid = await resolve_mal_to_kitsu(val)
+                    if kid:
+                        resolved[f"mal:{val}"] = kid
+                except Exception:
+                    pass
+            tasks.append(resolve_one_mal())
+        for x in remaining_al:
+            async def resolve_one_al(val=x):
+                try:
+                    kid = await resolve_anilist_to_kitsu(val)
+                    if kid:
+                        resolved[f"anilist:{val}"] = kid
+                except Exception:
+                    pass
+            tasks.append(resolve_one_al())
+        for x in remaining_simkl:
+            async def resolve_one_simkl(val=x):
+                try:
+                    kid = await resolve_simkl_to_kitsu(val)
+                    if kid:
+                        resolved[f"simkl:{val}"] = kid
+                except Exception:
+                    pass
+            tasks.append(resolve_one_simkl())
+            
+        if tasks:
+            await asyncio.gather(*tasks)
+            
+    return resolved
