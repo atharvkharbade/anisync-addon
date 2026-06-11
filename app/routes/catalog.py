@@ -1016,7 +1016,20 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # Sorting
             if custom_sort_enabled and sort_by != "default":
-                sorted_items = sort_watchlist_items(combined_items, sort_by, sort_order, "combined", bulk_details=bulk_details)
+                if user.get("sort_by_new_episodes") and comb_status in ["watching", "plan_to_watch"]:
+                    new_ep_items = []
+                    other_items = []
+                    for item in combined_items:
+                        is_new, _, _ = compute_comb_flags(item)
+                        if is_new:
+                            new_ep_items.append(item)
+                        else:
+                            other_items.append(item)
+                    sorted_new = sort_watchlist_items(new_ep_items, sort_by, sort_order, "combined", bulk_details=bulk_details)
+                    sorted_other = sort_watchlist_items(other_items, sort_by, sort_order, "combined", bulk_details=bulk_details)
+                    sorted_items = sorted_new + sorted_other
+                else:
+                    sorted_items = sort_watchlist_items(combined_items, sort_by, sort_order, "combined", bulk_details=bulk_details)
                 paged_items = sorted_items[offset: offset + 40]
             elif user.get("sort_by_new_episodes") and comb_status in ["watching", "plan_to_watch"]:
                 def parse_mal_updated_at(updated_str):
@@ -1288,7 +1301,23 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 return is_new_ep, has_unwatched, latest_aired_at, latest_aired_num
 
             if custom_sort_enabled and sort_by != "default":
-                sorted_data_items = sort_watchlist_items(data_items, sort_by, sort_order, "simkl", bulk_details=bulk_details)
+                if user.get("sort_by_new_episodes") and simkl_status in ["watching", "plantowatch"]:
+                    new_ep_items = []
+                    other_items = []
+                    for item in data_items:
+                        show_obj = item.get("show") or item.get("anime") or item
+                        ids = show_obj.get("ids") or {}
+                        mal_id = str(ids.get("mal") or "") or None
+                        is_new, _, _, _ = compute_simkl_flags(item, mal_id)
+                        if is_new:
+                            new_ep_items.append(item)
+                        else:
+                            other_items.append(item)
+                    sorted_new = sort_watchlist_items(new_ep_items, sort_by, sort_order, "simkl", bulk_details=bulk_details)
+                    sorted_other = sort_watchlist_items(other_items, sort_by, sort_order, "simkl", bulk_details=bulk_details)
+                    sorted_data_items = sorted_new + sorted_other
+                else:
+                    sorted_data_items = sort_watchlist_items(data_items, sort_by, sort_order, "simkl", bulk_details=bulk_details)
                 paged_data_items = sorted_data_items[offset: offset + 40]
             elif user.get("sort_by_new_episodes") and simkl_status in ["watching", "plantowatch"]:
                 def get_simkl_priority(item):
@@ -1488,7 +1517,22 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # ── Sorting ───────────────────────────────────────────────────────
             if custom_sort_enabled and sort_by != "default":
-                sorted_data_items = sort_watchlist_items(data_items, sort_by, sort_order, "mal", bulk_details=bulk_details)
+                if user.get("sort_by_new_episodes") and mal_status in ["watching", "plan_to_watch"]:
+                    new_ep_items = []
+                    other_items = []
+                    for item in data_items:
+                        node = item.get("node", {})
+                        mal_id = str(node["id"])
+                        is_new, _, _, _ = compute_mal_flags(node, mal_id)
+                        if is_new:
+                            new_ep_items.append(item)
+                        else:
+                            other_items.append(item)
+                    sorted_new = sort_watchlist_items(new_ep_items, sort_by, sort_order, "mal", bulk_details=bulk_details)
+                    sorted_other = sort_watchlist_items(other_items, sort_by, sort_order, "mal", bulk_details=bulk_details)
+                    sorted_data_items = sorted_new + sorted_other
+                else:
+                    sorted_data_items = sort_watchlist_items(data_items, sort_by, sort_order, "mal", bulk_details=bulk_details)
                 paged_data_items = sorted_data_items[offset: offset + 40]
             elif user.get("sort_by_new_episodes") and mal_status in ["watching", "plan_to_watch"]:
                 def parse_mal_updated_at(updated_str):
@@ -1695,7 +1739,20 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # ── Sorting ───────────────────────────────────────────────────────
             if custom_sort_enabled and sort_by != "default":
-                entries = sort_watchlist_items(entries, sort_by, sort_order, "anilist", bulk_details=None)
+                if user.get("sort_by_new_episodes") and anilist_status in ["CURRENT", "PLANNING"]:
+                    new_ep_items = []
+                    other_items = []
+                    for entry in entries:
+                        is_new, _, _ = compute_al_flags(entry)
+                        if is_new:
+                            new_ep_items.append(entry)
+                        else:
+                            other_items.append(entry)
+                    sorted_new = sort_watchlist_items(new_ep_items, sort_by, sort_order, "anilist", bulk_details=None)
+                    sorted_other = sort_watchlist_items(other_items, sort_by, sort_order, "anilist", bulk_details=None)
+                    entries = sorted_new + sorted_other
+                else:
+                    entries = sort_watchlist_items(entries, sort_by, sort_order, "anilist", bulk_details=None)
             elif user.get("sort_by_new_episodes") and anilist_status in ["CURRENT", "PLANNING"]:
                 def get_al_priority(entry):
                     is_new_ep, has_unwatched, latest_aired_at = compute_al_flags(entry)
