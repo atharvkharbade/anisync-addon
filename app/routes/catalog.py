@@ -924,7 +924,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                     if is_airing and is_new_ep:
                         group_idx = 0
-                        secondary_sort = (next_airing_at, -updated_ts)
+                        secondary_sort = (-next_airing_at, -updated_ts)
                     elif not is_airing:
                         group_idx = 1
                         secondary_sort = (-updated_ts, 0)
@@ -951,14 +951,26 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 def get_default_updated_ts(item):
                     mal_updated_ts = 0
                     al_updated_ts = 0
+                    simkl_updated_ts = 0
                     if item["mal_item"]:
                         mal_updated_ts = parse_mal_updated_at(item["mal_item"].get("my_list_status", {}).get("updated_at", ""))
                     if item["anilist_item"]:
                         al_updated_ts = item["anilist_item"].get("updatedAt") or 0
-                    return -max(mal_updated_ts, al_updated_ts)
+                    if item["simkl_item"]:
+                        last_watched_str = item["simkl_item"].get("last_watched_at")
+                        if last_watched_str:
+                            try:
+                                s = last_watched_str.replace("Z", "").replace("T", " ")
+                                s = s.split(".")[0]
+                                dt = datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+                                simkl_updated_ts = int(dt.timestamp())
+                            except Exception:
+                                pass
+                    return -max(mal_updated_ts, al_updated_ts, simkl_updated_ts)
 
                 sorted_items = sorted(combined_items, key=get_default_updated_ts)
                 paged_items = sorted_items[offset: offset + 40]
+
 
             # Resolve Kitsu IDs in bulk
             from app.lib.id_resolver import bulk_resolve_to_kitsu
@@ -1153,7 +1165,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     
                     if is_airing and is_new_ep:
                         group_idx = 0
-                        secondary_sort = (airing_at, -updated_ts)
+                        secondary_sort = (-airing_at, -updated_ts)
                     elif not is_airing:
                         group_idx = 1
                         secondary_sort = (-updated_ts, 0)
@@ -1166,7 +1178,21 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 sorted_data_items = sorted(data_items, key=get_simkl_priority)
                 paged_data_items = sorted_data_items[offset: offset + 40]
             else:
-                paged_data_items = data_items[offset: offset + 40]
+                def get_simkl_updated_ts(item):
+                    last_watched_str = item.get("last_watched_at")
+                    if last_watched_str:
+                        try:
+                            s = last_watched_str.replace("Z", "").replace("T", " ")
+                            s = s.split(".")[0]
+                            dt = datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+                            return int(dt.timestamp())
+                        except Exception:
+                            pass
+                    return 0
+
+                sorted_data_items = sorted(data_items, key=get_simkl_updated_ts, reverse=True)
+                paged_data_items = sorted_data_items[offset: offset + 40]
+
 
             # Resolve Kitsu IDs in bulk
             from app.lib.id_resolver import bulk_resolve_to_kitsu
@@ -1314,7 +1340,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     if is_airing and is_new_ep:
                         # Group 0: Airing anime with new episodes (first)
                         group_idx = 0
-                        secondary_sort = (airing_at, -updated_ts)
+                        secondary_sort = (-airing_at, -updated_ts)
                     elif not is_airing:
                         # Group 1: Completed airing anime (always placed before Group 2)
                         group_idx = 1
@@ -1329,7 +1355,24 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 sorted_data_items = sorted(data_items, key=get_mal_priority)
                 paged_data_items = sorted_data_items[offset: offset + 40]
             else:
-                paged_data_items = data_items[offset: offset + 40]
+                def parse_mal_updated_at(updated_str):
+                    if not updated_str:
+                        return 0
+                    try:
+                        s = updated_str.replace("Z", "").replace("T", " ")
+                        s = s.split(".")[0]
+                        dt = datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+                        return int(dt.timestamp())
+                    except Exception:
+                        return 0
+
+                def get_mal_updated_ts(item):
+                    node = item.get("node", {})
+                    return parse_mal_updated_at(node.get("my_list_status", {}).get("updated_at", ""))
+
+                sorted_data_items = sorted(data_items, key=get_mal_updated_ts, reverse=True)
+                paged_data_items = sorted_data_items[offset: offset + 40]
+
 
             # Resolve Kitsu IDs in bulk
             from app.lib.id_resolver import bulk_resolve_to_kitsu
@@ -1465,7 +1508,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     if is_airing and is_new_ep:
                         # Group 0: Airing anime with new episodes (first)
                         group_idx = 0
-                        secondary_sort = (airing_at, -updated_ts)
+                        secondary_sort = (-airing_at, -updated_ts)
                     elif not is_airing:
                         # Group 1: Completed airing anime (always placed before Group 2)
                         group_idx = 1
@@ -1478,9 +1521,15 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     return (group_idx, *secondary_sort)
 
                 entries = sorted(entries, key=get_al_priority)
+            else:
+                def get_al_updated_ts(entry):
+                    return entry.get("updatedAt") or 0
+
+                entries = sorted(entries, key=get_al_updated_ts, reverse=True)
 
             # Paginate the full sorted list
             paged_entries = entries[offset: offset + 40]
+
 
             # Resolve Kitsu IDs in bulk
             from app.lib.id_resolver import bulk_resolve_to_kitsu
