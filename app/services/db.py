@@ -237,3 +237,69 @@ def invalidate_user_watchlist_cache(user_id: str):
         logging.error("Failed to invalidate watchlist cache for user %s: %s", user_id, e)
 
 
+def get_user_watch_progress(user_id: str, mal_id: Optional[str] = None, anilist_id: Optional[str] = None, simkl_id: Optional[str] = None) -> int:
+    """Find the user's maximum watch progress (watched episode count) across cached watchlists."""
+    if not user_id:
+        return 0
+
+    max_progress = 0
+    try:
+        cache_col = db.get_collection("user_watchlist_cache")
+        docs = list(cache_col.find({"uid": str(user_id)}))
+
+        mal_str = str(mal_id) if mal_id else None
+        anilist_str = str(anilist_id) if anilist_id else None
+        simkl_str = str(simkl_id) if simkl_id else None
+
+        for doc in docs:
+            tracker = doc.get("tracker")
+            data = doc.get("data")
+            if not data:
+                continue
+
+            if tracker == "mal":
+                for item in data:
+                    node = item.get("node") or {}
+                    nid = str(node.get("id") or "")
+                    if nid and mal_str and nid == mal_str:
+                        status_obj = item.get("my_list_status") or {}
+                        max_progress = max(max_progress, status_obj.get("num_episodes_watched") or 0)
+
+            elif tracker == "anilist":
+                lists = data.get("lists") or []
+                for lst in lists:
+                    entries = lst.get("entries") or []
+                    for entry in entries:
+                        media = entry.get("media") or {}
+                        al_id = str(media.get("id") or "")
+                        al_mal_id = str(media.get("idMal") or "")
+                        if (anilist_str and al_id == anilist_str) or (mal_str and al_mal_id == mal_str):
+                            max_progress = max(max_progress, entry.get("progress") or 0)
+
+            elif tracker == "simkl":
+                for item in data:
+                    show_obj = item.get("show") or item.get("anime") or item
+                    ids = show_obj.get("ids") or {}
+                    s_mal = str(ids.get("mal") or "")
+                    s_al = str(ids.get("anilist") or "")
+                    s_simkl = str(ids.get("simkl") or "")
+
+                    match = False
+                    if mal_str and s_mal and s_mal == mal_str:
+                        match = True
+                    elif anilist_str and s_al and s_al == anilist_str:
+                        match = True
+                    elif simkl_str and s_simkl and s_simkl == simkl_str:
+                        match = True
+
+                    if match:
+                        prog = item.get("watched_episodes_count") or item.get("episodes_watched") or item.get("progress") or 0
+                        max_progress = max(max_progress, prog)
+
+    except Exception as e:
+        logging.error("Failed to query watch progress for user %s: %s", user_id, e)
+
+    return max_progress
+
+
+

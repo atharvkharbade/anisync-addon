@@ -419,6 +419,8 @@
                     value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
                 <input type="hidden" name="show_filler_tags"
                     value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                <input type="hidden" name="show_watched_tags"
+                    value="{{ 'true' if user.get('show_watched_tags', False) else 'false' }}">
             </form>
             {% endif %}
         </div>
@@ -486,6 +488,8 @@
                     value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
                 <input type="hidden" name="show_filler_tags"
                     value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                <input type="hidden" name="show_watched_tags"
+                    value="{{ 'true' if user.get('show_watched_tags', False) else 'false' }}">
             </form>
             {% endif %}
         </div>
@@ -553,6 +557,8 @@
                     value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
                 <input type="hidden" name="show_filler_tags"
                     value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                <input type="hidden" name="show_watched_tags"
+                    value="{{ 'true' if user.get('show_watched_tags', False) else 'false' }}">
             </form>
             {% endif %}
         </div>
@@ -579,6 +585,8 @@
                     value="{{ 'true' if user.get('rpdb_in_search', True) else 'false' }}">
                 <input type="hidden" id="show_filler_tags_val" name="show_filler_tags"
                     value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                <input type="hidden" id="show_watched_tags_val" name="show_watched_tags"
+                    value="{{ 'true' if user.get('show_watched_tags', False) else 'false' }}">
                 <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
                     value="{{ 'true' if user.get('combine_watchlists', False) else 'false' }}">
                 <input type="hidden" id="custom_sort_enabled_val" name="custom_sort_enabled"
@@ -685,6 +693,17 @@
                             <span class="fw-medium d-block">Show filler tags on episodes</span>
                             <span class="text-secondary small d-block">
                                 Mark filler episodes with a [Filler] tag inside the episode list.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="show_watched_tags" {% if
+                            user.get('show_watched_tags', False) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="show_watched_tags">
+                            <span class="fw-medium d-block">Show watched tags on episodes</span>
+                            <span class="text-secondary small d-block">
+                                Mark already watched episodes with a [Watched] tag inside the episode list.
                             </span>
                         </label>
                     </div>
@@ -1858,6 +1877,8 @@
             document.getElementById('rpdb_in_search').checked ? 'true' : 'false';
         document.getElementById('show_filler_tags_val').value =
             document.getElementById('show_filler_tags').checked ? 'true' : 'false';
+        document.getElementById('show_watched_tags_val').value =
+            document.getElementById('show_watched_tags').checked ? 'true' : 'false';
         const combineWatchlistsCheckbox = document.getElementById('combine_watchlists');
         if (combineWatchlistsCheckbox) {
             document.getElementById('combine_watchlists_val').value =

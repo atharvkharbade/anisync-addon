@@ -59,7 +59,7 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
     return resp.json()
 
 
-def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None, mal_id: str = None, show_filler_tags: bool = True, loop = None, cinemeta_data: dict = None) -> dict:
+def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None, mal_id: str = None, show_filler_tags: bool = True, loop = None, cinemeta_data: dict = None, show_watched_tags: bool = False, watched_progress: int = 0) -> dict:
     data = kitsu_data.get("data", {})
     if not data:
         return {}
@@ -185,6 +185,8 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
                                 
                 if is_filler:
                     ep_title = f"[Filler] {ep_title}"
+                if show_watched_tags and ep_num <= watched_progress:
+                    ep_title = f"[Watched] {ep_title}"
 
                 videos.append({
                     "id": f"kitsu:{data['id']}:{ep_num}",
@@ -231,6 +233,8 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
                                 
                 if is_filler:
                     ep_title = f"[Filler] {ep_title}"
+                if show_watched_tags and i <= watched_progress:
+                    ep_title = f"[Watched] {ep_title}"
 
                 videos.append({
                     "id": f"kitsu:{data['id']}:{i}",
@@ -290,6 +294,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     kitsu_id = None
     anilist_id = None
     mal_id = None
+    simkl_id = None
     
     if meta_id.startswith("mal:"):
         mal_id = meta_id.split(":")[1]
@@ -335,7 +340,19 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             media_type = "movie" if subtype == "movie" else "series"
             cinemeta_data = await fetch_cinemeta_metadata(imdb_id, media_type)
 
+        # Resolve simkl_id if not present but we have kitsu_id
+        if not simkl_id and kitsu_id:
+            from app.services.db import get_cached_ids
+            cached_ids = get_cached_ids(kitsu_id)
+            if cached_ids:
+                simkl_id = cached_ids.get("simkl_id")
+
         show_filler = user.get("show_filler_tags", True) if user else True
+        show_watched = user.get("show_watched_tags", False) if user else False
+        watched_progress = 0
+        if show_watched:
+            from app.services.db import get_user_watch_progress
+            watched_progress = get_user_watch_progress(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
         
         # Offload CPU-bound mapping to worker threads
         run_loop = asyncio.get_running_loop()
@@ -347,7 +364,9 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             mal_id,
             show_filler,
             run_loop,
-            cinemeta_data
+            cinemeta_data,
+            show_watched,
+            watched_progress
         )
 
         # Look up description in recommendations cache to retain the trace prefix

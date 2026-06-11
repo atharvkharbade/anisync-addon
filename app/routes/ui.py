@@ -139,6 +139,7 @@ async def configure(user_id: str = ""):
         user["enable_search"] = form.get("enable_search") == "true"
         user["rpdb_in_search"] = form.get("rpdb_in_search") == "true"
         user["show_filler_tags"] = form.get("show_filler_tags") == "true"
+        user["show_watched_tags"] = form.get("show_watched_tags") == "true"
         
         user["custom_sort_enabled"] = form.get("custom_sort_enabled") == "true"
         user["custom_sort_watching_by"] = form.get("custom_sort_watching_by", "default")
