@@ -139,6 +139,19 @@ async def configure(user_id: str = ""):
         user["enable_search"] = form.get("enable_search") == "true"
         user["rpdb_in_search"] = form.get("rpdb_in_search") == "true"
         user["show_filler_tags"] = form.get("show_filler_tags") == "true"
+        
+        user["custom_sort_enabled"] = form.get("custom_sort_enabled") == "true"
+        user["custom_sort_watching_by"] = form.get("custom_sort_watching_by", "default")
+        user["custom_sort_watching_order"] = form.get("custom_sort_watching_order", "desc")
+        user["custom_sort_planning_by"] = form.get("custom_sort_planning_by", "default")
+        user["custom_sort_planning_order"] = form.get("custom_sort_planning_order", "desc")
+        user["custom_sort_completed_by"] = form.get("custom_sort_completed_by", "default")
+        user["custom_sort_completed_order"] = form.get("custom_sort_completed_order", "desc")
+        user["custom_sort_on_hold_by"] = form.get("custom_sort_on_hold_by", "default")
+        user["custom_sort_on_hold_order"] = form.get("custom_sort_on_hold_order", "desc")
+        user["custom_sort_dropped_by"] = form.get("custom_sort_dropped_by", "default")
+        user["custom_sort_dropped_order"] = form.get("custom_sort_dropped_order", "desc")
+
         try:
             user["new_episode_interval"] = int(form.get("new_episode_interval", 24))
         except (ValueError, TypeError):
