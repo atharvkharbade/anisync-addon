@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>AniSync</title>
     <meta name="description" content="A Stremio addon to update your anime watchlists on MyAnimeList and AniList. Track episodes in real-time, get new episode notifications directly via anime posters, and receive personalized recommendations based on your viewing history.">
-    
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url if request else '' }}">
@@ -147,14 +147,14 @@
 
             const toast = document.createElement('div');
             toast.className = `custom-toast ${type}`;
-            
+
             let icon = '<i class="fa-solid fa-circle-info me-2 text-info"></i>';
             if (type === 'success') {
                 icon = '<i class="fa-solid fa-circle-check me-2 text-success"></i>';
             } else if (type === 'error') {
                 icon = '<i class="fa-solid fa-circle-exclamation me-2 text-danger"></i>';
             }
-            
+
             toast.innerHTML = `${icon}<span>${message}</span>`;
             container.appendChild(toast);
 

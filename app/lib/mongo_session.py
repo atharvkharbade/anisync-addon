@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
+
 from quart.sessions import SessionInterface, SessionMixin
 
 
@@ -52,38 +53,35 @@ class MongoSessionInterface(SessionInterface):
 
     def open_session(self, app, request):
         from app.services.db import db
+
         cookie_name = app.config.get("SESSION_COOKIE_NAME", "session")
         sid = request.cookies.get(cookie_name)
         if not sid:
             return MongoSession(sid=str(uuid.uuid4()))
-            
+
         try:
             doc = db.get_collection(self.collection_name).find_one({"sid": sid})
             if doc:
                 # Check expiration
-                from datetime import timezone
-                if doc.get("expiry") and datetime.now(timezone.utc).replace(tzinfo=None) > doc["expiry"]:
+                if doc.get("expiry") and datetime.now(UTC).replace(tzinfo=None) > doc["expiry"]:
                     db.get_collection(self.collection_name).delete_one({"sid": sid})
                     return MongoSession(sid=str(uuid.uuid4()))
                 return MongoSession(doc.get("data", {}), sid=sid)
         except Exception:
             pass
-            
+
         return MongoSession(sid=sid)
 
     def save_session(self, app, session, response):
         from app.services.db import db
+
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)
         cookie_name = app.config.get("SESSION_COOKIE_NAME", "session")
-        
+
         if not session:
             if session.modified:
-                response.delete_cookie(
-                    cookie_name,
-                    domain=domain,
-                    path=path
-                )
+                response.delete_cookie(cookie_name, domain=domain, path=path)
                 try:
                     db.get_collection(self.collection_name).delete_one({"sid": session.sid})
                 except Exception:
@@ -94,14 +92,11 @@ class MongoSessionInterface(SessionInterface):
         if not session.accessed and not session.modified:
             return
 
-        from datetime import timezone
-        expiry = datetime.now(timezone.utc).replace(tzinfo=None) + app.permanent_session_lifetime
-        
+        expiry = datetime.now(UTC).replace(tzinfo=None) + app.permanent_session_lifetime
+
         try:
             db.get_collection(self.collection_name).update_one(
-                {"sid": session.sid},
-                {"$set": {"data": dict(session), "expiry": expiry}},
-                upsert=True
+                {"sid": session.sid}, {"$set": {"data": dict(session), "expiry": expiry}}, upsert=True
             )
         except Exception:
             pass

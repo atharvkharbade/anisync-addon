@@ -737,7 +737,7 @@
                     <!-- Custom Sorting Options Sub-Container -->
                     <div id="custom-sorting-container" style="display: none;" class="mb-3 ps-0 ps-sm-3">
                         <p class="text-secondary small mb-3">Set your sorting preference for each watchlist category:</p>
-                        
+
                         <!-- Watching Sort -->
                         <div class="row g-2 mb-3 align-items-center">
                             <div class="col-12 col-sm-4 mb-1 mb-sm-0">
@@ -1114,10 +1114,10 @@
                     {% for sorted_id in user.get('catalogs', []) %}
                     {% for item_id, item_name, item_source in default_order %}
                     {% if item_id == sorted_id %}
-                    {% if (item_source == 'mal' and user.get('mal_access_token')) or 
-                          (item_source == 'anilist' and user.get('anilist_token')) or 
-                          (item_source == 'simkl' and user.get('simkl_access_token')) or 
-                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token'))) or 
+                    {% if (item_source == 'mal' and user.get('mal_access_token')) or
+                          (item_source == 'anilist' and user.get('anilist_token')) or
+                          (item_source == 'simkl' and user.get('simkl_access_token')) or
+                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token'))) or
                           item_source == 'rec' %}
                     {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
                     {% endif %}
@@ -1128,10 +1128,10 @@
 
                     <!-- 2. Append any unselected/new catalogs from the source default order -->
                     {% for item_id, item_name, item_source in default_order %}
-                    {% if (item_source == 'mal' and user.get('mal_access_token')) or 
-                          (item_source == 'anilist' and user.get('anilist_token')) or 
-                          (item_source == 'simkl' and user.get('simkl_access_token')) or 
-                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token'))) or 
+                    {% if (item_source == 'mal' and user.get('mal_access_token')) or
+                          (item_source == 'anilist' and user.get('anilist_token')) or
+                          (item_source == 'simkl' and user.get('simkl_access_token')) or
+                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token'))) or
                           item_source == 'rec' %}
                     {% if item_id not in user.get('catalogs', []) %}
                     {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
@@ -1225,7 +1225,7 @@
     document.addEventListener("DOMContentLoaded", function () {
         // Custom Dropdown select initialization and event handlers
         const customWrappers = document.querySelectorAll(".custom-select-wrapper");
-        
+
         customWrappers.forEach(wrapper => {
             const inputId = wrapper.getAttribute("data-input-id");
             const hiddenInput = document.getElementById(inputId);
@@ -1258,7 +1258,7 @@
                 document.querySelectorAll(".custom-select").forEach(sel => {
                     if (sel !== selectEl) sel.classList.remove("active");
                 });
-                
+
                 menuEl.classList.toggle("show");
                 selectEl.classList.toggle("active");
             });
@@ -1270,10 +1270,10 @@
                     const val = opt.getAttribute("data-value");
                     hiddenInput.value = val;
                     textEl.innerHTML = opt.innerHTML;
-                    
+
                     optionItems.forEach(o => o.classList.remove("selected"));
                     opt.classList.add("selected");
-                    
+
                     menuEl.classList.remove("show");
                     selectEl.classList.remove("active");
                 });
@@ -1483,7 +1483,7 @@
             if (!rpdbInSearchCheckbox) return;
             const hasRpdbKey = rpdbKeyEl && rpdbKeyEl.value.trim() !== "";
             const isValid = hasRpdbKey && isRpdbKeyValid;
-            
+
             if (isValid) {
                 if (rpdbInSearchCheckbox.disabled) {
                     // It was disabled, now enabling it
@@ -1604,22 +1604,22 @@
             const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
             const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
             const simklToken = "{{ 'true' if user.get('simkl_access_token') else 'false' }}" === "true";
-            
+
             const malEnabledCheckbox = document.getElementById("mal_enabled");
             const alEnabledCheckbox = document.getElementById("anilist_enabled");
             const simklEnabledCheckbox = document.getElementById("simkl_enabled");
-            
+
             const malActive = malToken && (!malEnabledCheckbox || malEnabledCheckbox.checked);
             const alActive = alToken && (!alEnabledCheckbox || alEnabledCheckbox.checked);
             const simklActive = simklToken && (!simklEnabledCheckbox || simklEnabledCheckbox.checked);
-            
+
             let activeCount = 0;
             if (malActive) activeCount++;
             if (alActive) activeCount++;
             if (simklActive) activeCount++;
-            
+
             const warningText = document.getElementById("combine-warning-text");
-            
+
             if (combineCheckbox) {
                 if (activeCount >= 2) {
                     combineCheckbox.disabled = false;
@@ -1635,7 +1635,7 @@
 
         if (combineCheckbox) {
             combineCheckbox.addEventListener("change", () => syncCatalogCombinedVisibility(false));
-            
+
             const malEnabledCheckbox = document.getElementById("mal_enabled");
             const alEnabledCheckbox = document.getElementById("anilist_enabled");
             const simklEnabledCheckbox = document.getElementById("simkl_enabled");
