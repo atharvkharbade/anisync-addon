@@ -8,3 +8,5 @@ dist/
 .uv/
 flask_session/
 test_aiometadata/
+test_*.py
+test_proxy_routing.py
