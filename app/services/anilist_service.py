@@ -26,7 +26,11 @@ async def sync_anilist(user: dict, anilist_id: str, episode: int, sync_unlisted:
 
     logging.info(
         "AniList sync: id=%s ep=%d progress=%d status=%s total=%d",
-        anilist_id, episode, progress, current_al_status, total_episodes
+        anilist_id,
+        episode,
+        progress,
+        current_al_status,
+        total_episodes,
     )
 
     if not list_entry and not sync_unlisted:

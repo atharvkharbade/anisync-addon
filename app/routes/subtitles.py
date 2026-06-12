@@ -5,9 +5,9 @@ import urllib.parse
 from quart import Blueprint
 
 from app.lib.id_resolver import resolve
-from app.routes.utils import respond_with, is_valid_user_id, rate_limit
-from app.services.db import get_user
+from app.routes.utils import is_valid_user_id, rate_limit, respond_with
 from app.services.anilist_service import sync_anilist
+from app.services.db import get_user
 from app.services.mal_service import sync_mal
 from app.services.simkl_service import sync_simkl
 
@@ -30,7 +30,7 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
         return await respond_with({"subtitles": []})
 
     # Strip the "kitsu:" prefix
-    remainder = content_id[len("kitsu:"):]
+    remainder = content_id[len("kitsu:") :]
 
     # Strip anything after "/" (video hash / filename junk)
     remainder = remainder.split("/")[0]
@@ -82,9 +82,10 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
                 logging.info("Sync result: %s", r)
                 if getattr(r, "name", None) == "OK":
                     any_updated = True
-        
+
         if any_updated:
             from app.services.db import invalidate_user_watchlist_cache
+
             invalidate_user_watchlist_cache(user_id)
 
     return await respond_with({"subtitles": []})

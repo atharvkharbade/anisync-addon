@@ -1,9 +1,12 @@
+import contextvars
 import logging
+
 import httpx
-from typing import Optional
+
 from config import Config
 
-_client: Optional[httpx.AsyncClient] = None
+_client: httpx.AsyncClient | None = None
+
 
 class PersistentAsyncClient(httpx.AsyncClient):
     async def __aenter__(self):
@@ -28,9 +31,7 @@ def init_client():
     if _client is None:
         proxy = Config.PROXY_URL if Config.PROXY_URL else None
         _client = PersistentAsyncClient(
-            timeout=8,
-            limits=httpx.Limits(max_connections=200, max_keepalive_connections=50),
-            proxy=proxy
+            timeout=8, limits=httpx.Limits(max_connections=200, max_keepalive_connections=50), proxy=proxy
         )
         if proxy:
             logging.info("Initialized shared persistent connection pool with proxy: %s", proxy)
@@ -52,6 +53,4 @@ async def close_client():
         _client = None
 
 
-import contextvars
 correlation_id_var = contextvars.ContextVar("correlation_id", default=None)
-

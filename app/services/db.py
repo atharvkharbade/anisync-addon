@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
 
 from pymongo import MongoClient
 from pymongo.synchronous.collection import Collection
@@ -16,7 +15,7 @@ client: MongoClient = MongoClient(
     connectTimeoutMS=5000,
     socketTimeoutMS=5000,
     retryWrites=True,
-    retryReads=True
+    retryReads=True,
 )
 db: Database = client.get_database(Config.MONGO_DB)
 
@@ -26,7 +25,7 @@ try:
     db.get_collection("users").create_index("mal_id")
     db.get_collection("users").create_index("anilist_id")
     db.get_collection("users").create_index("simkl_id")
-    
+
     db.get_collection("rate_limits").create_index([("ip", 1), ("route", 1), ("timestamp", -1)])
     db.get_collection("rate_limits").create_index("timestamp", expireAfterSeconds=60)
     db.get_collection("sessions").create_index("expiry", expireAfterSeconds=0)
@@ -34,17 +33,17 @@ try:
     db.get_collection("fribb_mappings").create_index("mal_id")
     db.get_collection("fribb_mappings").create_index("anilist_id")
     db.get_collection("jikan_cache").create_index([("mal_id", 1), ("episode", 1)])
-    
+
     # id_cache indexes
     db.get_collection("id_cache").create_index("kitsu_id")
     db.get_collection("id_cache").create_index("mal_id")
     db.get_collection("id_cache").create_index("anilist_id")
     db.get_collection("id_cache").create_index("simkl_id")
-    
+
     # Caching collections indexes
     db.get_collection("user_watchlist_cache").create_index([("uid", 1), ("tracker", 1), ("status", 1)])
     db.get_collection("user_watchlist_cache").create_index("expires_at", expireAfterSeconds=0)
-    
+
     db.get_collection("anilist_airing_cache").create_index("anilist_id")
     db.get_collection("anilist_airing_cache").create_index("expires_at", expireAfterSeconds=0)
 
@@ -62,7 +61,8 @@ jikan_cache_collection: Collection = db.get_collection("jikan_cache")
 
 JIKAN_CACHE_TTL_HOURS = 168
 
-def get_jikan_filler_cache(mal_id: str, episode: int) -> Optional[bool]:
+
+def get_jikan_filler_cache(mal_id: str, episode: int) -> bool | None:
     """Return cached filler status for an episode, or None if not cached / expired."""
     try:
         doc = jikan_cache_collection.find_one({"mal_id": str(mal_id), "episode": int(episode)})
@@ -80,7 +80,14 @@ def set_jikan_filler_cache(mal_id: str, episode: int, filler: bool):
     try:
         jikan_cache_collection.update_one(
             {"mal_id": str(mal_id), "episode": int(episode)},
-            {"$set": {"mal_id": str(mal_id), "episode": int(episode), "filler": filler, "cached_at": datetime.utcnow()}},
+            {
+                "$set": {
+                    "mal_id": str(mal_id),
+                    "episode": int(episode),
+                    "filler": filler,
+                    "cached_at": datetime.utcnow(),
+                }
+            },
             upsert=True,
         )
     except Exception as e:
@@ -89,14 +96,15 @@ def set_jikan_filler_cache(mal_id: str, episode: int, filler: bool):
 
 # ── User helpers ──────────────────────────────────────────────────────────────
 
-def get_user(user_id: str) -> Optional[dict]:
+
+def get_user(user_id: str) -> dict | None:
     if not user_id:
         return None
     # 1. Try exact match first
     user = users_collection.find_one({"uid": user_id})
     if user:
         return user
-        
+
     # 2. Support stripping prefixes (e.g., al_6613976 -> 6613976)
     if user_id.startswith("al_"):
         stripped = user_id[3:]
@@ -108,35 +116,31 @@ def get_user(user_id: str) -> Optional[dict]:
         user = users_collection.find_one({"uid": stripped})
         if user:
             return user
-            
+
     # 3. Support adding prefixes (e.g., 6613976 -> al_6613976)
     if user_id.isdigit():
         for prefix in ["al_", "simkl_"]:
             user = users_collection.find_one({"uid": f"{prefix}{user_id}"})
             if user:
                 return user
-                
+
     return None
 
 
-def find_user_by_mal_id(mal_id: str) -> Optional[dict]:
+def find_user_by_mal_id(mal_id: str) -> dict | None:
     return users_collection.find_one({"$or": [{"uid": str(mal_id)}, {"mal_id": str(mal_id)}]})
 
 
-def find_user_by_anilist_id(anilist_id: str) -> Optional[dict]:
-    return users_collection.find_one({"$or": [
-        {"uid": f"al_{anilist_id}"},
-        {"uid": str(anilist_id)},
-        {"anilist_id": str(anilist_id)}
-    ]})
+def find_user_by_anilist_id(anilist_id: str) -> dict | None:
+    return users_collection.find_one(
+        {"$or": [{"uid": f"al_{anilist_id}"}, {"uid": str(anilist_id)}, {"anilist_id": str(anilist_id)}]}
+    )
 
 
-def find_user_by_simkl_id(simkl_id: str) -> Optional[dict]:
-    return users_collection.find_one({"$or": [
-        {"uid": f"simkl_{simkl_id}"},
-        {"uid": str(simkl_id)},
-        {"simkl_id": str(simkl_id)}
-    ]})
+def find_user_by_simkl_id(simkl_id: str) -> dict | None:
+    return users_collection.find_one(
+        {"$or": [{"uid": f"simkl_{simkl_id}"}, {"uid": str(simkl_id)}, {"simkl_id": str(simkl_id)}]}
+    )
 
 
 def store_user(user_details: dict) -> bool:
@@ -146,13 +150,11 @@ def store_user(user_details: dict) -> bool:
     user_details["uid"] = str(uid)
     existing = users_collection.find_one({"uid": str(uid)})
     if existing:
-        return users_collection.replace_one(
-            {"uid": str(uid)}, user_details
-        ).acknowledged
+        return users_collection.replace_one({"uid": str(uid)}, user_details).acknowledged
     return users_collection.insert_one(user_details).acknowledged
 
 
-def get_valid_mal_user(user_id: str) -> tuple[dict, Optional[str]]:
+def get_valid_mal_user(user_id: str) -> tuple[dict, str | None]:
     user = get_user(user_id)
     if not user:
         return {}, "User not found."
@@ -168,28 +170,29 @@ def get_valid_mal_user(user_id: str) -> tuple[dict, Optional[str]]:
 
 # ── ARM ID cache ──────────────────────────────────────────────────────────────
 
-def get_cached_ids(kitsu_id: str) -> Optional[dict]:
+
+def get_cached_ids(kitsu_id: str) -> dict | None:
     try:
         return id_cache_collection.find_one({"kitsu_id": int(kitsu_id)})
     except (ValueError, TypeError):
         return None
 
 
-def get_cached_ids_by_mal(mal_id: str) -> Optional[dict]:
+def get_cached_ids_by_mal(mal_id: str) -> dict | None:
     try:
         return id_cache_collection.find_one({"mal_id": str(mal_id)})
     except (ValueError, TypeError):
         return None
 
 
-def get_cached_ids_by_anilist(anilist_id: str) -> Optional[dict]:
+def get_cached_ids_by_anilist(anilist_id: str) -> dict | None:
     try:
         return id_cache_collection.find_one({"anilist_id": str(anilist_id)})
     except (ValueError, TypeError):
         return None
 
 
-def get_cached_ids_by_simkl(simkl_id: str) -> Optional[dict]:
+def get_cached_ids_by_simkl(simkl_id: str) -> dict | None:
     try:
         query = {"$or": [{"simkl_id": str(simkl_id)}]}
         if str(simkl_id).isdigit():
@@ -200,7 +203,15 @@ def get_cached_ids_by_simkl(simkl_id: str) -> Optional[dict]:
         return None
 
 
-def cache_ids(kitsu_id: str, mal_id: Optional[str], anilist_id: Optional[str], simkl_id: Optional[str] = None, imdb_id: Optional[str] = None, tmdb_id: Optional[str] = None, tvdb_id: Optional[str] = None):
+def cache_ids(
+    kitsu_id: str,
+    mal_id: str | None,
+    anilist_id: str | None,
+    simkl_id: str | None = None,
+    imdb_id: str | None = None,
+    tmdb_id: str | None = None,
+    tvdb_id: str | None = None,
+):
     try:
         doc = {
             "kitsu_id": int(kitsu_id) if kitsu_id else None,
@@ -237,7 +248,9 @@ def invalidate_user_watchlist_cache(user_id: str):
         logging.error("Failed to invalidate watchlist cache for user %s: %s", user_id, e)
 
 
-def get_user_watch_progress(user_id: str, mal_id: Optional[str] = None, anilist_id: Optional[str] = None, simkl_id: Optional[str] = None) -> int:
+def get_user_watch_progress(
+    user_id: str, mal_id: str | None = None, anilist_id: str | None = None, simkl_id: str | None = None
+) -> int:
     """Find the user's maximum watch progress (watched episode count) across cached watchlists."""
     if not user_id:
         return 0
@@ -262,7 +275,7 @@ def get_user_watch_progress(user_id: str, mal_id: Optional[str] = None, anilist_
                     node = item.get("node") or {}
                     nid = str(node.get("id") or "")
                     if nid and mal_str and nid == mal_str:
-                        status_obj = item.get("my_list_status") or {}
+                        status_obj = node.get("my_list_status") or {}
                         max_progress = max(max_progress, status_obj.get("num_episodes_watched") or 0)
 
             elif tracker == "anilist":
@@ -293,13 +306,15 @@ def get_user_watch_progress(user_id: str, mal_id: Optional[str] = None, anilist_
                         match = True
 
                     if match:
-                        prog = item.get("watched_episodes_count") or item.get("episodes_watched") or item.get("progress") or 0
+                        prog = (
+                            item.get("watched_episodes_count")
+                            or item.get("episodes_watched")
+                            or item.get("progress")
+                            or 0
+                        )
                         max_progress = max(max_progress, prog)
 
     except Exception as e:
         logging.error("Failed to query watch progress for user %s: %s", user_id, e)
 
     return max_progress
-
-
-

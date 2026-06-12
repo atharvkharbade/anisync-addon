@@ -1,8 +1,7 @@
 import logging
-from typing import Optional
 
-from config import Config
 from app.services.http import get_client
+from config import Config
 
 BASE_URL = "https://api.simkl.com"
 TIMEOUT = 10
@@ -40,7 +39,6 @@ async def get_access_token(code: str) -> str:
     return data.get("access_token") or ""
 
 
-
 async def get_user_details(token: str) -> dict:
     """Get the user's settings / details from Simkl."""
     client = get_client()
@@ -58,7 +56,7 @@ async def get_user_details(token: str) -> dict:
     return resp.json()
 
 
-async def get_user_anime_list(token: str, status: Optional[str] = None) -> list:
+async def get_user_anime_list(token: str, status: str | None = None) -> list:
     """Get the user's anime watchlist items (all or by status)."""
     client = get_client()
     headers = {
@@ -99,8 +97,8 @@ async def get_user_anime_list(token: str, status: Optional[str] = None) -> list:
 async def sync_history(
     token: str,
     kitsu_id: str,
-    mal_id: Optional[str],
-    anilist_id: Optional[str],
+    mal_id: str | None,
+    anilist_id: str | None,
     episode: int,
     content_type: str,
 ) -> bool:
@@ -120,32 +118,19 @@ async def sync_history(
     if mal_id:
         ids["mal"] = int(mal_id) if isinstance(mal_id, (int, str)) and str(mal_id).isdigit() else mal_id
     if anilist_id:
-        ids["anilist"] = int(anilist_id) if isinstance(anilist_id, (int, str)) and str(anilist_id).isdigit() else anilist_id
+        ids["anilist"] = (
+            int(anilist_id) if isinstance(anilist_id, (int, str)) and str(anilist_id).isdigit() else anilist_id
+        )
 
     # Format the payload based on movie vs show content type
     if content_type == "movie":
-        payload = {
-            "movies": [
-                {
-                    "ids": ids
-                }
-            ]
-        }
+        payload = {"movies": [{"ids": ids}]}
     else:
         payload = {
             "shows": [
                 {
                     "ids": ids,
-                    "seasons": [
-                        {
-                            "number": 1,
-                            "episodes": [
-                                {
-                                    "number": i
-                                } for i in range(1, int(episode) + 1)
-                            ]
-                        }
-                    ]
+                    "seasons": [{"number": 1, "episodes": [{"number": i} for i in range(1, int(episode) + 1)]}],
                 }
             ]
         }

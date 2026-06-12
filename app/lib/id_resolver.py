@@ -1,19 +1,23 @@
-import logging
-from typing import Optional
-from datetime import datetime, timedelta
 import asyncio
+import logging
+from datetime import datetime, timedelta
 
 import httpx
 
+from app.services.db import (
+    cache_ids,
+    db,
+    get_cached_ids,
+    get_cached_ids_by_anilist,
+    get_cached_ids_by_mal,
+    get_cached_ids_by_simkl,
+)
 from app.services.http import get_client
-from app.services.db import db, cache_ids, get_cached_ids, get_cached_ids_by_mal, get_cached_ids_by_anilist, get_cached_ids_by_simkl
 
-ARM_API    = "https://arm.haglund.dev/api/v2/ids"
-ANIZP_API  = "https://api.ani.zip/mappings"
-FRIBB_API  = "https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-full.json"
-TIMEOUT    = 8
-
-_fribb_lock = asyncio.Lock()
+ARM_API = "https://arm.haglund.dev/api/v2/ids"
+ANIZP_API = "https://api.ani.zip/mappings"
+FRIBB_API = "https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-full.json"
+TIMEOUT = 8
 
 
 async def ensure_fribb_mappings(client: httpx.AsyncClient):
@@ -40,12 +44,39 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
     except Exception as e:
         logging.error("Failed to query Fribb metadata: %s", e)
 
-    async with _fribb_lock:
-        # Re-check metadata inside the lock
+    # Acquire distributed lock in MongoDB to prevent multi-worker races
+    try:
+        # Check for active rebuild lock (not stale)
+        lock = db.fribb_meta.find_one({"key": "rebuild_lock"})
+        if lock:
+            locked_at = lock.get("locked_at")
+            if locked_at and (now - locked_at) < timedelta(minutes=10):
+                logging.info("Another worker is currently rebuilding Fribb mappings. Skipping.")
+                return
+            else:
+                logging.warning("Stale Fribb rebuild lock detected. Removing it.")
+                db.fribb_meta.delete_one({"key": "rebuild_lock"})
+
+        # Atomically acquire rebuild lock
+        res = db.fribb_meta.find_one_and_update(
+            {"key": "rebuild_lock"},
+            {"$setOnInsert": {"key": "rebuild_lock", "locked_at": now}},
+            upsert=True,
+            return_document=False,
+        )
+        if res is not None:
+            logging.info("Another worker acquired the Fribb rebuild lock. Skipping.")
+            return
+    except Exception as e:
+        logging.error("Failed to acquire Fribb rebuild lock: %s", e)
+        return
+
+    try:
+        # Recheck last_updated after acquiring lock
         try:
             if not force_rebuild:
                 meta = db.fribb_meta.find_one({"key": "last_updated"})
-                if meta and (now - meta["timestamp"]) < timedelta(hours=24):
+                if meta and (datetime.utcnow() - meta["timestamp"]) < timedelta(hours=24):
                     return
         except Exception:
             pass
@@ -65,7 +96,7 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
                     simkl_id = entry.get("simkl_id")
                     imdb_id = entry.get("imdb_id")
                     tvdb_id = entry.get("tvdb_id")
-                    
+
                     tmdb_id = None
                     tmdb_obj = entry.get("themoviedb_id")
                     if tmdb_obj:
@@ -74,15 +105,17 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
                         else:
                             tmdb_id = tmdb_obj
 
-                    docs.append({
-                        "kitsu_id": int(kitsu_id),
-                        "mal_id": str(mal_id) if mal_id is not None else None,
-                        "anilist_id": str(anilist_id) if anilist_id is not None else None,
-                        "simkl_id": str(simkl_id) if simkl_id is not None else None,
-                        "imdb_id": str(imdb_id) if imdb_id else None,
-                        "tmdb_id": str(tmdb_id) if tmdb_id is not None else None,
-                        "tvdb_id": str(tvdb_id) if tvdb_id is not None else None,
-                    })
+                    docs.append(
+                        {
+                            "kitsu_id": int(kitsu_id),
+                            "mal_id": str(mal_id) if mal_id is not None else None,
+                            "anilist_id": str(anilist_id) if anilist_id is not None else None,
+                            "simkl_id": str(simkl_id) if simkl_id is not None else None,
+                            "imdb_id": str(imdb_id) if imdb_id else None,
+                            "tmdb_id": str(tmdb_id) if tmdb_id is not None else None,
+                            "tvdb_id": str(tvdb_id) if tvdb_id is not None else None,
+                        }
+                    )
 
             if docs:
                 temp_coll = db.get_collection("fribb_mappings_temp")
@@ -93,21 +126,24 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
                 temp_coll.create_index("anilist_id")
                 temp_coll.create_index("simkl_id")
                 temp_coll.create_index("imdb_id")
-                
+
                 # Swap collections atomically
                 temp_coll.rename("fribb_mappings", dropTarget=True)
 
                 db.fribb_meta.update_one(
-                    {"key": "last_updated"},
-                    {"$set": {"timestamp": datetime.utcnow()}},
-                    upsert=True
+                    {"key": "last_updated"}, {"$set": {"timestamp": datetime.utcnow()}}, upsert=True
                 )
                 logging.info("Successfully updated Fribb mappings with %d entries.", len(docs))
         except Exception as e:
             logging.error("Failed to update Fribb mappings cache: %s", e)
+    finally:
+        try:
+            db.fribb_meta.delete_one({"key": "rebuild_lock"})
+        except Exception as e:
+            logging.error("Failed to release Fribb rebuild lock: %s", e)
 
 
-async def _try_arm(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional[str], Optional[str]]:
+async def _try_arm(client: httpx.AsyncClient, kitsu_id: str) -> tuple[str | None, str | None]:
     resp = await client.get(
         ARM_API,
         params={"source": "kitsu", "id": kitsu_id, "include": "anilist,myanimelist"},
@@ -115,42 +151,37 @@ async def _try_arm(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional[s
     )
     resp.raise_for_status()
     data = resp.json()
-    mal_id     = str(data["myanimelist"]) if data.get("myanimelist") else None
-    anilist_id = str(data["anilist"])     if data.get("anilist")     else None
+    mal_id = str(data["myanimelist"]) if data.get("myanimelist") else None
+    anilist_id = str(data["anilist"]) if data.get("anilist") else None
     if mal_id or anilist_id:
         return mal_id, anilist_id
     return None, None
 
 
-async def _try_anizp(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional[str], Optional[str]]:
+async def _try_anizp(client: httpx.AsyncClient, kitsu_id: str) -> tuple[str | None, str | None]:
     resp = await client.get(ANIZP_API, params={"kitsu_id": kitsu_id}, timeout=TIMEOUT)
     resp.raise_for_status()
-    mappings   = resp.json().get("mappings", {})
-    mal_id     = str(mappings["mal_id"])     if mappings.get("mal_id")     else None
+    mappings = resp.json().get("mappings", {})
+    mal_id = str(mappings["mal_id"]) if mappings.get("mal_id") else None
     anilist_id = str(mappings["anilist_id"]) if mappings.get("anilist_id") else None
-    imdb_id    = str(mappings.get("imdb_id")) if mappings.get("imdb_id") else None
-    tmdb_id    = str(mappings.get("themoviedb_id")) if mappings.get("themoviedb_id") else None
-    tvdb_id    = str(mappings.get("thetvdb_id")) if mappings.get("thetvdb_id") else None
+    imdb_id = str(mappings.get("imdb_id")) if mappings.get("imdb_id") else None
+    tmdb_id = str(mappings.get("themoviedb_id")) if mappings.get("themoviedb_id") else None
+    tvdb_id = str(mappings.get("thetvdb_id")) if mappings.get("thetvdb_id") else None
     if mal_id or anilist_id or imdb_id or tmdb_id or tvdb_id:
         cache_ids(
-            kitsu_id=kitsu_id,
-            mal_id=mal_id,
-            anilist_id=anilist_id,
-            imdb_id=imdb_id,
-            tmdb_id=tmdb_id,
-            tvdb_id=tvdb_id
+            kitsu_id=kitsu_id, mal_id=mal_id, anilist_id=anilist_id, imdb_id=imdb_id, tmdb_id=tmdb_id, tvdb_id=tvdb_id
         )
         return mal_id, anilist_id
     return None, None
 
 
-async def _try_fribb(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional[str], Optional[str]]:
+async def _try_fribb(client: httpx.AsyncClient, kitsu_id: str) -> tuple[str | None, str | None]:
     await ensure_fribb_mappings(client)
     try:
         kid = int(kitsu_id)
         doc = db.fribb_mappings.find_one({"kitsu_id": kid})
         if doc:
-            mal_id     = doc.get("mal_id")
+            mal_id = doc.get("mal_id")
             anilist_id = doc.get("anilist_id")
             return mal_id, anilist_id
     except Exception as e:
@@ -158,7 +189,7 @@ async def _try_fribb(client: httpx.AsyncClient, kitsu_id: str) -> tuple[Optional
     return None, None
 
 
-async def resolve(kitsu_id: str) -> tuple[Optional[str], Optional[str]]:
+async def resolve(kitsu_id: str) -> tuple[str | None, str | None]:
     """
     Returns (mal_id, anilist_id) for a given kitsu_id.
     Checks MongoDB cache first, then tries APIs in order:
@@ -171,9 +202,9 @@ async def resolve(kitsu_id: str) -> tuple[Optional[str], Optional[str]]:
         return cached.get("mal_id"), cached.get("anilist_id")
 
     resolvers = [
-        ("ARM",    _try_arm),
+        ("ARM", _try_arm),
         ("ani.zip", _try_anizp),
-        ("Fribb",  _try_fribb),
+        ("Fribb", _try_fribb),
     ]
 
     client = get_client()
@@ -193,7 +224,7 @@ async def resolve(kitsu_id: str) -> tuple[Optional[str], Optional[str]]:
     return None, None
 
 
-async def search_kitsu_by_title(title: str) -> Optional[str]:
+async def search_kitsu_by_title(title: str) -> str | None:
     """
     Searches Kitsu by title and returns the best matching kitsu_id.
     """
@@ -219,7 +250,7 @@ async def search_kitsu_by_title(title: str) -> Optional[str]:
     return None
 
 
-async def fetch_anime_info_by_mal_id(mal_id: str) -> tuple[Optional[str], Optional[str]]:
+async def fetch_anime_info_by_mal_id(mal_id: str) -> tuple[str | None, str | None]:
     """
     Queries AniList GraphQL using idMal to retrieve the title and AniList ID.
     Also falls back to public MAL API V2 if AniList GraphQL query fails.
@@ -258,6 +289,7 @@ async def fetch_anime_info_by_mal_id(mal_id: str) -> tuple[Optional[str], Option
 
     # 2. Fallback to MyAnimeList Public API if Client ID is configured
     from config import Config
+
     if Config.MAL_CLIENT_ID:
         try:
             client = get_client()
@@ -276,7 +308,7 @@ async def fetch_anime_info_by_mal_id(mal_id: str) -> tuple[Optional[str], Option
     return None, None
 
 
-async def fetch_anime_info_by_anilist_id(anilist_id: str) -> tuple[Optional[str], Optional[str]]:
+async def fetch_anime_info_by_anilist_id(anilist_id: str) -> tuple[str | None, str | None]:
     """
     Queries AniList GraphQL using id to retrieve the title and MAL ID.
     Returns (title, mal_id).
@@ -314,7 +346,7 @@ async def fetch_anime_info_by_anilist_id(anilist_id: str) -> tuple[Optional[str]
     return None, None
 
 
-async def resolve_mal_to_kitsu(mal_id: str) -> Optional[str]:
+async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
     """
     Returns kitsu_id (str) for a given mal_id.
     Checks MongoDB cache first, then tries APIs in order:
@@ -374,7 +406,7 @@ async def resolve_mal_to_kitsu(mal_id: str) -> Optional[str]:
     return None
 
 
-async def resolve_anilist_to_kitsu(anilist_id: str) -> Optional[str]:
+async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
     """
     Returns kitsu_id (str) for a given anilist_id.
     Checks MongoDB cache first, then tries APIs in order:
@@ -425,7 +457,7 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> Optional[str]:
                     anilist_id=anilist_id,
                     imdb_id=imdb_id,
                     tmdb_id=tmdb_id,
-                    tvdb_id=tvdb_id
+                    tvdb_id=tvdb_id,
                 )
                 return kitsu_id
     except Exception as e:
@@ -458,7 +490,7 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> Optional[str]:
     return None
 
 
-async def resolve_simkl_to_kitsu(simkl_id: str) -> Optional[str]:
+async def resolve_simkl_to_kitsu(simkl_id: str) -> str | None:
     """
     Returns kitsu_id (str) for a given simkl_id.
     Checks MongoDB cache first, then queries local watchlist cache, then Simkl API.
@@ -475,15 +507,9 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> Optional[str]:
         simkl_id_int = int(simkl_id) if simkl_id.isdigit() else None
         query_or = [{"data.anime.ids.simkl": simkl_id}, {"data.ids.simkl": simkl_id}]
         if simkl_id_int is not None:
-            query_or.extend([
-                {"data.anime.ids.simkl": simkl_id_int},
-                {"data.ids.simkl": simkl_id_int}
-            ])
-        
-        doc = db.user_watchlist_cache.find_one({
-            "tracker": "simkl",
-            "$or": query_or
-        })
+            query_or.extend([{"data.anime.ids.simkl": simkl_id_int}, {"data.ids.simkl": simkl_id_int}])
+
+        doc = db.user_watchlist_cache.find_one({"tracker": "simkl", "$or": query_or})
         if doc:
             items = doc.get("data", [])
             for item in items:
@@ -493,13 +519,13 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> Optional[str]:
                     kitsu_id = str(ids.get("kitsu") or "") or None
                     mal_id = str(ids.get("mal") or "") or None
                     anilist_id = str(ids.get("anilist") or "") or None
-                    
+
                     if not kitsu_id:
                         if mal_id:
                             kitsu_id = await resolve_mal_to_kitsu(mal_id)
                         elif anilist_id:
                             kitsu_id = await resolve_anilist_to_kitsu(anilist_id)
-                            
+
                     if kitsu_id:
                         cache_ids(kitsu_id, mal_id, anilist_id, simkl_id)
                         return kitsu_id
@@ -510,6 +536,7 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> Optional[str]:
     client = get_client()
     try:
         from config import Config
+
         url = f"https://api.simkl.com/anime/{simkl_id}"
         params = {"client_id": Config.SIMKL_CLIENT_ID}
         headers = {"User-Agent": "AniSync/1.0"}
@@ -517,12 +544,12 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> Optional[str]:
         if resp.status_code == 200:
             data = resp.json()
             ids = data.get("ids") or {}
-            
+
             simkl_id_val = str(ids.get("simkl") or simkl_id)
             kitsu_id = str(ids.get("kitsu") or "") or None
             mal_id = str(ids.get("mal") or "") or None
             anilist_id = str(ids.get("anilist") or "") or None
-            
+
             if not kitsu_id:
                 if mal_id:
                     kitsu_id = await resolve_mal_to_kitsu(mal_id)
@@ -532,7 +559,7 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> Optional[str]:
                     title = data.get("title") or data.get("en_title")
                     if title:
                         kitsu_id = await search_kitsu_by_title(title)
-            
+
             if kitsu_id:
                 cache_ids(kitsu_id, mal_id, anilist_id, simkl_id_val)
                 return kitsu_id
@@ -542,13 +569,15 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> Optional[str]:
     return None
 
 
-async def bulk_resolve_to_kitsu(mal_ids: list[str] = None, anilist_ids: list[str] = None, simkl_ids: list[str] = None) -> dict:
+async def bulk_resolve_to_kitsu(
+    mal_ids: list[str] = None, anilist_ids: list[str] = None, simkl_ids: list[str] = None
+) -> dict:
     """
     Returns a dict mapping (mal_id/anilist_id/simkl_id) -> kitsu_id.
     """
     resolved = {}
-    from app.services.db import id_cache_collection, db
-    
+    from app.services.db import db, id_cache_collection
+
     # 1. Query id_cache
     query_or = []
     if mal_ids:
@@ -561,10 +590,10 @@ async def bulk_resolve_to_kitsu(mal_ids: list[str] = None, anilist_ids: list[str
         if simkl_ints:
             query_or.append({"simkl_id": {"$in": simkl_ints}})
             query_or.append({"simkl": {"$in": simkl_ints}})
-            
+
     if not query_or:
         return {}
-        
+
     try:
         docs = list(id_cache_collection.find({"$or": query_or}))
         for doc in docs:
@@ -581,11 +610,11 @@ async def bulk_resolve_to_kitsu(mal_ids: list[str] = None, anilist_ids: list[str
                 resolved[f"simkl:{doc['simkl']}"] = k_id
     except Exception as e:
         logging.error("bulk_resolve_to_kitsu: id_cache query failed: %s", e)
-        
+
     # 2. Check fribb_mappings
     unresolved_mal = [x for x in (mal_ids or []) if f"mal:{x}" not in resolved]
     unresolved_al = [x for x in (anilist_ids or []) if f"anilist:{x}" not in resolved]
-    
+
     if unresolved_mal or unresolved_al:
         try:
             fribb_query = []
@@ -605,15 +634,16 @@ async def bulk_resolve_to_kitsu(mal_ids: list[str] = None, anilist_ids: list[str
                         resolved[f"anilist:{doc['anilist_id']}"] = k_id
         except Exception as e:
             logging.error("bulk_resolve_to_kitsu: fribb query failed: %s", e)
-            
+
     # 3. Individual on-the-fly resolution
     remaining_mal = [x for x in (mal_ids or []) if f"mal:{x}" not in resolved]
     remaining_al = [x for x in (anilist_ids or []) if f"anilist:{x}" not in resolved]
     remaining_simkl = [x for x in (simkl_ids or []) if f"simkl:{x}" not in resolved]
-    
+
     if remaining_mal or remaining_al or remaining_simkl:
         tasks = []
         for x in remaining_mal:
+
             async def resolve_one_mal(val=x):
                 try:
                     kid = await resolve_mal_to_kitsu(val)
@@ -621,8 +651,10 @@ async def bulk_resolve_to_kitsu(mal_ids: list[str] = None, anilist_ids: list[str
                         resolved[f"mal:{val}"] = kid
                 except Exception:
                     pass
+
             tasks.append(resolve_one_mal())
         for x in remaining_al:
+
             async def resolve_one_al(val=x):
                 try:
                     kid = await resolve_anilist_to_kitsu(val)
@@ -630,8 +662,10 @@ async def bulk_resolve_to_kitsu(mal_ids: list[str] = None, anilist_ids: list[str
                         resolved[f"anilist:{val}"] = kid
                 except Exception:
                     pass
+
             tasks.append(resolve_one_al())
         for x in remaining_simkl:
+
             async def resolve_one_simkl(val=x):
                 try:
                     kid = await resolve_simkl_to_kitsu(val)
@@ -639,9 +673,10 @@ async def bulk_resolve_to_kitsu(mal_ids: list[str] = None, anilist_ids: list[str
                         resolved[f"simkl:{val}"] = kid
                 except Exception:
                     pass
+
             tasks.append(resolve_one_simkl())
-            
+
         if tasks:
             await asyncio.gather(*tasks)
-            
+
     return resolved

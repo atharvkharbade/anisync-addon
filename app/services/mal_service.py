@@ -1,7 +1,6 @@
 import logging
 from datetime import date
 from enum import Enum
-from typing import Optional
 
 from app.api import mal as mal_api
 
@@ -18,7 +17,7 @@ def _resolve_new_status(
     current_episode: int,
     watched_episodes: int,
     total_episodes: int,
-) -> Optional[str]:
+) -> str | None:
     # Allow any listed status including "completed" re-watch edge cases
     if not current_status:
         return None
@@ -33,7 +32,7 @@ def _resolve_new_status(
 
 
 def _watch_dates(
-    list_status: Optional[dict],
+    list_status: dict | None,
     current_episode: int,
     total_episodes: int,
 ) -> tuple[str, str]:
@@ -69,7 +68,11 @@ async def sync_mal(user: dict, mal_id: str, episode: int, sync_unlisted: bool) -
 
     logging.info(
         "MAL sync: id=%s ep=%d watched=%d status=%s total=%d",
-        mal_id, episode, watched_episodes, current_status, total_episodes
+        mal_id,
+        episode,
+        watched_episodes,
+        current_status,
+        total_episodes,
     )
 
     if not current_status and not sync_unlisted:
@@ -86,9 +89,7 @@ async def sync_mal(user: dict, mal_id: str, episode: int, sync_unlisted: bool) -
     start_date, finish_date = _watch_dates(list_status, episode, total_episodes)
 
     try:
-        await mal_api.update_watch_status(
-            token, mal_id, episode, new_status, start_date, finish_date
-        )
+        await mal_api.update_watch_status(token, mal_id, episode, new_status, start_date, finish_date)
         logging.info("MAL updated: id=%s ep=%d status=%s", mal_id, episode, new_status)
         return UpdateStatus.OK
     except Exception as e:

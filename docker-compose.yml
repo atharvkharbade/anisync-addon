@@ -6,7 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
     image: anisync-local:beta
-    container_name: anisync
+    ports:
+      - "5005:5000"
     labels:
       - com.centurylinklabs.watchtower.enable=false
     env_file:
@@ -31,7 +32,6 @@ services:
     mem_limit: 1g
     memswap_limit: 2g
     image: mongo:7
-    container_name: anisync-mongo
     volumes:
       - mongo_data:/data/db
     healthcheck:

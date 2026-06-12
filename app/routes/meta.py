@@ -1,14 +1,15 @@
-import logging
-import httpx
 import asyncio
+import logging
+
 from quart import Blueprint
 
+from app.lib.id_resolver import resolve, resolve_anilist_to_kitsu, resolve_mal_to_kitsu, resolve_simkl_to_kitsu
+from app.routes.utils import is_valid_user_id, rate_limit, respond_with
 from app.services.db import get_user
-from app.routes.utils import respond_with, is_valid_user_id, rate_limit
 from app.services.http import get_client
-from app.lib.id_resolver import resolve, resolve_mal_to_kitsu, resolve_anilist_to_kitsu, resolve_simkl_to_kitsu
 
 meta_bp = Blueprint("meta", __name__)
+
 
 async def fetch_anizp_metadata(anilist_id: str = None, mal_id: str = None) -> dict:
     url = "https://api.ani.zip/mappings"
@@ -40,6 +41,7 @@ async def fetch_cinemeta_metadata(imdb_id: str, media_type: str) -> dict:
         logging.warning("Failed to fetch metadata from Cinemeta: %s", e)
     return {}
 
+
 KITSU_API_BASE = "https://kitsu.io/api/edge"
 TIMEOUT = 10
 
@@ -59,7 +61,17 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
     return resp.json()
 
 
-def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None, mal_id: str = None, show_filler_tags: bool = True, loop = None, cinemeta_data: dict = None, show_watched_tags: bool = False, watched_progress: int = 0) -> dict:
+def map_kitsu_to_stremio(
+    kitsu_data: dict,
+    meta_id: str,
+    anizp_data: dict = None,
+    mal_id: str = None,
+    show_filler_tags: bool = True,
+    loop=None,
+    cinemeta_data: dict = None,
+    show_watched_tags: bool = False,
+    watched_progress: int = 0,
+) -> dict:
     data = kitsu_data.get("data", {})
     if not data:
         return {}
@@ -83,10 +95,12 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
     poster_data = attributes.get("posterImage") or {}
     poster = anizp_poster or poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or ""
     cover_data = attributes.get("coverImage") or {}
-    background = anizp_fanart or cover_data.get("original") or cover_data.get("large") or cover_data.get("medium") or poster
+    background = (
+        anizp_fanart or cover_data.get("original") or cover_data.get("large") or cover_data.get("medium") or poster
+    )
 
     imdb_id = anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None
-    
+
     logo = anizp_logo
     if not logo and cinemeta_data:
         logo = cinemeta_data.get("logo")
@@ -127,15 +141,17 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
     anizp_episodes = anizp_data.get("episodes", {}) if anizp_data else {}
 
     if subtype == "movie":
-        videos.append({
-            "id": f"kitsu:{data['id']}",
-            "title": title,
-            "episode": 1,
-            "season": 1,
-            "released": start_date + "T00:00:00Z" if start_date else None,
-            "overview": synopsis,
-            "thumbnail": background or poster,
-        })
+        videos.append(
+            {
+                "id": f"kitsu:{data['id']}",
+                "title": title,
+                "episode": 1,
+                "season": 1,
+                "released": start_date + "T00:00:00Z" if start_date else None,
+                "overview": synopsis,
+                "thumbnail": background or poster,
+            }
+        )
     else:
         if episodes_data:
             # Sort by episode number
@@ -143,10 +159,10 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
             for ep in episodes_data:
                 attrs = ep.get("attributes", {})
                 ep_num = attrs.get("number") or 1
-                
+
                 # Fetch details from ani.zip if available
                 anizp_ep = anizp_episodes.get(str(ep_num)) or {}
-                
+
                 ep_title = (
                     attrs.get("canonicalTitle")
                     or anizp_ep.get("title", {}).get("en")
@@ -161,89 +177,91 @@ def map_kitsu_to_stremio(kitsu_data: dict, meta_id: str, anizp_data: dict = None
                     or (attrs.get("thumbnail") or {}).get("large")
                     or background
                 )
-                
+
                 # Check filler status
                 is_filler = False
                 if mal_id and show_filler_tags:
                     from app.services.db import get_jikan_filler_cache
+
                     cached = get_jikan_filler_cache(mal_id, ep_num)
                     if cached is not None:
                         is_filler = cached
                     else:
-                        from app.routes.catalog import currently_fetching_pairs, background_fetch_and_cache_filler
+                        from app.routes.catalog import background_fetch_and_cache_filler, currently_fetching_pairs
+
                         pair = (str(mal_id), ep_num)
                         if pair not in currently_fetching_pairs:
                             currently_fetching_pairs.add(pair)
                             if loop and loop.is_running():
                                 try:
                                     asyncio.run_coroutine_threadsafe(
-                                        background_fetch_and_cache_filler(mal_id, ep_num),
-                                        loop
+                                        background_fetch_and_cache_filler(mal_id, ep_num), loop
                                     )
                                 except Exception:
                                     pass
-                                
+
                 if is_filler:
                     ep_title = f"[Filler] {ep_title}"
                 if show_watched_tags and ep_num <= watched_progress:
                     ep_title = f"[Watched] {ep_title}"
 
-                videos.append({
-                    "id": f"kitsu:{data['id']}:{ep_num}",
-                    "title": ep_title,
-                    "episode": ep_num,
-                    "season": 1,
-                    "released": released + "T00:00:00Z" if released else None,
-                    "overview": overview,
-                    "thumbnail": thumbnail,
-                })
+                videos.append(
+                    {
+                        "id": f"kitsu:{data['id']}:{ep_num}",
+                        "title": ep_title,
+                        "episode": ep_num,
+                        "season": 1,
+                        "released": released + "T00:00:00Z" if released else None,
+                        "overview": overview,
+                        "thumbnail": thumbnail,
+                    }
+                )
         else:
             # Fallback if no episodes returned (generate placeholder episodes from episodeCount)
             ep_count = attributes.get("episodeCount") or 12
             for i in range(1, ep_count + 1):
                 anizp_ep = anizp_episodes.get(str(i)) or {}
                 ep_title = (
-                    anizp_ep.get("title", {}).get("en")
-                    or anizp_ep.get("title", {}).get("x-jat")
-                    or f"Episode {i}"
+                    anizp_ep.get("title", {}).get("en") or anizp_ep.get("title", {}).get("x-jat") or f"Episode {i}"
                 )
                 overview = anizp_ep.get("overview") or anizp_ep.get("summary") or f"Episode {i} of {title}"
                 thumbnail = anizp_ep.get("image") or background
-                
+
                 # Check filler status for fallback
                 is_filler = False
                 if mal_id and show_filler_tags:
                     from app.services.db import get_jikan_filler_cache
+
                     cached = get_jikan_filler_cache(mal_id, i)
                     if cached is not None:
                         is_filler = cached
                     else:
-                        from app.routes.catalog import currently_fetching_pairs, background_fetch_and_cache_filler
+                        from app.routes.catalog import background_fetch_and_cache_filler, currently_fetching_pairs
+
                         pair = (str(mal_id), i)
                         if pair not in currently_fetching_pairs:
                             currently_fetching_pairs.add(pair)
                             if loop and loop.is_running():
                                 try:
-                                    asyncio.run_coroutine_threadsafe(
-                                        background_fetch_and_cache_filler(mal_id, i),
-                                        loop
-                                    )
+                                    asyncio.run_coroutine_threadsafe(background_fetch_and_cache_filler(mal_id, i), loop)
                                 except Exception:
                                     pass
-                                
+
                 if is_filler:
                     ep_title = f"[Filler] {ep_title}"
                 if show_watched_tags and i <= watched_progress:
                     ep_title = f"[Watched] {ep_title}"
 
-                videos.append({
-                    "id": f"kitsu:{data['id']}:{i}",
-                    "title": ep_title,
-                    "episode": i,
-                    "season": 1,
-                    "overview": overview,
-                    "thumbnail": thumbnail,
-                })
+                videos.append(
+                    {
+                        "id": f"kitsu:{data['id']}:{i}",
+                        "title": ep_title,
+                        "episode": i,
+                        "season": 1,
+                        "overview": overview,
+                        "thumbnail": thumbnail,
+                    }
+                )
 
     genres = ["Anime"]
     if cinemeta_data and cinemeta_data.get("genres"):
@@ -295,7 +313,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     anilist_id = None
     mal_id = None
     simkl_id = None
-    
+
     if meta_id.startswith("mal:"):
         mal_id = meta_id.split(":")[1]
         kitsu_id = await resolve_mal_to_kitsu(mal_id)
@@ -325,7 +343,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             tasks.append(fetch_anizp_metadata(anilist_id=anilist_id, mal_id=mal_id))
         else:
             tasks.append(asyncio.sleep(0, {}))
-            
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
         kitsu_data = results[0] if not isinstance(results[0], Exception) else {}
         anizp_data = results[1] if (len(results) > 1 and not isinstance(results[1], Exception)) else {}
@@ -343,6 +361,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         # Resolve simkl_id if not present but we have kitsu_id
         if not simkl_id and kitsu_id:
             from app.services.db import get_cached_ids
+
             cached_ids = get_cached_ids(kitsu_id)
             if cached_ids:
                 simkl_id = cached_ids.get("simkl_id")
@@ -352,25 +371,27 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         watched_progress = 0
         if show_watched:
             from app.services.db import get_user_watch_progress
+
             watched_progress = get_user_watch_progress(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
-        
+
         # Offload CPU-bound mapping to worker threads
         run_loop = asyncio.get_running_loop()
         meta = await asyncio.to_thread(
             map_kitsu_to_stremio,
             kitsu_data,
             meta_id,
-            anizp_data,
-            mal_id,
-            show_filler,
-            run_loop,
-            cinemeta_data,
-            show_watched,
-            watched_progress
+            anizp_data=anizp_data,
+            mal_id=mal_id,
+            show_filler_tags=show_filler,
+            loop=run_loop,
+            cinemeta_data=cinemeta_data,
+            show_watched_tags=show_watched,
+            watched_progress=watched_progress,
         )
 
         # Look up description in recommendations cache to retain the trace prefix
         from app.services.recommendations import get_cached_recommendations
+
         cache = get_cached_recommendations(user_id)
         if cache:
             found_desc = None
@@ -405,13 +426,14 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         # Apply RPDB poster if configured
         if user.get("rpdb_api_key"):
             from app.services.rpdb import get_rpdb_poster_url
+
             meta["poster"] = get_rpdb_poster_url(
                 user=user,
                 media_type=meta.get("type", "series"),
                 kitsu_id=kitsu_id,
                 mal_id=mal_id,
                 anilist_id=anilist_id,
-                fallback_poster=meta.get("poster")
+                fallback_poster=meta.get("poster"),
             )
 
         return await respond_with({"meta": meta})

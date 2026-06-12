@@ -1,6 +1,5 @@
 import logging
 from enum import Enum
-from typing import Optional
 
 from app.api import simkl as simkl_api
 
@@ -17,8 +16,8 @@ class UpdateStatus(Enum):
 async def sync_simkl(
     user: dict,
     kitsu_id: str,
-    mal_id: Optional[str],
-    anilist_id: Optional[str],
+    mal_id: str | None,
+    anilist_id: str | None,
     episode: int,
     content_type: str,
     sync_unlisted: bool,
@@ -57,7 +56,9 @@ async def sync_simkl(
             if not found:
                 logger.info(
                     "Simkl sync skipped: item kitsu:%s / mal:%s / al:%s not in user watchlist.",
-                    kitsu_id, mal_id, anilist_id
+                    kitsu_id,
+                    mal_id,
+                    anilist_id,
                 )
                 return UpdateStatus.NOT_LIST
         except Exception as e:
@@ -76,8 +77,7 @@ async def sync_simkl(
 
     if success:
         logger.info(
-            "Simkl updated: kitsu=%s mal=%s al=%s ep=%d type=%s",
-            kitsu_id, mal_id, anilist_id, episode, content_type
+            "Simkl updated: kitsu=%s mal=%s al=%s ep=%d type=%s", kitsu_id, mal_id, anilist_id, episode, content_type
         )
         return UpdateStatus.OK
     else:
