@@ -1,19 +1,21 @@
-from quart import Blueprint, flash, make_response, redirect, render_template, request, session, url_for
-import datetime
 import asyncio
+import datetime
 
-from app.services.db import get_user, store_user
+from quart import Blueprint, flash, make_response, redirect, render_template, request, session, url_for
+
 from app.routes.utils import rate_limit
+from app.services.db import get_user, store_user
 from config import Config
 
 ui_bp = Blueprint("ui", __name__)
 
 
 async def sync_user_profiles_task(user_id: str):
-    from app.services.db import get_user, store_user
-    from app.api import mal as mal_api
-    from app.api import anilist as al_api
     import logging
+
+    from app.api import anilist as al_api
+    from app.api import mal as mal_api
+    from app.services.db import get_user, store_user
 
     user = get_user(user_id)
     if not user:
@@ -56,6 +58,7 @@ async def sync_user_profiles_task(user_id: str):
     # 3. Sync Simkl profile details if connected and enabled
     if user.get("simkl_access_token") and user.get("simkl_enabled", True):
         from app.api import simkl as simkl_api
+
         try:
             user_info = await simkl_api.get_user_details(user["simkl_access_token"])
             simkl_username = user_info.get("user", {}).get("name")
@@ -76,11 +79,29 @@ async def sync_user_profiles_task(user_id: str):
 
 
 ANIME_GENRES = [
-    "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", 
-    "Mahou Shoujo", "Mecha", "Music", "Mystery", "Psychological", 
-    "Romance", "Sci-Fi", "Slice of Life", "Sports", "Supernatural", 
-    "Thriller", "Suspense", "Award Winning", "Boys Love", "Girls Love", 
-    "Ecchi", "Gourmet"
+    "Action",
+    "Adventure",
+    "Comedy",
+    "Drama",
+    "Fantasy",
+    "Horror",
+    "Mahou Shoujo",
+    "Mecha",
+    "Music",
+    "Mystery",
+    "Psychological",
+    "Romance",
+    "Sci-Fi",
+    "Slice of Life",
+    "Sports",
+    "Supernatural",
+    "Thriller",
+    "Suspense",
+    "Award Winning",
+    "Boys Love",
+    "Girls Love",
+    "Ecchi",
+    "Gourmet",
 ]
 
 
@@ -99,7 +120,6 @@ async def index():
     resp = await make_response(await _render("index.html"))
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return resp
-
 
 
 @ui_bp.route("/configure", methods=["GET", "POST"])
@@ -140,7 +160,7 @@ async def configure(user_id: str = ""):
         user["rpdb_in_search"] = form.get("rpdb_in_search") == "true"
         user["show_filler_tags"] = form.get("show_filler_tags") == "true"
         user["show_watched_tags"] = form.get("show_watched_tags") == "true"
-        
+
         user["custom_sort_enabled"] = form.get("custom_sort_enabled") == "true"
         user["custom_sort_watching_by"] = form.get("custom_sort_watching_by", "default")
         user["custom_sort_watching_order"] = form.get("custom_sort_watching_order", "desc")
@@ -164,18 +184,37 @@ async def configure(user_id: str = ""):
 
         enabled_list = []
         possible_cats = [
-            "mal_watching", "mal_plan_to_watch", "mal_completed", "mal_on_hold", "mal_dropped",
-            "anilist_watching", "anilist_planning", "anilist_completed", "anilist_paused", "anilist_dropped", "anilist_repeating",
-            "simkl_watching", "simkl_plantowatch", "simkl_completed", "simkl_hold", "simkl_dropped",
-            "comb_watching", "comb_plan_to_watch", "comb_completed", "comb_paused_on_hold", "comb_dropped",
-            "anisync_rec", "anisync_loved", "anisync_liked"
+            "mal_watching",
+            "mal_plan_to_watch",
+            "mal_completed",
+            "mal_on_hold",
+            "mal_dropped",
+            "anilist_watching",
+            "anilist_planning",
+            "anilist_completed",
+            "anilist_paused",
+            "anilist_dropped",
+            "anilist_repeating",
+            "simkl_watching",
+            "simkl_plantowatch",
+            "simkl_completed",
+            "simkl_hold",
+            "simkl_dropped",
+            "comb_watching",
+            "comb_plan_to_watch",
+            "comb_completed",
+            "comb_paused_on_hold",
+            "comb_dropped",
+            "anisync_rec",
+            "anisync_loved",
+            "anisync_liked",
         ]
-        
+
         # Add enabled ones in custom sorted order
         for cat in sorted_ids:
             if cat in possible_cats and form.get(f"cat_{cat}"):
                 enabled_list.append(cat)
-                
+
         # Fallback to append any remaining enabled ones
         for cat in possible_cats:
             if cat not in enabled_list and form.get(f"cat_{cat}"):
@@ -186,34 +225,35 @@ async def configure(user_id: str = ""):
         user["recommendations_filter_watched"] = form.get("recommendations_filter_watched") == "true"
         gemini_key = form.get("gemini_api_key", "").strip()
         rpdb_key = form.get("rpdb_api_key", "").strip()
-        
+
         user["gemini_api_key"] = gemini_key
         user["rpdb_api_key"] = rpdb_key
 
         rpdb_task = None
         gemini_task = None
-        
+
         if rpdb_key:
             from app.services.rpdb import validate_rpdb_api_key
+
             rpdb_task = validate_rpdb_api_key(rpdb_key)
         else:
             user["rpdb_key_valid"] = False
             user["rpdb_key_last_checked"] = None
-            
+
         if gemini_key:
             gemini_task = check_gemini_api_key_valid(gemini_key)
         else:
             user["gemini_key_valid"] = False
-            
+
         if rpdb_task or gemini_task:
             tasks = []
             if rpdb_task:
                 tasks.append(rpdb_task)
             if gemini_task:
                 tasks.append(gemini_task)
-                
+
             results = await asyncio.gather(*tasks)
-            
+
             idx = 0
             if rpdb_task:
                 rpdb_valid = results[idx]
@@ -244,10 +284,12 @@ async def configure(user_id: str = ""):
 
         store_user(user)
         from app.services.db import invalidate_user_watchlist_cache
+
         invalidate_user_watchlist_cache(uid)
 
         if user["enable_recommendations"]:
             from app.services.recommendations import trigger_recommendation_update_background
+
             trigger_recommendation_update_background(uid, force=True)
 
         validation_failed_msg = []
@@ -258,21 +300,27 @@ async def configure(user_id: str = ""):
 
         if validation_failed_msg:
             msg_str = " & ".join(validation_failed_msg)
-            if request.headers.get("Accept") == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            if (
+                request.headers.get("Accept") == "application/json"
+                or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            ):
                 return {
                     "status": "warning",
                     "message": f"Preferences saved, but: {msg_str}",
                     "rpdb_valid": user.get("rpdb_key_valid", False),
-                    "gemini_valid": user.get("gemini_key_valid", False)
+                    "gemini_valid": user.get("gemini_key_valid", False),
                 }
             await flash(f"Preferences saved, but: {msg_str}", "warning")
         else:
-            if request.headers.get("Accept") == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            if (
+                request.headers.get("Accept") == "application/json"
+                or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            ):
                 return {
                     "status": "success",
                     "message": "Preferences saved successfully!",
                     "rpdb_valid": user.get("rpdb_key_valid", False),
-                    "gemini_valid": user.get("gemini_key_valid", False)
+                    "gemini_valid": user.get("gemini_key_valid", False),
                 }
             await flash("Preferences saved.", "success")
 
@@ -293,6 +341,7 @@ async def configure(user_id: str = ""):
 
 async def check_gemini_api_key_valid(api_key: str) -> tuple[bool, str]:
     import httpx
+
     if not api_key:
         return False, "Key cannot be empty"
     try:
@@ -332,6 +381,7 @@ async def validate_rpdb_key():
         return {"status": "error", "message": "Key cannot be empty"}, 400
     try:
         from app.services.rpdb import validate_rpdb_api_key
+
         is_valid = await validate_rpdb_api_key(api_key)
         if is_valid:
             return {"status": "success", "message": "API key is valid ✓"}
@@ -345,7 +395,9 @@ async def validate_rpdb_key():
 @rate_limit(limit=60, period_seconds=60)
 async def health():
     import asyncio
+
     from app.services.db import db
+
     try:
         # Verify MongoDB is reachable
         await asyncio.to_thread(db.command, "ping")

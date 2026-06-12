@@ -1,17 +1,17 @@
+import logging
 import os
 import uuid
-import logging
 
 from app.app import App
+from app.lib.mongo_session import MongoSessionInterface
 from app.routes.auth import auth_bp
-from app.routes.manifest import manifest_bp
-from app.routes.subtitles import subtitles_bp
-from app.routes.ui import ui_bp
 from app.routes.catalog import catalog_bp
+from app.routes.manifest import manifest_bp
 from app.routes.meta import meta_bp
 from app.routes.poster import poster_bp
-from app.services.http import init_client, close_client, correlation_id_var
-from app.lib.mongo_session import MongoSessionInterface
+from app.routes.subtitles import subtitles_bp
+from app.routes.ui import ui_bp
+from app.services.http import close_client, correlation_id_var, init_client
 
 
 def create_app() -> App:
@@ -30,21 +30,25 @@ def create_app() -> App:
             try:
                 os.makedirs(os.path.dirname(logo_path), exist_ok=True)
                 from app.routes.manifest import save_logo_to_path
+
                 save_logo_to_path(logo_path)
                 logging.info("Pre-generated static logo.png asset at startup.")
             except Exception as e:
                 logging.error("Failed to pre-generate logo on startup: %s", e)
 
         init_client()
-        
+
         # Ensure Fribb mappings are populated and schema is up-to-date in the background
         import asyncio
-        from app.services.http import get_client
+
         from app.lib.id_resolver import ensure_fribb_mappings
+        from app.services.http import get_client
+
         asyncio.create_task(ensure_fribb_mappings(get_client()))
-        
+
         # Start background task to update popular fallback anime covers automatically
         from app.services.recommendations import trigger_popular_fallbacks_update_background
+
         trigger_popular_fallbacks_update_background()
 
     @app_.after_serving
@@ -73,5 +77,5 @@ def create_app() -> App:
     app_.register_blueprint(catalog_bp)
     app_.register_blueprint(meta_bp)
     app_.register_blueprint(poster_bp)
-    
+
     return app_
