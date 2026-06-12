@@ -5,7 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "python-dotenv",
     "pymongo",
-    "httpx",
+    "httpx[socks]",
     "quart>=0.20.0",
     "uvicorn>=0.29.0",
     "Pillow>=10.0.0",
