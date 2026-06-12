@@ -1,14 +1,43 @@
-import logging
 import io
-import urllib.parse
+import logging
 import os
-from quart import Blueprint, abort, redirect, request, Response
+import urllib.parse
+
 from PIL import Image, ImageDraw, ImageFont
+from quart import Blueprint, Response, abort, redirect, request
 
 from app.routes.utils import is_valid_user_id, rate_limit
 from app.services.http import get_client
 
 poster_bp = Blueprint("poster", __name__)
+
+
+def is_trusted_url(url: str) -> bool:
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        host = parsed.hostname
+        if not host:
+            return False
+        host = host.lower()
+        trusted_domains = (
+            "myanimelist.net",
+            "anilist.co",
+            "simkl.in",
+            "simkl.com",
+            "kitsu.io",
+            "metahub.space",
+            "ratingposterdb.com",
+            "tmdb.org",
+            "thetvdb.com",
+        )
+        for domain in trusted_domains:
+            if host == domain or host.endswith("." + domain):
+                return True
+        return False
+    except Exception:
+        return False
 
 
 @poster_bp.route("/<user_id>/poster/<string:media_id>.jpg")
@@ -21,7 +50,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
         return "Invalid user ID", 400
 
     original_url = request.args.get("url")
-    if not original_url:
+    if not original_url or not is_trusted_url(original_url):
         return abort(400)
 
     badge = request.args.get("badge")
@@ -39,15 +68,15 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
         # Load image into Pillow
         img = Image.open(io.BytesIO(resp.content))
-        
+
         # Resize to standard Stremio catalog poster dimensions for perfect uniformity
         resample_filter = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
         img = img.resize((225, 350), resample_filter)
-        
+
         if img.mode != "RGBA":
             img = img.convert("RGBA")
 
-        w, h = img.size # w=225, h=350
+        w, h = img.size  # w=225, h=350
 
         tracker = request.args.get("tracker", "").lower()
 
@@ -57,8 +86,8 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
         # Draw translucent black bar covering the bottom 10% (35px height, from y=315 to 350)
         bar_h = 35
-        bar_y = h - bar_h # y=315
-        draw.rectangle([(0, bar_y), (w, h)], fill=(0, 0, 0, 255)) # Solid black
+        bar_y = h - bar_h  # y=315
+        draw.rectangle([(0, bar_y), (w, h)], fill=(0, 0, 0, 255))  # Solid black
 
         try:
             # Setup fonts
@@ -82,7 +111,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logo_w, logo_h = 16, 16
             logo_gap = 4
             text_gap = 6
-            
+
             # Parse tracker parameter. Standard URL query parsing decodes '+' as space,
             # so we replace spaces (and commas) with '+' first before splitting.
             tracker_clean = tracker.replace(" ", "+").replace(",", "+")
@@ -95,7 +124,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
             resample_filter = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
 
             logos = []
-            
+
             if draw_mal:
                 logo_path = os.path.join(assets_dir, "mal_logo.png")
                 if os.path.exists(logo_path):
@@ -104,7 +133,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
                         logos.append(mal_logo_img)
                     except Exception as e:
                         logging.error("Failed to load MAL logo image: %s", e)
-            
+
             if draw_al:
                 logo_path = os.path.join(assets_dir, "anilist_logo.png")
                 if os.path.exists(logo_path):
@@ -134,7 +163,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
             for logo in logos:
                 overlay.paste(logo, (int(curr_x), int(bar_center_y - logo_h / 2)), logo)
                 curr_x += logo_w + logo_gap
-                
+
             text_x = block_x + total_logos_w + text_gap if total_logos_w > 0 else block_x
 
             # Draw text "NEW EPISODE"
