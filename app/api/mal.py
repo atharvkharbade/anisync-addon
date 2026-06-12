@@ -1,14 +1,8 @@
-import os
 import secrets
-import hashlib
-import base64
-from typing import Optional
 from urllib.parse import urlencode
 
-import httpx
-
-from config import Config
 from app.services.http import get_client
+from config import Config
 
 AUTH_URL = "https://myanimelist.net/v1"
 BASE_URL = "https://api.myanimelist.net/v2"
@@ -31,6 +25,7 @@ def _client_secret() -> str:
 
 # ── PKCE helpers ──────────────────────────────────────────────────────────────
 
+
 def generate_pkce() -> tuple[str, str]:
     # Generate high-entropy verifier (43-128 characters)
     verifier = secrets.token_urlsafe(N_BYTES)[:128]
@@ -39,18 +34,21 @@ def generate_pkce() -> tuple[str, str]:
 
 
 def get_auth_url(code_challenge: str, state: str) -> str:
-    params = urlencode({
-        "response_type": "code",
-        "client_id": _client_id(),
-        "state": state,
-        "code_challenge": code_challenge,
-        "code_challenge_method": CODE_CHALLENGE_METHOD,
-        "redirect_uri": _redirect_uri(),
-    })
+    params = urlencode(
+        {
+            "response_type": "code",
+            "client_id": _client_id(),
+            "state": state,
+            "code_challenge": code_challenge,
+            "code_challenge_method": CODE_CHALLENGE_METHOD,
+            "redirect_uri": _redirect_uri(),
+        }
+    )
     return f"{AUTH_URL}/oauth2/authorize?{params}"
 
 
 # ── Token management ──────────────────────────────────────────────────────────
+
 
 async def get_access_token(code: str, code_verifier: str) -> dict:
     client = get_client()
@@ -100,6 +98,7 @@ async def get_user_details(token: str) -> dict:
 
 # ── Anime data ────────────────────────────────────────────────────────────────
 
+
 async def get_anime_details(token: str, anime_id: str) -> dict:
     fields = "id,title,num_episodes,my_list_status{status,num_episodes_watched,start_date,finish_date,is_rewatching}"
     client = get_client()
@@ -114,7 +113,7 @@ async def get_anime_details(token: str, anime_id: str) -> dict:
 
 
 async def get_user_anime_list(token: str, status: str = "", limit: int = 100, offset: int = 0) -> dict:
-    fields = "id,title,main_picture,num_episodes,status,my_list_status{status,score,num_episodes_watched,updated_at},genres,media_type"
+    fields = "id,title,main_picture,num_episodes,status,mean,my_list_status{status,score,num_episodes_watched,updated_at},genres,media_type"
     params = {"fields": fields, "limit": limit, "offset": offset}
     if status:
         params["status"] = status
@@ -130,7 +129,10 @@ async def get_user_anime_list(token: str, status: str = "", limit: int = 100, of
 
 
 async def search_anime(token: str, query: str, limit: int = 100, offset: int = 0) -> dict:
-    fields = "id,title,main_picture,num_episodes,status,my_list_status{status,num_episodes_watched,updated_at},media_type"
+    fields = (
+        "id,title,main_picture,num_episodes,status,mean,my_list_status{status,num_episodes_watched,updated_at},media_type"
+    )
+
     params = {"q": query, "fields": fields, "limit": limit, "offset": offset}
     client = get_client()
     resp = await client.get(

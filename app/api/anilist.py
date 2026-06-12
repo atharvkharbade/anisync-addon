@@ -1,8 +1,3 @@
-import logging
-from typing import Optional
-
-import httpx
-
 from app.services.http import get_client
 
 ANILIST_URL = "https://graphql.anilist.co"
@@ -43,7 +38,7 @@ mutation ($mediaId: Int, $progress: Int, $status: MediaListStatus) {
 """
 
 
-async def _gql(token: str, query: str, variables: Optional[dict] = None) -> dict:
+async def _gql(token: str, query: str, variables: dict | None = None) -> dict:
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
@@ -57,7 +52,6 @@ async def _gql(token: str, query: str, variables: Optional[dict] = None) -> dict
     resp = await client.post(ANILIST_URL, json=payload, headers=headers, timeout=TIMEOUT)
     resp.raise_for_status()
     return resp.json()
-
 
 
 async def get_viewer(token: str) -> dict:
@@ -100,6 +94,7 @@ query ($userId: Int, $status: MediaListStatus) {
           description
           genres
           status
+          averageScore
           nextAiringEpisode {
             episode
             airingAt
