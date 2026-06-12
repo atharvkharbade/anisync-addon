@@ -100,7 +100,7 @@ async def get_user_details(token: str) -> dict:
 
 
 async def get_anime_details(token: str, anime_id: str) -> dict:
-    fields = "id,title,num_episodes,my_list_status{status,num_episodes_watched,start_date,finish_date,is_rewatching}"
+    fields = "id,title,num_episodes,my_list_status{status,num_episodes_watched,start_date,finish_date,is_rewatching,num_times_rewatched}"
     client = get_client()
     resp = await client.get(
         f"{BASE_URL}/anime/{anime_id}",
@@ -152,12 +152,18 @@ async def update_watch_status(
     status: str,
     start_date: str = "",
     finish_date: str = "",
+    is_rewatching: bool | None = None,
+    num_times_rewatched: int | None = None,
 ) -> dict:
     body: dict = {"status": status, "num_watched_episodes": episode}
     if start_date:
         body["start_date"] = start_date
     if finish_date:
         body["finish_date"] = finish_date
+    if is_rewatching is not None:
+        body["is_rewatching"] = "true" if is_rewatching else "false"
+    if num_times_rewatched is not None:
+        body["num_times_rewatched"] = num_times_rewatched
 
     client = get_client()
     resp = await client.put(

@@ -65,14 +65,18 @@ async def sync_mal(user: dict, mal_id: str, episode: int, sync_unlisted: bool) -
     list_status = anime.get("my_list_status")
     current_status = list_status.get("status", "") if list_status else ""
     watched_episodes = list_status.get("num_episodes_watched", 0) if list_status else 0
+    is_rewatching = list_status.get("is_rewatching", False) if list_status else False
+    num_times_rewatched = list_status.get("num_times_rewatched", 0) if list_status else 0
 
     logging.info(
-        "MAL sync: id=%s ep=%d watched=%d status=%s total=%d",
+        "MAL sync: id=%s ep=%d watched=%d status=%s total=%d is_rewatching=%s rewatch_count=%d",
         mal_id,
         episode,
         watched_episodes,
         current_status,
         total_episodes,
+        is_rewatching,
+        num_times_rewatched,
     )
 
     if not current_status and not sync_unlisted:
@@ -88,8 +92,25 @@ async def sync_mal(user: dict, mal_id: str, episode: int, sync_unlisted: bool) -
 
     start_date, finish_date = _watch_dates(list_status, episode, total_episodes)
 
+    # Rewatching completion logic
+    send_is_rewatching = None
+    send_num_times_rewatched = None
+    if is_rewatching:
+        if new_status == "completed":
+            send_is_rewatching = False
+            send_num_times_rewatched = num_times_rewatched + 1
+
     try:
-        await mal_api.update_watch_status(token, mal_id, episode, new_status, start_date, finish_date)
+        await mal_api.update_watch_status(
+            token,
+            mal_id,
+            episode,
+            new_status,
+            start_date,
+            finish_date,
+            is_rewatching=send_is_rewatching,
+            num_times_rewatched=send_num_times_rewatched,
+        )
         logging.info("MAL updated: id=%s ep=%d status=%s", mal_id, episode, new_status)
         return UpdateStatus.OK
     except Exception as e:
