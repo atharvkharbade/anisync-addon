@@ -28,6 +28,17 @@ class Config:
 
     # Proxy Support
     PROXY_URL = os.getenv("PROXY_URL", "")
+    PROXY_ANILIST = os.getenv("PROXY_ANILIST", "")
+    PROXY_MAL = os.getenv("PROXY_MAL", "")
+    PROXY_SIMKL = os.getenv("PROXY_SIMKL", "")
+    PROXY_JIKAN = os.getenv("PROXY_JIKAN", "")
+    PROXY_KITSU = os.getenv("PROXY_KITSU", "")
+    PROXY_ANIZP = os.getenv("PROXY_ANIZP", "")
+    PROXY_CINEMETA = os.getenv("PROXY_CINEMETA", "")
+    PROXY_ARM = os.getenv("PROXY_ARM", "")
+    PROXY_GITHUB = os.getenv("PROXY_GITHUB", "")
+    PROXY_METAHUB = os.getenv("PROXY_METAHUB", "")
+    PROXY_RPDB = os.getenv("PROXY_RPDB", "")
 
     # MAL OAuth
     MAL_CLIENT_ID = os.getenv("MAL_CLIENT_ID", "")
