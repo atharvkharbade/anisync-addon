@@ -350,7 +350,7 @@ async def check_gemini_api_key_valid(api_key: str) -> tuple[bool, str]:
         async with httpx.AsyncClient(timeout=5) as client:
             resp = await client.post(url, json=payload)
             if resp.status_code == 200:
-                return True, "API key is valid ✓"
+                return True, "API key verified ✓"
             else:
                 try:
                     error_msg = resp.json().get("error", {}).get("message", "Invalid API key")
@@ -384,7 +384,7 @@ async def validate_rpdb_key():
 
         is_valid = await validate_rpdb_api_key(api_key)
         if is_valid:
-            return {"status": "success", "message": "API key is valid ✓"}
+            return {"status": "success", "message": "API key verified ✓"}
         else:
             return {"status": "error", "message": "Invalid RPDB API key"}, 400
     except Exception as e:
