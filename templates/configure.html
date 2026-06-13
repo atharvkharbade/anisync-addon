@@ -692,7 +692,7 @@
                         <label class="form-check-label ms-1" for="show_filler_tags">
                             <span class="fw-medium d-block">Show filler tags on episodes</span>
                             <span class="text-secondary small d-block">
-                                Mark filler episodes with a [Filler] tag inside the episode list.
+                                Prepends a [Filler] tag to episode titles in the Stremio episode list.
                             </span>
                         </label>
                     </div>
@@ -703,12 +703,10 @@
                         <label class="form-check-label ms-1" for="show_watched_tags">
                             <span class="fw-medium d-block">Show watched tags on episodes</span>
                             <span class="text-secondary small d-block">
-                                Mark already watched episodes with a [Watched] tag inside the episode list.
+                                Prepends a [Watched] tag to episode titles in the Stremio episode list.
                             </span>
                         </label>
                     </div>
-
-                    <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="combine_watchlists" {% if
                             user.get('combine_watchlists', False) %}checked{% endif %}>
                         <label class="form-check-label ms-1" for="combine_watchlists">
@@ -931,13 +929,13 @@
                         </button>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-1 gap-sm-0 mt-2">
                         <span id="rpdb-validation-status" class="small {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
                             {% if user.get('rpdb_api_key') %}
                                 {% if user.get('rpdb_key_valid') == False %}
                                     Invalid or Expired API Key
                                 {% else %}
-                                    API key saved & verified ✓
+                                    API key verified ✓
                                 {% endif %}
                             {% else %}
                                 Not verified
@@ -945,7 +943,7 @@
                         </span>
                         <a href="https://ratingposterdb.com/" target="_blank"
                             class="small text-info text-decoration-none" style="font-size:0.75rem;">
-                            Get your API key from RatingPosterDB <i
+                            Get RPDB API Key <i
                                 class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
                         </a>
                     </div>
@@ -1042,13 +1040,13 @@
                             </button>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-1 gap-sm-0 mt-2">
                             <span id="gemini-validation-status" class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
                                 {% if user.get('gemini_api_key') %}
                                     {% if user.get('gemini_key_valid') == False %}
                                         Invalid Gemini API key
                                     {% else %}
-                                        API key saved & verified ✓
+                                        API key verified ✓
                                     {% endif %}
                                 {% else %}
                                     Not verified
@@ -1056,7 +1054,7 @@
                             </span>
                             <a href="https://aistudio.google.com/" target="_blank"
                                 class="small text-info text-decoration-none" style="font-size:0.75rem;">
-                                Get your free API key from Google AI Studio <i
+                                Get Gemini API Key <i
                                     class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
                             </a>
                         </div>
@@ -1320,7 +1318,7 @@
                                 if (result.rpdb_valid) {
                                     rpdbCheckIcon.className = "fa-solid fa-circle-check text-success";
                                     rpdbStatusSpan.className = "small text-success fw-medium";
-                                    rpdbStatusSpan.textContent = "API key saved & verified ✓";
+                                    rpdbStatusSpan.textContent = "API key verified ✓";
                                     isRpdbKeyValid = true;
                                 } else {
                                     rpdbCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
@@ -1346,7 +1344,7 @@
                                 if (result.gemini_valid) {
                                     geminiCheckIcon.className = "fa-solid fa-circle-check text-success";
                                     geminiStatusSpan.className = "small text-success fw-medium";
-                                    geminiStatusSpan.textContent = "API key saved & verified ✓";
+                                    geminiStatusSpan.textContent = "API key verified ✓";
                                 } else {
                                     geminiCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
                                     geminiStatusSpan.className = "small text-danger";
