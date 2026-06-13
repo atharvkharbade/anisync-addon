@@ -930,7 +930,7 @@
                         </button>
                     </div>
 
-                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-1 gap-sm-0 mt-2">
+                    <div class="d-flex justify-content-between align-items-center mt-2">
                         <span id="rpdb-validation-status" class="small {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
                             {% if user.get('rpdb_api_key') %}
                                 {% if user.get('rpdb_key_valid') == False %}
@@ -943,7 +943,7 @@
                             {% endif %}
                         </span>
                         <a href="https://ratingposterdb.com/" target="_blank"
-                            class="small text-info text-decoration-none align-self-end align-self-sm-center" style="font-size:0.75rem;">
+                            class="small text-info text-decoration-none" style="font-size:0.75rem;">
                             Get RPDB API Key <i
                                 class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
                         </a>
@@ -1041,7 +1041,7 @@
                             </button>
                         </div>
 
-                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-1 gap-sm-0 mt-2">
+                        <div class="d-flex justify-content-between align-items-center mt-2">
                             <span id="gemini-validation-status" class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
                                 {% if user.get('gemini_api_key') %}
                                     {% if user.get('gemini_key_valid') == False %}
@@ -1054,7 +1054,7 @@
                                 {% endif %}
                             </span>
                             <a href="https://aistudio.google.com/" target="_blank"
-                                class="small text-info text-decoration-none align-self-end align-self-sm-center" style="font-size:0.75rem;">
+                                class="small text-info text-decoration-none" style="font-size:0.75rem;">
                                 Get Gemini API Key <i
                                     class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
                             </a>
