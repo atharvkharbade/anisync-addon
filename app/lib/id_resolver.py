@@ -151,6 +151,8 @@ async def _try_arm(client: httpx.AsyncClient, kitsu_id: str) -> tuple[str | None
     )
     resp.raise_for_status()
     data = resp.json()
+    if not data:
+        return None, None
     mal_id = str(data["myanimelist"]) if data.get("myanimelist") else None
     anilist_id = str(data["anilist"]) if data.get("anilist") else None
     if mal_id or anilist_id:
@@ -371,11 +373,12 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
         )
         if resp.status_code == 200:
             data = resp.json()
-            kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
-            anilist_id = str(data["anilist"]) if data.get("anilist") else None
-            if kitsu_id:
-                cache_ids(kitsu_id, mal_id, anilist_id)
-                return kitsu_id
+            if data:
+                kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
+                anilist_id = str(data["anilist"]) if data.get("anilist") else None
+                if kitsu_id:
+                    cache_ids(kitsu_id, mal_id, anilist_id)
+                    return kitsu_id
     except Exception as e:
         logging.warning("ARM mal->kitsu failed for mal_id=%s: %s", mal_id, e)
 
@@ -432,11 +435,12 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
         )
         if resp.status_code == 200:
             data = resp.json()
-            kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
-            mal_id = str(data["myanimelist"]) if data.get("myanimelist") else None
-            if kitsu_id:
-                cache_ids(kitsu_id, mal_id, anilist_id)
-                return kitsu_id
+            if data:
+                kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
+                mal_id = str(data["myanimelist"]) if data.get("myanimelist") else None
+                if kitsu_id:
+                    cache_ids(kitsu_id, mal_id, anilist_id)
+                    return kitsu_id
     except Exception as e:
         logging.warning("ARM anilist->kitsu failed for anilist_id=%s: %s", anilist_id, e)
 
