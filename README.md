@@ -39,7 +39,7 @@ Fetches episode lists via the Jikan API and prepends a `[Filler]` tag directly t
 ![Inline episode filler tag details](docs/images/stremio_filler_indicators.png)
 
 ### ✅ Episode Watched Indicators (`[Watched]`)
-A unique feature that prepends a `[Watched]` tag directly to the episode titles in Stremio for all episodes you have already completed. By reading your watch progress from MyAnimeList, AniList or Simkl, AniSync lets you see exactly where you left off at a glance inside Stremio's player and detail views.
+A unique feature that prepends a `[Watched]` tag directly to the episode titles in Stremio for all episodes you have already completed. By reading your watch progress from MyAnimeList, AniList or Simkl. AniSync lets you see exactly where you left off at a glance inside Stremio's player and detail views.
 
 ![Inline episode watched tag details](docs/images/stremio_watched_indicators.png)
 
