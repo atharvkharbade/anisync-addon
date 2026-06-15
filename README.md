@@ -10,20 +10,20 @@
 [![Docker Support](https://img.shields.io/badge/docker-ready-2496ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![Stremio Addon](https://img.shields.io/badge/stremio-addon-8a2be2.svg)](https://stremio.com)
 
-**AniSync** is a power-user-focused Stremio addon that automatically synchronizes your anime progress with MyAnimeList, AniList, and Simkl in real-time. It enriches Stremio with poster badges (including support for RPDB overlays), airing indicators, episode filler & watched tags, and personalized catalogs directly synced with your watchlists.
+**AniSync** is a power-user-focused Stremio addon that automatically synchronizes your anime progress with MyAnimeList, AniList and Simkl in real-time. It enriches Stremio with poster badges (including support for RPDB overlays), airing indicators, episode filler & watched tags and personalized catalogs directly synced with your watchlists.
 
 ---
 
 ## 🌟 Features
 
 ### 📺 Poster Badges & Airing Indicators
-Whenever a new episode drops for a show on your watchlist, AniSync overlays a clean `NEW EPISODE` banner directly on the poster in Stremio. If you connect multiple trackers, it overlays MyAnimeList, AniList, and Simkl logos side-by-side.
-* **RPDB Integration**: Optionally supply a Rating Poster DB (RPDB) API key to overlay professional ratings, language flags, and certification logos directly on your posters.
+Whenever a new episode drops for a show on your watchlist, AniSync overlays a clean `NEW EPISODE` banner directly on the poster in Stremio. If you connect multiple trackers, it overlays MyAnimeList, AniList and Simkl logos side-by-side.
+* **RPDB Integration**: Optionally supply a Rating Poster DB (RPDB) API key to overlay rating logos directly on your posters.
 
 ![Combined Tracker Poster Badges](docs/images/stremio_poster_badges.png)
 
 ### 🗂️ Combined Watchlist Catalogs
-Connect MyAnimeList, AniList, and Simkl simultaneously. AniSync merges and deduplicates your lists into single, clean catalogs in Stremio, auto-merging progress across trackers and supporting AniList re-watching series.
+Connect MyAnimeList, AniList and Simkl simultaneously. AniSync merges and deduplicates your lists into single, clean catalogs in Stremio, auto-merging progress across trackers and supporting AniList re-watching series.
 
 ![Stremio Combined Catalogs](docs/images/stremio_combined_watchlists.png)
 
@@ -39,7 +39,7 @@ Fetches episode lists via the Jikan API and prepends a `[Filler]` tag directly t
 ![Inline episode filler tag details](docs/images/stremio_filler_indicators.png)
 
 ### ✅ Episode Watched Indicators (`[Watched]`)
-A unique feature that prepends a `[Watched]` tag directly to the episode titles in Stremio for all episodes you have already completed. By reading your watch progress from MyAnimeList, AniList, or Simkl, AniSync lets you see exactly where you left off at a glance inside Stremio's player and detail views.
+A unique feature that prepends a `[Watched]` tag directly to the episode titles in Stremio for all episodes you have already completed. By reading your watch progress from MyAnimeList, AniList or Simkl, AniSync lets you see exactly where you left off at a glance inside Stremio's player and detail views.
 
 ![Inline episode watched tag details](docs/images/stremio_watched_indicators.png)
 
@@ -48,7 +48,7 @@ A unique feature that prepends a `[Watched]` tag directly to the episode titles 
 ## 📥 Installation
 
 1. Visit the **[AniSync Configuration Dashboard](https://yourdomain.com)** (replace with your hosted instance URL).
-2. Authenticate with **MyAnimeList**, **AniList**, and/or **Simkl** via secure OAuth2.
+2. Authenticate with **MyAnimeList**, **AniList** and/or **Simkl** via secure OAuth2.
 3. Save your preferences and click **Direct Install** or copy the **Manifest URL** into Stremio.
 
 ---
@@ -114,7 +114,7 @@ networks:
 
 ## ⚠️ Disclaimer
 
-**AniSync** is a tool for synchronizing progress and managing metadata from anime tracking services. It does not host, store, or distribute any media or video content. The developer does not endorse or promote access to copyrighted content. Users are solely responsible for complying with all applicable laws and the terms of service of any addons or services they use with AniSync.
+**AniSync** is a tool for synchronizing progress and managing metadata from anime tracking services. It does not host, store or distribute any media or video content. The developer does not endorse or promote access to copyrighted content. Users are solely responsible for complying with all applicable laws and the terms of service of any addons or services they use with AniSync.
 
 ---
 
