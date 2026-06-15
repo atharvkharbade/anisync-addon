@@ -737,7 +737,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     )
                     if poster:
                         poster = poster.split("?")[0]
-                    synopsis = attrs.get("synopsis", "")
+                    synopsis = attrs.get("synopsis") or ""
                     metas.append(
                         {
                             "id": f"kitsu:{item['id']}",
