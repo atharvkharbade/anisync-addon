@@ -210,7 +210,7 @@ def map_kitsu_to_stremio(
                         "id": f"kitsu:{data['id']}:{ep_num}",
                         "title": ep_title,
                         "episode": ep_num,
-                        "season": anizp_ep.get("seasonNumber") or 1,
+                        "season": anizp_ep.get("seasonNumber") if anizp_ep.get("seasonNumber") is not None else 1,
                         "released": released + "T00:00:00Z" if released else None,
                         "overview": overview,
                         "thumbnail": thumbnail,
@@ -257,7 +257,7 @@ def map_kitsu_to_stremio(
                         "id": f"kitsu:{data['id']}:{i}",
                         "title": ep_title,
                         "episode": i,
-                        "season": anizp_ep.get("seasonNumber") or 1,
+                        "season": anizp_ep.get("seasonNumber") if anizp_ep.get("seasonNumber") is not None else 1,
                         "overview": overview,
                         "thumbnail": thumbnail,
                     }
