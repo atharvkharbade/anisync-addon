@@ -2,7 +2,7 @@
   <img src="docs/images/logo.png" width="120" alt="AniSync Logo" />
 </p>
 
-# AniSync - MyAnimeList & AniList Tracker for Stremio
+# AniSync - MyAnimeList, AniList & Simkl Tracker for Stremio
 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white)](https://python.org)
@@ -10,19 +10,20 @@
 [![Docker Support](https://img.shields.io/badge/docker-ready-2496ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![Stremio Addon](https://img.shields.io/badge/stremio-addon-8a2be2.svg)](https://stremio.com)
 
-**AniSync** is a power-user-focused Stremio addon that automatically synchronizes your anime progress with MyAnimeList and AniList in real-time. It enriches Stremio with poster badges, airing indicators, episode filler tags, and personalized catalogs directly synced with your watchlists.
+**AniSync** is a power-user-focused Stremio addon that automatically synchronizes your anime progress with MyAnimeList, AniList, and Simkl in real-time. It enriches Stremio with poster badges (including support for RPDB overlays), airing indicators, episode filler tags, and personalized catalogs directly synced with your watchlists.
 
 ---
 
 ## 🌟 Features
 
 ### 📺 Poster Badges & Airing Indicators
-Whenever a new episode drops for a show on your watchlist, AniSync overlays a clean `NEW EPISODE` banner directly on the poster in Stremio. If you connect both trackers, it overlays both MyAnimeList and AniList logos side-by-side.
+Whenever a new episode drops for a show on your watchlist, AniSync overlays a clean `NEW EPISODE` banner directly on the poster in Stremio. If you connect multiple trackers, it overlays MyAnimeList, AniList, and Simkl logos side-by-side.
+* **RPDB Integration**: Optionally supply a Rating Poster DB (RPDB) API key to overlay professional ratings, language flags, and certification logos directly on your posters.
 
 ![Combined Tracker Poster Badges](docs/images/stremio_poster_badges.png)
 
 ### 🗂️ Combined Watchlist Catalogs
-Connect both MyAnimeList and AniList simultaneously. AniSync merges and deduplicates your lists into single, clean catalogs in Stremio, auto-merging progress across trackers and supporting AniList re-watching series.
+Connect MyAnimeList, AniList, and Simkl simultaneously. AniSync merges and deduplicates your lists into single, clean catalogs in Stremio, auto-merging progress across trackers and supporting AniList re-watching series.
 
 ![Stremio Combined Catalogs](docs/images/stremio_combined_watchlists.png)
 
@@ -42,7 +43,7 @@ Fetches episode lists via the Jikan API and prepends a `[Filler]` tag directly t
 ## 📥 Installation
 
 1. Visit the **[AniSync Configuration Dashboard](https://yourdomain.com)** (replace with your hosted instance URL).
-2. Authenticate with **MyAnimeList** and/or **AniList** via secure OAuth2.
+2. Authenticate with **MyAnimeList**, **AniList**, and/or **Simkl** via secure OAuth2.
 3. Save your preferences and click **Direct Install** or copy the **Manifest URL** into Stremio.
 
 ---
@@ -51,7 +52,7 @@ Fetches episode lists via the Jikan API and prepends a `[Filler]` tag directly t
 
 ### Docker Compose
 
-You can easily deploy AniSync using Docker. Create a `.env` file from `.env.example` and run:
+You can easily deploy AniSync using Docker. Create a `.env` file from `.env.example` (which includes configuration for general and domain-specific SOCKS5/HTTP proxies to bypass tracker rate limits) and run:
 
 ```yaml
 services:
