@@ -10,7 +10,7 @@
 [![Docker Support](https://img.shields.io/badge/docker-ready-2496ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![Stremio Addon](https://img.shields.io/badge/stremio-addon-8a2be2.svg)](https://stremio.com)
 
-**AniSync** is a power-user-focused Stremio addon that automatically synchronizes your anime progress with MyAnimeList, AniList, and Simkl in real-time. It enriches Stremio with poster badges (including support for RPDB overlays), airing indicators, episode filler tags, and personalized catalogs directly synced with your watchlists.
+**AniSync** is a power-user-focused Stremio addon that automatically synchronizes your anime progress with MyAnimeList, AniList, and Simkl in real-time. It enriches Stremio with poster badges (including support for RPDB overlays), airing indicators, episode filler & watched tags, and personalized catalogs directly synced with your watchlists.
 
 ---
 
@@ -37,6 +37,11 @@ Get custom anime recommendation rows injected directly into Stremio based on you
 Fetches episode lists via the Jikan API and prepends a `[Filler]` tag directly to the episode titles in Stremio's player detail overlay, letting you know exactly which episodes are safe to skip.
 
 ![Inline episode filler tag details](docs/images/stremio_filler_indicators.png)
+
+### ✅ Episode Watched Indicators (`[Watched]`)
+A unique feature that prepends a `[Watched]` tag directly to the episode titles in Stremio for all episodes you have already completed. By reading your watch progress from MyAnimeList, AniList, or Simkl, AniSync lets you see exactly where you left off at a glance inside Stremio's player and detail views.
+
+![Inline episode watched tag details](docs/images/stremio_watched_indicators.png)
 
 ---
 
