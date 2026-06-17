@@ -38,6 +38,11 @@ mutation ($mediaId: Int, $progress: Int, $status: MediaListStatus) {
 """
 
 
+class AnilistTokenInvalidError(Exception):
+    """Exception raised when AniList API returns an invalid token error."""
+    pass
+
+
 async def _gql(token: str, query: str, variables: dict | None = None) -> dict:
     headers = {
         "Authorization": f"Bearer {token}",
@@ -50,6 +55,15 @@ async def _gql(token: str, query: str, variables: dict | None = None) -> dict:
 
     client = get_client()
     resp = await client.post(ANILIST_URL, json=payload, headers=headers, timeout=TIMEOUT)
+    if resp.status_code in (400, 200):
+        try:
+            data = resp.json()
+            errors = data.get("errors", [])
+            for err in errors:
+                if err.get("message") == "Invalid token":
+                    raise AnilistTokenInvalidError("AniList token is invalid or expired.")
+        except (ValueError, KeyError, TypeError):
+            pass
     resp.raise_for_status()
     return resp.json()
 

@@ -248,6 +248,25 @@ def invalidate_user_watchlist_cache(user_id: str):
         logging.error("Failed to invalidate watchlist cache for user %s: %s", user_id, e)
 
 
+def handle_invalid_anilist_token(user_id: str):
+    """Automatically disconnects AniList if the token is invalid to prevent log spam and redundant calls."""
+    try:
+        user = get_user(user_id)
+        if user and user.get("anilist_token"):
+            logging.warning("Automatically disconnecting invalid/expired AniList token for user %s", user_id)
+            user.pop("anilist_token", None)
+            user.pop("anilist_username", None)
+            user.pop("anilist_picture", None)
+            user["anilist_enabled"] = False
+            # Retain user picture if MAL or Simkl is connected
+            if not user.get("mal_access_token") and not user.get("simkl_access_token"):
+                user.pop("picture", None)
+            store_user(user)
+            invalidate_user_watchlist_cache(user_id)
+    except Exception as e:
+        logging.error("Failed to automatically disconnect invalid AniList token for user %s: %s", user_id, e)
+
+
 def get_user_watch_progress(
     user_id: str, mal_id: str | None = None, anilist_id: str | None = None, simkl_id: str | None = None
 ) -> int:

@@ -113,6 +113,10 @@ async def get_cached_anilist_user_anime_list(user_id: str, token: str, anilist_u
         except Exception as e:
             logging.error("Failed to write user_watchlist_cache (AniList): %s", e)
         return collection
+    except anilist_api.AnilistTokenInvalidError as e:
+        from app.services.db import handle_invalid_anilist_token
+        handle_invalid_anilist_token(user_id)
+        raise e
     except Exception as e:
         if cached:
             logging.warning("AniList API failed, returning expired cache for user %s: %s", user_id, e)
@@ -885,6 +889,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             lists = collection.get("lists", [])
                             for user_list in lists:
                                 anilist_entries.extend(user_list.get("entries", []))
+                    except anilist_api.AnilistTokenInvalidError as ex:
+                        logging.warning("AniList token invalid during combined list fetch for user %s: %s", user_id, ex)
+                        from app.services.db import handle_invalid_anilist_token
+                        handle_invalid_anilist_token(user_id)
                     except Exception as ex:
                         logging.error("Combined: Failed to fetch AniList list for %s: %s", al_status, ex)
 
@@ -1810,6 +1818,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 anilist_uid = int(viewer["id"])
                 user["anilist_id"] = str(anilist_uid)
                 store_user(user)
+            except anilist_api.AnilistTokenInvalidError as e:
+                logging.warning("AniList token invalid during viewer retrieval for user %s: %s", user_id, e)
+                from app.services.db import handle_invalid_anilist_token
+                handle_invalid_anilist_token(user_id)
+                return await respond_with({"metas": []})
             except Exception as e:
                 logging.error("Failed to retrieve AniList viewer ID: %s", e)
                 return await respond_with({"metas": []})

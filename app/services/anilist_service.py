@@ -15,6 +15,11 @@ async def sync_anilist(user: dict, anilist_id: str, episode: int, sync_unlisted:
     token = user.get("anilist_token", "")
     try:
         media = await al_api.get_media_status(token, int(anilist_id))
+    except al_api.AnilistTokenInvalidError as e:
+        logging.warning("AniList token invalid during sync_anilist for user %s: %s", user.get("uid"), e)
+        from app.services.db import handle_invalid_anilist_token
+        handle_invalid_anilist_token(user.get("uid"))
+        return UpdateStatus.FAIL
     except Exception as e:
         logging.error("AniList get_media_status failed: %s", e)
         return UpdateStatus.FAIL
@@ -51,6 +56,11 @@ async def sync_anilist(user: dict, anilist_id: str, episode: int, sync_unlisted:
         await al_api.save_entry(token, int(anilist_id), episode, new_status)
         logging.info("AniList updated: id=%s ep=%d status=%s", anilist_id, episode, new_status)
         return UpdateStatus.OK
+    except al_api.AnilistTokenInvalidError as e:
+        logging.warning("AniList token invalid during save_entry for user %s: %s", user.get("uid"), e)
+        from app.services.db import handle_invalid_anilist_token
+        handle_invalid_anilist_token(user.get("uid"))
+        return UpdateStatus.FAIL
     except Exception as e:
         logging.error("AniList save_entry failed: %s", e)
         return UpdateStatus.FAIL

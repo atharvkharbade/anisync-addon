@@ -1324,6 +1324,10 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
             collection = await anilist_api.get_user_anime_list(user["anilist_token"], user_id=anilist_uid)
             for user_list in collection.get("lists", []):
                 anilist_items.extend(user_list.get("entries", []))
+        except anilist_api.AnilistTokenInvalidError as e:
+            logger.warning("AniList token invalid during recommendations update for user %s: %s", user_id, e)
+            from app.services.db import handle_invalid_anilist_token
+            handle_invalid_anilist_token(user_id)
         except Exception as e:
             logger.warning("Failed to fetch AniList user list: %s", e)
 
