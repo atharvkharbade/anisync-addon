@@ -11,6 +11,25 @@ from app.services.http import get_client
 meta_bp = Blueprint("meta", __name__)
 
 
+def clean_imdb_id(val) -> str | None:
+    if not val:
+        return None
+    if isinstance(val, list):
+        val = val[0] if val else None
+    if not val:
+        return None
+    val = str(val).strip()
+    if val.startswith("[") and val.endswith("]"):
+        import ast
+        try:
+            lst = ast.literal_eval(val)
+            if isinstance(lst, list) and len(lst) > 0:
+                val = str(lst[0]).strip()
+        except Exception:
+            val = val.strip("[]'\" ")
+    return val.strip("'\" ")
+
+
 async def fetch_anizp_metadata(anilist_id: str = None, mal_id: str = None) -> dict:
     url = "https://api.ani.zip/mappings"
     params = {}
@@ -99,7 +118,7 @@ def map_kitsu_to_stremio(
         anizp_fanart or cover_data.get("original") or cover_data.get("large") or cover_data.get("medium") or poster
     )
 
-    imdb_id = anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None
+    imdb_id = clean_imdb_id(anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None)
 
     logo = anizp_logo
     if not logo and cinemeta_data:
@@ -351,7 +370,26 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         if not kitsu_data:
             return await respond_with({"meta": {}})
 
-        imdb_id = anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None
+        imdb_id = clean_imdb_id(anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None)
+        if not imdb_id and kitsu_id:
+            from app.services.db import get_cached_ids, db
+            cached_ids = get_cached_ids(kitsu_id)
+            if cached_ids:
+                imdb_id = clean_imdb_id(cached_ids.get("imdb_id"))
+            if not imdb_id:
+                try:
+                    fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
+                    if fribb_doc:
+                        imdb_id = clean_imdb_id(fribb_doc.get("imdb_id"))
+                except Exception as e:
+                    logging.warning("Failed to query fribb_mappings for imdb_id: %s", e)
+            if imdb_id:
+                if not isinstance(anizp_data, dict):
+                    anizp_data = {}
+                if "mappings" not in anizp_data:
+                    anizp_data["mappings"] = {}
+                anizp_data["mappings"]["imdb_id"] = imdb_id
+
         cinemeta_data = {}
         if imdb_id:
             subtype = (kitsu_data.get("data", {}).get("attributes", {}).get("subtype") or "tv").lower()

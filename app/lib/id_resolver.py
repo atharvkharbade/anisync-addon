@@ -88,6 +88,25 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
             entries = resp.json()
 
             docs = []
+
+            def clean_id(val) -> str | None:
+                if not val:
+                    return None
+                if isinstance(val, list):
+                    val = val[0] if val else None
+                if not val:
+                    return None
+                val = str(val).strip()
+                if val.startswith("[") and val.endswith("]"):
+                    import ast
+                    try:
+                        lst = ast.literal_eval(val)
+                        if isinstance(lst, list) and len(lst) > 0:
+                            val = str(lst[0]).strip()
+                    except Exception:
+                        val = val.strip("[]'\" ")
+                return val.strip("'\" ")
+
             for entry in entries:
                 kitsu_id = entry.get("kitsu_id")
                 if kitsu_id is not None:
@@ -111,9 +130,9 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
                             "mal_id": str(mal_id) if mal_id is not None else None,
                             "anilist_id": str(anilist_id) if anilist_id is not None else None,
                             "simkl_id": str(simkl_id) if simkl_id is not None else None,
-                            "imdb_id": str(imdb_id) if imdb_id else None,
-                            "tmdb_id": str(tmdb_id) if tmdb_id is not None else None,
-                            "tvdb_id": str(tvdb_id) if tvdb_id is not None else None,
+                            "imdb_id": clean_id(imdb_id),
+                            "tmdb_id": clean_id(tmdb_id),
+                            "tvdb_id": clean_id(tvdb_id),
                         }
                     )
 
