@@ -167,7 +167,7 @@ MANIFEST = {
     "version": "1.3.0",
     "name": "AniSync",
     "logo": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png?v=7",
-    "description": "Sync and update your anime watchlists on MyAnimeList, AniList, and Simkl in real-time. Easily track episodes, combine watchlists, skip fillers, and get personalized recommendations directly inside Stremio.",
+    "description": "Sync and update your anime watchlists on MyAnimeList, AniList, and Simkl in real-time. Easily track episodes, combine watchlists, skip fillers, and get personalized recommendations.",
     "types": ["anime", "series", "movie"],
     "resources": ["subtitles", "catalog", "meta"],
     "idPrefixes": ["kitsu", "mal", "anilist", "simkl"],
