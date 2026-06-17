@@ -47,8 +47,8 @@ A unique feature that prepends a `[Watched]` tag directly to the episode titles 
 
 ## 📥 Installation
 
-1. Visit the **[AniSync Configuration Dashboard](https://yourdomain.com)** (replace with your hosted instance URL).
-2. Authenticate with **MyAnimeList**, **AniList** and/or **Simkl** via secure OAuth2.
+1. Visit the **[AniSync Configuration Dashboard](https://anisync.qzz.io)**
+2. Authenticate with **MyAnimeList**, **AniList** and/or **Simkl**
 3. Save your preferences and click **Direct Install** or copy the **Manifest URL** into Stremio.
 
 ---
