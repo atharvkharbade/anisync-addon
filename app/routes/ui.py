@@ -240,6 +240,9 @@ async def configure(user_id: str = ""):
                 "anisync_highest_rated",
                 "anisync_most_popular",
                 "anisync_top_airing",
+                "anisync_seasonal",
+                "anisync_schedule",
+                "anisync_spotlight",
             ]
 
             # Add enabled ones in custom sorted order

@@ -619,21 +619,47 @@ def is_proper_anime(title: str) -> bool:
     return True
 
 
-async def get_mal_recommendations_for_id(token: str, mal_id: str) -> list[dict]:
-    client = get_client()
-    url = f"{Config.MAL_API_URL}/anime/{mal_id}"
-    # Fetch start_season, genres, media_type, popularity, mean, status to enforce user preferences in recommendations
-    params = {
-        "fields": "recommendations{node{id,title,main_picture,genres,start_season,media_type,popularity,mean,synopsis,average_episode_duration,status}}"
-    }
-    headers = {"Authorization": f"Bearer {token}"}
-    try:
-        resp = await client.get(url, params=params, headers=headers, timeout=10)
-        if resp.status_code == 200:
-            return resp.json().get("recommendations", [])
-    except Exception as e:
-        logger.warning("Failed to fetch MAL recommendations for MAL ID %s: %s", mal_id, e)
-    return []
+async def get_mal_recommendations_for_id(token: str | None, mal_id: str) -> list[dict]:
+    items = []
+    if token:
+        client = get_client()
+        url = f"{Config.MAL_API_URL}/anime/{mal_id}"
+        params = {
+            "fields": "recommendations{node{id,title,main_picture,genres,start_season,media_type,popularity,mean,synopsis,average_episode_duration,status}}"
+        }
+        headers = {"Authorization": f"Bearer {token}"}
+        try:
+            resp = await client.get(url, params=params, headers=headers, timeout=10)
+            if resp.status_code == 200:
+                items = resp.json().get("recommendations", [])
+        except Exception as e:
+            logger.warning("Failed to fetch MAL recommendations for MAL ID %s: %s", mal_id, e)
+
+    if not items and mal_id:
+        try:
+            from app.api.jikan import get_anime_recommendations
+            jikan_recs = await get_anime_recommendations(mal_id)
+            if jikan_recs:
+                for rec in jikan_recs:
+                    entry = rec.get("entry", {})
+                    mid = entry.get("mal_id")
+                    title = entry.get("title") or entry.get("name")
+                    url = entry.get("url") or ""
+                    if not title and "/anime/" in url:
+                        parts = url.split("/anime/")[1].split("/")
+                        if len(parts) > 1:
+                            title = parts[1].replace("_", " ")
+                    if mid:
+                        items.append({
+                            "node": {
+                                "id": mid,
+                                "title": title or f"Anime #{mid}"
+                            }
+                        })
+        except Exception as ex:
+            logger.warning("Jikan recommendations fallback failed for MAL ID %s: %s", mal_id, ex)
+
+    return items
 
 
 async def get_anilist_recommendations_bulk(token: str, anilist_ids: list[int]) -> list[dict]:
@@ -2200,9 +2226,39 @@ async def update_popular_fallbacks_cache():
                     popular_fallbacks_collection.insert_many(new_items)
                     logger.info("Successfully cached %d popular fallbacks from AniList.", len(new_items))
                     return
-        logger.warning("Failed to fetch popular fallbacks from AniList: Status %s", resp.status_code)
+        logger.warning("AniList returned empty data for popular fallbacks, attempting Jikan fallback...")
     except Exception as e:
-        logger.error("Failed to update popular fallbacks cache: %s", e)
+        logger.error("Failed to update popular fallbacks cache from AniList: %s, trying Jikan...", e)
+
+    try:
+        from app.api.jikan import get_top_anime
+        jikan_top = await get_top_anime(type_filter="tv", page=1)
+        if jikan_top:
+            import re
+            new_items = []
+            for item in jikan_top[:40]:
+                mal_id = item.get("mal_id")
+                name = item.get("title_english") or item.get("title") or "Unknown Anime"
+                desc = item.get("synopsis") or ""
+                desc = re.sub("<[^<]+?>", "", desc)
+                desc = desc[:150] + "..." if len(desc) > 150 else desc
+                desc = desc.replace("\n", " ").replace("  ", " ").strip()
+                images = item.get("images", {}).get("jpg", {})
+                poster = images.get("large_image_url") or images.get("image_url") or ""
+                if mal_id:
+                    new_items.append({
+                        "id": f"mal:{mal_id}",
+                        "type": "series",
+                        "name": name,
+                        "poster": poster,
+                        "description": desc
+                    })
+            if new_items:
+                popular_fallbacks_collection.delete_many({})
+                popular_fallbacks_collection.insert_many(new_items)
+                logger.info("Successfully cached %d popular fallbacks from Jikan API.", len(new_items))
+    except Exception as ex:
+        logger.error("Failed to update popular fallbacks from Jikan fallback: %s", ex)
 
 
 async def popular_fallbacks_loop():
