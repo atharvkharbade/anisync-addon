@@ -291,20 +291,14 @@ async def fetch_anime_info_by_mal_id(mal_id: str) -> tuple[str | None, str | Non
     }
     """
     try:
-        client = get_client()
-        resp = await client.post(
-            "https://graphql.anilist.co",
-            json={"query": query, "variables": {"idMal": int(mal_id)}},
-            timeout=TIMEOUT,
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            media = data.get("data", {}).get("Media", {})
-            if media:
-                anilist_id = str(media["id"])
-                titles = media.get("title", {})
-                title = titles.get("english") or titles.get("userPreferred") or titles.get("romaji")
-                return title, anilist_id
+        from app.api.anilist import _gql
+        data = await _gql(None, query, {"idMal": int(mal_id)})
+        media = data.get("data", {}).get("Media", {})
+        if media:
+            anilist_id = str(media["id"])
+            titles = media.get("title", {})
+            title = titles.get("english") or titles.get("userPreferred") or titles.get("romaji")
+            return title, anilist_id
     except Exception as e:
         logging.warning("fetch_anime_info_by_mal_id: AniList query failed for mal_id=%s: %s", mal_id, e)
 
@@ -347,20 +341,14 @@ async def fetch_anime_info_by_anilist_id(anilist_id: str) -> tuple[str | None, s
     }
     """
     try:
-        client = get_client()
-        resp = await client.post(
-            "https://graphql.anilist.co",
-            json={"query": query, "variables": {"id": int(anilist_id)}},
-            timeout=TIMEOUT,
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            media = data.get("data", {}).get("Media", {})
-            if media:
-                mal_id = str(media["idMal"]) if media.get("idMal") else None
-                titles = media.get("title", {})
-                title = titles.get("english") or titles.get("userPreferred") or titles.get("romaji")
-                return title, mal_id
+        from app.api.anilist import _gql
+        data = await _gql(None, query, {"id": int(anilist_id)})
+        media = data.get("data", {}).get("Media", {})
+        if media:
+            mal_id = str(media["idMal"]) if media.get("idMal") else None
+            titles = media.get("title", {})
+            title = titles.get("english") or titles.get("userPreferred") or titles.get("romaji")
+            return title, mal_id
     except Exception as e:
         logging.warning("fetch_anime_info_by_anilist_id: AniList query failed for anilist_id=%s: %s", anilist_id, e)
 

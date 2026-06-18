@@ -638,10 +638,12 @@ async def get_mal_recommendations_for_id(token: str, mal_id: str) -> list[dict]:
 async def get_anilist_recommendations_bulk(token: str, anilist_ids: list[int]) -> list[dict]:
     if not anilist_ids:
         return []
-    query = """
-    query ($mediaIds: [Int]) {
-      Page(page: 1, perPage: 50) {
-        recommendations(mediaId_in: $mediaIds, sort: RATING_DESC) {
+    
+    # AniList Page recommendations doesn't support bulk mediaId_in, so we query using aliases.
+    # Limit to top 15 seeds to keep query size reasonable and avoid complexity limits.
+    anilist_ids = [int(aid) for aid in anilist_ids[:15]]
+    
+    rec_fields = """
           rating
           media {
             id
@@ -669,21 +671,39 @@ async def get_anilist_recommendations_bulk(token: str, anilist_ids: list[int]) -
             averageScore
             description
           }
-        }
-      }
-    }
     """
+    
+    # Construct the query variables definition
+    var_defs = ", ".join([f"$mediaId{i}: Int" for i in range(len(anilist_ids))])
+    
+    # Construct the query fields (aliases)
+    alias_queries = []
+    for i in range(len(anilist_ids)):
+        alias_queries.append(f"""
+      page_{i}: Page(page: 1, perPage: 15) {{
+        recommendations(mediaId: $mediaId{i}, sort: RATING_DESC) {{
+          {rec_fields}
+        }}
+      }}
+        """)
+        
+    query = f"""
+    query ({var_defs}) {{
+      {"".join(alias_queries)}
+    }}
+    """
+    
+    variables = {f"mediaId{i}": aid for i, aid in enumerate(anilist_ids)}
+    
     try:
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-        payload = {"query": query, "variables": {"mediaIds": anilist_ids}}
-        client = get_client()
-        resp = await client.post("https://graphql.anilist.co", json=payload, headers=headers, timeout=10)
-        if resp.status_code == 200:
-            return resp.json().get("data", {}).get("Page", {}).get("recommendations", [])
+        res = await anilist_api._gql(token, query, variables)
+        all_recs = []
+        for key, page_data in res.get("data", {}).items():
+            if key.startswith("page_") and page_data:
+                recs = page_data.get("recommendations", [])
+                if recs:
+                    all_recs.extend(recs)
+        return all_recs
     except Exception as e:
         logger.warning("Failed bulk AniList recommendations query: %s", e)
     return []
@@ -1130,18 +1150,8 @@ async def get_top_anime_by_genre(token: str, genre: str, sort: str = "POPULARITY
     }
     """
     try:
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-
-        payload = {"query": query, "variables": {"genre": genre, "sort": [sort]}}
-        client = get_client()
-        resp = await client.post("https://graphql.anilist.co", json=payload, headers=headers, timeout=10)
-        if resp.status_code == 200:
-            return resp.json().get("data", {}).get("Page", {}).get("media", [])
+        res = await anilist_api._gql(token, query, {"genre": genre, "sort": [sort]})
+        return res.get("data", {}).get("Page", {}).get("media", [])
     except Exception as e:
         logger.warning("Failed to fetch top anime for genre %s: %s", genre, e)
     return []
@@ -2152,15 +2162,9 @@ async def update_popular_fallbacks_cache():
     """
     try:
         logger.info("Updating popular fallbacks cache from AniList...")
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-        client = get_client()
-        resp = await client.post("https://graphql.anilist.co", json={"query": query}, headers=headers, timeout=15)
-        if resp.status_code == 200:
-            data = resp.json().get("data", {}).get("Page", {}).get("media", [])
-            if data:
+        res = await anilist_api._gql(None, query)
+        data = res.get("data", {}).get("Page", {}).get("media", [])
+        if data:
                 import re
 
                 new_items = []

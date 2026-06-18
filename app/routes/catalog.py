@@ -248,13 +248,11 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
             chunks = [uncached_anilist_ids[i : i + 50] for i in range(0, len(uncached_anilist_ids), 50)]
 
             async def fetch_chunk(chunk_ids):
-                payload = {"query": query, "variables": {"ids": [int(x) for x in chunk_ids]}}
-                client = get_client()
-                resp = await client.post("https://graphql.anilist.co", json=payload, headers=headers, timeout=8)
-                if resp.status_code == 200:
-                    return resp.json().get("data", {}).get("Page", {}).get("media", [])
-                else:
-                    logging.error("AniList chunk query failed: %s %s", resp.status_code, resp.text)
+                try:
+                    res = await anilist_api._gql(None, query, {"ids": [int(x) for x in chunk_ids]})
+                    return res.get("data", {}).get("Page", {}).get("media", [])
+                except Exception as e:
+                    logging.error("AniList chunk query failed: %s", e)
                 return []
 
             tasks = [fetch_chunk(c) for c in chunks]
