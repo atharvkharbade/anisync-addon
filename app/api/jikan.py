@@ -5,7 +5,8 @@ from typing import Any, Dict, List, Optional
 from app.services.http import get_client
 from config import Config
 
-JIKAN_BASE_URL = os_jikan_url = getattr(Config, "JIKAN_API_URL", "https://jikanfortheweebs.midnightignite.me/v4")
+JIKAN_PRIMARY_URL = getattr(Config, "JIKAN_PRIMARY_URL", "https://jikanfortheweebs.midnightignite.me/v4")
+JIKAN_FALLBACK_URL = getattr(Config, "JIKAN_FALLBACK_URL", "https://api.jikan.moe/v4")
 
 _jikan_semaphore: Optional[asyncio.Semaphore] = None
 
@@ -18,37 +19,46 @@ def get_jikan_semaphore() -> asyncio.Semaphore:
 
 
 async def _jikan_request(endpoint: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-    """Execute a rate-limited request to the Jikan API with exponential backoff retries."""
-    url = f"{JIKAN_BASE_URL.rstrip('/')}/{endpoint.lstrip('/')}"
+    """Execute a rate-limited request to Jikan API.
+
+    Tries Primary endpoint first (midnightignite), then falls back to official Jikan API if primary is rate limited (429) or fails.
+    """
+    clean_endpoint = endpoint.lstrip("/")
+    primary_url = f"{JIKAN_PRIMARY_URL.rstrip('/')}/{clean_endpoint}"
+    fallback_url = f"{JIKAN_FALLBACK_URL.rstrip('/')}/{clean_endpoint}"
+
     sem = get_jikan_semaphore()
     client = get_client()
 
-    retries = 3
-    backoff = 1.0
-
     async with sem:
-        for attempt in range(retries):
-            try:
-                resp = await client.get(url, params=params, timeout=12.0)
-                if resp.status_code == 200:
-                    return resp.json()
-                elif resp.status_code == 404:
-                    logging.warning("Jikan 404 for %s", url)
-                    return None
-                elif resp.status_code == 429:
-                    retry_after = resp.headers.get("Retry-After")
-                    sleep_time = float(retry_after) if retry_after else backoff
-                    logging.warning("Jikan 429 rate limit hit on %s, sleeping %.1fs...", url, sleep_time)
-                    await asyncio.sleep(sleep_time)
-                    backoff *= 1.5
-                else:
-                    logging.warning("Jikan returned status %s for %s", resp.status_code, url)
-                    await asyncio.sleep(backoff)
-                    backoff *= 1.5
-            except Exception as e:
-                logging.error("Jikan request exception (attempt %s/%s) for %s: %s", attempt + 1, retries, url, e)
-                await asyncio.sleep(backoff)
-                backoff *= 1.5
+        # 1. Try Primary Endpoint (Midnight)
+        try:
+            resp = await client.get(primary_url, params=params, timeout=10.0)
+            if resp.status_code == 200:
+                return resp.json()
+            elif resp.status_code == 404:
+                logging.warning("Jikan Primary 404 for %s", primary_url)
+                return None
+            else:
+                logging.warning("Jikan Primary returned status %s for %s, falling back to official Jikan...", resp.status_code, primary_url)
+        except Exception as e:
+            logging.warning("Jikan Primary request exception for %s: %s, falling back to official Jikan...", primary_url, e)
+
+        # 2. Try Fallback Endpoint (Official api.jikan.moe)
+        try:
+            logging.info("Executing Jikan fallback request to %s", fallback_url)
+            resp = await client.get(fallback_url, params=params, timeout=10.0)
+            if resp.status_code == 200:
+                return resp.json()
+            elif resp.status_code == 404:
+                return None
+            elif resp.status_code == 429:
+                logging.warning("Jikan Official API 429 rate limit hit on %s", fallback_url)
+                await asyncio.sleep(1.0)
+            else:
+                logging.warning("Jikan Official API returned status %s for %s", resp.status_code, fallback_url)
+        except Exception as ex:
+            logging.error("Jikan Official API fallback exception for %s: %s", fallback_url, ex)
 
     return None
 
