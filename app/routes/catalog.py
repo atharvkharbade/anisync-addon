@@ -819,9 +819,27 @@ async def update_discovery_catalogs_cache() -> dict:
         except Exception as ex:
             logging.error("Failed to write to discovery_catalogs_cache for %s: %s", catalog_id, ex)
 
-        result_metas[catalog_id] = metas
-
     return result_metas
+
+
+async def discovery_catalogs_loop():
+    """Background loop to periodically pre-fetch and update discovery catalogs cache."""
+    # Wait a short bit after startup to avoid overloading AniList API during other startup tasks
+    await asyncio.sleep(5)
+    while True:
+        try:
+            logging.info("Pre-fetching discovery catalogs cache...")
+            await update_discovery_catalogs_cache()
+            logging.info("Discovery catalogs cache successfully updated.")
+        except Exception as e:
+            logging.error("Error in discovery catalogs pre-fetch loop: %s", e)
+        # Sleep for 6 hours (matching cache TTL) minus a 5-minute buffer
+        await asyncio.sleep(6 * 3600 - 300)
+
+
+def trigger_discovery_catalogs_prefetch():
+    """Start the background discovery catalogs prefetch loop."""
+    asyncio.create_task(discovery_catalogs_loop())
 
 
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>.json")

@@ -51,6 +51,11 @@ def create_app() -> App:
 
         trigger_popular_fallbacks_update_background()
 
+        # Start background task to pre-fetch and periodically update discovery catalogs
+        from app.routes.catalog import trigger_discovery_catalogs_prefetch
+
+        trigger_discovery_catalogs_prefetch()
+
     @app_.after_serving
     async def shutdown():
         await close_client()
