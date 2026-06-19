@@ -53,6 +53,7 @@ class Config:
     SIMKL_CLIENT_SECRET = os.getenv("SIMKL_CLIENT_SECRET", "")
 
     # API endpoints (Allows routing through Cloudflare Workers or proxies)
+    CUSTOM_JIKAN_URL = os.getenv("CUSTOM_JIKAN_URL", os.getenv("JIKAN_API_URL", "")).strip()
     ANILIST_API_URL = os.getenv("ANILIST_API_URL", "https://graphql.anilist.co")
     MAL_API_URL = os.getenv("MAL_API_URL", "https://api.myanimelist.net/v2")
     SIMKL_API_URL = os.getenv("SIMKL_API_URL", "https://api.simkl.com")

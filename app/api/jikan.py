@@ -18,47 +18,62 @@ def get_jikan_semaphore() -> asyncio.Semaphore:
     return _jikan_semaphore
 
 
-async def _jikan_request(endpoint: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-    """Execute a rate-limited request to Jikan API.
+def get_jikan_endpoints() -> List[str]:
+    """Build an ordered list of Jikan API endpoints.
 
-    Tries Primary endpoint first (midnightignite), then falls back to official Jikan API if primary is rate limited (429) or fails.
+    If CUSTOM_JIKAN_URL (or JIKAN_API_URL) env var is set, it becomes Primary (Tier 1).
+    Followed by MidnightIgnite instance (Tier 2) and official Jikan API (Tier 3).
     """
+    endpoints = []
+    custom_url = getattr(Config, "CUSTOM_JIKAN_URL", "").strip()
+    if custom_url:
+        endpoints.append(custom_url)
+    endpoints.append(JIKAN_PRIMARY_URL)
+    endpoints.append(JIKAN_FALLBACK_URL)
+
+    seen = set()
+    unique_endpoints = []
+    for ep in endpoints:
+        cleaned = ep.rstrip("/")
+        if cleaned and cleaned not in seen:
+            seen.add(cleaned)
+            unique_endpoints.append(cleaned)
+
+    return unique_endpoints
+
+
+async def _jikan_request(endpoint: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    """Execute a rate-limited request to Jikan API using ordered fallback endpoints."""
     clean_endpoint = endpoint.lstrip("/")
-    primary_url = f"{JIKAN_PRIMARY_URL.rstrip('/')}/{clean_endpoint}"
-    fallback_url = f"{JIKAN_FALLBACK_URL.rstrip('/')}/{clean_endpoint}"
+    endpoints = get_jikan_endpoints()
 
     sem = get_jikan_semaphore()
     client = get_client()
 
     async with sem:
-        # 1. Try Primary Endpoint (Midnight)
-        try:
-            resp = await client.get(primary_url, params=params, timeout=10.0)
-            if resp.status_code == 200:
-                return resp.json()
-            elif resp.status_code == 404:
-                logging.warning("Jikan Primary 404 for %s", primary_url)
-                return None
-            else:
-                logging.warning("Jikan Primary returned status %s for %s, falling back to official Jikan...", resp.status_code, primary_url)
-        except Exception as e:
-            logging.warning("Jikan Primary request exception for %s: %s, falling back to official Jikan...", primary_url, e)
-
-        # 2. Try Fallback Endpoint (Official api.jikan.moe)
-        try:
-            logging.info("Executing Jikan fallback request to %s", fallback_url)
-            resp = await client.get(fallback_url, params=params, timeout=10.0)
-            if resp.status_code == 200:
-                return resp.json()
-            elif resp.status_code == 404:
-                return None
-            elif resp.status_code == 429:
-                logging.warning("Jikan Official API 429 rate limit hit on %s", fallback_url)
-                await asyncio.sleep(1.0)
-            else:
-                logging.warning("Jikan Official API returned status %s for %s", resp.status_code, fallback_url)
-        except Exception as ex:
-            logging.error("Jikan Official API fallback exception for %s: %s", fallback_url, ex)
+        for idx, base_url in enumerate(endpoints):
+            full_url = f"{base_url}/{clean_endpoint}"
+            try:
+                resp = await client.get(full_url, params=params, timeout=10.0)
+                if resp.status_code == 200:
+                    return resp.json()
+                elif resp.status_code == 404:
+                    logging.warning("Jikan endpoint %s returned 404 for %s", base_url, full_url)
+                    return None
+                else:
+                    logging.warning(
+                        "Jikan endpoint %s returned status %s for %s, trying next fallback...",
+                        base_url,
+                        resp.status_code,
+                        full_url,
+                    )
+            except Exception as e:
+                logging.warning(
+                    "Jikan endpoint %s exception for %s: %s, trying next fallback...",
+                    base_url,
+                    full_url,
+                    e,
+                )
 
     return None
 
