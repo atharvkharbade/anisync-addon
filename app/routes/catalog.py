@@ -1375,6 +1375,17 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     )
                     progress = max(progress, simkl_progress)
 
+                # Extract total episodes
+                total = 0
+                if item.get("mal_item"):
+                    total = max(total, item["mal_item"].get("node", {}).get("num_episodes", 0))
+                if item.get("anilist_item"):
+                    total = max(total, item["anilist_item"].get("media", {}).get("episodes") or 0)
+                if item.get("simkl_item"):
+                    show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
+                    simkl_total = show_obj.get("episodes_count") or show_obj.get("num_episodes") or 0
+                    total = max(total, simkl_total)
+
                 # Airing calculations using AniList data
                 next_ep_num = None
                 next_ep_airing_at = None
@@ -1403,20 +1414,47 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 al_status = al_media.get("status") if al_media else ""
                 if al_status == "FINISHED":
                     end_date = al_media.get("endDate")
-                    total_eps = al_media.get("episodes")
-                    if end_date and total_eps:
-                        y = end_date.get("year")
-                        m = end_date.get("month") or 1
-                        d = end_date.get("day") or 1
-                        if y:
+                    total_eps = al_media.get("episodes") or total
+                    if total_eps:
+                        if end_date:
+                            y = end_date.get("year")
+                            m = end_date.get("month") or 1
+                            d = end_date.get("day") or 1
+                            if y:
+                                try:
+                                    import datetime
+                                    dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                    end_ts = int(dt.timestamp())
+                                    if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
+                                        recently_finished = True
+                                        latest_aired_num = total_eps
+                                        latest_aired_at = end_ts
+                                except Exception:
+                                    pass
+                        else:
+                            # If status is FINISHED but no endDate is set yet, assume it ended today
+                            if progress < total_eps:
+                                recently_finished = True
+                                latest_aired_num = total_eps
+                                latest_aired_at = current_time
+
+                # Fallback to MAL's own end_date if we couldn't determine from AniList
+                if not recently_finished and item.get("mal_item"):
+                    mal_node = item["mal_item"].get("node", {})
+                    if mal_node.get("status") == "finished_airing":
+                        mal_end_date = mal_node.get("end_date")
+                        mal_total = mal_node.get("num_episodes", 0) or total
+                        if mal_end_date and mal_total > 0:
                             try:
                                 import datetime
-                                dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
-                                end_ts = int(dt.timestamp())
-                                if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
-                                    recently_finished = True
-                                    latest_aired_num = total_eps
-                                    latest_aired_at = end_ts
+                                parts = [int(p) for p in mal_end_date.split("-")]
+                                if len(parts) == 3:
+                                    dt = datetime.datetime(parts[0], parts[1], parts[2], tzinfo=datetime.timezone.utc)
+                                    end_ts = int(dt.timestamp())
+                                    if (current_time - end_ts) <= (604800 + 86400) and progress < mal_total:
+                                        recently_finished = True
+                                        latest_aired_num = mal_total
+                                        latest_aired_at = end_ts
                             except Exception:
                                 pass
 
@@ -1762,22 +1800,29 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 al_status = al_media.get("status") if al_media else ""
                 if al_status == "FINISHED":
                     end_date = al_media.get("endDate")
-                    total_eps = al_media.get("episodes")
-                    if end_date and total_eps:
-                        y = end_date.get("year")
-                        m = end_date.get("month") or 1
-                        d = end_date.get("day") or 1
-                        if y:
-                            try:
-                                import datetime
-                                dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
-                                end_ts = int(dt.timestamp())
-                                if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
-                                    recently_finished = True
-                                    latest_aired_num = total_eps
-                                    latest_aired_at = end_ts
-                            except Exception:
-                                pass
+                    total_eps = al_media.get("episodes") or total
+                    if total_eps:
+                        if end_date:
+                            y = end_date.get("year")
+                            m = end_date.get("month") or 1
+                            d = end_date.get("day") or 1
+                            if y:
+                                try:
+                                    import datetime
+                                    dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                    end_ts = int(dt.timestamp())
+                                    if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
+                                        recently_finished = True
+                                        latest_aired_num = total_eps
+                                        latest_aired_at = end_ts
+                                except Exception:
+                                    pass
+                        else:
+                            # If status is FINISHED but no endDate is set yet, assume it ended today
+                            if progress < total_eps:
+                                recently_finished = True
+                                latest_aired_num = total_eps
+                                latest_aired_at = current_time
 
                 is_new_ep = False
                 if (
@@ -2015,21 +2060,28 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if al_status == "FINISHED":
                     end_date = al_media.get("endDate")
                     total_eps = al_media.get("episodes") or total
-                    if end_date and total_eps:
-                        y = end_date.get("year")
-                        m = end_date.get("month") or 1
-                        d = end_date.get("day") or 1
-                        if y:
-                            try:
-                                import datetime
-                                dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
-                                end_ts = int(dt.timestamp())
-                                if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
-                                    recently_finished = True
-                                    latest_aired_num = total_eps
-                                    latest_aired_at = end_ts
-                            except Exception:
-                                pass
+                    if total_eps:
+                        if end_date:
+                            y = end_date.get("year")
+                            m = end_date.get("month") or 1
+                            d = end_date.get("day") or 1
+                            if y:
+                                try:
+                                    import datetime
+                                    dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                    end_ts = int(dt.timestamp())
+                                    if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
+                                        recently_finished = True
+                                        latest_aired_num = total_eps
+                                        latest_aired_at = end_ts
+                                except Exception:
+                                    pass
+                        else:
+                            # If status is FINISHED but no endDate is set yet, assume it ended today
+                            if progress < total_eps:
+                                recently_finished = True
+                                latest_aired_num = total_eps
+                                latest_aired_at = current_time
 
                 # Fallback to MAL's own end_date if we couldn't determine from AniList
                 if not recently_finished and node.get("status") == "finished_airing":
@@ -2274,21 +2326,28 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 recently_finished = False
                 if status == "FINISHED":
                     end_date = media.get("endDate")
-                    if end_date and total > 0:
-                        y = end_date.get("year")
-                        m = end_date.get("month") or 1
-                        d = end_date.get("day") or 1
-                        if y:
-                            try:
-                                import datetime
-                                dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
-                                end_ts = int(dt.timestamp())
-                                if (current_time - end_ts) <= (604800 + 86400) and progress < total:
-                                    recently_finished = True
-                                    latest_aired_num = total
-                                    latest_aired_at = end_ts
-                            except Exception:
-                                pass
+                    if total > 0:
+                        if end_date:
+                            y = end_date.get("year")
+                            m = end_date.get("month") or 1
+                            d = end_date.get("day") or 1
+                            if y:
+                                try:
+                                    import datetime
+                                    dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                    end_ts = int(dt.timestamp())
+                                    if (current_time - end_ts) <= (604800 + 86400) and progress < total:
+                                        recently_finished = True
+                                        latest_aired_num = total
+                                        latest_aired_at = end_ts
+                                except Exception:
+                                    pass
+                        else:
+                            # If status is FINISHED but no endDate is set yet, assume it ended today
+                            if progress < total:
+                                recently_finished = True
+                                latest_aired_num = total
+                                latest_aired_at = current_time
 
                 has_unwatched = False
                 if latest_aired_num > 0:
