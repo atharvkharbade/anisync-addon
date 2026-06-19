@@ -1445,29 +1445,133 @@
         const watchlistOptionsContainer = document.getElementById("watchlist-options-container");
         const catalogManagementCard = document.getElementById("catalog-management-card");
         const enableRecsCheckbox = document.getElementById("enable_recommendations");
+        const combineCheckbox = document.getElementById("combine_watchlists");
 
-        function syncCatalogManagementCardVisibility() {
+        function syncCatalogManagement(isInitialLoad = false) {
             const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
             const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
             const simklToken = "{{ 'true' if user.get('simkl_access_token') else 'false' }}" === "true";
             const enableCatalogs = enableCatalogsCheckbox && enableCatalogsCheckbox.checked;
             const enableRecs = enableRecsCheckbox && enableRecsCheckbox.checked;
+            const combineEnabled = combineCheckbox && combineCheckbox.checked;
 
-            const shouldShowCard = (enableCatalogs && (malToken || alToken || simklToken)) || enableRecs;
+            if (watchlistOptionsContainer) {
+                watchlistOptionsContainer.style.display = enableCatalogs ? "block" : "none";
+            }
+            const optionsDiv = document.getElementById("recommendations-options");
+            if (optionsDiv) {
+                optionsDiv.style.display = enableRecs ? "block" : "none";
+            }
+
+            const malItems = document.querySelectorAll('.catalog-order-item[data-source="mal"]');
+            const alItems = document.querySelectorAll('.catalog-order-item[data-source="anilist"]');
+            const simklItems = document.querySelectorAll('.catalog-order-item[data-source="simkl"]');
+            const combItems = document.querySelectorAll('.catalog-order-item[data-source="combined"]');
+
+            const showWatchlistItems = enableCatalogs || (!enableCatalogs && !enableRecs);
+
+            malItems.forEach(item => {
+                if (!showWatchlistItems || combineEnabled) {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                } else {
+                    if (malToken) {
+                        item.classList.remove("d-none");
+                        if (!isInitialLoad && enableCatalogs) {
+                            const cb = item.querySelector('.catalog-checkbox');
+                            if (cb) cb.checked = true;
+                        }
+                    }
+                }
+            });
+
+            alItems.forEach(item => {
+                if (!showWatchlistItems || combineEnabled) {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                } else {
+                    if (alToken) {
+                        item.classList.remove("d-none");
+                        if (!isInitialLoad && enableCatalogs) {
+                            const cb = item.querySelector('.catalog-checkbox');
+                            if (cb) cb.checked = true;
+                        }
+                    }
+                }
+            });
+
+            simklItems.forEach(item => {
+                if (!showWatchlistItems || combineEnabled) {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                } else {
+                    if (simklToken) {
+                        item.classList.remove("d-none");
+                        if (!isInitialLoad && enableCatalogs) {
+                            const cb = item.querySelector('.catalog-checkbox');
+                            if (cb) cb.checked = true;
+                        }
+                    }
+                }
+            });
+
+            combItems.forEach(item => {
+                if (!showWatchlistItems || !combineEnabled) {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                } else {
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad && enableCatalogs) {
+                        const cb = item.querySelector('.catalog-checkbox');
+                        if (cb) cb.checked = true;
+                    }
+                }
+            });
+
+            const recItems = document.querySelectorAll('.catalog-order-item[data-source="rec"]');
+            const showRecItems = enableRecs || (!enableCatalogs && !enableRecs);
+
+            recItems.forEach(item => {
+                if (showRecItems) {
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad && enableRecs) {
+                        const cb = item.querySelector('.catalog-checkbox');
+                        if (cb) cb.checked = true;
+                    }
+                } else {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                }
+            });
+
+            updateSortedInput();
+
+            const shouldShowCard = malToken || alToken || simklToken || enableRecs;
             if (catalogManagementCard) {
-                catalogManagementCard.style.display = shouldShowCard ? "block" : "none";
+                if (shouldShowCard) {
+                    catalogManagementCard.style.display = "block";
+                    if (!enableCatalogs && !enableRecs) {
+                        catalogManagementCard.style.opacity = "0.4";
+                        catalogManagementCard.style.pointerEvents = "none";
+                        catalogManagementCard.style.filter = "grayscale(1)";
+                    } else {
+                        catalogManagementCard.style.opacity = "1";
+                        catalogManagementCard.style.pointerEvents = "auto";
+                        catalogManagementCard.style.filter = "none";
+                    }
+                } else {
+                    catalogManagementCard.style.display = "none";
+                }
             }
         }
 
-        function toggleCatalogsDependents() {
-            const enableCatalogs = enableCatalogsCheckbox && enableCatalogsCheckbox.checked;
-            if (watchlistOptionsContainer) watchlistOptionsContainer.style.display = enableCatalogs ? "block" : "none";
-            syncCatalogManagementCardVisibility();
-        }
-
         if (enableCatalogsCheckbox) {
-            enableCatalogsCheckbox.addEventListener("change", toggleCatalogsDependents);
-            toggleCatalogsDependents(); // Run on initial load
+            enableCatalogsCheckbox.addEventListener("change", () => syncCatalogManagement(false));
         }
 
         const enableSearchCheckbox = document.getElementById("enable_search");
@@ -1522,82 +1626,7 @@
         toggleSearchDependents(); // Run on initial load
 
         // Combined watchlist toggle visibility logic
-        const combineCheckbox = document.getElementById("combine_watchlists");
-        function syncCatalogCombinedVisibility(isInitialLoad = false) {
-            const combineEnabled = combineCheckbox && combineCheckbox.checked;
-            const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
-            const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
-            const simklToken = "{{ 'true' if user.get('simkl_access_token') else 'false' }}" === "true";
 
-            const malItems = document.querySelectorAll('.catalog-order-item[data-source="mal"]');
-            const alItems = document.querySelectorAll('.catalog-order-item[data-source="anilist"]');
-            const simklItems = document.querySelectorAll('.catalog-order-item[data-source="simkl"]');
-            const combItems = document.querySelectorAll('.catalog-order-item[data-source="combined"]');
-
-            malItems.forEach(item => {
-                if (combineEnabled) {
-                    item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
-                } else {
-                    if (malToken) {
-                        item.classList.remove("d-none");
-                        if (!isInitialLoad) {
-                            const cb = item.querySelector('.catalog-checkbox');
-                            if (cb) cb.checked = true;
-                        }
-                    }
-                }
-            });
-
-            alItems.forEach(item => {
-                if (combineEnabled) {
-                    item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
-                } else {
-                    if (alToken) {
-                        item.classList.remove("d-none");
-                        if (!isInitialLoad) {
-                            const cb = item.querySelector('.catalog-checkbox');
-                            if (cb) cb.checked = true;
-                        }
-                    }
-                }
-            });
-
-            simklItems.forEach(item => {
-                if (combineEnabled) {
-                    item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
-                } else {
-                    if (simklToken) {
-                        item.classList.remove("d-none");
-                        if (!isInitialLoad) {
-                            const cb = item.querySelector('.catalog-checkbox');
-                            if (cb) cb.checked = true;
-                        }
-                    }
-                }
-            });
-
-            combItems.forEach(item => {
-                if (combineEnabled) {
-                    item.classList.remove("d-none");
-                    if (!isInitialLoad) {
-                        const cb = item.querySelector('.catalog-checkbox');
-                        if (cb) cb.checked = true;
-                    }
-                } else {
-                    item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
-                }
-            });
-
-            updateSortedInput();
-        }
 
         function syncCombineWatchlistsState() {
             const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
@@ -1627,13 +1656,13 @@
                     combineCheckbox.disabled = true;
                     combineCheckbox.checked = false;
                     if (warningText) warningText.classList.remove("d-none");
-                    syncCatalogCombinedVisibility(true);
+                    syncCatalogManagement(true);
                 }
             }
         }
 
         if (combineCheckbox) {
-            combineCheckbox.addEventListener("change", () => syncCatalogCombinedVisibility(false));
+            combineCheckbox.addEventListener("change", () => syncCatalogManagement(false));
 
             const malEnabledCheckbox = document.getElementById("mal_enabled");
             const alEnabledCheckbox = document.getElementById("anilist_enabled");
@@ -1649,37 +1678,12 @@
             }
 
             syncCombineWatchlistsState();
-            syncCatalogCombinedVisibility(true); // Run on initial load
+            syncCatalogManagement(true); // Run on initial load
         }
 
         // Recommendations UI Logic
-        function syncRecCatalogsVisibility(isInitialLoad = false) {
-            const enableRecs = enableRecsCheckbox && enableRecsCheckbox.checked;
-            const optionsDiv = document.getElementById("recommendations-options");
-            if (optionsDiv) {
-                optionsDiv.style.display = enableRecs ? "block" : "none";
-            }
-
-            const recItems = document.querySelectorAll('.catalog-order-item[data-source="rec"]');
-            recItems.forEach(item => {
-                if (enableRecs) {
-                    item.classList.remove("d-none");
-                    if (!isInitialLoad) {
-                        const cb = item.querySelector('.catalog-checkbox');
-                        if (cb) cb.checked = true;
-                    }
-                } else {
-                    item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
-                }
-            });
-            updateSortedInput();
-            syncCatalogManagementCardVisibility();
-        }
-
         if (enableRecsCheckbox) {
-            enableRecsCheckbox.addEventListener("change", () => syncRecCatalogsVisibility(false));
+            enableRecsCheckbox.addEventListener("change", () => syncCatalogManagement(false));
         }
 
         const keyInput = document.getElementById("gemini_api_key");
@@ -1859,7 +1863,7 @@
             updateSlider();
         }
 
-        syncRecCatalogsVisibility(true);
+        syncCatalogManagement(true);
 
     });
 
