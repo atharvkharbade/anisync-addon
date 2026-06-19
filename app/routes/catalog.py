@@ -217,6 +217,8 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
                 "status": doc.get("status"),
                 "nextAiringEpisode": doc.get("nextAiringEpisode"),
                 "averageScore": doc.get("averageScore"),
+                "episodes": doc.get("episodes"),
+                "endDate": doc.get("endDate"),
             }
     except Exception as e:
         logging.error("Failed to read from anilist_airing_cache: %s", e)
@@ -232,6 +234,12 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
               id
               status
               averageScore
+              episodes
+              endDate {
+                year
+                month
+                day
+              }
               nextAiringEpisode {
                 episode
                 airingAt
@@ -289,6 +297,8 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
                                 "status": status,
                                 "nextAiringEpisode": next_ep,
                                 "averageScore": avg_score,
+                                "episodes": media.get("episodes"),
+                                "endDate": media.get("endDate"),
                                 "expires_at": expires_at,
                             }
                         },
@@ -1333,6 +1343,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 # Check status/airing state first
                 is_airing = False
+                al_media = {}
                 if item.get("anilist_item"):
                     al_media = item["anilist_item"].get("media", {})
                     al_status_str = al_media.get("status", "")
@@ -1340,10 +1351,14 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 elif item.get("mal_item"):
                     mal_status_str = item["mal_item"]["node"].get("status", "")
                     is_airing = mal_status_str in ["currently_airing", "not_yet_aired"]
+                    if item.get("mal_id") and bulk_details:
+                        al_media = bulk_details.get(item["mal_id"]) or {}
                 elif item.get("simkl_item"):
                     show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
                     simkl_status_str = show_obj.get("status", "")
                     is_airing = simkl_status_str in ["airing", "currently airing"]
+                    if item.get("mal_id") and bulk_details:
+                        al_media = bulk_details.get(item["mal_id"]) or {}
 
                 # Extract progress
                 progress = 0
@@ -1370,7 +1385,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         next_ep_num = next_ep.get("episode")
                         next_ep_airing_at = next_ep.get("airingAt")
                 elif item.get("mal_id"):
-                    al_media = bulk_details.get(item["mal_id"]) or {}
+                    if not al_media:
+                        al_media = bulk_details.get(item["mal_id"]) or {}
                     next_ep = al_media.get("nextAiringEpisode")
                     if next_ep:
                         next_ep_num = next_ep.get("episode")
@@ -1382,14 +1398,36 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     latest_aired_at = next_ep_airing_at - 604800
                     next_airing_at = next_ep_airing_at
 
+                # Check for recently finished show
+                recently_finished = False
+                al_status = al_media.get("status") if al_media else ""
+                if al_status == "FINISHED":
+                    end_date = al_media.get("endDate")
+                    total_eps = al_media.get("episodes")
+                    if end_date and total_eps:
+                        y = end_date.get("year")
+                        m = end_date.get("month") or 1
+                        d = end_date.get("day") or 1
+                        if y:
+                            try:
+                                import datetime
+                                dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                end_ts = int(dt.timestamp())
+                                if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
+                                    recently_finished = True
+                                    latest_aired_num = total_eps
+                                    latest_aired_at = end_ts
+                            except Exception:
+                                pass
+
                 if (
-                    is_airing
+                    (is_airing or recently_finished)
                     and user.get("sort_by_new_episodes")
                     and latest_aired_num > 0
                     and progress < latest_aired_num
                 ):
                     time_since_air = current_time - latest_aired_at
-                    if time_since_air <= 604800:
+                    if time_since_air <= 604800 or recently_finished:
                         is_new_ep = True
 
                 return is_new_ep, latest_aired_at, next_airing_at
@@ -1437,23 +1475,62 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                     # Determine airing state
                     is_airing = False
+                    al_media = {}
                     if item.get("anilist_item"):
-                        al_status_str = item["anilist_item"].get("media", {}).get("status", "")
+                        al_media = item["anilist_item"].get("media", {})
+                        al_status_str = al_media.get("status", "")
                         is_airing = al_status_str in ["RELEASING", "NOT_YET_RELEASED"]
                     elif item.get("mal_item"):
                         mal_status_str = item["mal_item"]["node"].get("status", "")
                         is_airing = mal_status_str in ["currently_airing", "not_yet_aired"]
+                        if item.get("mal_id") and bulk_details:
+                            al_media = bulk_details.get(item["mal_id"]) or {}
                     elif item.get("simkl_item"):
                         show_obj = (
                             item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
                         )
                         simkl_status_str = show_obj.get("status", "")
                         is_airing = simkl_status_str in ["airing", "currently airing"]
+                        if item.get("mal_id") and bulk_details:
+                            al_media = bulk_details.get(item["mal_id"]) or {}
 
-                    if is_airing and is_new_ep:
+                    progress = 0
+                    if item.get("mal_item"):
+                        progress = max(progress, item["mal_item"].get("node", {}).get("my_list_status", {}).get("num_episodes_watched", 0))
+                    if item.get("anilist_item"):
+                        progress = max(progress, item["anilist_item"].get("progress", 0))
+                    if item.get("simkl_item"):
+                        simkl_progress = (
+                            item["simkl_item"].get("watched_episodes_count")
+                            or item["simkl_item"].get("episodes_watched")
+                            or item["simkl_item"].get("progress")
+                            or 0
+                        )
+                        progress = max(progress, simkl_progress)
+
+                    recently_finished = False
+                    al_status = al_media.get("status") if al_media else ""
+                    if al_status == "FINISHED":
+                        end_date = al_media.get("endDate")
+                        total_eps = al_media.get("episodes")
+                        if end_date and total_eps:
+                            y = end_date.get("year")
+                            m = end_date.get("month") or 1
+                            d = end_date.get("day") or 1
+                            if y:
+                                try:
+                                    import datetime
+                                    dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                    end_ts = int(dt.timestamp())
+                                    if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
+                                        recently_finished = True
+                                except Exception:
+                                    pass
+
+                    if is_new_ep:
                         group_idx = 0
                         secondary_sort = (-next_airing_at, -updated_ts)
-                    elif not is_airing:
+                    elif not is_airing and not recently_finished:
                         group_idx = 1
                         secondary_sort = (-updated_ts, 0)
                     else:
@@ -1680,18 +1757,37 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 else:
                     is_airing = item.get("not_aired_episodes_count", 0) > 0
 
+                # Check for recently finished show
+                recently_finished = False
+                al_status = al_media.get("status") if al_media else ""
+                if al_status == "FINISHED":
+                    end_date = al_media.get("endDate")
+                    total_eps = al_media.get("episodes")
+                    if end_date and total_eps:
+                        y = end_date.get("year")
+                        m = end_date.get("month") or 1
+                        d = end_date.get("day") or 1
+                        if y:
+                            try:
+                                import datetime
+                                dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                end_ts = int(dt.timestamp())
+                                if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
+                                    recently_finished = True
+                                    latest_aired_num = total_eps
+                                    latest_aired_at = end_ts
+                            except Exception:
+                                pass
+
                 is_new_ep = False
                 if (
-                    is_airing
+                    (is_airing or recently_finished)
                     and user.get("sort_by_new_episodes")
                     and latest_aired_num > 0
                     and progress < latest_aired_num
                 ):
-                    if latest_aired_at > 0:
-                        time_since_air = current_time - latest_aired_at
-                        if time_since_air <= 604800:
-                            is_new_ep = True
-                    else:
+                    time_since_air = current_time - latest_aired_at
+                    if time_since_air <= 604800 or recently_finished:
                         is_new_ep = True
 
                 return is_new_ep, has_unwatched, latest_aired_at, latest_aired_num
@@ -1738,6 +1834,34 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     else:
                         is_airing = item.get("not_aired_episodes_count", 0) > 0
 
+                    progress = (
+                        item.get("watched_episodes_count") or item.get("episodes_watched") or item.get("progress") or 0
+                    )
+                    total_eps = (
+                        show_obj.get("episodes_count")
+                        or show_obj.get("num_episodes")
+                        or item.get("total_episodes_count")
+                        or 0
+                    )
+
+                    recently_finished = False
+                    al_status = al_media.get("status") if al_media else ""
+                    if al_status == "FINISHED":
+                        end_date = al_media.get("endDate")
+                        if end_date and total_eps:
+                            y = end_date.get("year")
+                            m = end_date.get("month") or 1
+                            d = end_date.get("day") or 1
+                            if y:
+                                try:
+                                    import datetime
+                                    dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                    end_ts = int(dt.timestamp())
+                                    if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
+                                        recently_finished = True
+                                except Exception:
+                                    pass
+
                     next_ep = al_media.get("nextAiringEpisode")
                     airing_at = next_ep.get("airingAt") if next_ep else None
                     if not airing_at:
@@ -1745,10 +1869,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                     updated_ts = parse_iso_timestamp(item.get("last_watched_at"))
 
-                    if is_airing and is_new_ep:
+                    if is_new_ep:
                         group_idx = 0
                         secondary_sort = (-airing_at, -updated_ts)
-                    elif not is_airing:
+                    elif not is_airing and not recently_finished:
                         group_idx = 1
                         secondary_sort = (-updated_ts, 0)
                     else:
@@ -1868,7 +1992,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # ── Compute per-item: is_new_ep (with time-gating) ────────────────
             def compute_mal_flags(item, mal_id):
-                """Return (is_new_ep, has_unwatched, latest_aired_at, latest_aired_num)."""
+                """Return (is_new_ep, has_unwatched, latest_aired_at, latest_aired_num, recently_finished)."""
                 node = item.get("node", {})
                 progress = node.get("my_list_status", {}).get("num_episodes_watched", 0)
                 total = node.get("num_episodes", 0)
@@ -1884,6 +2008,46 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     latest_aired_num = next_ep_num - 1
                     latest_aired_at = next_ep_airing_at - 604800
 
+                recently_finished = False
+                al_status = al_media.get("status") if al_media else ""
+
+                # Check AniList status
+                if al_status == "FINISHED":
+                    end_date = al_media.get("endDate")
+                    total_eps = al_media.get("episodes") or total
+                    if end_date and total_eps:
+                        y = end_date.get("year")
+                        m = end_date.get("month") or 1
+                        d = end_date.get("day") or 1
+                        if y:
+                            try:
+                                import datetime
+                                dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                end_ts = int(dt.timestamp())
+                                if (current_time - end_ts) <= (604800 + 86400) and progress < total_eps:
+                                    recently_finished = True
+                                    latest_aired_num = total_eps
+                                    latest_aired_at = end_ts
+                            except Exception:
+                                pass
+
+                # Fallback to MAL's own end_date if we couldn't determine from AniList
+                if not recently_finished and node.get("status") == "finished_airing":
+                    mal_end_date = node.get("end_date")
+                    if mal_end_date and total > 0:
+                        try:
+                            import datetime
+                            parts = [int(p) for p in mal_end_date.split("-")]
+                            if len(parts) == 3:
+                                dt = datetime.datetime(parts[0], parts[1], parts[2], tzinfo=datetime.timezone.utc)
+                                end_ts = int(dt.timestamp())
+                                if (current_time - end_ts) <= (604800 + 86400) and progress < total:
+                                    recently_finished = True
+                                    latest_aired_num = total
+                                    latest_aired_at = end_ts
+                        except Exception:
+                            pass
+
                 has_unwatched = False
                 if latest_aired_num > 0:
                     has_unwatched = progress < latest_aired_num
@@ -1898,17 +2062,17 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 is_new_ep = False
                 if (
-                    is_airing
+                    (is_airing or recently_finished)
                     and user.get("sort_by_new_episodes")
                     and latest_aired_num > 0
                     and progress < latest_aired_num
                 ):
                     time_since_air = current_time - latest_aired_at
                     # Global 7-day window (604800 seconds)
-                    if time_since_air <= 604800:
+                    if time_since_air <= 604800 or recently_finished:
                         is_new_ep = True
 
-                return is_new_ep, has_unwatched, latest_aired_at, latest_aired_num
+                return is_new_ep, has_unwatched, latest_aired_at, latest_aired_num, recently_finished
 
             # ── Sorting ───────────────────────────────────────────────────────
             if custom_sort_enabled and sort_by != "default":
@@ -1918,7 +2082,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     for item in data_items:
                         node = item.get("node", {})
                         mal_id = str(node["id"])
-                        is_new, _, _, _ = compute_mal_flags(item, mal_id)
+                        is_new, _, _, _, _ = compute_mal_flags(item, mal_id)
                         if is_new:
                             new_ep_items.append(item)
                         else:
@@ -1940,7 +2104,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 def get_mal_priority(item):
                     node = item.get("node", {})
                     mal_id = str(node["id"])
-                    is_new_ep, has_unwatched, latest_aired_at, _ = compute_mal_flags(item, mal_id)
+                    is_new_ep, has_unwatched, latest_aired_at, _, recently_finished = compute_mal_flags(item, mal_id)
 
                     status = node.get("status", "")
                     is_airing = status == "currently_airing" or status == "not_yet_aired"
@@ -1952,13 +2116,16 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     next_ep = al_media.get("nextAiringEpisode")
                     airing_at = next_ep.get("airingAt") if next_ep else None
                     if not airing_at:
-                        airing_at = 2**31 - 1  # Fallback for no next airing details
+                        if recently_finished:
+                            airing_at = latest_aired_at
+                        else:
+                            airing_at = 2**31 - 1  # Fallback for no next airing details
 
-                    if is_airing and is_new_ep:
-                        # Group 0: Airing anime with new episodes (first)
+                    if (is_airing or recently_finished) and is_new_ep:
+                        # Group 0: Airing/recently finished anime with new episodes (first)
                         group_idx = 0
                         secondary_sort = (-airing_at, -updated_ts)
-                    elif not is_airing:
+                    elif not is_airing and not recently_finished:
                         # Group 1: Completed airing anime (always placed before Group 2)
                         group_idx = 1
                         secondary_sort = (-updated_ts, 0)
@@ -1993,10 +2160,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 mal_id = str(node["id"])
                 progress = node.get("my_list_status", {}).get("num_episodes_watched", 0)
 
-                is_new_ep, _, _, _ = (
+                is_new_ep, _, _, _, _ = (
                     compute_mal_flags(item, mal_id)
                     if mal_status in ["watching", "plan_to_watch"]
-                    else (False, False, 0, 0)
+                    else (False, False, 0, 0, False)
                 )
 
                 name = node.get("title", "")
@@ -2103,6 +2270,26 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     latest_aired_num = next_ep_num - 1
                     latest_aired_at = next_ep_airing_at - 604800
 
+                status = media.get("status", "")
+                recently_finished = False
+                if status == "FINISHED":
+                    end_date = media.get("endDate")
+                    if end_date and total > 0:
+                        y = end_date.get("year")
+                        m = end_date.get("month") or 1
+                        d = end_date.get("day") or 1
+                        if y:
+                            try:
+                                import datetime
+                                dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                end_ts = int(dt.timestamp())
+                                if (current_time - end_ts) <= (604800 + 86400) and progress < total:
+                                    recently_finished = True
+                                    latest_aired_num = total
+                                    latest_aired_at = end_ts
+                            except Exception:
+                                pass
+
                 has_unwatched = False
                 if latest_aired_num > 0:
                     has_unwatched = progress < latest_aired_num
@@ -2112,22 +2299,21 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     has_unwatched = True
 
                 # Banned completed airing anime from showing the [New] tag
-                status = media.get("status", "")
                 is_airing = status in ["RELEASING", "NOT_YET_RELEASED"]
 
                 is_new_ep = False
                 if (
-                    is_airing
+                    (is_airing or recently_finished)
                     and user.get("sort_by_new_episodes")
                     and latest_aired_num > 0
                     and progress < latest_aired_num
                 ):
                     time_since_air = current_time - latest_aired_at
                     # Global 7-day window (604800 seconds)
-                    if time_since_air <= 604800:
+                    if time_since_air <= 604800 or recently_finished:
                         is_new_ep = True
 
-                return is_new_ep, has_unwatched, latest_aired_at
+                return is_new_ep, has_unwatched, latest_aired_at, recently_finished
 
             # ── Sorting ───────────────────────────────────────────────────────
             if custom_sort_enabled and sort_by != "default":
@@ -2135,7 +2321,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     new_ep_items = []
                     other_items = []
                     for entry in entries:
-                        is_new, _, _ = compute_al_flags(entry)
+                        is_new, _, _, _ = compute_al_flags(entry)
                         if is_new:
                             new_ep_items.append(entry)
                         else:
@@ -2148,7 +2334,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             elif user.get("sort_by_new_episodes") and anilist_status in ["CURRENT", "PLANNING"]:
 
                 def get_al_priority(entry):
-                    is_new_ep, has_unwatched, latest_aired_at = compute_al_flags(entry)
+                    is_new_ep, has_unwatched, latest_aired_at, recently_finished = compute_al_flags(entry)
                     media = entry.get("media", {})
                     status = media.get("status", "")
                     is_airing = status in ["RELEASING", "NOT_YET_RELEASED"]
@@ -2157,13 +2343,16 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     next_ep = media.get("nextAiringEpisode")
                     airing_at = next_ep.get("airingAt") if next_ep else None
                     if not airing_at:
-                        airing_at = 2**31 - 1  # Fallback for no next airing details
+                        if recently_finished:
+                            airing_at = latest_aired_at
+                        else:
+                            airing_at = 2**31 - 1  # Fallback for no next airing details
 
-                    if is_airing and is_new_ep:
-                        # Group 0: Airing anime with new episodes (first)
+                    if (is_airing or recently_finished) and is_new_ep:
+                        # Group 0: Airing/recently finished anime with new episodes (first)
                         group_idx = 0
                         secondary_sort = (-airing_at, -updated_ts)
-                    elif not is_airing:
+                    elif not is_airing and not recently_finished:
                         # Group 1: Completed airing anime (always placed before Group 2)
                         group_idx = 1
                         secondary_sort = (-updated_ts, 0)
@@ -2199,7 +2388,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 is_new_ep = False
                 if anilist_status in ["CURRENT", "PLANNING"]:
-                    is_new_ep, _, _ = compute_al_flags(entry)
+                    is_new_ep, _, _, _ = compute_al_flags(entry)
 
                 name = media["title"]["userPreferred"] or media["title"]["english"] or ""
 
