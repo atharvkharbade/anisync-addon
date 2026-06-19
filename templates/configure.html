@@ -17,6 +17,11 @@
         margin-bottom: 1.5rem;
     }
 
+    .bg-discovery {
+        background-color: #6f42c1 !important;
+        color: #fff !important;
+    }
+
     .rec-label {
         font-size: 0.75rem;
         font-weight: 700;
@@ -1061,13 +1066,48 @@
                         </div>
                     </div>
 
+            <!-- Discovery Catalogs Card -->
+            <div class="card-dark p-3 p-sm-4 mb-3">
+                <h6 class="fw-semibold mb-3"><i
+                        class="fa-solid fa-compass me-2 text-primary"></i>Anime Discovery Catalogs</h6>
+
+                <input type="hidden" id="enable_discovery_catalogs_val" name="enable_discovery_catalogs"
+                    value="{{ 'true' if user.get('enable_discovery_catalogs', True) else 'false' }}">
+                <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
+                    value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if
+                        user.get('enable_discovery_catalogs', True) %}checked{% endif %}>
+                    <label class="form-check-label ms-1" for="enable_discovery_catalogs">
+                        <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
+                        <span class="text-secondary small d-block">
+                            Enable general public discovery catalogs (Trending, Highest Rated, Most Popular, and Top Airing) compiled from AniList.
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Sub-toggle for shuffling -->
+                <div id="discovery-sub-options"
+                    style="display: none; border-left: 2px solid rgba(13, 110, 253, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
+                    class="mb-3">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {% if
+                            user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="shuffle_discovery_catalogs">
+                            <span class="fw-medium d-block">Shuffle Catalogs on Request</span>
+                            <span class="text-secondary small d-block">
+                                Randomly shuffle the order of discovery catalogs in Stremio on every reload.
+                            </span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
             <!-- Catalogs Management Card -->
-            {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or user.get('enable_recommendations', True) %}
+            {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True) %}
             <div class="card-dark p-3 p-sm-4 mb-3" id="catalog-management-card"
-                 {% if not user.get('mal_access_token') and not user.get('anilist_token') and not user.get('simkl_access_token') and not user.get('enable_recommendations', True) %}style="display: none;"{% endif %}>
+                 {% if not user.get('mal_access_token') and not user.get('anilist_token') and not user.get('simkl_access_token') and not user.get('enable_recommendations', True) and not user.get('enable_discovery_catalogs', True) %}style="display: none;"{% endif %}>
                 <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
                     Management</h6>
                 <p class="text-secondary small mb-3">Toggle visibility and **drag-and-drop** to reorder the catalogs
@@ -1102,7 +1142,11 @@
                     ('comb_dropped', 'Dropped', 'combined'),
                     ('anisync_rec', 'Top Picks', 'rec'),
                     ('anisync_loved', 'Inspired by your Favorites', 'rec'),
-                    ('anisync_liked', 'More from your Watchlist', 'rec')
+                    ('anisync_liked', 'More from your Watchlist', 'rec'),
+                    ('anisync_trending', 'Trending Anime', 'discovery'),
+                    ('anisync_highest_rated', 'Highest Rated Anime', 'discovery'),
+                    ('anisync_most_popular', 'Most Popular Anime', 'discovery'),
+                    ('anisync_top_airing', 'Top Airing Anime', 'discovery')
                     ]
                     %}
 
@@ -1117,7 +1161,8 @@
                           (item_source == 'anilist' and user.get('anilist_token')) or
                           (item_source == 'simkl' and user.get('simkl_access_token')) or
                           (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token'))) or
-                          item_source == 'rec' %}
+                          item_source == 'rec' or
+                          item_source == 'discovery' %}
                     {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
                     {% endif %}
                     {% endif %}
@@ -1131,7 +1176,8 @@
                           (item_source == 'anilist' and user.get('anilist_token')) or
                           (item_source == 'simkl' and user.get('simkl_access_token')) or
                           (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token'))) or
-                          item_source == 'rec' %}
+                          item_source == 'rec' or
+                          item_source == 'discovery' %}
                     {% if item_id not in user.get('catalogs', []) %}
                     {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
                     {% endif %}
@@ -1140,7 +1186,7 @@
 
                     <!-- 3. Render the orderable items -->
                     {% for item_id, item_name, item_source in active_user_order %}
-                    <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
+                    <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
                         draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}"
                         style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
                         <div class="d-flex align-items-center">
@@ -1148,7 +1194,7 @@
                             <div class="form-check mb-0">
                                 <input class="form-check-input catalog-checkbox" type="checkbox" id="cat_{{ item_id }}"
                                     name="cat_{{ item_id }}" {% if user.get('catalogs') is none or item_id in
-                                    user.get('catalogs', []) %}checked{% endif %}>
+                                    user.get('catalogs', []) or (item_source == 'discovery' and 'enable_discovery_catalogs' not in user) %}checked{% endif %}>
                                 <label class="form-check-label small fw-medium text-light" for="cat_{{ item_id }}"
                                     style="user-select: none;">
                                     {{ item_name }}
@@ -1156,9 +1202,9 @@
                             </div>
                         </div>
                         <span
-                            class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% else %}bg-warning text-dark{% endif %}"
+                            class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}"
                             style="font-size:0.68rem; letter-spacing:0.02em;">
-                            {{ 'RECOMMENDED' if item_source == 'rec' else item_source | upper }}
+                            {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery' else item_source | upper) }}
                         </span>
                     </div>
                     {% endfor %}
@@ -1445,6 +1491,7 @@
         const watchlistOptionsContainer = document.getElementById("watchlist-options-container");
         const catalogManagementCard = document.getElementById("catalog-management-card");
         const enableRecsCheckbox = document.getElementById("enable_recommendations");
+        const enableDiscoveryCheckbox = document.getElementById("enable_discovery_catalogs");
         const combineCheckbox = document.getElementById("combine_watchlists");
 
         function syncCatalogManagement(isInitialLoad = false) {
@@ -1453,6 +1500,7 @@
             const simklToken = "{{ 'true' if user.get('simkl_access_token') else 'false' }}" === "true";
             const enableCatalogs = enableCatalogsCheckbox && enableCatalogsCheckbox.checked;
             const enableRecs = enableRecsCheckbox && enableRecsCheckbox.checked;
+            const enableDiscovery = enableDiscoveryCheckbox && enableDiscoveryCheckbox.checked;
             const combineEnabled = combineCheckbox && combineCheckbox.checked;
 
             if (watchlistOptionsContainer) {
@@ -1462,13 +1510,17 @@
             if (optionsDiv) {
                 optionsDiv.style.display = enableRecs ? "block" : "none";
             }
+            const discoveryOptionsDiv = document.getElementById("discovery-sub-options");
+            if (discoveryOptionsDiv) {
+                discoveryOptionsDiv.style.display = enableDiscovery ? "block" : "none";
+            }
 
             const malItems = document.querySelectorAll('.catalog-order-item[data-source="mal"]');
             const alItems = document.querySelectorAll('.catalog-order-item[data-source="anilist"]');
             const simklItems = document.querySelectorAll('.catalog-order-item[data-source="simkl"]');
             const combItems = document.querySelectorAll('.catalog-order-item[data-source="combined"]');
 
-            const showWatchlistItems = enableCatalogs || (!enableCatalogs && !enableRecs);
+            const showWatchlistItems = enableCatalogs || (!enableCatalogs && !enableRecs && !enableDiscovery);
 
             malItems.forEach(item => {
                 if (!showWatchlistItems || combineEnabled) {
@@ -1533,7 +1585,7 @@
             });
 
             const recItems = document.querySelectorAll('.catalog-order-item[data-source="rec"]');
-            const showRecItems = enableRecs || (!enableCatalogs && !enableRecs);
+            const showRecItems = enableRecs || (!enableCatalogs && !enableRecs && !enableDiscovery);
 
             recItems.forEach(item => {
                 if (showRecItems) {
@@ -1549,13 +1601,30 @@
                 }
             });
 
+            const discoveryItems = document.querySelectorAll('.catalog-order-item[data-source="discovery"]');
+            const showDiscoveryItems = enableDiscovery || (!enableCatalogs && !enableRecs && !enableDiscovery);
+
+            discoveryItems.forEach(item => {
+                if (showDiscoveryItems) {
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad && enableDiscovery) {
+                        const cb = item.querySelector('.catalog-checkbox');
+                        if (cb) cb.checked = true;
+                    }
+                } else {
+                    item.classList.add("d-none");
+                    const cb = item.querySelector('.catalog-checkbox');
+                    if (cb) cb.checked = false;
+                }
+            });
+
             updateSortedInput();
 
-            const shouldShowCard = malToken || alToken || simklToken || enableRecs;
+            const shouldShowCard = malToken || alToken || simklToken || enableRecs || enableDiscovery;
             if (catalogManagementCard) {
                 if (shouldShowCard) {
                     catalogManagementCard.style.display = "block";
-                    if (!enableCatalogs && !enableRecs) {
+                    if (!enableCatalogs && !enableRecs && !enableDiscovery) {
                         catalogManagementCard.style.opacity = "0.4";
                         catalogManagementCard.style.pointerEvents = "none";
                         catalogManagementCard.style.filter = "grayscale(1)";
@@ -1572,6 +1641,10 @@
 
         if (enableCatalogsCheckbox) {
             enableCatalogsCheckbox.addEventListener("change", () => syncCatalogManagement(false));
+        }
+
+        if (enableDiscoveryCheckbox) {
+            enableDiscoveryCheckbox.addEventListener("change", () => syncCatalogManagement(false));
         }
 
         const enableSearchCheckbox = document.getElementById("enable_search");
@@ -1903,6 +1976,17 @@
         if (filterWatchedCheckbox) {
             document.getElementById('recommendations_filter_watched_val').value =
                 filterWatchedCheckbox.checked ? 'true' : 'false';
+        }
+
+        const enableDiscoveryCheckbox = document.getElementById("enable_discovery_catalogs");
+        if (enableDiscoveryCheckbox) {
+            document.getElementById('enable_discovery_catalogs_val').value =
+                enableDiscoveryCheckbox.checked ? 'true' : 'false';
+        }
+        const shuffleDiscoveryCheckbox = document.getElementById("shuffle_discovery_catalogs");
+        if (shuffleDiscoveryCheckbox) {
+            document.getElementById('shuffle_discovery_catalogs_val').value =
+                shuffleDiscoveryCheckbox.checked ? 'true' : 'false';
         }
 
         const customSortCheckbox = document.getElementById("custom_sort_enabled");

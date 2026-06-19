@@ -654,6 +654,176 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
     return formatted_metas
 
 
+async def update_discovery_catalogs_cache() -> dict:
+    import re
+    from app.services.db import db
+    from app.lib.id_resolver import bulk_resolve_to_kitsu
+
+    query = """
+    query {
+      trending: Page(page: 1, perPage: 50) {
+        media(type: ANIME, sort: TRENDING_DESC, isAdult: false) {
+          id
+          idMal
+          format
+          duration
+          title {
+            english
+            userPreferred
+            romaji
+          }
+          coverImage {
+            large
+          }
+          description
+        }
+      }
+      highestRated: Page(page: 1, perPage: 50) {
+        media(type: ANIME, sort: SCORE_DESC, isAdult: false) {
+          id
+          idMal
+          format
+          duration
+          title {
+            english
+            userPreferred
+            romaji
+          }
+          coverImage {
+            large
+          }
+          description
+        }
+      }
+      mostPopular: Page(page: 1, perPage: 50) {
+        media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
+          id
+          idMal
+          format
+          duration
+          title {
+            english
+            userPreferred
+            romaji
+          }
+          coverImage {
+            large
+          }
+          description
+        }
+      }
+      topAiring: Page(page: 1, perPage: 50) {
+        media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {
+          id
+          idMal
+          format
+          duration
+          title {
+            english
+            userPreferred
+            romaji
+          }
+          coverImage {
+            large
+          }
+          description
+        }
+      }
+    }
+    """
+
+    res = await anilist_api._gql(None, query)
+    data = res.get("data") or {}
+
+    mal_ids = []
+    anilist_ids = []
+    for key in ["trending", "highestRated", "mostPopular", "topAiring"]:
+        media_list = data.get(key, {}).get("media", [])
+        for m in media_list:
+            aid = str(m["id"])
+            mid = str(m["idMal"]) if m.get("idMal") else None
+            anilist_ids.append(aid)
+            if mid:
+                mal_ids.append(mid)
+
+    kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, anilist_ids=anilist_ids)
+
+    key_mapping = {
+        "trending": "anisync_trending",
+        "highestRated": "anisync_highest_rated",
+        "mostPopular": "anisync_most_popular",
+        "topAiring": "anisync_top_airing"
+    }
+
+    now = datetime.datetime.utcnow()
+    expires_at = now + datetime.timedelta(hours=6)
+    discovery_col = db.get_collection("discovery_catalogs_cache")
+
+    result_metas = {}
+
+    for gql_key, catalog_id in key_mapping.items():
+        media_list = data.get(gql_key, {}).get("media", [])
+        metas = []
+        for m in media_list:
+            m_format = m.get("format")
+            duration = m.get("duration")
+            if m_format in ["MUSIC", "TV_SHORT"]:
+                continue
+            if duration is not None and duration <= 5:
+                continue
+
+            item_type = "movie" if m_format == "MOVIE" else "series"
+
+            title_pref = m.get("title") or {}
+            name = title_pref.get("english") or title_pref.get("userPreferred") or title_pref.get("romaji") or "Unknown"
+
+            desc = m.get("description") or ""
+            desc = re.sub("<[^<]+?>", "", desc)
+            desc = desc.replace("\n", " ").replace("  ", " ").strip()
+            if len(desc) > 200:
+                desc = desc[:200] + "..."
+
+            poster = (m.get("coverImage") or {}).get("large") or ""
+
+            aid = str(m["id"])
+            mid = str(m["idMal"]) if m.get("idMal") else None
+
+            kitsu_id = None
+            if mid:
+                kitsu_id = kitsu_mappings.get(f"mal:{mid}")
+            if not kitsu_id:
+                kitsu_id = kitsu_mappings.get(f"anilist:{aid}")
+
+            stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mid}" if mid else f"anilist:{aid}")
+
+            metas.append({
+                "id": stremio_id,
+                "type": item_type,
+                "name": name,
+                "poster": poster,
+                "description": desc
+            })
+
+        try:
+            discovery_col.update_one(
+                {"catalog_id": catalog_id},
+                {
+                    "$set": {
+                        "catalog_id": catalog_id,
+                        "metas": metas,
+                        "expires_at": expires_at
+                    }
+                },
+                upsert=True
+            )
+        except Exception as ex:
+            logging.error("Failed to write to discovery_catalogs_cache for %s: %s", catalog_id, ex)
+
+        result_metas[catalog_id] = metas
+
+    return result_metas
+
+
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>.json")
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>/<path:extras>.json")
 @rate_limit(limit=60, period_seconds=60)
@@ -691,6 +861,39 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
     search_query = filters.get("search", "")
 
     metas = []
+
+    # --- Discovery Catalogs ---
+    if catalog_id in ["anisync_trending", "anisync_highest_rated", "anisync_most_popular", "anisync_top_airing"]:
+        if not user.get("enable_discovery_catalogs", True):
+            return await respond_with({"metas": []})
+
+        from app.services.db import db
+        discovery_col = db.get_collection("discovery_catalogs_cache")
+        now = datetime.datetime.utcnow()
+        cached = None
+        try:
+            cached = discovery_col.find_one({"catalog_id": catalog_id})
+        except Exception as e:
+            logging.error("Failed to query discovery_catalogs_cache: %s", e)
+
+        metas = []
+        if cached and cached.get("expires_at") > now:
+            metas = cached["metas"]
+        else:
+            try:
+                all_metas = await update_discovery_catalogs_cache()
+                metas = all_metas.get(catalog_id, [])
+            except Exception as e:
+                logging.error("Failed to update discovery catalogs from AniList: %s", e)
+                if cached:
+                    logging.warning("Returning expired discovery cache for %s", catalog_id)
+                    metas = cached["metas"]
+                else:
+                    metas = []
+
+        # Handle pagination skip
+        metas = metas[offset : offset + 40]
+        return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)})
 
     # --- Search Catalog ---
     if catalog_id == "anisync_search":

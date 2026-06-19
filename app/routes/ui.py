@@ -208,6 +208,10 @@ async def configure(user_id: str = ""):
             "anisync_rec",
             "anisync_loved",
             "anisync_liked",
+            "anisync_trending",
+            "anisync_highest_rated",
+            "anisync_most_popular",
+            "anisync_top_airing",
         ]
 
         # Add enabled ones in custom sorted order
@@ -223,6 +227,8 @@ async def configure(user_id: str = ""):
         user["catalogs"] = enabled_list
         user["enable_recommendations"] = form.get("enable_recommendations") == "true"
         user["recommendations_filter_watched"] = form.get("recommendations_filter_watched") == "true"
+        user["enable_discovery_catalogs"] = form.get("enable_discovery_catalogs") == "true"
+        user["shuffle_discovery_catalogs"] = form.get("shuffle_discovery_catalogs") == "true"
         gemini_key = form.get("gemini_api_key", "").strip()
         rpdb_key = form.get("rpdb_api_key", "").strip()
 
