@@ -147,6 +147,11 @@ query ($userId: Int, $status: MediaListStatus) {
           genres
           status
           averageScore
+          endDate {
+            year
+            month
+            day
+          }
           nextAiringEpisode {
             episode
             airingAt
