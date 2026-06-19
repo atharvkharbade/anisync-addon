@@ -411,18 +411,6 @@ async def user_manifest(user_id: str):
     rec_catalog_ids = ["anisync_rec", "anisync_loved", "anisync_liked"]
     discovery_catalog_ids = ["anisync_trending", "anisync_top_airing", "anisync_highest_rated", "anisync_most_popular"]
 
-    # Gather active discovery catalogs and shuffle them if requested
-    active_discovery_cats = []
-    if enable_discovery_catalogs:
-        for cat in CATALOGS:
-            if cat["id"] in discovery_catalog_ids:
-                if user_catalogs is not None and cat["id"] not in user_catalogs and "enable_discovery_catalogs" in user:
-                    continue
-                active_discovery_cats.append(cat.copy())
-        if shuffle_discovery_catalogs:
-            import random
-            random.shuffle(active_discovery_cats)
-
     # 1. Add custom sorted catalogs first (if user has saved preferences)
     if user_catalogs is not None:
         for cat_id in user_catalogs:
@@ -452,17 +440,7 @@ async def user_manifest(user_id: str):
                         ):
                             continue
 
-                    if cat_id in discovery_catalog_ids:
-                        if shuffle_discovery_catalogs:
-                            if active_discovery_cats:
-                                configured_cat = active_discovery_cats.pop(0)
-                            else:
-                                continue
-                        else:
-                            configured_cat = get_configured_catalog(cat)
-                    else:
-                        configured_cat = get_configured_catalog(cat)
-
+                    configured_cat = get_configured_catalog(cat)
                     if configured_cat not in active_catalogs:
                         active_catalogs.append(configured_cat)
 
@@ -499,17 +477,7 @@ async def user_manifest(user_id: str):
                 if cat_id not in user_catalogs:
                     continue
 
-            if cat_id in discovery_catalog_ids:
-                if shuffle_discovery_catalogs:
-                    if active_discovery_cats:
-                        configured_cat = active_discovery_cats.pop(0)
-                    else:
-                        continue
-                else:
-                    configured_cat = get_configured_catalog(cat)
-            else:
-                configured_cat = get_configured_catalog(cat)
-
+            configured_cat = get_configured_catalog(cat)
             if configured_cat not in active_catalogs:
                 active_catalogs.append(configured_cat)
     else:
@@ -539,17 +507,7 @@ async def user_manifest(user_id: str):
                 ):
                     continue
 
-            if cat_id in discovery_catalog_ids:
-                if shuffle_discovery_catalogs:
-                    if active_discovery_cats:
-                        configured_cat = active_discovery_cats.pop(0)
-                    else:
-                        continue
-                else:
-                    configured_cat = get_configured_catalog(cat)
-            else:
-                configured_cat = get_configured_catalog(cat)
-
+            configured_cat = get_configured_catalog(cat)
             if configured_cat not in active_catalogs:
                 active_catalogs.append(configured_cat)
 

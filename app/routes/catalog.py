@@ -891,6 +891,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 else:
                     metas = []
 
+        # Shuffle if enabled
+        if user.get("shuffle_discovery_catalogs", False):
+            import random
+            metas = list(metas)
+            random.shuffle(metas)
+
         # Handle pagination skip
         metas = metas[offset : offset + 40]
         return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)})
