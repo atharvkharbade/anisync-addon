@@ -122,6 +122,33 @@ async def index():
     return resp
 
 
+@ui_bp.route("/guest-login")
+@rate_limit(limit=10, period_seconds=60)
+async def guest_login():
+    import secrets
+
+    user_session = session.get("user")
+    if user_session and user_session.get("uid"):
+        return redirect(url_for("ui.configure"))
+
+    guest_uid = f"guest_{secrets.token_hex(8)}"
+    guest_user = {
+        "_id": guest_uid,
+        "uid": guest_uid,
+        "username": "Guest User",
+        "is_guest": True,
+        "enable_discovery_catalogs": True,
+        "enable_catalogs": False,
+        "enable_recommendations": False,
+        "enable_search": True,
+        "title_language": "english",
+        "created_at": datetime.datetime.utcnow(),
+    }
+    store_user(guest_user)
+    session["user"] = {"uid": guest_uid, "username": "Guest User", "is_guest": True}
+    return redirect(url_for("ui.configure"))
+
+
 @ui_bp.route("/configure", methods=["GET", "POST"])
 @ui_bp.route("/<user_id>/configure")
 @rate_limit(limit=30, period_seconds=60)

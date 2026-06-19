@@ -354,12 +354,29 @@
                 {% endif %}
                 {% if user.get('name') or user.get('anilist_username') or user.get('simkl_username') %}
                 Hey, {{ user.get('name') or user.get('anilist_username') or user.get('simkl_username') }}
+                {% elif user.get('is_guest') %}
+                Hey, Guest User
                 {% else %}
                 Configure AniSync
                 {% endif %}
             </h3>
             <p class="text-secondary small mb-0">Manage your tracking connections and preferences below.</p>
         </div>
+
+        {% if user.get('is_guest') %}
+        <div class="alert alert-info border-0 rounded-4 p-3 mb-4 shadow-sm" style="background: linear-gradient(135deg, rgba(2,169,255,0.15), rgba(0,242,254,0.1)); border-left: 4px solid #02a9ff !important;">
+            <div class="d-flex align-items-start">
+                <i class="fa-solid fa-user-secret fs-4 me-3 text-info mt-1"></i>
+                <div>
+                    <h6 class="fw-bold mb-1 text-white">Guest Mode Active — Standalone Anime Discovery</h6>
+                    <p class="small text-secondary mb-0">
+                        You can customize, reorder, and stream all 7 Discovery Catalogs in Stremio.
+                        To enable watch progress tracking or personal recommendations, sign in with <a href="{{ url_for('auth.authorize_mal') }}" class="text-info fw-semibold text-decoration-underline">MyAnimeList</a>, <a href="{{ url_for('auth.authorize_anilist') }}" class="text-info fw-semibold text-decoration-underline">AniList</a>, or <a href="{{ url_for('auth.authorize_simkl') }}" class="text-info fw-semibold text-decoration-underline">Simkl</a> anytime.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- MAL Card -->
         <div class="card-dark p-3 p-sm-4 mb-3">
