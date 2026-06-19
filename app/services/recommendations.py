@@ -750,7 +750,7 @@ async def resolve_title_via_kitsu(
                 )
                 if poster:
                     poster = poster.split("?")[0]
-                synopsis = attrs.get("synopsis", "")
+                synopsis = attrs.get("synopsis") or ""
 
                 return {
                     "id": f"kitsu:{kitsu_id}",
@@ -1011,7 +1011,7 @@ async def get_recommendations_for_seeds(
                     return s, []
 
                 data = resp.json()
-                included = data.get("included", [])
+                included = data.get("included") or []
                 related_items = []
                 for item in included:
                     if item.get("type") == "anime":
@@ -1052,7 +1052,7 @@ async def get_recommendations_for_seeds(
                         )
                         if poster:
                             poster = poster.split("?")[0]
-                        synopsis = attrs.get("synopsis", "")
+                        synopsis = attrs.get("synopsis") or ""
 
                         related_items.append(
                             {

@@ -149,7 +149,7 @@ def map_kitsu_to_stremio(
 
     # Videos / Episodes List
     videos = []
-    included = kitsu_data.get("included", [])
+    included = kitsu_data.get("included") or []
 
     # Filter and sort episodes by number
     episodes_data = []
@@ -333,17 +333,17 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     mal_id = None
     simkl_id = None
 
-    if meta_id.startswith("mal:"):
-        mal_id = meta_id.split(":")[1]
+    if meta_id.startswith(("mal:", "mal-", "mal_")):
+        mal_id = meta_id[4:]
         kitsu_id = await resolve_mal_to_kitsu(mal_id)
-    elif meta_id.startswith("anilist:"):
-        anilist_id = meta_id.split(":")[1]
+    elif meta_id.startswith(("anilist:", "anilist-", "anilist_")):
+        anilist_id = meta_id[8:]
         kitsu_id = await resolve_anilist_to_kitsu(anilist_id)
-    elif meta_id.startswith("simkl:"):
-        simkl_id = meta_id.split(":")[1]
+    elif meta_id.startswith(("simkl:", "simkl-", "simkl_")):
+        simkl_id = meta_id[6:]
         kitsu_id = await resolve_simkl_to_kitsu(simkl_id)
-    elif meta_id.startswith("kitsu:"):
-        kitsu_id = meta_id.split(":")[1]
+    elif meta_id.startswith(("kitsu:", "kitsu-", "kitsu_")):
+        kitsu_id = meta_id[6:]
 
     if not kitsu_id:
         logging.warning("Could not map meta_id=%s to Kitsu ID", meta_id)
