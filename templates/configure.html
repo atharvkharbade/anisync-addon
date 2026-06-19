@@ -1516,18 +1516,20 @@
             const simklItems = document.querySelectorAll('.catalog-order-item[data-source="simkl"]');
             const combItems = document.querySelectorAll('.catalog-order-item[data-source="combined"]');
 
-            const showWatchlistItems = enableCatalogs || (!enableCatalogs && !enableRecs && !enableDiscovery);
+            const allDisabled = !enableCatalogs && !enableRecs && !enableDiscovery;
 
             malItems.forEach(item => {
-                if (!showWatchlistItems || combineEnabled) {
+                const cb = item.querySelector('.catalog-checkbox');
+                const isChecked = cb && cb.checked;
+                const showItem = enableCatalogs || (allDisabled && isChecked);
+
+                if (!showItem || combineEnabled) {
                     item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
+                    if (cb && !allDisabled) cb.checked = false;
                 } else {
                     if (malToken) {
                         item.classList.remove("d-none");
                         if (!isInitialLoad && enableCatalogs) {
-                            const cb = item.querySelector('.catalog-checkbox');
                             if (cb) cb.checked = true;
                         }
                     }
@@ -1535,15 +1537,17 @@
             });
 
             alItems.forEach(item => {
-                if (!showWatchlistItems || combineEnabled) {
+                const cb = item.querySelector('.catalog-checkbox');
+                const isChecked = cb && cb.checked;
+                const showItem = enableCatalogs || (allDisabled && isChecked);
+
+                if (!showItem || combineEnabled) {
                     item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
+                    if (cb && !allDisabled) cb.checked = false;
                 } else {
                     if (alToken) {
                         item.classList.remove("d-none");
                         if (!isInitialLoad && enableCatalogs) {
-                            const cb = item.querySelector('.catalog-checkbox');
                             if (cb) cb.checked = true;
                         }
                     }
@@ -1551,15 +1555,17 @@
             });
 
             simklItems.forEach(item => {
-                if (!showWatchlistItems || combineEnabled) {
+                const cb = item.querySelector('.catalog-checkbox');
+                const isChecked = cb && cb.checked;
+                const showItem = enableCatalogs || (allDisabled && isChecked);
+
+                if (!showItem || combineEnabled) {
                     item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
+                    if (cb && !allDisabled) cb.checked = false;
                 } else {
                     if (simklToken) {
                         item.classList.remove("d-none");
                         if (!isInitialLoad && enableCatalogs) {
-                            const cb = item.querySelector('.catalog-checkbox');
                             if (cb) cb.checked = true;
                         }
                     }
@@ -1567,50 +1573,52 @@
             });
 
             combItems.forEach(item => {
-                if (!showWatchlistItems || !combineEnabled) {
+                const cb = item.querySelector('.catalog-checkbox');
+                const isChecked = cb && cb.checked;
+                const showItem = enableCatalogs || (allDisabled && isChecked);
+
+                if (!showItem || !combineEnabled) {
                     item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
+                    if (cb && !allDisabled) cb.checked = false;
                 } else {
                     item.classList.remove("d-none");
                     if (!isInitialLoad && enableCatalogs) {
-                        const cb = item.querySelector('.catalog-checkbox');
                         if (cb) cb.checked = true;
                     }
                 }
             });
 
             const recItems = document.querySelectorAll('.catalog-order-item[data-source="rec"]');
-            const showRecItems = enableRecs || (!enableCatalogs && !enableRecs && !enableDiscovery);
-
             recItems.forEach(item => {
-                if (showRecItems) {
+                const cb = item.querySelector('.catalog-checkbox');
+                const isChecked = cb && cb.checked;
+                const showItem = enableRecs || (allDisabled && isChecked);
+
+                if (showItem) {
                     item.classList.remove("d-none");
                     if (!isInitialLoad && enableRecs) {
-                        const cb = item.querySelector('.catalog-checkbox');
                         if (cb) cb.checked = true;
                     }
                 } else {
                     item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
+                    if (cb && !allDisabled) cb.checked = false;
                 }
             });
 
             const discoveryItems = document.querySelectorAll('.catalog-order-item[data-source="discovery"]');
-            const showDiscoveryItems = enableDiscovery || (!enableCatalogs && !enableRecs && !enableDiscovery);
-
             discoveryItems.forEach(item => {
-                if (showDiscoveryItems) {
+                const cb = item.querySelector('.catalog-checkbox');
+                const isChecked = cb && cb.checked;
+                const showItem = enableDiscovery || (allDisabled && isChecked);
+
+                if (showItem) {
                     item.classList.remove("d-none");
                     if (!isInitialLoad && enableDiscovery) {
-                        const cb = item.querySelector('.catalog-checkbox');
                         if (cb) cb.checked = true;
                     }
                 } else {
                     item.classList.add("d-none");
-                    const cb = item.querySelector('.catalog-checkbox');
-                    if (cb) cb.checked = false;
+                    if (cb && !allDisabled) cb.checked = false;
                 }
             });
 
