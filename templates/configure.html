@@ -616,6 +616,10 @@
                     value="{{ user.get('custom_sort_dropped_by', 'default') }}">
                 <input type="hidden" id="custom_sort_dropped_order_val" name="custom_sort_dropped_order"
                     value="{{ user.get('custom_sort_dropped_order', 'desc') }}">
+                <input type="hidden" id="enable_discovery_catalogs_val" name="enable_discovery_catalogs"
+                    value="{{ 'true' if user.get('enable_discovery_catalogs', True) else 'false' }}">
+                <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
+                    value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
 
                 <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" role="switch" id="sync_unlisted" {% if
@@ -912,6 +916,34 @@
 
                 </div>
 
+                <!-- Discovery Catalogs Section -->
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if
+                        user.get('enable_discovery_catalogs', True) %}checked{% endif %}>
+                    <label class="form-check-label ms-1" for="enable_discovery_catalogs">
+                        <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
+                        <span class="text-secondary small d-block">
+                            Enable general public discovery catalogs (Trending, Highest Rated, Most Popular, and Top Airing) compiled from AniList.
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Sub-toggle for shuffling -->
+                <div id="discovery-sub-options"
+                    style="display: none; border-left: 2px solid rgba(13, 110, 253, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
+                    class="mb-3">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {% if
+                            user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="shuffle_discovery_catalogs">
+                            <span class="fw-medium d-block">Shuffle Catalogs on Request</span>
+                            <span class="text-secondary small d-block">
+                                Randomly shuffle the order of discovery catalogs in Stremio on every reload.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- RPDB Integration Section -->
                 <div id="rpdb-key-section" style="margin-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
                     <label class="rec-label mb-2"><i class="fa-solid fa-star text-warning me-2"></i>Rating Poster DB (RPDB) (Optional)</label>
@@ -1066,43 +1098,6 @@
                         </div>
                     </div>
 
-            <!-- Discovery Catalogs Card -->
-            <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i
-                        class="fa-solid fa-compass me-2 text-primary"></i>Anime Discovery Catalogs</h6>
-
-                <input type="hidden" id="enable_discovery_catalogs_val" name="enable_discovery_catalogs"
-                    value="{{ 'true' if user.get('enable_discovery_catalogs', True) else 'false' }}">
-                <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
-                    value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
-
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if
-                        user.get('enable_discovery_catalogs', True) %}checked{% endif %}>
-                    <label class="form-check-label ms-1" for="enable_discovery_catalogs">
-                        <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
-                        <span class="text-secondary small d-block">
-                            Enable general public discovery catalogs (Trending, Highest Rated, Most Popular, and Top Airing) compiled from AniList.
-                        </span>
-                    </label>
-                </div>
-
-                <!-- Sub-toggle for shuffling -->
-                <div id="discovery-sub-options"
-                    style="display: none; border-left: 2px solid rgba(13, 110, 253, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
-                    class="mb-3">
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {% if
-                            user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
-                        <label class="form-check-label ms-1" for="shuffle_discovery_catalogs">
-                            <span class="fw-medium d-block">Shuffle Catalogs on Request</span>
-                            <span class="text-secondary small d-block">
-                                Randomly shuffle the order of discovery catalogs in Stremio on every reload.
-                            </span>
-                        </label>
-                    </div>
-                </div>
-            </div>
 
             <!-- Catalogs Management Card -->
             {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True) %}
