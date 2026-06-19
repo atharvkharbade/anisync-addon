@@ -59,17 +59,21 @@ async def mal_callback():
         mal_id = str(user_info["id"])
 
         user_session = session.get("user")
-        if user_session:
+        old_guest_uid = None
+        if user_session and user_session.get("uid") and not user_session["uid"].startswith("guest_"):
             uid = user_session["uid"]
             existing = get_user(uid) or {}
         else:
+            if user_session and user_session.get("uid", "").startswith("guest_"):
+                old_guest_uid = user_session["uid"]
+
             existing = find_user_by_mal_id(mal_id) or {}
             uid = existing.get("uid")
 
             # Migration check: if existing user has prefix, try to strip it
             from app.services.db import db
 
-            if uid and (uid.startswith("al_") or uid.startswith("simkl_")):
+            if uid and (uid.startswith("al_") or uid.startswith("simkl_") or uid.startswith("guest_")):
                 stripped_uid = uid.split("_", 1)[1]
                 if stripped_uid.isdigit() and not db.get_collection("users").find_one({"uid": stripped_uid}):
                     db.get_collection("users").delete_one({"uid": uid})
@@ -91,9 +95,16 @@ async def mal_callback():
                             uid = candidate
                             break
 
+            if old_guest_uid:
+                db.get_collection("users").delete_one({"_id": old_guest_uid})
+                db.get_collection("users").delete_one({"uid": old_guest_uid})
+
             session["user"] = {"uid": uid}
             session.permanent = True
 
+        existing.pop("is_guest", None)
+        existing["enable_catalogs"] = True
+        existing["enable_recommendations"] = True
         existing.update(
             {
                 "uid": uid,
@@ -191,17 +202,21 @@ async def anilist_save():
         anilist_picture = viewer.get("avatar", {}).get("large", "")
 
         user_session = session.get("user")
-        if user_session:
+        old_guest_uid = None
+        if user_session and user_session.get("uid") and not user_session["uid"].startswith("guest_"):
             uid = user_session["uid"]
             user = get_user(uid) or {}
         else:
+            if user_session and user_session.get("uid", "").startswith("guest_"):
+                old_guest_uid = user_session["uid"]
+
             user = find_user_by_anilist_id(anilist_uid) or {}
             uid = user.get("uid")
 
             # Migration check: if existing user has prefix, try to strip it
             from app.services.db import db
 
-            if uid and (uid.startswith("al_") or uid.startswith("simkl_")):
+            if uid and (uid.startswith("al_") or uid.startswith("simkl_") or uid.startswith("guest_")):
                 stripped_uid = uid.split("_", 1)[1]
                 if stripped_uid.isdigit() and not db.get_collection("users").find_one({"uid": stripped_uid}):
                     db.get_collection("users").delete_one({"uid": uid})
@@ -223,8 +238,16 @@ async def anilist_save():
                             uid = candidate
                             break
 
+            if old_guest_uid:
+                db.get_collection("users").delete_one({"_id": old_guest_uid})
+                db.get_collection("users").delete_one({"uid": old_guest_uid})
+
             session["user"] = {"uid": uid}
             session.permanent = True
+
+        user.pop("is_guest", None)
+        user["enable_catalogs"] = True
+        user["enable_recommendations"] = True
 
         user.update(
             {
@@ -368,17 +391,21 @@ async def simkl_callback():
         simkl_avatar = user_info.get("user", {}).get("avatar") or ""
 
         user_session = session.get("user")
-        if user_session:
+        old_guest_uid = None
+        if user_session and user_session.get("uid") and not user_session["uid"].startswith("guest_"):
             uid = user_session["uid"]
             user = get_user(uid) or {}
         else:
+            if user_session and user_session.get("uid", "").startswith("guest_"):
+                old_guest_uid = user_session["uid"]
+
             user = find_user_by_simkl_id(simkl_id) or {}
             uid = user.get("uid")
 
             # Migration check: if existing user has prefix, try to strip it
             from app.services.db import db
 
-            if uid and (uid.startswith("al_") or uid.startswith("simkl_")):
+            if uid and (uid.startswith("al_") or uid.startswith("simkl_") or uid.startswith("guest_")):
                 stripped_uid = uid.split("_", 1)[1]
                 if stripped_uid.isdigit() and not db.get_collection("users").find_one({"uid": stripped_uid}):
                     db.get_collection("users").delete_one({"uid": uid})
@@ -400,8 +427,16 @@ async def simkl_callback():
                             uid = candidate
                             break
 
+            if old_guest_uid:
+                db.get_collection("users").delete_one({"_id": old_guest_uid})
+                db.get_collection("users").delete_one({"uid": old_guest_uid})
+
             session["user"] = {"uid": uid}
             session.permanent = True
+
+        user.pop("is_guest", None)
+        user["enable_catalogs"] = True
+        user["enable_recommendations"] = True
 
         user.update(
             {
