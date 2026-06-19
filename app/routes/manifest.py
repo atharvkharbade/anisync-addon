@@ -162,6 +162,12 @@ CATALOGS = [
     },
     {
         "type": "anime",
+        "id": "anisync_top_airing",
+        "name": "Top Airing Anime",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
         "id": "anisync_highest_rated",
         "name": "Highest Rated Anime",
         "extra": [{"name": "skip"}],
@@ -170,12 +176,6 @@ CATALOGS = [
         "type": "anime",
         "id": "anisync_most_popular",
         "name": "Most Popular Anime",
-        "extra": [{"name": "skip"}],
-    },
-    {
-        "type": "anime",
-        "id": "anisync_top_airing",
-        "name": "Top Airing Anime",
         "extra": [{"name": "skip"}],
     },
     {
@@ -409,7 +409,7 @@ async def user_manifest(user_id: str):
 
     active_catalogs = []
     rec_catalog_ids = ["anisync_rec", "anisync_loved", "anisync_liked"]
-    discovery_catalog_ids = ["anisync_trending", "anisync_highest_rated", "anisync_most_popular", "anisync_top_airing"]
+    discovery_catalog_ids = ["anisync_trending", "anisync_top_airing", "anisync_highest_rated", "anisync_most_popular"]
 
     # Gather active discovery catalogs and shuffle them if requested
     active_discovery_cats = []
