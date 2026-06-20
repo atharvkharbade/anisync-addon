@@ -870,8 +870,39 @@ async def update_discovery_catalogs_cache() -> dict:
     }}
     """
 
-    res = await anilist_api._gql(None, query)
-    data = res.get("data") or {}
+    data = {}
+    try:
+        res = await anilist_api._gql(None, query)
+        data = res.get("data") or {}
+    except Exception as e:
+        logging.warning("AniList GraphQL discovery fetch failed (%s), relying on Jikan data...", e)
+
+    # Fetch Jikan discovery lists in parallel
+    from app.api.jikan import get_top_anime, get_airing_schedule
+    try:
+        jikan_pop_task = asyncio.create_task(get_top_anime(type_filter="bypopularity", page=1))
+        jikan_airing_task = asyncio.create_task(get_top_anime(type_filter="airing", page=1))
+        jikan_top_task = asyncio.create_task(get_top_anime(page=1))
+        jikan_movie_task = asyncio.create_task(get_top_anime(type_filter="movie", page=1))
+
+        jikan_pop, jikan_airing, jikan_top, jikan_movies = await asyncio.gather(
+            jikan_pop_task, jikan_airing_task, jikan_top_task, jikan_movie_task, return_exceptions=True
+        )
+        jikan_pop = jikan_pop if isinstance(jikan_pop, list) else []
+        jikan_airing = jikan_airing if isinstance(jikan_airing, list) else []
+        jikan_top = jikan_top if isinstance(jikan_top, list) else []
+        jikan_movies = jikan_movies if isinstance(jikan_movies, list) else []
+    except Exception as ex:
+        logging.warning("Jikan parallel discovery fetch warning: %s", ex)
+        jikan_pop, jikan_airing, jikan_top, jikan_movies = [], [], [], []
+
+    jikan_map = {
+        "anisync_trending": jikan_pop,
+        "anisync_most_popular": jikan_pop,
+        "anisync_top_airing": jikan_airing,
+        "anisync_highest_rated": jikan_top,
+        "anisync_spotlight": jikan_movies,
+    }
 
     mal_ids = []
     anilist_ids = []
@@ -884,6 +915,12 @@ async def update_discovery_catalogs_cache() -> dict:
             anilist_ids.append(aid)
             if mid:
                 mal_ids.append(mid)
+
+    for j_list in [jikan_pop, jikan_airing, jikan_top, jikan_movies]:
+        for item in j_list:
+            mid = item.get("mal_id")
+            if mid:
+                mal_ids.append(str(mid))
 
     kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, anilist_ids=anilist_ids, skip_external=True)
 
@@ -905,6 +942,8 @@ async def update_discovery_catalogs_cache() -> dict:
     for gql_key, catalog_id in key_mapping.items():
         media_list = data.get(gql_key, {}).get("media", [])
         metas = []
+        seen_mal_ids = set()
+
         for m in media_list:
             m_format = m.get("format")
             duration = m.get("duration")
@@ -928,6 +967,8 @@ async def update_discovery_catalogs_cache() -> dict:
 
             aid = str(m["id"])
             mid = str(m["idMal"]) if m.get("idMal") else None
+            if mid:
+                seen_mal_ids.add(str(mid))
 
             kitsu_id = None
             if mid:
@@ -944,6 +985,37 @@ async def update_discovery_catalogs_cache() -> dict:
                 "title_obj": title_pref,
                 "poster": poster,
                 "description": desc
+            })
+
+        # Blend unique Jikan/MAL discovery items for this catalog
+        j_items = jikan_map.get(catalog_id, [])
+        for item in j_items:
+            j_mid = item.get("mal_id")
+            if not j_mid or str(j_mid) in seen_mal_ids:
+                continue
+            seen_mal_ids.add(str(j_mid))
+
+            j_type = "movie" if item.get("type") == "Movie" else "series"
+            j_name = item.get("title_english") or item.get("title") or "Unknown"
+            j_desc = item.get("synopsis") or ""
+            j_desc = re.sub("<[^<]+?>", "", j_desc)
+            j_desc = j_desc.replace("\n", " ").replace("  ", " ").strip()
+            if len(j_desc) > 200:
+                j_desc = j_desc[:200] + "..."
+
+            images = item.get("images", {}).get("jpg", {})
+            j_poster = images.get("large_image_url") or images.get("image_url") or ""
+
+            kitsu_id = kitsu_mappings.get(f"mal:{j_mid}")
+            stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"mal:{j_mid}"
+
+            metas.append({
+                "id": stremio_id,
+                "type": j_type,
+                "name": j_name,
+                "title_obj": {"english": j_name, "romaji": j_name},
+                "poster": j_poster,
+                "description": j_desc
             })
 
         result_metas[catalog_id] = metas
