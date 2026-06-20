@@ -84,8 +84,19 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
                     any_updated = True
 
         if any_updated:
-            from app.services.db import invalidate_user_watchlist_cache
+            from app.services.db import get_cached_ids, update_user_watchlist_cache_progress
 
-            invalidate_user_watchlist_cache(user_id)
+            simkl_id = None
+            cached_ids = get_cached_ids(kitsu_id)
+            if cached_ids:
+                simkl_id = cached_ids.get("simkl_id")
+
+            update_user_watchlist_cache_progress(
+                user_id=user_id,
+                episode=episode,
+                mal_id=mal_id,
+                anilist_id=anilist_id,
+                simkl_id=simkl_id,
+            )
 
     return await respond_with({"subtitles": []})

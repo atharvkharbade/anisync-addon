@@ -48,7 +48,7 @@ async def get_cached_mal_user_anime_list(user_id: str, token: str, status: str) 
     cache_col = db.get_collection("user_watchlist_cache")
     try:
         cached = cache_col.find_one({"uid": user_id, "tracker": "mal", "status": status})
-        if cached and cached.get("expires_at") > now:
+        if cached and cached.get("fetched_at") and (now - cached.get("fetched_at")) < datetime.timedelta(minutes=5):
             return cached["data"]
     except Exception as e:
         logging.error("Failed to query user_watchlist_cache (MAL): %s", e)
@@ -66,7 +66,8 @@ async def get_cached_mal_user_anime_list(user_id: str, token: str, status: str) 
                         "tracker": "mal",
                         "status": status,
                         "data": data_items,
-                        "expires_at": now + datetime.timedelta(minutes=5),
+                        "fetched_at": now,
+                        "expires_at": now + datetime.timedelta(days=7),
                     }
                 },
                 upsert=True,
@@ -88,7 +89,7 @@ async def get_cached_anilist_user_anime_list(user_id: str, token: str, anilist_u
     cache_col = db.get_collection("user_watchlist_cache")
     try:
         cached = cache_col.find_one({"uid": user_id, "tracker": "anilist", "status": status})
-        if cached and cached.get("expires_at") > now:
+        if cached and cached.get("fetched_at") and (now - cached.get("fetched_at")) < datetime.timedelta(minutes=5):
             return cached["data"]
     except Exception as e:
         logging.error("Failed to query user_watchlist_cache (AniList): %s", e)
@@ -105,7 +106,8 @@ async def get_cached_anilist_user_anime_list(user_id: str, token: str, anilist_u
                         "tracker": "anilist",
                         "status": status,
                         "data": collection,
-                        "expires_at": now + datetime.timedelta(minutes=5),
+                        "fetched_at": now,
+                        "expires_at": now + datetime.timedelta(days=7),
                     }
                 },
                 upsert=True,
@@ -131,7 +133,7 @@ async def get_cached_simkl_user_anime_list(user_id: str, token: str, status: str
     cache_col = db.get_collection("user_watchlist_cache")
     try:
         cached = cache_col.find_one({"uid": user_id, "tracker": "simkl", "status": status})
-        if cached and cached.get("expires_at") > now:
+        if cached and cached.get("fetched_at") and (now - cached.get("fetched_at")) < datetime.timedelta(minutes=5):
             return cached["data"]
     except Exception as e:
         logging.error("Failed to query user_watchlist_cache (Simkl): %s", e)
@@ -148,7 +150,8 @@ async def get_cached_simkl_user_anime_list(user_id: str, token: str, status: str
                         "tracker": "simkl",
                         "status": status,
                         "data": collection,
-                        "expires_at": now + datetime.timedelta(minutes=5),
+                        "fetched_at": now,
+                        "expires_at": now + datetime.timedelta(days=7),
                     }
                 },
                 upsert=True,
