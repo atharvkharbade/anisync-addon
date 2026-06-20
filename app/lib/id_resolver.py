@@ -16,6 +16,7 @@ from app.services.http import get_client
 
 ARM_API = "https://arm.haglund.dev/api/v2/ids"
 ANIZP_API = "https://api.ani.zip/mappings"
+MALSYNC_API = "https://api.malsync.moe/mal/anime"
 FRIBB_API = "https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-full.json"
 TIMEOUT = 8
 
@@ -401,6 +402,25 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
                 return kitsu_id
     except Exception as e:
         logging.warning("Fribb mal->kitsu failed for mal_id=%s: %s", mal_id, e)
+
+    # Try MAL-Sync API
+    try:
+        resp = await client.get(f"{MALSYNC_API}/{mal_id}", timeout=TIMEOUT)
+        if resp.status_code == 200:
+            data = resp.json()
+            sites = data.get("Sites", {})
+            kitsu_sites = sites.get("Kitsu", {})
+            kitsu_id = None
+            for k, v in kitsu_sites.items():
+                if v.get("id"):
+                    kitsu_id = str(v["id"])
+                    break
+            anilist_id = str(data.get("anilistId")) if data.get("anilistId") else None
+            if kitsu_id:
+                cache_ids(kitsu_id, mal_id, anilist_id)
+                return kitsu_id
+    except Exception as e:
+        logging.warning("MAL-Sync mal->kitsu failed for mal_id=%s: %s", mal_id, e)
 
     # Try Title-based fallback
     try:

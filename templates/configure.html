@@ -936,6 +936,27 @@
                     </div>
                 </div>
 
+                <!-- Metadata Provider Preference -->
+                <div class="mb-4 mt-3" style="max-width: 400px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
+                    <label class="rec-label mb-2"><i class="fa-solid fa-database text-warning me-2"></i>Metadata Provider</label>
+                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                        Select your preferred metadata provider for posters, banners, synopses, and episode listings.
+                        <span class="text-warning-emphasis d-block mt-1" style="color: #e0a92e !important;"><i class="fa-solid fa-circle-info me-1"></i>Primary item IDs remain Kitsu IDs for 100% video stream compatibility. Falls back to Kitsu if unmapped.</span>
+                    </p>
+                    <input type="hidden" id="metadata_provider" name="metadata_provider" value="{{ user.get('metadata_provider', 'kitsu') }}">
+                    <div class="custom-select-wrapper" data-input-id="metadata_provider">
+                        <div class="custom-select">
+                            <span class="custom-select-text">Kitsu (Default)</span>
+                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                        </div>
+                        <div class="custom-options-menu">
+                            <div class="custom-option-item" data-value="kitsu">Kitsu (Default)</div>
+                            <div class="custom-option-item" data-value="mal">MyAnimeList / Jikan</div>
+                            <div class="custom-option-item" data-value="anilist">AniList</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- RPDB Integration Section -->
                 <div id="rpdb-key-section" style="margin-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
                     <label class="rec-label mb-2"><i class="fa-solid fa-star text-warning me-2"></i>Rating Poster DB (RPDB) (Optional)</label>
