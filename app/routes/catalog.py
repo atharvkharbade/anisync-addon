@@ -902,6 +902,8 @@ async def update_discovery_catalogs_cache() -> dict:
         "anisync_top_airing": jikan_airing,
         "anisync_highest_rated": jikan_top,
         "anisync_spotlight": jikan_movies,
+        "anisync_seasonal": jikan_airing,
+        "anisync_schedule": jikan_airing,
     }
 
     mal_ids = []
