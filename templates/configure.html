@@ -542,6 +542,35 @@
             <!-- Preferences Card -->
             <div class="card-dark p-3 p-sm-4 mb-3">
                 <h6 class="fw-semibold mb-3"><i class="fa-solid fa-sliders me-2 text-warning"></i>Preferences</h6>
+
+                <!-- Metadata Provider Preference (Available for all users including Guests) -->
+                <div class="mb-4" style="max-width: 400px;">
+                    <label class="rec-label mb-2"><i class="fa-solid fa-database text-warning me-2"></i>Metadata Provider</label>
+                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                        Select your preferred metadata provider for posters, banners, synopses, and episode listings.
+                        <span class="text-warning-emphasis d-block mt-1" style="color: #e0a92e !important;"><i class="fa-solid fa-circle-info me-1"></i>Primary item IDs remain Kitsu IDs for 100% video stream compatibility. Falls back to Kitsu if unmapped.</span>
+                    </p>
+                    <input type="hidden" id="metadata_provider" name="metadata_provider" value="{{ user.get('metadata_provider', 'kitsu') }}">
+                    <div class="custom-select-wrapper" data-input-id="metadata_provider">
+                        <div class="custom-select">
+                            <span class="custom-select-text d-flex align-items-center">
+                                <img src="https://kitsu.io/favicon-32x32.png" width="18" height="18" class="me-2 rounded-1">Kitsu (Default)
+                            </span>
+                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                        </div>
+                        <div class="custom-options-menu">
+                            <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
+                                <img src="https://kitsu.io/favicon-32x32.png" width="18" height="18" class="me-2 rounded-1">Kitsu (Default)
+                            </div>
+                            <div class="custom-option-item d-flex align-items-center" data-value="mal">
+                                <img src="https://myanimelist.net/favicon.ico" width="18" height="18" class="me-2 rounded-1">MAL
+                            </div>
+                            <div class="custom-option-item d-flex align-items-center" data-value="anilist">
+                                <img src="https://anilist.co/img/icons/favicon-32x32.png" width="18" height="18" class="me-2 rounded-1">AniList
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <input type="hidden" id="mal_enabled_val" name="mal_enabled"
                     value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
                 <input type="hidden" id="anilist_enabled_val" name="anilist_enabled"
@@ -932,27 +961,6 @@
                             <div class="custom-option-item" data-value="default">Default / Canonical</div>
                             <div class="custom-option-item" data-value="romaji">Romaji</div>
                             <div class="custom-option-item" data-value="japanese">Japanese</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Metadata Provider Preference -->
-                <div class="mb-4 mt-3" style="max-width: 400px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
-                    <label class="rec-label mb-2"><i class="fa-solid fa-database text-warning me-2"></i>Metadata Provider</label>
-                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                        Select your preferred metadata provider for posters, banners, synopses, and episode listings.
-                        <span class="text-warning-emphasis d-block mt-1" style="color: #e0a92e !important;"><i class="fa-solid fa-circle-info me-1"></i>Primary item IDs remain Kitsu IDs for 100% video stream compatibility. Falls back to Kitsu if unmapped.</span>
-                    </p>
-                    <input type="hidden" id="metadata_provider" name="metadata_provider" value="{{ user.get('metadata_provider', 'kitsu') }}">
-                    <div class="custom-select-wrapper" data-input-id="metadata_provider">
-                        <div class="custom-select">
-                            <span class="custom-select-text">Kitsu (Default)</span>
-                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                        </div>
-                        <div class="custom-options-menu">
-                            <div class="custom-option-item" data-value="kitsu">Kitsu (Default)</div>
-                            <div class="custom-option-item" data-value="mal">MyAnimeList / Jikan</div>
-                            <div class="custom-option-item" data-value="anilist">AniList</div>
                         </div>
                     </div>
                 </div>
