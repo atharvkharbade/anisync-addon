@@ -961,29 +961,29 @@
                         <div class="custom-select">
                             <span class="custom-select-text d-flex align-items-center">
                                 {% if user.get('title_language', 'english') == 'default' %}
-                                    <i class="fa-solid fa-globe me-2 text-info" style="font-size:0.85rem; width:16px;"></i>Default / Canonical
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-globe" style="font-size:10px;"></i></span>Default / Canonical
                                 {% elif user.get('title_language', 'english') == 'romaji' %}
-                                    <i class="fa-solid fa-torii-gate me-2 text-danger" style="font-size:0.85rem; width:16px;"></i>Romaji
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
                                 {% elif user.get('title_language', 'english') == 'japanese' %}
-                                    <i class="fa-solid fa-language me-2 text-warning" style="font-size:0.85rem; width:16px;"></i>Japanese
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
                                 {% else %}
-                                    <i class="fa-solid fa-earth-americas me-2 text-primary" style="font-size:0.85rem; width:16px;"></i>English (Default)
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
                                 {% endif %}
                             </span>
                             <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
                         </div>
                         <div class="custom-options-menu">
                             <div class="custom-option-item d-flex align-items-center" data-value="english">
-                                <i class="fa-solid fa-earth-americas me-2 text-primary" style="font-size:0.85rem; width:16px;"></i>English (Default)
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="default">
-                                <i class="fa-solid fa-globe me-2 text-info" style="font-size:0.85rem; width:16px;"></i>Default / Canonical
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-globe" style="font-size:10px;"></i></span>Default / Canonical
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="romaji">
-                                <i class="fa-solid fa-torii-gate me-2 text-danger" style="font-size:0.85rem; width:16px;"></i>Romaji
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="japanese">
-                                <i class="fa-solid fa-language me-2 text-warning" style="font-size:0.85rem; width:16px;"></i>Japanese
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
                             </div>
                         </div>
                     </div>
