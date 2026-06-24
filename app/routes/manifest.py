@@ -157,7 +157,7 @@ CATALOGS = [
     {
         "type": "anime",
         "id": "anisync_spotlight",
-        "name": "AniSync Spotlight",
+        "name": "Spotlight",
         "extra": [
             {
                 "name": "genre",
