@@ -144,13 +144,13 @@ async def guest_login():
         "title_language": "english",
         "metadata_provider": "kitsu",
         "catalogs": [
+            "anisync_spotlight",
             "anisync_seasonal",
             "anisync_schedule",
             "anisync_trending",
             "anisync_top_airing",
             "anisync_highest_rated",
             "anisync_most_popular",
-            "anisync_spotlight",
         ],
         "created_at": datetime.datetime.utcnow(),
     }
@@ -276,13 +276,13 @@ async def configure(user_id: str = ""):
                 "anisync_rec",
                 "anisync_loved",
                 "anisync_liked",
+                "anisync_spotlight",
                 "anisync_seasonal",
                 "anisync_schedule",
                 "anisync_trending",
                 "anisync_top_airing",
                 "anisync_highest_rated",
                 "anisync_most_popular",
-                "anisync_spotlight",
             ]
 
             # Add enabled ones in custom sorted order
