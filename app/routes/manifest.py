@@ -183,25 +183,25 @@ CATALOGS = [
     {
         "type": "anime",
         "id": "anisync_trending",
-        "name": "Trending Anime",
+        "name": "Trending",
         "extra": [{"name": "skip"}],
     },
     {
         "type": "anime",
         "id": "anisync_top_airing",
-        "name": "Top Airing Anime",
+        "name": "Top Airing",
         "extra": [{"name": "skip"}],
     },
     {
         "type": "anime",
         "id": "anisync_highest_rated",
-        "name": "Highest Rated Anime",
+        "name": "Highest Rated",
         "extra": [{"name": "skip"}],
     },
     {
         "type": "anime",
         "id": "anisync_most_popular",
-        "name": "Most Popular Anime",
+        "name": "Most Popular",
         "extra": [{"name": "skip"}],
     },
     {
