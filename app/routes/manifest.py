@@ -156,30 +156,6 @@ CATALOGS = [
     },
     {
         "type": "anime",
-        "id": "anisync_trending",
-        "name": "Trending Anime",
-        "extra": [{"name": "skip"}],
-    },
-    {
-        "type": "anime",
-        "id": "anisync_top_airing",
-        "name": "Top Airing Anime",
-        "extra": [{"name": "skip"}],
-    },
-    {
-        "type": "anime",
-        "id": "anisync_highest_rated",
-        "name": "Highest Rated Anime",
-        "extra": [{"name": "skip"}],
-    },
-    {
-        "type": "anime",
-        "id": "anisync_most_popular",
-        "name": "Most Popular Anime",
-        "extra": [{"name": "skip"}],
-    },
-    {
-        "type": "anime",
         "id": "anisync_seasonal",
         "name": "Seasonal Showcase",
         "extra": [
@@ -203,6 +179,30 @@ CATALOGS = [
             },
             {"name": "skip"},
         ],
+    },
+    {
+        "type": "anime",
+        "id": "anisync_trending",
+        "name": "Trending Anime",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
+        "id": "anisync_top_airing",
+        "name": "Top Airing Anime",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
+        "id": "anisync_highest_rated",
+        "name": "Highest Rated Anime",
+        "extra": [{"name": "skip"}],
+    },
+    {
+        "type": "anime",
+        "id": "anisync_most_popular",
+        "name": "Most Popular Anime",
+        "extra": [{"name": "skip"}],
     },
     {
         "type": "anime",
@@ -454,12 +454,12 @@ async def user_manifest(user_id: str):
     active_catalogs = []
     rec_catalog_ids = ["anisync_rec", "anisync_loved", "anisync_liked"]
     discovery_catalog_ids = [
+        "anisync_seasonal",
+        "anisync_schedule",
         "anisync_trending",
         "anisync_top_airing",
         "anisync_highest_rated",
         "anisync_most_popular",
-        "anisync_seasonal",
-        "anisync_schedule",
         "anisync_spotlight",
     ]
 
