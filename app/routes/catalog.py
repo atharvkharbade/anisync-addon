@@ -878,32 +878,53 @@ async def update_discovery_catalogs_cache() -> dict:
         logging.warning("AniList GraphQL discovery fetch failed (%s), relying on Jikan data...", e)
 
     # Fetch Jikan discovery lists in parallel
-    from app.api.jikan import get_top_anime, get_airing_schedule
+    from app.api.jikan import get_top_anime, get_airing_schedule, get_season_now
     try:
         jikan_pop_task = asyncio.create_task(get_top_anime(filter_by="bypopularity", page=1))
         jikan_airing_task = asyncio.create_task(get_top_anime(filter_by="airing", page=1))
         jikan_top_task = asyncio.create_task(get_top_anime(page=1))
         jikan_movie_task = asyncio.create_task(get_top_anime(type_filter="movie", page=1))
+        jikan_season_task = asyncio.create_task(get_season_now(page=1))
+        jikan_schedule_task = asyncio.create_task(get_airing_schedule(page=1))
+        jikan_fav_task = asyncio.create_task(get_top_anime(filter_by="favorite", page=1))
 
-        jikan_pop, jikan_airing, jikan_top, jikan_movies = await asyncio.gather(
-            jikan_pop_task, jikan_airing_task, jikan_top_task, jikan_movie_task, return_exceptions=True
+        (
+            jikan_pop,
+            jikan_airing,
+            jikan_top,
+            jikan_movies,
+            jikan_season_now,
+            jikan_schedule,
+            jikan_fav,
+        ) = await asyncio.gather(
+            jikan_pop_task,
+            jikan_airing_task,
+            jikan_top_task,
+            jikan_movie_task,
+            jikan_season_task,
+            jikan_schedule_task,
+            jikan_fav_task,
+            return_exceptions=True,
         )
         jikan_pop = jikan_pop if isinstance(jikan_pop, list) else []
         jikan_airing = jikan_airing if isinstance(jikan_airing, list) else []
         jikan_top = jikan_top if isinstance(jikan_top, list) else []
         jikan_movies = jikan_movies if isinstance(jikan_movies, list) else []
+        jikan_season_now = jikan_season_now if isinstance(jikan_season_now, list) else []
+        jikan_schedule = jikan_schedule if isinstance(jikan_schedule, list) else []
+        jikan_fav = jikan_fav if isinstance(jikan_fav, list) else []
     except Exception as ex:
         logging.warning("Jikan parallel discovery fetch warning: %s", ex)
-        jikan_pop, jikan_airing, jikan_top, jikan_movies = [], [], [], []
+        jikan_pop, jikan_airing, jikan_top, jikan_movies, jikan_season_now, jikan_schedule, jikan_fav = [], [], [], [], [], [], []
 
     jikan_map = {
-        "anisync_trending": jikan_pop,
+        "anisync_trending": jikan_season_now,
         "anisync_most_popular": jikan_pop,
         "anisync_top_airing": jikan_airing,
         "anisync_highest_rated": jikan_top,
         "anisync_spotlight": jikan_movies,
-        "anisync_seasonal": jikan_airing,
-        "anisync_schedule": jikan_airing,
+        "anisync_seasonal": jikan_season_now,
+        "anisync_schedule": jikan_schedule,
     }
 
     mal_ids = []
@@ -918,7 +939,7 @@ async def update_discovery_catalogs_cache() -> dict:
             if mid:
                 mal_ids.append(mid)
 
-    for j_list in [jikan_pop, jikan_airing, jikan_top, jikan_movies]:
+    for j_list in [jikan_pop, jikan_airing, jikan_top, jikan_movies, jikan_season_now, jikan_schedule, jikan_fav]:
         for item in j_list:
             mid = item.get("mal_id")
             if mid:
