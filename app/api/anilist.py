@@ -26,20 +26,23 @@ query ($mediaId: Int) {
     mediaListEntry {
       progress
       status
+      repeat
     }
   }
 }
 """
 
 SAVE_MUTATION = """
-mutation ($mediaId: Int, $progress: Int, $status: MediaListStatus) {
-  SaveMediaListEntry(mediaId: $mediaId, progress: $progress, status: $status) {
+mutation ($mediaId: Int, $progress: Int, $status: MediaListStatus, $repeat: Int) {
+  SaveMediaListEntry(mediaId: $mediaId, progress: $progress, status: $status, repeat: $repeat) {
     id
     status
     progress
+    repeat
   }
 }
 """
+
 
 
 class AnilistTokenInvalidError(Exception):
@@ -116,11 +119,14 @@ async def get_media_status(token: str, anilist_id: int) -> dict:
     return data["data"]["Media"]
 
 
-async def save_entry(token: str, anilist_id: int, progress: int, status: str) -> dict:
+async def save_entry(token: str, anilist_id: int, progress: int, status: str, repeat: int | None = None) -> dict:
+    variables = {"mediaId": anilist_id, "progress": progress, "status": status}
+    if repeat is not None:
+        variables["repeat"] = repeat
     data = await _gql(
         token,
         SAVE_MUTATION,
-        {"mediaId": anilist_id, "progress": progress, "status": status},
+        variables,
     )
     return data["data"]["SaveMediaListEntry"]
 
