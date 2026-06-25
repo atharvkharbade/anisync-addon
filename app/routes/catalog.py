@@ -880,11 +880,12 @@ async def update_discovery_catalogs_cache() -> dict:
     # Fetch Jikan and Kitsu discovery lists in parallel
     from app.api.jikan import get_top_anime, get_airing_schedule, get_season_now
 
-    async def fetch_kitsu_discovery(query_str: str) -> list:
+    async def fetch_kitsu_discovery(params: dict) -> list:
         try:
             client = get_client()
             res = await client.get(
-                f"https://kitsu.io/api/edge/anime?{query_str}",
+                "https://kitsu.io/api/edge/anime",
+                params=params,
                 headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
                 timeout=4.0,
             )
@@ -893,9 +894,9 @@ async def update_discovery_catalogs_cache() -> dict:
                 if isinstance(data, dict):
                     return data.get("data") or []
             else:
-                logging.warning("Kitsu discovery returned HTTP %s for %s", res.status_code, query_str)
+                logging.warning("Kitsu discovery returned HTTP %s for %s", res.status_code, params)
         except Exception as ex:
-            logging.warning("Kitsu discovery fetch error (%s): %s", query_str, ex)
+            logging.warning("Kitsu discovery fetch error (%s): %s", params, ex)
         return []
 
     try:
@@ -907,11 +908,11 @@ async def update_discovery_catalogs_cache() -> dict:
         jikan_schedule_task = asyncio.create_task(get_airing_schedule(page=1))
         jikan_fav_task = asyncio.create_task(get_top_anime(filter_by="favorite", page=1))
 
-        kitsu_pop_task = asyncio.create_task(fetch_kitsu_discovery("sort=-userCount&page%5Blimit%5D=25"))
-        kitsu_rating_task = asyncio.create_task(fetch_kitsu_discovery("sort=-averageRating&page%5Blimit%5D=25"))
-        kitsu_airing_task = asyncio.create_task(fetch_kitsu_discovery("filter%5Bstatus%5D=current&sort=-userCount&page%5Blimit%5D=25"))
-        kitsu_season_task = asyncio.create_task(fetch_kitsu_discovery("filter%5Bstatus%5D=current&sort=-createdAt&page%5Blimit%5D=25"))
-        kitsu_movie_task = asyncio.create_task(fetch_kitsu_discovery("filter%5Bsubtype%5D=movie&sort=-averageRating&page%5Blimit%5D=25"))
+        kitsu_pop_task = asyncio.create_task(fetch_kitsu_discovery({"sort": "-userCount", "page[limit]": 25}))
+        kitsu_rating_task = asyncio.create_task(fetch_kitsu_discovery({"sort": "-averageRating", "page[limit]": 25}))
+        kitsu_airing_task = asyncio.create_task(fetch_kitsu_discovery({"filter[status]": "current", "sort": "-userCount", "page[limit]": 25}))
+        kitsu_season_task = asyncio.create_task(fetch_kitsu_discovery({"filter[status]": "current", "sort": "-createdAt", "page[limit]": 25}))
+        kitsu_movie_task = asyncio.create_task(fetch_kitsu_discovery({"filter[subtype]": "movie", "sort": "-averageRating", "page[limit]": 25}))
 
         (
             jikan_pop,
