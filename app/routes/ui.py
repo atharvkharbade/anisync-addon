@@ -137,24 +137,6 @@ async def configure(user_id: str = ""):
 
     uid = user["uid"]
 
-    # Check and flash expired token alerts
-    expired_flashed = False
-    if user.get("anilist_session_expired"):
-        await flash("Your AniList authentication has expired. Please re-login to continue tracking.", "warning")
-        user["anilist_session_expired"] = False
-        expired_flashed = True
-    if user.get("mal_session_expired"):
-        await flash("Your MyAnimeList authentication has expired or been revoked. Please re-login to continue tracking.", "warning")
-        user["mal_session_expired"] = False
-        expired_flashed = True
-    if user.get("simkl_session_expired"):
-        await flash("Your Simkl authentication has expired or been revoked. Please re-login to continue tracking.", "warning")
-        user["simkl_session_expired"] = False
-        expired_flashed = True
-
-    if expired_flashed:
-        store_user(user)
-
 
     # Time-gated background profile sync (once every 7 days)
     last_sync = user.get("last_profile_sync")

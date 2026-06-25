@@ -1071,9 +1071,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
     # --- Combined Watchlists ---
     elif catalog_id.startswith("comb_"):
-        mal_enabled = user.get("mal_access_token") and user.get("mal_enabled", True)
-        anilist_enabled = user.get("anilist_token") and user.get("anilist_enabled", True)
-        simkl_enabled = user.get("simkl_access_token") and user.get("simkl_enabled", True)
+        mal_enabled = user.get("mal_access_token") and user.get("mal_enabled", True) and not user.get("mal_token_expired")
+        anilist_enabled = user.get("anilist_token") and user.get("anilist_enabled", True) and not user.get("anilist_token_expired")
+        simkl_enabled = user.get("simkl_access_token") and user.get("simkl_enabled", True) and not user.get("simkl_token_expired")
 
         if not mal_enabled and not anilist_enabled and not simkl_enabled:
             return await respond_with({"metas": []})
@@ -1733,7 +1733,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
     # --- Simkl Watchlists ---
     elif catalog_id.startswith("simkl_"):
-        if not user.get("simkl_access_token") or not user.get("simkl_enabled", True):
+        if not user.get("simkl_access_token") or not user.get("simkl_enabled", True) or user.get("simkl_token_expired"):
             return await respond_with({"metas": []})
 
         simkl_status = catalog_id.split("simkl_")[1]
@@ -2012,7 +2012,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
     # --- MAL Watchlists ---
     elif catalog_id.startswith("mal_"):
-        if not user.get("mal_access_token") or not user.get("mal_enabled"):
+        if not user.get("mal_access_token") or not user.get("mal_enabled") or user.get("mal_token_expired"):
             return await respond_with({"metas": []})
 
         mal_status = catalog_id.split("mal_")[1]
@@ -2258,7 +2258,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
     # --- AniList Watchlists ---
     elif catalog_id.startswith("anilist_"):
-        if not user.get("anilist_token") or not user.get("anilist_enabled"):
+        if not user.get("anilist_token") or not user.get("anilist_enabled") or user.get("anilist_token_expired"):
             return await respond_with({"metas": []})
 
         # Retrieve user's AniList numerical ID first

@@ -24,6 +24,10 @@ async def sync_simkl(
 ) -> UpdateStatus:
     """Sync watch progress for a movie or show episode to Simkl."""
     user_id = user.get("uid")
+    if user.get("simkl_token_expired"):
+        logger.info("Skipping Simkl sync for user %s: token is expired", user_id)
+        return UpdateStatus.FAIL
+
     from app.services.db import handle_invalid_simkl_token, reset_simkl_error_counter
     from app.api.simkl import SimklTokenInvalidError
 
