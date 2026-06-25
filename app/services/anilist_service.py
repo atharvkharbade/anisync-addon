@@ -12,17 +12,25 @@ class UpdateStatus(Enum):
 
 
 async def sync_anilist(user: dict, anilist_id: str, episode: int, sync_unlisted: bool) -> UpdateStatus:
+    from app.services.db import is_anilist_in_cooldown, reset_anilist_error_counter
+    if is_anilist_in_cooldown(user):
+        logging.info("Skipping AniList sync for user %s due to temporary auth error cooldown", user.get("uid"))
+        return UpdateStatus.FAIL
+
     token = user.get("anilist_token", "")
     try:
         media = await al_api.get_media_status(token, int(anilist_id))
     except al_api.AnilistTokenInvalidError as e:
-        logging.warning("AniList token invalid during sync_anilist for user %s: %s", user.get("uid"), e)
+        logging.warning("AniList token invalid during get_media_status for user %s: %s", user.get("uid"), e)
         from app.services.db import handle_invalid_anilist_token
         handle_invalid_anilist_token(user.get("uid"))
         return UpdateStatus.FAIL
     except Exception as e:
         logging.error("AniList get_media_status failed: %s", e)
         return UpdateStatus.FAIL
+
+    if user.get("anilist_consecutive_auth_errors", 0) > 0:
+        reset_anilist_error_counter(user.get("uid"))
 
     total_episodes = media.get("episodes") or 0
     list_entry = media.get("mediaListEntry")
@@ -73,6 +81,8 @@ async def sync_anilist(user: dict, anilist_id: str, episode: int, sync_unlisted:
     try:
         await al_api.save_entry(token, int(anilist_id), episode, new_status, repeat=send_repeat)
         logging.info("AniList updated: id=%s ep=%d status=%s repeat=%s", anilist_id, episode, new_status, send_repeat)
+        if user.get("anilist_consecutive_auth_errors", 0) > 0:
+            reset_anilist_error_counter(user.get("uid"))
         return UpdateStatus.OK
     except al_api.AnilistTokenInvalidError as e:
         logging.warning("AniList token invalid during save_entry for user %s: %s", user.get("uid"), e)

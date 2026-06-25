@@ -887,6 +887,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         logging.warning("Catalog request: Unknown user_id=%s", user_id)
         return await respond_with({"metas": []})
 
+    from app.services.db import is_anilist_in_cooldown
+    if is_anilist_in_cooldown(user):
+        user["anilist_enabled"] = False
+
     filters = _parse_stremio_filters(extras)
     offset = int(filters.get("skip", 0))
     search_query = filters.get("search", "")
