@@ -59,19 +59,13 @@ async def _jikan_request(endpoint: str, params: Optional[Dict[str, Any]] = None)
                 resp = await client.get(full_url, params=params, timeout=3.5)
                 if resp.status_code == 200:
                     data_json = resp.json()
-                    data_list = data_json.get("data") if isinstance(data_json, dict) else None
-                    # If endpoint returns sufficient data (at least 10 items for lists) or non-list response, return it
-                    if data_json and (
-                        "data" not in data_json
-                        or (isinstance(data_list, list) and len(data_list) >= 10)
-                        or (not isinstance(data_list, list) and data_list)
-                    ):
+                    # If endpoint returns valid data or is not a data-list response, return it
+                    if data_json and (data_json.get("data") or "data" not in data_json):
                         return data_json
                     elif idx < len(endpoints) - 1:
                         logging.warning(
-                            "Jikan endpoint %s returned insufficient data (%s items) for %s, trying next fallback...",
+                            "Jikan endpoint %s returned empty data list for %s, trying next fallback...",
                             base_url,
-                            len(data_list) if isinstance(data_list, list) else 0,
                             full_url,
                         )
                         continue
