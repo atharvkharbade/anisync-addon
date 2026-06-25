@@ -23,8 +23,8 @@ def _resolve_new_status(
     if not current_status:
         return None
     
-    # Start/restart rewatch
-    if (current_status == "completed" or (is_rewatching and watched_episodes == total_episodes)) and current_episode == 1:
+    # Start/restart rewatch (ignore movies/single-episodes to prevent infinite loops)
+    if total_episodes != 1 and (current_status == "completed" or (is_rewatching and watched_episodes == total_episodes)) and current_episode == 1:
         return "watching"
 
     # Already at this episode or further — no regression
