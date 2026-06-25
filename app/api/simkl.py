@@ -51,6 +51,7 @@ async def get_access_token(code: str) -> str:
     if resp.status_code != 200:
         logger.error("SIMKL_TOKEN_ERROR status=%d body=%s", resp.status_code, resp.text)
     _raise_for_status(resp)
+    data = resp.json()
     return data.get("access_token") or ""
 
 
