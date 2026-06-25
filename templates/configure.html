@@ -401,7 +401,7 @@
             {% if user.get('mal_access_token') %}
             <div class="form-check form-switch mb-0">
                 <input class="form-check-input" type="checkbox" role="switch" id="mal_enabled"
-                    name="mal_enabled" {% if user.get('mal_enabled', True) %}checked{% endif %}>
+                    {% if user.get('mal_enabled', True) %}checked{% endif %}>
                 <label class="form-check-label text-secondary small" for="mal_enabled">
                     MAL tracking enabled
                 </label>
@@ -449,7 +449,7 @@
             {% if user.get('anilist_token') %}
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" id="anilist_enabled"
-                    name="anilist_enabled" {% if user.get('anilist_enabled', True) %}checked{% endif %}>
+                    {% if user.get('anilist_enabled', True) %}checked{% endif %}>
                 <label class="form-check-label text-secondary small" for="anilist_enabled">
                     AniList tracking enabled
                 </label>
@@ -497,7 +497,7 @@
             {% if user.get('simkl_access_token') %}
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" id="simkl_enabled"
-                    name="simkl_enabled" {% if user.get('simkl_enabled', True) %}checked{% endif %}>
+                    {% if user.get('simkl_enabled', True) %}checked{% endif %}>
                 <label class="form-check-label text-secondary small" for="simkl_enabled">
                     Simkl tracking enabled
                 </label>

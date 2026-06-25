@@ -51,12 +51,14 @@ async def sync_anilist(user: dict, anilist_id: str, episode: int, sync_unlisted:
     if not list_entry and not sync_unlisted:
         return UpdateStatus.NOT_LIST
 
-    # Determine if we are starting a new rewatch or in the middle of one
-    is_rewatching = (current_al_status == "REPEATING") or (current_al_status == "COMPLETED" and episode == 1)
+    # Determine if we are starting a new rewatch or in the middle of one (ignore movies)
+    is_rewatching = (current_al_status == "REPEATING") or (current_al_status == "COMPLETED" and episode == 1 and total_episodes != 1)
 
     # Bypass the regression check if we are explicitly resetting/starting a rewatch
-    is_starting_rewatch = (current_al_status == "COMPLETED" and episode == 1) or \
-                          (current_al_status == "REPEATING" and episode == 1 and progress == total_episodes)
+    is_starting_rewatch = (total_episodes != 1) and (
+        (current_al_status == "COMPLETED" and episode == 1) or
+        (current_al_status == "REPEATING" and episode == 1 and progress == total_episodes)
+    )
 
     if not is_starting_rewatch:
         # No regression
