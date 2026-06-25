@@ -11,6 +11,22 @@ TIMEOUT = 10
 CODE_CHALLENGE_METHOD = "plain"
 
 
+import httpx
+
+
+class MalTokenInvalidError(Exception):
+    pass
+
+
+def _raise_for_status(resp):
+    try:
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        if resp.status_code in [400, 401, 403]:
+            raise MalTokenInvalidError("MAL token is invalid, expired, or revoked") from e
+        raise e
+
+
 def _redirect_uri() -> str:
     return f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/callback"
 
@@ -64,7 +80,7 @@ async def get_access_token(code: str, code_verifier: str) -> dict:
         },
         timeout=TIMEOUT,
     )
-    resp.raise_for_status()
+    _raise_for_status(resp)
     return resp.json()
 
 
@@ -80,7 +96,7 @@ async def refresh_token(refresh_tok: str) -> dict:
         },
         timeout=TIMEOUT,
     )
-    resp.raise_for_status()
+    _raise_for_status(resp)
     return resp.json()
 
 
@@ -92,7 +108,7 @@ async def get_user_details(token: str) -> dict:
         params={"fields": "id,name,picture"},
         timeout=TIMEOUT,
     )
-    resp.raise_for_status()
+    _raise_for_status(resp)
     return resp.json()
 
 
@@ -108,7 +124,7 @@ async def get_anime_details(token: str, anime_id: str) -> dict:
         params={"fields": fields},
         timeout=TIMEOUT,
     )
-    resp.raise_for_status()
+    _raise_for_status(resp)
     return resp.json()
 
 
@@ -124,7 +140,7 @@ async def get_user_anime_list(token: str, status: str = "", limit: int = 100, of
         params=params,
         timeout=TIMEOUT,
     )
-    resp.raise_for_status()
+    _raise_for_status(resp)
     return resp.json()
 
 
@@ -141,7 +157,7 @@ async def search_anime(token: str, query: str, limit: int = 100, offset: int = 0
         params=params,
         timeout=TIMEOUT,
     )
-    resp.raise_for_status()
+    _raise_for_status(resp)
     return resp.json()
 
 
@@ -172,5 +188,5 @@ async def update_watch_status(
         data=body,
         timeout=TIMEOUT,
     )
-    resp.raise_for_status()
+    _raise_for_status(resp)
     return resp.json()

@@ -56,6 +56,8 @@ async def get_cached_mal_user_anime_list(user_id: str, token: str, status: str) 
 
     try:
         res = await mal_api.get_user_anime_list(token, status=status, limit=500, offset=0)
+        from app.services.db import reset_mal_error_counter
+        reset_mal_error_counter(user_id)
         data_items = res.get("data", [])
         try:
             cache_col.update_one(
@@ -76,6 +78,11 @@ async def get_cached_mal_user_anime_list(user_id: str, token: str, status: str) 
             logging.error("Failed to write user_watchlist_cache (MAL): %s", e)
         return data_items
     except Exception as e:
+        from app.api.mal import MalTokenInvalidError
+        if isinstance(e, MalTokenInvalidError):
+            logging.warning("MAL token invalid during get_cached_mal_user_anime_list for user %s: %s", user_id, e)
+            from app.services.db import handle_invalid_mal_token
+            handle_invalid_mal_token(user_id)
         if cached:
             logging.warning("MAL API failed, returning expired cache for user %s: %s", user_id, e)
             return cached["data"]
@@ -141,6 +148,8 @@ async def get_cached_simkl_user_anime_list(user_id: str, token: str, status: str
 
     try:
         collection = await simkl_api.get_user_anime_list(token, status=status)
+        from app.services.db import reset_simkl_error_counter
+        reset_simkl_error_counter(user_id)
         try:
             cache_col.update_one(
                 {"uid": user_id, "tracker": "simkl", "status": status},
@@ -160,6 +169,11 @@ async def get_cached_simkl_user_anime_list(user_id: str, token: str, status: str
             logging.error("Failed to write user_watchlist_cache (Simkl): %s", e)
         return collection
     except Exception as e:
+        from app.api.simkl import SimklTokenInvalidError
+        if isinstance(e, SimklTokenInvalidError):
+            logging.warning("Simkl token invalid during get_cached_simkl_user_anime_list for user %s: %s", user_id, e)
+            from app.services.db import handle_invalid_simkl_token
+            handle_invalid_simkl_token(user_id)
         if cached:
             logging.warning("Simkl API failed, returning expired cache for user %s: %s", user_id, e)
             return cached["data"]
@@ -1101,11 +1115,15 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 nonlocal mal_entries
                 if mal_enabled and mal_status:
                     try:
-                        mal_entries = await get_cached_mal_user_anime_list(
-                            user_id, user["mal_access_token"], mal_status
-                        )
+                        from app.services.db import get_or_refresh_mal_token
+                        mal_token = await get_or_refresh_mal_token(user_id)
+                        if mal_token:
+                            mal_entries = await get_cached_mal_user_anime_list(
+                                user_id, mal_token, mal_status
+                            )
                     except Exception as ex:
                         logging.error("Combined: Failed to fetch MAL list for %s: %s", mal_status, ex)
+
 
             async def fetch_al():
                 nonlocal anilist_entries
@@ -1999,7 +2017,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
         mal_status = catalog_id.split("mal_")[1]
         try:
-            data_items = await get_cached_mal_user_anime_list(user_id, user["mal_access_token"], mal_status)
+            from app.services.db import get_or_refresh_mal_token
+            mal_token = await get_or_refresh_mal_token(user_id)
+            if not mal_token:
+                return await respond_with({"metas": []})
+            data_items = await get_cached_mal_user_anime_list(user_id, mal_token, mal_status)
+
 
             current_time = int(time.time())
 

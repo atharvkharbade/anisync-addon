@@ -48,9 +48,9 @@
         /* Toast Container & Notification Styles */
         .toast-container {
             position: fixed;
-            top: 24px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate(-50%, -50%);
             z-index: 2000;
             display: flex;
             flex-direction: column;
@@ -61,25 +61,25 @@
         .custom-toast {
             min-width: 250px;
             max-width: 380px;
-            background: rgba(22, 22, 22, 0.92);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-left: 4px solid #02a9ff;
             border-radius: 10px;
-            padding: 12px 18px;
+            padding: 14px 20px;
             color: #e0e0e0;
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             display: flex;
             align-items: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             pointer-events: auto;
-            transform: translateY(-120%) scale(0.9);
+            transform: scale(0.85);
             opacity: 0;
-            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .custom-toast.show {
-            transform: translateY(0) scale(1);
+            transform: scale(1);
             opacity: 1;
         }
         .custom-toast.success {
@@ -88,16 +88,18 @@
         .custom-toast.error {
             border-left-color: #e71d36;
         }
+        .custom-toast.warning {
+            border-left-color: #ff9f1c;
+        }
         .custom-toast.info {
             border-left-color: #02a9ff;
         }
         @media (max-width: 576px) {
             .toast-container {
-                top: 16px;
-                left: 16px;
-                right: 16px;
-                transform: none;
-                width: calc(100% - 32px);
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 90%;
             }
             .custom-toast {
                 min-width: 0;
@@ -158,6 +160,8 @@
                 icon = '<i class="fa-solid fa-circle-check me-2 text-success"></i>';
             } else if (type === 'error') {
                 icon = '<i class="fa-solid fa-circle-exclamation me-2 text-danger"></i>';
+            } else if (type === 'warning') {
+                icon = '<i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i>';
             }
 
             toast.innerHTML = `${icon}<span>${message}</span>`;
@@ -192,7 +196,8 @@
                         let type = 'info';
                         let cat = '{{ category }}';
                         if (cat === 'success') type = 'success';
-                        else if (cat === 'danger' || cat === 'warning') type = 'error';
+                        else if (cat === 'danger') type = 'error';
+                        else if (cat === 'warning') type = 'warning';
                         showToast("{{ message }}", type);
                     })();
                 {% endfor %}

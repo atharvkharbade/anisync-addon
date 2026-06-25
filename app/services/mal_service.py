@@ -60,10 +60,22 @@ def _watch_dates(
 
 
 async def sync_mal(user: dict, mal_id: str, episode: int, sync_unlisted: bool) -> UpdateStatus:
-    token = user.get("mal_access_token", "")
+    user_id = user.get("uid")
+    from app.services.db import get_or_refresh_mal_token, handle_invalid_mal_token, reset_mal_error_counter
+    from app.api.mal import MalTokenInvalidError
+
+    token = await get_or_refresh_mal_token(user_id)
+    if not token:
+        logging.warning("MAL sync skipped: No valid token available for user %s", user_id)
+        return UpdateStatus.FAIL
+
     try:
         anime = await mal_api.get_anime_details(token, mal_id)
+        reset_mal_error_counter(user_id)
     except Exception as e:
+        if isinstance(e, MalTokenInvalidError):
+            logging.warning("MAL token invalid during get_anime_details for user %s: %s", user_id, e)
+            handle_invalid_mal_token(user_id)
         logging.error("MAL get_anime_details failed: %s", e)
         return UpdateStatus.FAIL
 
@@ -119,8 +131,13 @@ async def sync_mal(user: dict, mal_id: str, episode: int, sync_unlisted: bool) -
             is_rewatching=send_is_rewatching,
             num_times_rewatched=send_num_times_rewatched,
         )
+        reset_mal_error_counter(user_id)
         logging.info("MAL updated: id=%s ep=%d status=%s", mal_id, episode, new_status)
         return UpdateStatus.OK
     except Exception as e:
+        if isinstance(e, MalTokenInvalidError):
+            logging.warning("MAL token invalid during update_watch_status for user %s: %s", user_id, e)
+            handle_invalid_mal_token(user_id)
         logging.error("MAL update_watch_status failed: %s", e)
         return UpdateStatus.FAIL
+

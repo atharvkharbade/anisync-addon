@@ -9,6 +9,22 @@ TIMEOUT = 10
 logger = logging.getLogger("anisync")
 
 
+import httpx
+
+
+class SimklTokenInvalidError(Exception):
+    pass
+
+
+def _raise_for_status(resp):
+    try:
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        if resp.status_code in [401, 403]:
+            raise SimklTokenInvalidError("Simkl token is invalid or expired") from e
+        raise e
+
+
 def _redirect_uri() -> str:
     return f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/simkl-callback"
 
@@ -34,8 +50,7 @@ async def get_access_token(code: str) -> str:
     )
     if resp.status_code != 200:
         logger.error("SIMKL_TOKEN_ERROR status=%d body=%s", resp.status_code, resp.text)
-    resp.raise_for_status()
-    data = resp.json()
+    _raise_for_status(resp)
     return data.get("access_token") or ""
 
 
@@ -52,7 +67,7 @@ async def get_user_details(token: str) -> dict:
         headers=headers,
         timeout=TIMEOUT,
     )
-    resp.raise_for_status()
+    _raise_for_status(resp)
     return resp.json()
 
 
@@ -83,7 +98,7 @@ async def get_user_anime_list(token: str, status: str | None = None) -> list:
         headers=headers,
         timeout=TIMEOUT,
     )
-    resp.raise_for_status()
+    _raise_for_status(resp)
     data = resp.json()
 
     # Defensive parsing for direct list vs dictionary wrapped format
@@ -142,8 +157,10 @@ async def sync_history(
             headers=headers,
             timeout=TIMEOUT,
         )
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return True
+    except SimklTokenInvalidError:
+        raise
     except Exception as e:
         logger.error("Failed to sync watch history to Simkl: %s", e)
         return False
