@@ -17,10 +17,16 @@ def _resolve_new_status(
     current_episode: int,
     watched_episodes: int,
     total_episodes: int,
+    is_rewatching: bool = False,
 ) -> str | None:
     # Allow any listed status including "completed" re-watch edge cases
     if not current_status:
         return None
+    
+    # Start/restart rewatch
+    if (current_status == "completed" or (is_rewatching and watched_episodes == total_episodes)) and current_episode == 1:
+        return "watching"
+
     # Already at this episode or further — no regression
     if current_episode <= watched_episodes:
         return None
@@ -85,20 +91,22 @@ async def sync_mal(user: dict, mal_id: str, episode: int, sync_unlisted: bool) -
     if not current_status and sync_unlisted:
         current_status = "watching"
 
-    new_status = _resolve_new_status(current_status, episode, watched_episodes, total_episodes)
+    new_status = _resolve_new_status(current_status, episode, watched_episodes, total_episodes, is_rewatching=is_rewatching)
     if not new_status:
         logging.info("MAL no update needed: ep=%d already watched=%d", episode, watched_episodes)
         return UpdateStatus.NULL
 
     start_date, finish_date = _watch_dates(list_status, episode, total_episodes)
 
-    # Rewatching completion logic
+    # Rewatching logic
     send_is_rewatching = None
     send_num_times_rewatched = None
-    if is_rewatching:
+    if (current_status == "completed" and episode == 1) or is_rewatching:
         if new_status == "completed":
             send_is_rewatching = False
             send_num_times_rewatched = num_times_rewatched + 1
+        else:
+            send_is_rewatching = True
 
     try:
         await mal_api.update_watch_status(
