@@ -48,9 +48,9 @@
         /* Toast Container & Notification Styles */
         .toast-container {
             position: fixed;
-            top: 50%;
+            top: 24px;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             z-index: 2000;
             display: flex;
             flex-direction: column;
@@ -61,25 +61,25 @@
         .custom-toast {
             min-width: 250px;
             max-width: 380px;
-            background: rgba(18, 18, 18, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(22, 22, 22, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-left: 4px solid #02a9ff;
             border-radius: 10px;
-            padding: 14px 20px;
+            padding: 12px 18px;
             color: #e0e0e0;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             display: flex;
             align-items: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             pointer-events: auto;
-            transform: scale(0.85);
+            transform: translateY(-120%) scale(0.9);
             opacity: 0;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .custom-toast.show {
-            transform: scale(1);
+            transform: translateY(0) scale(1);
             opacity: 1;
         }
         .custom-toast.success {
@@ -96,9 +96,9 @@
         }
         @media (max-width: 576px) {
             .toast-container {
-                top: 50%;
+                top: 16px;
                 left: 50%;
-                transform: translate(-50%, -50%);
+                transform: translateX(-50%);
                 width: 90%;
             }
             .custom-toast {
