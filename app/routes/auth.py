@@ -234,8 +234,10 @@ async def anilist_save():
                 "anilist_picture": anilist_picture,
                 "picture": anilist_picture or user.get("mal_picture") or user.get("picture") or "",
                 "last_profile_sync": datetime.utcnow(),
+                "anilist_consecutive_auth_errors": 0,
             }
         )
+        user.pop("anilist_last_auth_error_at", None)
         store_user(user)
         return {"ok": True, "username": anilist_username}
 

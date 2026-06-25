@@ -248,23 +248,67 @@ def invalidate_user_watchlist_cache(user_id: str):
         logging.error("Failed to invalidate watchlist cache for user %s: %s", user_id, e)
 
 
-def handle_invalid_anilist_token(user_id: str):
-    """Automatically disconnects AniList if the token is invalid to prevent log spam and redundant calls."""
+def is_anilist_in_cooldown(user: dict) -> bool:
+    """Check if AniList calls are in a temporary cooldown due to a recent authentication error."""
+    last_error_at = user.get("anilist_last_auth_error_at")
+    if last_error_at:
+        import time
+        # Cooldown duration: 2 hours (7200 seconds)
+        if time.time() - last_error_at < 7200:
+            return True
+    return False
+
+
+def reset_anilist_error_counter(user_id: str):
+    """Reset the AniList consecutive auth error counter to 0 on success."""
     try:
         user = get_user(user_id)
-        if user and user.get("anilist_token"):
-            logging.warning("Automatically disconnecting invalid/expired AniList token for user %s", user_id)
+        if user and (user.get("anilist_consecutive_auth_errors", 0) > 0 or "anilist_last_auth_error_at" in user):
+            user["anilist_consecutive_auth_errors"] = 0
+            user.pop("anilist_last_auth_error_at", None)
+            store_user(user)
+            logging.info("Reset AniList auth error counter for user %s", user_id)
+    except Exception as e:
+        logging.error("Failed to reset AniList error counter for user %s: %s", user_id, e)
+
+
+def handle_invalid_anilist_token(user_id: str):
+    """Handles an invalid AniList token. Instead of disconnecting immediately,
+    it tracks consecutive failures and puts the account in a temporary cooldown.
+    After 3 consecutive failures, it permanently disconnects the account.
+    """
+    try:
+        user = get_user(user_id)
+        if not user or not user.get("anilist_token"):
+            return
+
+        import time
+        consecutive_errors = user.get("anilist_consecutive_auth_errors", 0) + 1
+        user["anilist_consecutive_auth_errors"] = consecutive_errors
+        user["anilist_last_auth_error_at"] = time.time()
+
+        if consecutive_errors >= 3:
+            logging.warning("AniList token failed 3 consecutive times. Automatically disconnecting user %s", user_id)
             user.pop("anilist_token", None)
             user.pop("anilist_username", None)
             user.pop("anilist_picture", None)
             user["anilist_enabled"] = False
+            user["anilist_consecutive_auth_errors"] = 0
+            user.pop("anilist_last_auth_error_at", None)
             # Retain user picture if MAL or Simkl is connected
             if not user.get("mal_access_token") and not user.get("simkl_access_token"):
                 user.pop("picture", None)
             store_user(user)
             invalidate_user_watchlist_cache(user_id)
+        else:
+            logging.warning(
+                "AniList token invalid error (attempt %d/3) for user %s. Entering 2-hour cooldown.",
+                consecutive_errors,
+                user_id,
+            )
+            store_user(user)
     except Exception as e:
-        logging.error("Failed to automatically disconnect invalid AniList token for user %s: %s", user_id, e)
+        logging.error("Failed to handle invalid AniList token for user %s: %s", user_id, e)
 
 
 def get_user_watch_progress(
