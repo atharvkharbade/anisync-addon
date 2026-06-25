@@ -3,7 +3,7 @@ import logging
 from app.services.http import get_client
 from config import Config
 
-BASE_URL = "https://api.simkl.com"
+BASE_URL = Config.SIMKL_API_URL
 TIMEOUT = 10
 
 logger = logging.getLogger("anisync")

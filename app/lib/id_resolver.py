@@ -309,7 +309,7 @@ async def fetch_anime_info_by_mal_id(mal_id: str) -> tuple[str | None, str | Non
         try:
             client = get_client()
             resp = await client.get(
-                f"https://api.myanimelist.net/v2/anime/{mal_id}",
+                f"{Config.MAL_API_URL}/anime/{mal_id}",
                 headers={"X-MAL-CLIENT-ID": Config.MAL_CLIENT_ID},
                 timeout=TIMEOUT,
             )
@@ -548,7 +548,7 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> str | None:
     try:
         from config import Config
 
-        url = f"https://api.simkl.com/anime/{simkl_id}"
+        url = f"{Config.SIMKL_API_URL}/anime/{simkl_id}"
         params = {"client_id": Config.SIMKL_CLIENT_ID}
         headers = {"User-Agent": "AniSync/1.0"}
         resp = await client.get(url, params=params, headers=headers, timeout=8)
