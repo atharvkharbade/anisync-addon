@@ -12,6 +12,10 @@ class UpdateStatus(Enum):
 
 
 async def sync_anilist(user: dict, anilist_id: str, episode: int, sync_unlisted: bool) -> UpdateStatus:
+    if user.get("anilist_token_expired"):
+        logging.info("Skipping AniList sync for user %s: token is expired", user.get("uid"))
+        return UpdateStatus.FAIL
+
     from app.services.db import is_anilist_in_cooldown, reset_anilist_error_counter
     if is_anilist_in_cooldown(user):
         logging.info("Skipping AniList sync for user %s due to temporary auth error cooldown", user.get("uid"))

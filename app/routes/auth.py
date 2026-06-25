@@ -104,10 +104,11 @@ async def mal_callback():
                 "mal_access_token": token_data["access_token"],
                 "mal_refresh_token": token_data["refresh_token"],
                 "mal_expires_at": datetime.utcnow() + timedelta(seconds=token_data["expires_in"]),
-                "mal_enabled": existing.get("mal_enabled", True),
+                "mal_enabled": True if existing.get("mal_token_expired") else existing.get("mal_enabled", True),
                 "last_profile_sync": datetime.utcnow(),
             }
         )
+        existing.pop("mal_token_expired", None)
         store_user(existing)
 
         await flash("Connected to MyAnimeList!", "success")
@@ -141,6 +142,7 @@ async def refresh_mal():
                 "mal_expires_at": datetime.utcnow() + timedelta(seconds=token_data["expires_in"]),
             }
         )
+        user.pop("mal_token_expired", None)
         store_user(user)
         await flash("MAL session refreshed.", "success")
     except Exception as e:
@@ -230,7 +232,7 @@ async def anilist_save():
                 "anilist_id": anilist_uid,
                 "anilist_token": token,
                 "anilist_username": anilist_username,
-                "anilist_enabled": user.get("anilist_enabled", True),
+                "anilist_enabled": True if user.get("anilist_token_expired") else user.get("anilist_enabled", True),
                 "anilist_picture": anilist_picture,
                 "picture": anilist_picture or user.get("mal_picture") or user.get("picture") or "",
                 "last_profile_sync": datetime.utcnow(),
@@ -238,6 +240,7 @@ async def anilist_save():
             }
         )
         user.pop("anilist_last_auth_error_at", None)
+        user.pop("anilist_token_expired", None)
         store_user(user)
         return {"ok": True, "username": anilist_username}
 
@@ -260,6 +263,7 @@ async def disconnect_mal():
         user.pop("mal_expires_at", None)
         user.pop("name", None)
         user.pop("mal_picture", None)
+        user.pop("mal_token_expired", None)
 
         from app.services.db import invalidate_user_watchlist_cache
 
@@ -292,6 +296,7 @@ async def disconnect_anilist():
         user.pop("anilist_token", None)
         user.pop("anilist_username", None)
         user.pop("anilist_picture", None)
+        user.pop("anilist_token_expired", None)
 
         from app.services.db import invalidate_user_watchlist_cache
 
@@ -405,7 +410,7 @@ async def simkl_callback():
                 "simkl_access_token": token,
                 "simkl_username": simkl_username,
                 "simkl_avatar": simkl_avatar,
-                "simkl_enabled": user.get("simkl_enabled", True),
+                "simkl_enabled": True if user.get("simkl_token_expired") else user.get("simkl_enabled", True),
                 "picture": simkl_avatar
                 or user.get("mal_picture")
                 or user.get("anilist_picture")
@@ -414,6 +419,7 @@ async def simkl_callback():
                 "last_profile_sync": datetime.utcnow(),
             }
         )
+        user.pop("simkl_token_expired", None)
         store_user(user)
 
         # Invalidate watchlist cache so it re-fetches with Simkl items included
@@ -443,6 +449,7 @@ async def disconnect_simkl():
         user.pop("simkl_username", None)
         user.pop("simkl_avatar", None)
         user.pop("simkl_id", None)
+        user.pop("simkl_token_expired", None)
 
         from app.services.db import invalidate_user_watchlist_cache
 
@@ -461,3 +468,42 @@ async def disconnect_simkl():
             return redirect(url_for("ui.configure"))
 
     return redirect(url_for("ui.index"))
+
+
+@auth_bp.route("/test-login")
+async def test_login():
+    from app.services.db import get_user, store_user
+    uid = "testuser"
+    user = get_user(uid)
+    if not user:
+        user = {"uid": uid}
+
+    user.update({
+        "name": "Fake MAL User",
+        "mal_id": "999999",
+        "mal_access_token": "fake_mal_access_token",
+        "mal_refresh_token": "fake_mal_refresh_token",
+        "mal_expires_at": datetime.utcnow() - timedelta(days=1),
+        "mal_enabled": False,
+        "mal_token_expired": True,
+
+        "anilist_username": "Fake AniList User",
+        "anilist_id": "999999",
+        "anilist_token": "fake_anilist_token",
+        "anilist_enabled": False,
+        "anilist_token_expired": True,
+
+        "simkl_username": "Fake Simkl User",
+        "simkl_id": "999999",
+        "simkl_access_token": "fake_simkl_token",
+        "simkl_avatar": "https://simkl.com/img/avatar.png",
+        "simkl_enabled": False,
+        "simkl_token_expired": True,
+
+        "picture": "https://simkl.com/img/avatar.png"
+    })
+    store_user(user)
+    session["user"] = {"uid": uid}
+    session.permanent = True
+    await flash("Logged in as expired test user.", "info")
+    return redirect(url_for("ui.configure"))

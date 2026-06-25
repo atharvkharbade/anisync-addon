@@ -288,17 +288,11 @@ def handle_invalid_anilist_token(user_id: str):
         user["anilist_last_auth_error_at"] = time.time()
 
         if consecutive_errors >= 3:
-            logging.warning("AniList token failed 3 consecutive times. Automatically disconnecting user %s", user_id)
-            user.pop("anilist_token", None)
-            user.pop("anilist_username", None)
-            user.pop("anilist_picture", None)
+            logging.warning("AniList token failed 3 consecutive times. Automatically marking expired for user %s", user_id)
             user["anilist_enabled"] = False
             user["anilist_consecutive_auth_errors"] = 0
             user.pop("anilist_last_auth_error_at", None)
-            user["anilist_session_expired"] = True
-            # Retain user picture if MAL or Simkl is connected
-            if not user.get("mal_access_token") and not user.get("simkl_access_token"):
-                user.pop("picture", None)
+            user["anilist_token_expired"] = True
             store_user(user)
             invalidate_user_watchlist_cache(user_id)
         else:
@@ -314,12 +308,15 @@ def handle_invalid_anilist_token(user_id: str):
 
 async def get_or_refresh_mal_token(user_id: str) -> str | None:
     """Gets the MAL access token for a user. If it's expired or close to expiring,
-    attempts to refresh it in the background. If refreshing fails, disconnects MAL
-    and sets the expired flag.
+    attempts to refresh it in the background. If refreshing fails, marks MAL as expired.
     """
     try:
         user = get_user(user_id)
         if not user or not user.get("mal_access_token") or not user.get("mal_refresh_token"):
+            return None
+
+        # If already marked expired, do not attempt to refresh or use
+        if user.get("mal_token_expired"):
             return None
 
         expiry = user.get("mal_expires_at")
@@ -333,21 +330,15 @@ async def get_or_refresh_mal_token(user_id: str) -> str | None:
                 user["mal_refresh_token"] = token_data["refresh_token"]
                 user["mal_expires_at"] = now + timedelta(seconds=token_data["expires_in"])
                 user["mal_consecutive_auth_errors"] = 0
+                user.pop("mal_token_expired", None)
                 store_user(user)
             except Exception as e:
                 logging.error("Failed to auto-refresh MAL token for user %s: %s", user_id, e)
-                # Disconnect on refresh failure
-                user.pop("mal_access_token", None)
-                user.pop("mal_refresh_token", None)
-                user.pop("mal_picture", None)
+                # Mark as expired on refresh failure
                 user["mal_enabled"] = False
                 user["mal_consecutive_auth_errors"] = 0
                 user.pop("mal_last_auth_error_at", None)
-                user["mal_session_expired"] = True
-
-                if not user.get("anilist_token") and not user.get("simkl_access_token"):
-                    user.pop("picture", None)
-
+                user["mal_token_expired"] = True
                 store_user(user)
                 invalidate_user_watchlist_cache(user_id)
                 return None
@@ -373,7 +364,7 @@ def reset_mal_error_counter(user_id: str):
 
 def handle_invalid_mal_token(user_id: str):
     """Handles an invalid MAL token (401/403). Tracks consecutive errors and
-    disconnects after 3 failures. Expures the token to force refresh.
+    marks expired after 3 failures.
     """
     try:
         user = get_user(user_id)
@@ -388,18 +379,11 @@ def handle_invalid_mal_token(user_id: str):
         user["mal_expires_at"] = datetime.utcnow() - timedelta(seconds=1)
 
         if consecutive_errors >= 3:
-            logging.warning("MAL token failed 3 consecutive times. Automatically disconnecting user %s", user_id)
-            user.pop("mal_access_token", None)
-            user.pop("mal_refresh_token", None)
-            user.pop("mal_picture", None)
+            logging.warning("MAL token failed 3 consecutive times. Automatically marking expired for user %s", user_id)
             user["mal_enabled"] = False
             user["mal_consecutive_auth_errors"] = 0
             user.pop("mal_last_auth_error_at", None)
-            user["mal_session_expired"] = True
-
-            if not user.get("anilist_token") and not user.get("simkl_access_token"):
-                user.pop("picture", None)
-
+            user["mal_token_expired"] = True
             store_user(user)
             invalidate_user_watchlist_cache(user_id)
         else:
@@ -424,7 +408,7 @@ def reset_simkl_error_counter(user_id: str):
 
 def handle_invalid_simkl_token(user_id: str):
     """Handles an invalid Simkl token (401/403). Tracks consecutive errors and
-    disconnects after 3 failures.
+    marks expired after 3 failures.
     """
     try:
         user = get_user(user_id)
@@ -437,18 +421,11 @@ def handle_invalid_simkl_token(user_id: str):
         user["simkl_last_auth_error_at"] = time.time()
 
         if consecutive_errors >= 3:
-            logging.warning("Simkl token failed 3 consecutive times. Automatically disconnecting user %s", user_id)
-            user.pop("simkl_access_token", None)
-            user.pop("simkl_username", None)
-            user.pop("simkl_avatar", None)
+            logging.warning("Simkl token failed 3 consecutive times. Automatically marking expired for user %s", user_id)
             user["simkl_enabled"] = False
             user["simkl_consecutive_auth_errors"] = 0
             user.pop("simkl_last_auth_error_at", None)
-            user["simkl_session_expired"] = True
-
-            if not user.get("mal_access_token") and not user.get("anilist_token"):
-                user.pop("picture", None)
-
+            user["simkl_token_expired"] = True
             store_user(user)
             invalidate_user_watchlist_cache(user_id)
         else:
@@ -456,6 +433,7 @@ def handle_invalid_simkl_token(user_id: str):
             store_user(user)
     except Exception as e:
         logging.error("Failed to handle invalid Simkl token: %s", e)
+
 
 
 

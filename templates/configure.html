@@ -370,10 +370,16 @@
                     <span class="fw-semibold">MyAnimeList</span>
                 </div>
                 {% if user.get('mal_access_token') %}
-                <span class="text-success small">
-                    <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('name') %} as {{ user['name']
-                    }}{% endif %}
-                </span>
+                    {% if user.get('mal_token_expired') %}
+                    <span class="text-danger small fw-semibold">
+                        <i class="fa-solid fa-circle-exclamation me-1"></i>Authentication Expired
+                    </span>
+                    {% else %}
+                    <span class="text-success small">
+                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('name') %} as {{ user['name']
+                        }}{% endif %}
+                    </span>
+                    {% endif %}
                 {% else %}
                 <span class="text-secondary small">
                     <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
@@ -383,7 +389,7 @@
 
             {% if user.get('mal_access_token') %}
             <div class="d-flex gap-2 mb-3">
-                <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal">
+                <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal {% if user.get('mal_token_expired') %}btn-pulse{% endif %}">
                     <i class="fa-solid fa-rotate me-2"></i>Reconnect
                 </a>
                 <a href="{{ url_for('auth.disconnect_mal') }}" class="btn btn-disconnect">
@@ -401,9 +407,9 @@
             {% if user.get('mal_access_token') %}
             <div class="form-check form-switch mb-0">
                 <input class="form-check-input" type="checkbox" role="switch" id="mal_enabled"
-                    {% if user.get('mal_enabled', True) %}checked{% endif %}>
+                    {% if user.get('mal_enabled', True) %}checked{% endif %} {% if user.get('mal_token_expired') %}disabled{% endif %}>
                 <label class="form-check-label text-secondary small" for="mal_enabled">
-                    MAL tracking enabled
+                    MAL tracking enabled {% if user.get('mal_token_expired') %}(Please reconnect){% endif %}
                 </label>
             </div>
             {% endif %}
@@ -418,10 +424,16 @@
                     <span class="fw-semibold">AniList</span>
                 </div>
                 {% if user.get('anilist_token') %}
-                <span class="text-success small">
-                    <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('anilist_username') %} as {{
-                    user['anilist_username'] }}{% endif %}
-                </span>
+                    {% if user.get('anilist_token_expired') %}
+                    <span class="text-danger small fw-semibold">
+                        <i class="fa-solid fa-circle-exclamation me-1"></i>Authentication Expired
+                    </span>
+                    {% else %}
+                    <span class="text-success small">
+                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('anilist_username') %} as {{
+                        user['anilist_username'] }}{% endif %}
+                    </span>
+                    {% endif %}
                 {% else %}
                 <span class="text-secondary small">
                     <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
@@ -431,7 +443,7 @@
 
             {% if user.get('anilist_token') %}
             <div class="d-flex gap-2 mb-3">
-                <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist">
+                <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist {% if user.get('anilist_token_expired') %}btn-pulse{% endif %}">
                     <i class="fa-solid fa-rotate me-2"></i>Reconnect
                 </a>
                 <a href="{{ url_for('auth.disconnect_anilist') }}" class="btn btn-disconnect">
@@ -449,9 +461,9 @@
             {% if user.get('anilist_token') %}
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" id="anilist_enabled"
-                    {% if user.get('anilist_enabled', True) %}checked{% endif %}>
+                    {% if user.get('anilist_enabled', True) %}checked{% endif %} {% if user.get('anilist_token_expired') %}disabled{% endif %}>
                 <label class="form-check-label text-secondary small" for="anilist_enabled">
-                    AniList tracking enabled
+                    AniList tracking enabled {% if user.get('anilist_token_expired') %}(Please reconnect){% endif %}
                 </label>
             </div>
             {% endif %}
@@ -466,10 +478,16 @@
                     <span class="fw-semibold">Simkl</span>
                 </div>
                 {% if user.get('simkl_access_token') %}
-                <span class="text-success small">
-                    <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('simkl_username') %} as {{
-                    user['simkl_username'] }}{% endif %}
-                </span>
+                    {% if user.get('simkl_token_expired') %}
+                    <span class="text-danger small fw-semibold">
+                        <i class="fa-solid fa-circle-exclamation me-1"></i>Authentication Expired
+                    </span>
+                    {% else %}
+                    <span class="text-success small">
+                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('simkl_username') %} as {{
+                        user['simkl_username'] }}{% endif %}
+                    </span>
+                    {% endif %}
                 {% else %}
                 <span class="text-secondary small">
                     <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
@@ -479,7 +497,7 @@
 
             {% if user.get('simkl_access_token') %}
             <div class="d-flex gap-2 mb-3">
-                <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-simkl">
+                <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-simkl {% if user.get('simkl_token_expired') %}btn-pulse{% endif %}">
                     <i class="fa-solid fa-rotate me-2"></i>Reconnect
                 </a>
                 <a href="{{ url_for('auth.disconnect_simkl') }}" class="btn btn-disconnect">
@@ -497,9 +515,9 @@
             {% if user.get('simkl_access_token') %}
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" id="simkl_enabled"
-                    {% if user.get('simkl_enabled', True) %}checked{% endif %}>
+                    {% if user.get('simkl_enabled', True) %}checked{% endif %} {% if user.get('simkl_token_expired') %}disabled{% endif %}>
                 <label class="form-check-label text-secondary small" for="simkl_enabled">
-                    Simkl tracking enabled
+                    Simkl tracking enabled {% if user.get('simkl_token_expired') %}(Please reconnect){% endif %}
                 </label>
             </div>
             {% endif %}

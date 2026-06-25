@@ -61,6 +61,10 @@ def _watch_dates(
 
 async def sync_mal(user: dict, mal_id: str, episode: int, sync_unlisted: bool) -> UpdateStatus:
     user_id = user.get("uid")
+    if user.get("mal_token_expired"):
+        logging.info("Skipping MAL sync for user %s: token is expired", user_id)
+        return UpdateStatus.FAIL
+
     from app.services.db import get_or_refresh_mal_token, handle_invalid_mal_token, reset_mal_error_counter
     from app.api.mal import MalTokenInvalidError
 
