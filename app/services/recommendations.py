@@ -10,6 +10,7 @@ from app.api import simkl as simkl_api
 from app.lib.id_resolver import resolve, resolve_anilist_to_kitsu, resolve_mal_to_kitsu
 from app.services.db import db, get_user, store_user
 from app.services.http import get_client
+from config import Config
 
 logger = logging.getLogger(__name__)
 recommendations_cache_collection = db.get_collection("recommendations_cache")
@@ -620,7 +621,7 @@ def is_proper_anime(title: str) -> bool:
 
 async def get_mal_recommendations_for_id(token: str, mal_id: str) -> list[dict]:
     client = get_client()
-    url = f"https://api.myanimelist.net/v2/anime/{mal_id}"
+    url = f"{Config.MAL_API_URL}/anime/{mal_id}"
     # Fetch start_season, genres, media_type, popularity, mean, status to enforce user preferences in recommendations
     params = {
         "fields": "recommendations{node{id,title,main_picture,genres,start_season,media_type,popularity,mean,synopsis,average_episode_duration,status}}"

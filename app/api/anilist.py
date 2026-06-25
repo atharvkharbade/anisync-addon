@@ -3,8 +3,9 @@ import logging
 import httpx
 
 from app.services.http import get_client
+from config import Config
 
-ANILIST_URL = "https://graphql.anilist.co"
+ANILIST_URL = Config.ANILIST_API_URL
 TIMEOUT = 10
 
 VIEWER_QUERY = """
