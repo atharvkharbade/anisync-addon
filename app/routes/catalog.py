@@ -637,7 +637,10 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         m_copy["type"] = item_type
 
         # Apply RPDB poster overlay if configured
-        if user and user.get("rpdb_api_key"):
+        has_poster_provider = user and (
+            (user.get("poster_provider") and user.get("poster_provider") != "none") or user.get("rpdb_api_key")
+        )
+        if has_poster_provider:
             if catalog_id == "anisync_search" and not user.get("rpdb_in_search", True):
                 # Skip RPDB poster overlay for search catalog if disabled
                 formatted_metas.append(m_copy)

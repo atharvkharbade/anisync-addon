@@ -306,6 +306,13 @@ async def configure(user_id: str = ""):
         if "shuffle_discovery_catalogs" in form:
             user["shuffle_discovery_catalogs"] = form.get("shuffle_discovery_catalogs") == "true"
 
+        if "poster_provider" in form:
+            user["poster_provider"] = form.get("poster_provider", "none").strip()
+        if "top_poster_key" in form:
+            user["top_poster_key"] = form.get("top_poster_key", "").strip()
+        if "custom_poster_pattern" in form:
+            user["custom_poster_pattern"] = form.get("custom_poster_pattern", "").strip()
+
         rpdb_task = None
         gemini_task = None
         rpdb_key = user.get("rpdb_api_key", "")
