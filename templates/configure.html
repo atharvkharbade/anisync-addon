@@ -372,7 +372,13 @@
                 Configure AniSync
                 {% endif %}
             </h3>
-            <p class="text-secondary small mb-0">Manage your tracking connections and preferences below.</p>
+            <p class="text-secondary small mb-0">
+                {% if user.get('is_guest') %}
+                Preferences are limited since you are on guest mode.
+                {% else %}
+                Manage your tracking connections and preferences below.
+                {% endif %}
+            </p>
         </div>
 
         {% if user.get('is_guest') %}
