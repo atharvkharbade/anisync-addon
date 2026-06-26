@@ -673,32 +673,7 @@
                             </span>
                         </label>
                     </div>
-                    <!-- ID & Metadata Provider Option -->
-                    <div class="mb-3">
-                        <label class="form-label ms-1 mb-1">
-                            <span class="fw-medium d-block">ID & Metadata Provider</span>
-                            <span class="text-secondary small d-block mb-2">
-                                Choose which metadata source and ID format AniSync uses for your Stremio catalogs and scrobbling.
-                            </span>
-                        </label>
-                        <div class="custom-select-wrapper mb-2" data-input-id="id_provider_val" style="max-width: 320px;">
-                            <div class="custom-select">
-                                <span class="custom-select-text">AnimeKitsu (Kitsu)</span>
-                                <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
-                            </div>
-                            <div class="custom-options-menu">
-                                <div class="custom-option-item" data-value="kitsu">
-                                    <i class="fa-solid fa-star me-2 text-warning" style="font-size:0.8rem; width:12px;"></i>AnimeKitsu (Kitsu) - Recommended
-                                </div>
-                                <div class="custom-option-item" data-value="mal">
-                                    <i class="fa-solid fa-circle-info me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>MyAnimeList (MAL)
-                                </div>
-                            </div>
-                        </div>
-                        <span class="text-secondary small d-block ms-1">
-                            <strong>Note:</strong> AnimeKitsu is recommended for the most accurate tracking. Using MAL means scraper addons that do not support MAL IDs (e.g. Torrentio or CyberFlix) will not show streams.
-                        </span>
-                    </div>
+
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="combine_watchlists" {% if
                             user.get('combine_watchlists', False) %}checked{% endif %}>
@@ -925,6 +900,35 @@
                             </span>
                         </label>
                     </div>
+                </div>
+
+                <!-- Metadata Provider Option -->
+                <div class="mb-4" style="margin-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
+                    <label class="form-label ms-1 mb-1">
+                        <span class="fw-semibold d-block">Metadata Provider</span>
+                        <span class="text-secondary small d-block mb-2">
+                            Choose which metadata source and ID format AniSync uses for your Stremio catalogs and scrobbling.
+                        </span>
+                    </label>
+                    <div class="custom-select-wrapper mb-2" data-input-id="id_provider_val" style="max-width: 320px;">
+                        <div class="custom-select">
+                            <span class="custom-select-text">
+                                <img src="https://kitsu.io/favicon.ico" width="16" height="16" class="me-2" style="border-radius:3px; vertical-align: middle;">AnimeKitsu (Kitsu)
+                            </span>
+                            <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                        </div>
+                        <div class="custom-options-menu">
+                            <div class="custom-option-item" data-value="kitsu">
+                                <img src="https://kitsu.io/favicon.ico" width="16" height="16" class="me-2" style="border-radius:3px; vertical-align: middle;">AnimeKitsu (Kitsu)
+                            </div>
+                            <div class="custom-option-item" data-value="mal">
+                                <img src="https://myanimelist.net/favicon.ico" width="16" height="16" class="me-2" style="border-radius:3px; vertical-align: middle;">MyAnimeList (MAL)
+                            </div>
+                        </div>
+                    </div>
+                    <span class="text-secondary small d-block ms-1">
+                        <strong>Note:</strong> Using MAL means scraper addons that do not support MAL IDs (e.g. Torrentio or CyberFlix) will not show streams.
+                    </span>
                 </div>
 
                 <!-- RPDB Integration Section -->
