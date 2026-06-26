@@ -85,6 +85,8 @@ def map_kitsu_to_stremio(
     meta_id: str,
     anizp_data: dict = None,
     mal_id: str = None,
+    anilist_id: str = None,
+    simkl_id: str = None,
     show_filler_tags: bool = True,
     loop=None,
     cinemeta_data: dict = None,
@@ -94,6 +96,18 @@ def map_kitsu_to_stremio(
     data = kitsu_data.get("data", {})
     if not data:
         return {}
+
+    # Determine the video base ID prefix based on meta_id format
+    video_base = f"kitsu:{data.get('id')}"
+    if meta_id.startswith("mal:"):
+        actual_mal = mal_id or meta_id.split(":")[1]
+        video_base = f"mal:{actual_mal}"
+    elif meta_id.startswith("anilist:"):
+        actual_anilist = anilist_id or meta_id.split(":")[1]
+        video_base = f"anilist:{actual_anilist}"
+    elif meta_id.startswith("simkl:"):
+        actual_simkl = simkl_id or meta_id.split(":")[1]
+        video_base = f"simkl:{actual_simkl}"
 
     attributes = data.get("attributes", {})
     titles = attributes.get("titles", {})
@@ -162,7 +176,7 @@ def map_kitsu_to_stremio(
     if subtype == "movie":
         videos.append(
             {
-                "id": f"kitsu:{data['id']}",
+                "id": video_base,
                 "title": title,
                 "episode": 1,
                 "season": 1,
@@ -226,7 +240,7 @@ def map_kitsu_to_stremio(
 
                 videos.append(
                     {
-                        "id": f"kitsu:{data['id']}:{ep_num}",
+                        "id": f"{video_base}:{ep_num}",
                         "title": ep_title,
                         "episode": ep_num,
                         "season": 1,
@@ -273,7 +287,7 @@ def map_kitsu_to_stremio(
 
                 videos.append(
                     {
-                        "id": f"kitsu:{data['id']}:{i}",
+                        "id": f"{video_base}:{i}",
                         "title": ep_title,
                         "episode": i,
                         "season": 1,
@@ -420,6 +434,8 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             meta_id,
             anizp_data=anizp_data,
             mal_id=mal_id,
+            anilist_id=anilist_id,
+            simkl_id=simkl_id,
             show_filler_tags=show_filler,
             loop=run_loop,
             cinemeta_data=cinemeta_data,

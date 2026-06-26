@@ -173,6 +173,11 @@ async def configure(user_id: str = ""):
         if "show_watched_tags" in form:
             user["show_watched_tags"] = form.get("show_watched_tags") == "true"
 
+        if "id_provider" in form:
+            provider = form.get("id_provider", "kitsu")
+            if provider in ["kitsu", "mal"]:
+                user["id_provider"] = provider
+
         if "custom_sort_enabled" in form:
             user["custom_sort_enabled"] = form.get("custom_sort_enabled") == "true"
         if "custom_sort_watching_by" in form:

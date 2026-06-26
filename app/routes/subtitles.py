@@ -22,31 +22,35 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
 
     content_id = urllib.parse.unquote(content_id)
 
-    # content_id format: "kitsu:KITSU_ID:EPISODE" or
-    # "kitsu:KITSU_ID/filename=...&videoSize=..." (torrent stream)
-    # We must extract only the numeric kitsu_id and episode number
+    # content_id format: "kitsu:KITSU_ID:EPISODE" or "mal:MAL_ID:EPISODE" or
+    # "kitsu:KITSU_ID/filename=..." (torrent stream)
+    # We must extract only the prefix, numeric ID and episode number
 
-    if not content_id.startswith("kitsu:"):
+    prefix = None
+    if content_id.startswith("kitsu:"):
+        prefix = "kitsu"
+        remainder = content_id[len("kitsu:") :]
+    elif content_id.startswith("mal:"):
+        prefix = "mal"
+        remainder = content_id[len("mal:") :]
+    else:
         return await respond_with({"subtitles": []})
-
-    # Strip the "kitsu:" prefix
-    remainder = content_id[len("kitsu:") :]
 
     # Strip anything after "/" (video hash / filename junk)
     remainder = remainder.split("/")[0]
 
-    # Now split by ":" to get kitsu_id and optional episode
+    # Now split by ":" to get kitsu_id/mal_id and optional episode
     parts = remainder.split(":")
-    kitsu_id = parts[0].strip()
+    extracted_id = parts[0].strip()
     episode = 1
     if len(parts) > 1 and parts[1].isdigit():
         episode = int(parts[1])
 
-    if not kitsu_id.isdigit():
-        logging.warning("Could not parse kitsu_id from content_id=%s", content_id)
+    if not extracted_id.isdigit():
+        logging.warning("Could not parse %s ID from content_id=%s", prefix, content_id)
         return await respond_with({"subtitles": []})
 
-    logging.info("Subtitles hook: kitsu_id=%s episode=%d user=%s", kitsu_id, episode, user_id)
+    logging.info("Subtitles hook: prefix=%s extracted_id=%s episode=%d user=%s", prefix, extracted_id, episode, user_id)
 
     user = get_user(user_id)
     if not user:
@@ -61,7 +65,22 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
     if not mal_enabled and not anilist_enabled and not simkl_enabled:
         return await respond_with({"subtitles": []})
 
-    mal_id, anilist_id = await resolve(kitsu_id)
+    kitsu_id = None
+    mal_id = None
+    anilist_id = None
+
+    if prefix == "kitsu":
+        kitsu_id = extracted_id
+        mal_id, anilist_id = await resolve(kitsu_id)
+    else:  # prefix == "mal"
+        mal_id = extracted_id
+        from app.lib.id_resolver import resolve_mal_to_kitsu, fetch_anime_info_by_mal_id
+        kitsu_id = await resolve_mal_to_kitsu(mal_id)
+        if kitsu_id:
+            _, anilist_id = await resolve(kitsu_id)
+        else:
+            _, anilist_id = await fetch_anime_info_by_mal_id(mal_id)
+
     logging.info("Resolved: kitsu=%s → mal=%s anilist=%s", kitsu_id, mal_id, anilist_id)
 
     tasks = []
@@ -84,10 +103,15 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
                     any_updated = True
 
         if any_updated:
-            from app.services.db import get_cached_ids, update_user_watchlist_cache_progress
+            from app.services.db import get_cached_ids, get_cached_ids_by_mal, update_user_watchlist_cache_progress
 
             simkl_id = None
-            cached_ids = get_cached_ids(kitsu_id)
+            cached_ids = None
+            if kitsu_id:
+                cached_ids = get_cached_ids(kitsu_id)
+            elif mal_id:
+                cached_ids = get_cached_ids_by_mal(mal_id)
+
             if cached_ids:
                 simkl_id = cached_ids.get("simkl_id")
 

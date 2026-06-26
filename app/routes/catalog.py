@@ -606,8 +606,100 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
     }
 
     import urllib.parse
-
+    import logging
     from app.services.rpdb import get_rpdb_poster_url
+    from app.services.db import db
+
+    # 1. Fetch user's preferred ID provider (defaults to kitsu)
+    id_provider = user.get("id_provider", "kitsu") if user else "kitsu"
+
+    # 2. Extract IDs for bulk mapping resolution
+    kitsu_ids = []
+    mal_ids = []
+    anilist_ids = []
+    simkl_ids = []
+
+    for m in metas_list:
+        stremio_id = m.get("id", "")
+        if stremio_id.startswith("kitsu:"):
+            try:
+                kitsu_ids.append(int(stremio_id.split(":")[1]))
+            except (ValueError, IndexError):
+                pass
+        elif stremio_id.startswith("mal:"):
+            mal_ids.append(stremio_id.split(":")[1])
+        elif stremio_id.startswith("anilist:"):
+            anilist_ids.append(stremio_id.split(":")[1])
+        elif stremio_id.startswith("simkl:"):
+            simkl_ids.append(stremio_id.split(":")[1])
+
+    # Query DB to resolve target IDs in bulk
+    mappings_dict = {}  # key format: "kitsu:123" -> {"mal": "456", "kitsu": "123", ...}
+    query_or = []
+    if kitsu_ids:
+        query_or.append({"kitsu_id": {"$in": kitsu_ids}})
+    if mal_ids:
+        query_or.append({"mal_id": {"$in": [str(x) for x in mal_ids]}})
+    if anilist_ids:
+        query_or.append({"anilist_id": {"$in": [str(x) for x in anilist_ids]}})
+    if simkl_ids:
+        query_or.append({"simkl_id": {"$in": [str(x) for x in simkl_ids]}})
+        simkl_ints = [int(x) for x in simkl_ids if str(x).isdigit()]
+        if simkl_ints:
+            query_or.append({"simkl_id": {"$in": simkl_ints}})
+            query_or.append({"simkl": {"$in": simkl_ints}})
+
+    if query_or:
+        try:
+            # Check id_cache
+            cache_docs = list(db.id_cache.find({"$or": query_or}))
+            for doc in cache_docs:
+                k_id = str(doc.get("kitsu_id") or "")
+                m_id = str(doc.get("mal_id") or "")
+                a_id = str(doc.get("anilist_id") or "")
+                s_id = str(doc.get("simkl_id") or doc.get("simkl") or "")
+                
+                entry = {}
+                if k_id: entry["kitsu"] = k_id
+                if m_id: entry["mal"] = m_id
+                if a_id: entry["anilist"] = a_id
+                if s_id: entry["simkl"] = s_id
+                
+                if k_id: mappings_dict[f"kitsu:{k_id}"] = entry
+                if m_id: mappings_dict[f"mal:{m_id}"] = entry
+                if a_id: mappings_dict[f"anilist:{a_id}"] = entry
+                if s_id: mappings_dict[f"simkl:{s_id}"] = entry
+
+            # Check fribb_mappings for missing Kitsu/MAL/AL IDs
+            fribb_query = []
+            missing_kitsu = [x for x in kitsu_ids if f"kitsu:{x}" not in mappings_dict]
+            missing_mal = [x for x in mal_ids if f"mal:{x}" not in mappings_dict]
+            missing_al = [x for x in anilist_ids if f"anilist:{x}" not in mappings_dict]
+            
+            if missing_kitsu: fribb_query.append({"kitsu_id": {"$in": missing_kitsu}})
+            if missing_mal: fribb_query.append({"mal_id": {"$in": missing_mal}})
+            if missing_al: fribb_query.append({"anilist_id": {"$in": missing_al}})
+            
+            if fribb_query:
+                fribb_docs = list(db.fribb_mappings.find({"$or": fribb_query}))
+                for doc in fribb_docs:
+                    k_id = str(doc.get("kitsu_id") or "")
+                    m_id = str(doc.get("mal_id") or "")
+                    a_id = str(doc.get("anilist_id") or "")
+                    s_id = str(doc.get("simkl_id") or "")
+                    
+                    entry = {}
+                    if k_id: entry["kitsu"] = k_id
+                    if m_id: entry["mal"] = m_id
+                    if a_id: entry["anilist"] = a_id
+                    if s_id: entry["simkl"] = s_id
+                    
+                    if k_id: mappings_dict[f"kitsu:{k_id}"] = entry
+                    if m_id: mappings_dict[f"mal:{m_id}"] = entry
+                    if a_id: mappings_dict[f"anilist:{a_id}"] = entry
+                    if s_id: mappings_dict[f"simkl:{s_id}"] = entry
+        except Exception as e:
+            logging.error("format_catalog_metas: bulk mapping resolution failed: %s", e)
 
     formatted_metas = []
     for m in metas_list:
@@ -622,19 +714,17 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                 item_type = "series"
         m_copy["type"] = item_type
 
-        # Apply RPDB poster overlay if configured
-        if user and user.get("rpdb_api_key"):
-            if catalog_id == "anisync_search" and not user.get("rpdb_in_search", True):
-                # Skip RPDB poster overlay for search catalog if disabled
-                formatted_metas.append(m_copy)
-                continue
+        stremio_id = m_copy.get("id", "")
+        
+        # 3. Dynamic ID resolution based on provider preference
+        mapped = mappings_dict.get(stremio_id, {})
+        kitsu_id = mapped.get("kitsu")
+        mal_id = mapped.get("mal")
+        anilist_id = mapped.get("anilist")
+        simkl_id = mapped.get("simkl")
 
-            stremio_id = m_copy.get("id", "")
-            kitsu_id = None
-            mal_id = None
-            anilist_id = None
-            simkl_id = None
-
+        # Fallback to parsing from original ID if mappings were not in DB
+        if not kitsu_id and not mal_id and not anilist_id and not simkl_id:
             if stremio_id.startswith("kitsu:"):
                 kitsu_id = stremio_id.split(":")[1]
             elif stremio_id.startswith("mal:"):
@@ -643,6 +733,21 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                 anilist_id = stremio_id.split(":")[1]
             elif stremio_id.startswith("simkl:"):
                 simkl_id = stremio_id.split(":")[1]
+
+        # Apply prefix according to preferred provider
+        if id_provider == "mal" and (mal_id or mapped.get("mal")):
+            target_mal = mal_id or mapped.get("mal")
+            m_copy["id"] = f"mal:{target_mal}"
+        elif id_provider == "kitsu" and (kitsu_id or mapped.get("kitsu")):
+            target_kitsu = kitsu_id or mapped.get("kitsu")
+            m_copy["id"] = f"kitsu:{target_kitsu}"
+
+        # Apply RPDB poster overlay if configured
+        if user and user.get("rpdb_api_key"):
+            if catalog_id == "anisync_search" and not user.get("rpdb_in_search", True):
+                # Skip RPDB poster overlay for search catalog if disabled
+                formatted_metas.append(m_copy)
+                continue
 
             current_poster = m_copy.get("poster", "")
             is_badge = False

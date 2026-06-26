@@ -547,6 +547,8 @@
                     value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
                 <input type="hidden" id="show_watched_tags_val" name="show_watched_tags"
                     value="{{ 'true' if user.get('show_watched_tags', False) else 'false' }}">
+                <input type="hidden" id="id_provider_val" name="id_provider"
+                    value="{{ user.get('id_provider', 'kitsu') }}">
                 <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
                     value="{{ 'true' if user.get('combine_watchlists', False) else 'false' }}">
                 <input type="hidden" id="custom_sort_enabled_val" name="custom_sort_enabled"
@@ -670,6 +672,32 @@
                                 Prepends a [Watched] tag to episode titles in the Stremio episode list.
                             </span>
                         </label>
+                    </div>
+                    <!-- ID & Metadata Provider Option -->
+                    <div class="mb-3">
+                        <label class="form-label ms-1 mb-1">
+                            <span class="fw-medium d-block">ID & Metadata Provider</span>
+                            <span class="text-secondary small d-block mb-2">
+                                Choose which metadata source and ID format AniSync uses for your Stremio catalogs and scrobbling.
+                            </span>
+                        </label>
+                        <div class="custom-select-wrapper mb-2" data-input-id="id_provider_val" style="max-width: 320px;">
+                            <div class="custom-select">
+                                <span class="custom-select-text">AnimeKitsu (Kitsu)</span>
+                                <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                            </div>
+                            <div class="custom-options-menu">
+                                <div class="custom-option-item" data-value="kitsu">
+                                    <i class="fa-solid fa-star me-2 text-warning" style="font-size:0.8rem; width:12px;"></i>AnimeKitsu (Kitsu) - Recommended
+                                </div>
+                                <div class="custom-option-item" data-value="mal">
+                                    <i class="fa-solid fa-circle-info me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>MyAnimeList (MAL)
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-secondary small d-block ms-1">
+                            <strong>Note:</strong> AnimeKitsu is recommended for the most accurate tracking. Using MAL means scraper addons that do not support MAL IDs (e.g. Torrentio or CyberFlix) will not show streams.
+                        </span>
                     </div>
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="combine_watchlists" {% if
