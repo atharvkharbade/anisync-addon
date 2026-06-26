@@ -151,9 +151,9 @@ def map_kitsu_to_stremio(
     else:
         # Prioritize Kitsu title and images
         title = attributes.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown Title"
-        poster = poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or anizp_poster or ""
+        poster = anizp_poster or poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or ""
         background = (
-            cover_data.get("original") or cover_data.get("large") or cover_data.get("medium") or anizp_fanart or poster
+            anizp_fanart or cover_data.get("original") or cover_data.get("large") or cover_data.get("medium") or poster
         )
 
     imdb_id = clean_imdb_id(anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None)
