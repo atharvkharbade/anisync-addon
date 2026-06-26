@@ -852,7 +852,13 @@ async def update_discovery_catalogs_cache() -> dict:
         import json as _json
         try:
             url = f"https://kitsu.io/api/edge/anime?{query_str}"
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "application/vnd.api+json",
+                },
+            )
             with urllib.request.urlopen(req, timeout=5) as resp:
                 data = _json.loads(resp.read())
                 if isinstance(data, dict):
