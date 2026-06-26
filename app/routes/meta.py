@@ -111,7 +111,6 @@ def map_kitsu_to_stremio(
 
     attributes = data.get("attributes", {})
     titles = attributes.get("titles", {})
-    title = attributes.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown Title"
     synopsis = attributes.get("synopsis", "")
     anizp_images = anizp_data.get("images", []) if anizp_data else []
     anizp_fanart = None
@@ -125,12 +124,37 @@ def map_kitsu_to_stremio(
         elif img.get("coverType") in ["Clearlogo", "Logo"] and not anizp_logo:
             anizp_logo = img.get("url")
 
+    # Determine Title and Images based on chosen provider
     poster_data = attributes.get("posterImage") or {}
-    poster = anizp_poster or poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or ""
     cover_data = attributes.get("coverImage") or {}
-    background = (
-        anizp_fanart or cover_data.get("original") or cover_data.get("large") or cover_data.get("medium") or poster
-    )
+
+    if meta_id.startswith("mal:"):
+        # Prioritize MAL (ani.zip) title and images
+        if anizp_data and "titles" in anizp_data:
+            anizp_titles = anizp_data.get("titles", {})
+            title = (
+                anizp_titles.get("en")
+                or anizp_titles.get("x-jat")
+                or anizp_titles.get("ja")
+                or attributes.get("canonicalTitle")
+                or titles.get("en")
+                or titles.get("en_jp")
+                or "Unknown Title"
+            )
+        else:
+            title = attributes.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown Title"
+
+        poster = anizp_poster or poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or ""
+        background = (
+            anizp_fanart or cover_data.get("original") or cover_data.get("large") or cover_data.get("medium") or poster
+        )
+    else:
+        # Prioritize Kitsu title and images
+        title = attributes.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown Title"
+        poster = poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or anizp_poster or ""
+        background = (
+            cover_data.get("original") or cover_data.get("large") or cover_data.get("medium") or anizp_fanart or poster
+        )
 
     imdb_id = clean_imdb_id(anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None)
 
@@ -196,20 +220,36 @@ def map_kitsu_to_stremio(
                 # Fetch details from ani.zip if available
                 anizp_ep = anizp_episodes.get(str(ep_num)) or {}
 
-                ep_title = (
-                    attrs.get("canonicalTitle")
-                    or anizp_ep.get("title", {}).get("en")
-                    or anizp_ep.get("title", {}).get("x-jat")
-                    or f"Episode {ep_num}"
-                )
-                released = attrs.get("airdate") or anizp_ep.get("airdate")
-                overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
-                thumbnail = (
-                    anizp_ep.get("image")
-                    or (attrs.get("thumbnail") or {}).get("original")
-                    or (attrs.get("thumbnail") or {}).get("large")
-                    or background
-                )
+                if meta_id.startswith("mal:") and anizp_ep:
+                    ep_title = (
+                        anizp_ep.get("title", {}).get("en")
+                        or anizp_ep.get("title", {}).get("x-jat")
+                        or attrs.get("canonicalTitle")
+                        or f"Episode {ep_num}"
+                    )
+                    released = anizp_ep.get("airdate") or attrs.get("airdate")
+                    overview = anizp_ep.get("overview") or anizp_ep.get("summary") or attrs.get("synopsis") or ""
+                    thumbnail = (
+                        anizp_ep.get("image")
+                        or (attrs.get("thumbnail") or {}).get("original")
+                        or (attrs.get("thumbnail") or {}).get("large")
+                        or background
+                    )
+                else:
+                    ep_title = (
+                        attrs.get("canonicalTitle")
+                        or anizp_ep.get("title", {}).get("en")
+                        or anizp_ep.get("title", {}).get("x-jat")
+                        or f"Episode {ep_num}"
+                    )
+                    released = attrs.get("airdate") or anizp_ep.get("airdate")
+                    overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
+                    thumbnail = (
+                        anizp_ep.get("image")
+                        or (attrs.get("thumbnail") or {}).get("original")
+                        or (attrs.get("thumbnail") or {}).get("large")
+                        or background
+                    )
 
                 # Check filler status
                 is_filler = False
