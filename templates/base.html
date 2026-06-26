@@ -108,13 +108,29 @@
                 justify-content: center;
             }
         }
-        @keyframes pulse-border {
+        @keyframes pulse-border-mal {
+            0% { box-shadow: 0 0 0 0 rgba(46, 81, 162, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(46, 81, 162, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(46, 81, 162, 0); }
+        }
+        @keyframes pulse-border-anilist {
             0% { box-shadow: 0 0 0 0 rgba(2, 169, 255, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(2, 169, 255, 0); }
             100% { box-shadow: 0 0 0 0 rgba(2, 169, 255, 0); }
         }
-        .btn-pulse {
-            animation: pulse-border 2.2s infinite;
+        @keyframes pulse-border-simkl {
+            0% { box-shadow: 0 0 0 0 rgba(226, 125, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(226, 125, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(226, 125, 0, 0); }
+        }
+        .btn-pulse-mal {
+            animation: pulse-border-mal 2.2s infinite;
+        }
+        .btn-pulse-anilist {
+            animation: pulse-border-anilist 2.2s infinite;
+        }
+        .btn-pulse-simkl {
+            animation: pulse-border-simkl 2.2s infinite;
         }
     </style>
 </head>

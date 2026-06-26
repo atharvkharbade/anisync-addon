@@ -389,7 +389,7 @@
 
             {% if user.get('mal_access_token') %}
             <div class="d-flex gap-2 mb-3">
-                <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal {% if user.get('mal_token_expired') %}btn-pulse{% endif %}">
+                <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal {% if user.get('mal_token_expired') %}btn-pulse-mal{% endif %}">
                     <i class="fa-solid fa-rotate me-2"></i>Reconnect
                 </a>
                 <a href="{{ url_for('auth.disconnect_mal') }}" class="btn btn-disconnect">
@@ -443,7 +443,7 @@
 
             {% if user.get('anilist_token') %}
             <div class="d-flex gap-2 mb-3">
-                <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist {% if user.get('anilist_token_expired') %}btn-pulse{% endif %}">
+                <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist {% if user.get('anilist_token_expired') %}btn-pulse-anilist{% endif %}">
                     <i class="fa-solid fa-rotate me-2"></i>Reconnect
                 </a>
                 <a href="{{ url_for('auth.disconnect_anilist') }}" class="btn btn-disconnect">
@@ -497,7 +497,7 @@
 
             {% if user.get('simkl_access_token') %}
             <div class="d-flex gap-2 mb-3">
-                <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-simkl {% if user.get('simkl_token_expired') %}btn-pulse{% endif %}">
+                <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-simkl {% if user.get('simkl_token_expired') %}btn-pulse-simkl{% endif %}">
                     <i class="fa-solid fa-rotate me-2"></i>Reconnect
                 </a>
                 <a href="{{ url_for('auth.disconnect_simkl') }}" class="btn btn-disconnect">
