@@ -210,131 +210,119 @@ def map_kitsu_to_stremio(
             }
         )
     else:
+        # Determine the maximum episode number we should display to prevent truncation
+        kitsu_ep_count = attributes.get("episodeCount") or 0
+
+        max_kitsu_ep = 0
         if episodes_data:
-            # Sort by episode number
-            episodes_data.sort(key=lambda x: x.get("attributes", {}).get("number") or 9999)
-            for ep in episodes_data:
-                attrs = ep.get("attributes", {})
-                ep_num = attrs.get("number") or 1
+            max_kitsu_ep = max([x.get("attributes", {}).get("number") or 0 for x in episodes_data])
 
-                # Fetch details from ani.zip if available
-                anizp_ep = anizp_episodes.get(str(ep_num)) or {}
+        max_anizp_ep = 0
+        if anizp_episodes:
+            try:
+                max_anizp_ep = max([int(k) for k in anizp_episodes.keys() if k.isdigit()])
+            except ValueError:
+                pass
 
-                if meta_id.startswith("mal:") and anizp_ep:
-                    ep_title = (
-                        anizp_ep.get("title", {}).get("en")
-                        or anizp_ep.get("title", {}).get("x-jat")
-                        or attrs.get("canonicalTitle")
-                        or f"Episode {ep_num}"
-                    )
-                    released = anizp_ep.get("airdate") or attrs.get("airdate")
-                    overview = anizp_ep.get("overview") or anizp_ep.get("summary") or attrs.get("synopsis") or ""
-                    thumbnail = (
-                        anizp_ep.get("image")
-                        or (attrs.get("thumbnail") or {}).get("original")
-                        or (attrs.get("thumbnail") or {}).get("large")
-                        or background
-                    )
-                else:
-                    ep_title = (
-                        attrs.get("canonicalTitle")
-                        or anizp_ep.get("title", {}).get("en")
-                        or anizp_ep.get("title", {}).get("x-jat")
-                        or f"Episode {ep_num}"
-                    )
-                    released = attrs.get("airdate") or anizp_ep.get("airdate")
-                    overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
-                    thumbnail = (
-                        anizp_ep.get("image")
-                        or (attrs.get("thumbnail") or {}).get("original")
-                        or (attrs.get("thumbnail") or {}).get("large")
-                        or background
-                    )
+        total_ep = max(kitsu_ep_count, max_kitsu_ep, max_anizp_ep)
+        if total_ep == 0:
+            total_ep = 12  # Default fallback
 
-                # Check filler status
-                is_filler = False
-                if mal_id and show_filler_tags:
-                    from app.services.db import get_jikan_filler_cache
+        # Create a mapping of episode number to Kitsu episode data for O(1) lookup
+        kitsu_ep_map = {}
+        for ep in episodes_data:
+            num = ep.get("attributes", {}).get("number")
+            if num:
+                try:
+                    kitsu_ep_map[int(num)] = ep
+                except (ValueError, TypeError):
+                    pass
 
-                    cached = get_jikan_filler_cache(mal_id, ep_num)
-                    if cached is not None:
-                        is_filler = cached
-                    else:
-                        from app.routes.catalog import background_fetch_and_cache_filler, currently_fetching_pairs
+        for i in range(1, total_ep + 1):
+            ep_num = i
+            kitsu_ep = kitsu_ep_map.get(i)
+            anizp_ep = anizp_episodes.get(str(i)) or {}
 
-                        pair = (str(mal_id), ep_num)
-                        if pair not in currently_fetching_pairs:
-                            currently_fetching_pairs.add(pair)
-                            if loop and loop.is_running():
-                                try:
-                                    asyncio.run_coroutine_threadsafe(
-                                        background_fetch_and_cache_filler(mal_id, ep_num), loop
-                                    )
-                                except Exception:
-                                    pass
+            # Extract attributes from Kitsu episode if available
+            attrs = kitsu_ep.get("attributes", {}) if kitsu_ep else {}
 
-                if is_filler:
-                    ep_title = f"[Filler] {ep_title}"
-                if show_watched_tags and ep_num <= watched_progress:
-                    ep_title = f"[Watched] {ep_title}"
-
-                videos.append(
-                    {
-                        "id": f"{video_base}:{ep_num}",
-                        "title": ep_title,
-                        "episode": ep_num,
-                        "season": 1,
-                        "released": released + "T00:00:00Z" if released else None,
-                        "overview": overview,
-                        "thumbnail": thumbnail,
-                    }
-                )
-        else:
-            # Fallback if no episodes returned (generate placeholder episodes from episodeCount)
-            ep_count = attributes.get("episodeCount") or 12
-            for i in range(1, ep_count + 1):
-                anizp_ep = anizp_episodes.get(str(i)) or {}
+            if meta_id.startswith("mal:") and anizp_ep:
                 ep_title = (
-                    anizp_ep.get("title", {}).get("en") or anizp_ep.get("title", {}).get("x-jat") or f"Episode {i}"
+                    anizp_ep.get("title", {}).get("en")
+                    or anizp_ep.get("title", {}).get("x-jat")
+                    or attrs.get("canonicalTitle")
+                    or f"Episode {ep_num}"
                 )
-                overview = anizp_ep.get("overview") or anizp_ep.get("summary") or f"Episode {i} of {title}"
-                thumbnail = anizp_ep.get("image") or background
-
-                # Check filler status for fallback
-                is_filler = False
-                if mal_id and show_filler_tags:
-                    from app.services.db import get_jikan_filler_cache
-
-                    cached = get_jikan_filler_cache(mal_id, i)
-                    if cached is not None:
-                        is_filler = cached
-                    else:
-                        from app.routes.catalog import background_fetch_and_cache_filler, currently_fetching_pairs
-
-                        pair = (str(mal_id), i)
-                        if pair not in currently_fetching_pairs:
-                            currently_fetching_pairs.add(pair)
-                            if loop and loop.is_running():
-                                try:
-                                    asyncio.run_coroutine_threadsafe(background_fetch_and_cache_filler(mal_id, i), loop)
-                                except Exception:
-                                    pass
-
-                if is_filler:
-                    ep_title = f"[Filler] {ep_title}"
-                if show_watched_tags and i <= watched_progress:
-                    ep_title = f"[Watched] {ep_title}"
-
-                videos.append(
-                    {
-                        "id": f"{video_base}:{i}",
-                        "title": ep_title,
-                        "episode": i,
-                        "season": 1,
-                        "overview": overview,
-                        "thumbnail": thumbnail,
-                    }
+                released = anizp_ep.get("airdate") or attrs.get("airdate")
+                overview = anizp_ep.get("overview") or anizp_ep.get("summary") or attrs.get("synopsis") or ""
+                thumbnail = (
+                    anizp_ep.get("image")
+                    or (attrs.get("thumbnail") or {}).get("original")
+                    or (attrs.get("thumbnail") or {}).get("large")
+                    or background
                 )
+            else:
+                ep_title = (
+                    attrs.get("canonicalTitle")
+                    or anizp_ep.get("title", {}).get("en")
+                    or anizp_ep.get("title", {}).get("x-jat")
+                    or f"Episode {ep_num}"
+                )
+                released = attrs.get("airdate") or anizp_ep.get("airdate")
+                overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
+                thumbnail = (
+                    anizp_ep.get("image")
+                    or (attrs.get("thumbnail") or {}).get("original")
+                    or (attrs.get("thumbnail") or {}).get("large")
+                    or background
+                )
+
+            # Check filler status
+            is_filler = False
+            if mal_id and show_filler_tags:
+                from app.services.db import get_jikan_filler_cache
+
+                cached = get_jikan_filler_cache(mal_id, ep_num)
+                if cached is not None:
+                    is_filler = cached
+                else:
+                    from app.routes.catalog import background_fetch_and_cache_filler, currently_fetching_pairs
+
+                    pair = (str(mal_id), ep_num)
+                    if pair not in currently_fetching_pairs:
+                        currently_fetching_pairs.add(pair)
+                        if loop and loop.is_running():
+                            try:
+                                asyncio.run_coroutine_threadsafe(
+                                    background_fetch_and_cache_filler(mal_id, ep_num), loop
+                                )
+                            except Exception:
+                                pass
+
+            if is_filler:
+                ep_title = f"[Filler] {ep_title}"
+            if show_watched_tags and ep_num <= watched_progress:
+                ep_title = f"[Watched] {ep_title}"
+
+            released_str = None
+            if released and isinstance(released, str) and released.strip():
+                released = released.strip()
+                if "T" not in released:
+                    released_str = released + "T00:00:00Z"
+                else:
+                    released_str = released
+
+            videos.append(
+                {
+                    "id": f"{video_base}:{ep_num}",
+                    "title": ep_title,
+                    "episode": ep_num,
+                    "season": 1,
+                    "released": released_str,
+                    "overview": overview,
+                    "thumbnail": thumbnail,
+                }
+            )
 
     genres = ["Anime"]
     if cinemeta_data and cinemeta_data.get("genres"):
