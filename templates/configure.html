@@ -670,16 +670,18 @@
                     style="display: none; border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
                     class="mb-3">
                     <div class="form-check form-switch mb-0">
+                        {% set p_prov = user.get('poster_provider', 'none') %}
+                        {% set is_p_valid = (p_prov == 'none' or p_prov == 'btttr' or p_prov == 'betterposters' or (p_prov == 'rpdb' and user.get('rpdb_api_key')) or ((p_prov == 'top_poster' or p_prov == 'topposters') and user.get('top_poster_key')) or (p_prov == 'custom' and user.get('custom_poster_pattern'))) %}
                         <input class="form-check-input" type="checkbox" role="switch" id="rpdb_in_search"
-                            {% if user.get('rpdb_in_search', True) and user.get('rpdb_api_key') %}checked{% endif %}
-                            {% if not user.get('rpdb_api_key') %}disabled{% endif %}>
+                            {% if user.get('rpdb_in_search', True) and is_p_valid %}checked{% endif %}
+                            {% if not is_p_valid %}disabled{% endif %}>
                         <label class="form-check-label ms-1" for="rpdb_in_search">
-                            <span class="fw-medium d-block">Enable RPDB posters in Search Catalog</span>
+                            <span class="fw-medium d-block">Enable Poster Art Provider in Search Catalog</span>
                             <span class="text-secondary small d-block">
-                                Replace standard anime posters with RPDB rating posters in search results.
+                                Replace standard anime posters with your selected Poster Art Provider (BetterPosters, RPDB, TOP Posters, or Custom) in search results.
                             </span>
-                            <span id="rpdb-search-warning-text" class="text-warning small d-block mt-1 fw-medium {% if user.get('rpdb_api_key') %}d-none{% endif %}">
-                                <i class="fa-solid fa-circle-info me-1"></i>Provide a valid RPDB API key to enable rating posters.
+                            <span id="rpdb-search-warning-text" class="text-warning small d-block mt-1 fw-medium {% if is_p_valid %}d-none{% endif %}">
+                                <i class="fa-solid fa-circle-info me-1"></i>Provide a valid API key or pattern for your selected poster provider to enable rating posters.
                             </span>
                         </label>
                     </div>
@@ -1441,6 +1443,7 @@
             if (rpdbContainer) rpdbContainer.classList.toggle("d-none", val !== "rpdb");
             if (topContainer) topContainer.classList.toggle("d-none", val !== "top_poster");
             if (customContainer) customContainer.classList.toggle("d-none", val !== "custom");
+            if (typeof syncRpdbSearchState === "function") syncRpdbSearchState();
         }
         syncPosterProviderFields();
 
@@ -1784,12 +1787,23 @@
 
         function syncRpdbSearchState() {
             if (!rpdbInSearchCheckbox) return;
-            const hasRpdbKey = rpdbKeyEl && rpdbKeyEl.value.trim() !== "";
-            const isValid = hasRpdbKey && isRpdbKeyValid;
+            const providerInput = document.getElementById("poster_provider");
+            const provider = providerInput ? providerInput.value : "none";
+
+            let isValid = true;
+            if (provider === "rpdb") {
+                const hasRpdbKey = rpdbKeyEl && rpdbKeyEl.value.trim() !== "";
+                isValid = hasRpdbKey && isRpdbKeyValid;
+            } else if (provider === "top_poster" || provider === "topposters") {
+                const topKeyEl = document.getElementById("top_poster_key");
+                isValid = topKeyEl && topKeyEl.value.trim() !== "";
+            } else if (provider === "custom") {
+                const customPatternEl = document.getElementById("custom_poster_pattern");
+                isValid = customPatternEl && customPatternEl.value.trim() !== "";
+            }
 
             if (isValid) {
                 if (rpdbInSearchCheckbox.disabled) {
-                    // It was disabled, now enabling it
                     const rpdbVal = document.getElementById("rpdb_in_search_val");
                     if (rpdbVal && rpdbVal.value !== "false") {
                         rpdbInSearchCheckbox.checked = true;
@@ -1822,6 +1836,14 @@
                 isRpdbKeyValid = rpdbKeyEl.value.trim() !== "";
                 toggleSearchDependents();
             });
+        }
+        const topKeyEl = document.getElementById("top_poster_key");
+        if (topKeyEl) {
+            topKeyEl.addEventListener("input", toggleSearchDependents);
+        }
+        const customPatternEl = document.getElementById("custom_poster_pattern");
+        if (customPatternEl) {
+            customPatternEl.addEventListener("input", toggleSearchDependents);
         }
         toggleSearchDependents(); // Run on initial load
 
