@@ -979,9 +979,7 @@
                     <div class="custom-select-wrapper" data-input-id="title_language">
                         <div class="custom-select">
                             <span class="custom-select-text d-flex align-items-center">
-                                {% if user.get('title_language', 'english') == 'default' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-globe" style="font-size:10px;"></i></span>Default / Canonical
-                                {% elif user.get('title_language', 'english') == 'romaji' %}
+                                {% if user.get('title_language', 'english') == 'romaji' %}
                                     <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
                                 {% elif user.get('title_language', 'english') == 'japanese' %}
                                     <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
@@ -994,9 +992,6 @@
                         <div class="custom-options-menu">
                             <div class="custom-option-item d-flex align-items-center" data-value="english">
                                 <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="default">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-globe" style="font-size:10px;"></i></span>Default / Canonical
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="romaji">
                                 <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
