@@ -667,7 +667,7 @@
 
                 <!-- Search Sub-Options (only visible when enabled) -->
                 <div id="search-options-container"
-                    style="display: none; border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
+                    style="{% if not user.get('enable_search', True) %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
                     class="mb-3">
                     <div class="form-check form-switch mb-0">
                         {% set p_prov = user.get('poster_provider', 'none') %}
