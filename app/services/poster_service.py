@@ -21,6 +21,26 @@ async def validate_rpdb_api_key(api_key: str) -> bool:
         return False
 
 
+async def validate_top_poster_api_key(api_key: str) -> bool:
+    """
+    Validate the TOP Posters API key by querying the /isValid endpoint.
+    """
+    if not api_key:
+        return False
+    url = f"https://topposters.com/api/{api_key}/isValid"
+    try:
+        client = get_client()
+        resp = await client.get(url, timeout=8)
+        if resp.status_code == 200:
+            return True
+        url_alt = f"https://topposters.com/api/{api_key}/imdb/poster-default/tt0111161.jpg"
+        resp_alt = await client.get(url_alt, timeout=8)
+        return resp_alt.status_code in [200, 302, 307]
+    except Exception as e:
+        logging.error("Failed to validate TOP Posters API key: %s", e)
+        return False
+
+
 async def background_resolve_external_ids(
     kitsu_id: str | None = None, mal_id: str | None = None, anilist_id: str | None = None
 ):

@@ -1094,8 +1094,28 @@
                             <input type="password" id="top_poster_key" name="top_poster_key" class="gemini-input"
                                 value="{{ user.get('top_poster_key', '') }}"
                                 placeholder="Paste your TOP Posters API key here">
+                            <button type="button" class="gemini-btn" id="toggle-top-visibility"
+                                style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                            <button type="button" class="gemini-btn p-0" id="validate-top-btn" title="Validate Key">
+                                <i id="top-check-icon"
+                                    class="fa-solid {% if user.get('top_poster_key') %}{% if user.get('top_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                    style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                            </button>
                         </div>
-                        <div class="d-flex justify-content-end align-items-center mt-2">
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span id="top-validation-status" class="small {% if user.get('top_poster_key') %}{% if user.get('top_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                {% if user.get('top_poster_key') %}
+                                    {% if user.get('top_key_valid') == False %}
+                                        Invalid or Expired API Key
+                                    {% else %}
+                                        API key verified ✓
+                                    {% endif %}
+                                {% else %}
+                                    Not verified
+                                {% endif %}
+                            </span>
                             <a href="https://top-posters.com/" target="_blank"
                                 class="small text-info text-decoration-none" style="font-size:0.75rem;">
                                 Get TOP Posters API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
@@ -1503,6 +1523,28 @@
                                 isRpdbKeyValid = false;
                             }
                             syncRpdbSearchState();
+                        }
+
+                        // Update TOP Posters status dynamically
+                        const topKeyVal = document.getElementById("top_poster_key").value.trim();
+                        const topCheckIcon = document.getElementById("top-check-icon");
+                        const topStatusSpan = document.getElementById("top-validation-status");
+                        if (topCheckIcon && topStatusSpan) {
+                            if (topKeyVal) {
+                                if (result.top_valid) {
+                                    topCheckIcon.className = "fa-solid fa-circle-check text-success";
+                                    topStatusSpan.className = "small text-success fw-medium";
+                                    topStatusSpan.textContent = "API key verified ✓";
+                                } else {
+                                    topCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                                    topStatusSpan.className = "small text-danger";
+                                    topStatusSpan.textContent = "Invalid or Expired API Key";
+                                }
+                            } else {
+                                topCheckIcon.className = "fa-solid fa-circle-check text-secondary";
+                                topStatusSpan.className = "small text-secondary";
+                                topStatusSpan.textContent = "Not verified";
+                            }
                         }
 
                         // Update Gemini status dynamically
@@ -2034,6 +2076,64 @@
                 } finally {
                     validateRpdbBtn.disabled = false;
                     syncRpdbSearchState();
+                }
+            });
+        }
+
+        const topKeyInput = document.getElementById("top_poster_key");
+        const toggleTopBtn = document.getElementById("toggle-top-visibility");
+        if (topKeyInput && toggleTopBtn) {
+            toggleTopBtn.addEventListener("click", function () {
+                if (topKeyInput.type === "password") {
+                    topKeyInput.type = "text";
+                    toggleTopBtn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+                } else {
+                    topKeyInput.type = "password";
+                    toggleTopBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+                }
+            });
+        }
+
+        const validateTopBtn = document.getElementById("validate-top-btn");
+        const topCheckIcon = document.getElementById("top-check-icon");
+        const topStatusSpan = document.getElementById("top-validation-status");
+        if (validateTopBtn && topCheckIcon && topStatusSpan && topKeyInput) {
+            validateTopBtn.addEventListener("click", async function () {
+                const apiKey = topKeyInput.value.trim();
+                if (!apiKey) {
+                    topStatusSpan.textContent = "Key cannot be empty";
+                    topStatusSpan.className = "small text-danger";
+                    topCheckIcon.className = "fa-solid fa-circle-check text-danger";
+                    return;
+                }
+                topStatusSpan.textContent = "Verifying...";
+                topStatusSpan.className = "small text-info";
+                topCheckIcon.className = "fa-solid fa-circle-notch fa-spin text-info";
+                validateTopBtn.disabled = true;
+                try {
+                    const response = await fetch("/top_poster/validation", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ api_key: apiKey })
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.status === "success") {
+                        topStatusSpan.textContent = result.message;
+                        topStatusSpan.className = "small text-success fw-semibold";
+                        topCheckIcon.className = "fa-solid fa-circle-check text-success";
+                    } else {
+                        topStatusSpan.textContent = result.message || "Invalid API key";
+                        topStatusSpan.className = "small text-danger";
+                        topCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                    }
+                } catch (err) {
+                    topStatusSpan.textContent = "Verification failed";
+                    topStatusSpan.className = "small text-danger";
+                    topCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                } finally {
+                    validateTopBtn.disabled = false;
                 }
             });
         }
