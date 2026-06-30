@@ -702,7 +702,7 @@
 
                 <!-- Watchlist Sub-Options (only visible when enabled) -->
                 <div id="watchlist-options-container"
-                    style="display: none; border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
+                    style="{% if not user.get('enable_catalogs', True) or user.get('is_guest') %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
                     class="mb-3">
 
                     <div class="form-check form-switch mb-3">
@@ -768,7 +768,7 @@
                     </div>
 
                     <!-- Custom Sorting Options Sub-Container -->
-                    <div id="custom-sorting-container" style="display: none;" class="mb-3 ps-0 ps-sm-3">
+                    <div id="custom-sorting-container" style="{% if not user.get('custom_sort_enabled', False) %}display: none;{% endif %}" class="mb-3 ps-0 ps-sm-3">
                         <p class="text-secondary small mb-3">Set your sorting preference for each watchlist category:</p>
 
                         <!-- Watching Sort -->
@@ -955,7 +955,7 @@
 
                 <!-- Sub-toggle for shuffling -->
                 <div id="discovery-sub-options"
-                    style="display: none; border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
+                    style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
                     class="mb-3">
                     <div class="form-check form-switch mb-0">
                         <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {% if
@@ -1159,7 +1159,7 @@
 
                 <!-- Recommendations Sub-Options (only visible when enabled) -->
                 <div id="recommendations-options"
-                    style="display: none; border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
+                    style="{% if not user.get('enable_recommendations', True) or user.get('is_guest') %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
                     class="mb-3">
 
                     <div class="form-check form-switch mb-3">
@@ -1817,15 +1817,13 @@
         }
 
         const enableSearchCheckbox = document.getElementById("enable_search");
-        const searchOptionsContainer = document.getElementById("search-options-container");
-        const rpdbKeyEl = document.getElementById("rpdb_api_key");
-        const rpdbInSearchCheckbox = document.getElementById("rpdb_in_search");
-        const rpdbSearchWarningText = document.getElementById("rpdb-search-warning-text");
-
         let isRpdbKeyValid = "{{ user.get('rpdb_key_valid') }}" !== "False" && "{{ user.get('rpdb_api_key', '') }}" !== "";
 
         function syncRpdbSearchState() {
+            const rpdbInSearchCheckbox = document.getElementById("rpdb_in_search");
             if (!rpdbInSearchCheckbox) return;
+            const rpdbKeyEl = document.getElementById("rpdb_api_key");
+            const rpdbSearchWarningText = document.getElementById("rpdb-search-warning-text");
             const providerInput = document.getElementById("poster_provider");
             const provider = providerInput ? providerInput.value : "none";
 
@@ -1842,14 +1840,6 @@
             }
 
             if (isValid) {
-                if (rpdbInSearchCheckbox.disabled) {
-                    const rpdbVal = document.getElementById("rpdb_in_search_val");
-                    if (rpdbVal && rpdbVal.value !== "false") {
-                        rpdbInSearchCheckbox.checked = true;
-                    } else if (!rpdbVal) {
-                        rpdbInSearchCheckbox.checked = true;
-                    }
-                }
                 rpdbInSearchCheckbox.disabled = false;
                 if (rpdbSearchWarningText) rpdbSearchWarningText.classList.add("d-none");
             } else {
@@ -1860,6 +1850,8 @@
         }
 
         function toggleSearchDependents() {
+            const enableSearchCheckbox = document.getElementById("enable_search");
+            const searchOptionsContainer = document.getElementById("search-options-container");
             const enableSearch = enableSearchCheckbox && enableSearchCheckbox.checked;
             if (searchOptionsContainer) {
                 searchOptionsContainer.style.display = enableSearch ? "block" : "none";
