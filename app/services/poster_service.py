@@ -257,6 +257,9 @@ def get_rpdb_poster_url(
     if not provider:
         provider = "rpdb" if user.get("rpdb_api_key") else "none"
 
+    if provider in ["topposters", "top_poster"]:
+        provider = "top_poster"
+
     if provider == "none":
         return fallback_poster
 
@@ -278,6 +281,8 @@ def get_rpdb_poster_url(
 
     elif provider == "top_poster":
         if not top_key:
+            return fallback_poster
+        if user.get("top_key_valid") is False:
             return fallback_poster
 
     elif provider == "custom":
@@ -394,12 +399,7 @@ def get_rpdb_poster_url(
         return fallback_poster
 
     # Provider specific URL generation
-    if provider == "btttr":
-        if imdb_id:
-            return f"https://btttr.cc/poster/imdb/poster-default/{imdb_id}.jpg"
-        return fallback_poster
-
-    elif provider == "custom":
+    if provider == "custom":
         try:
             # Substitute placeholders
             url = custom_pattern
