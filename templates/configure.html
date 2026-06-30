@@ -1021,7 +1021,7 @@
                                 {% elif current_provider == 'top_poster' or current_provider == 'topposters' %}
                                     <img src="/assets/topposters_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP Posters
                                 {% elif current_provider == 'custom' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#8b5cf6; border-radius:4px; font-size:10px;"><i class="fa-solid fa-code" style="font-size:9px;"></i></span>Custom
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:4px; font-size:10px;"><i class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
                                 {% else %}
                                     <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
                                 {% endif %}
@@ -1039,7 +1039,7 @@
                                 <img src="/assets/topposters_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP Posters
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="custom">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#8b5cf6; border-radius:4px; font-size:10px;"><i class="fa-solid fa-code" style="font-size:9px;"></i></span>Custom
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:4px; font-size:10px;"><i class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
                             </div>
                         </div>
                     </div>
@@ -1123,13 +1123,19 @@
                     <div id="custom-pattern-container" class="poster-provider-field mt-3 {% if current_provider != 'custom' %}d-none{% endif %}">
                         <label class="rec-label mb-2 small text-secondary">Custom Poster URL Pattern</label>
                         <div class="gemini-input-wrapper position-relative">
-                            <i class="fa-solid fa-code gemini-icon" style="color: #a855f7;"></i>
+                            <i class="fa-solid fa-link gemini-icon" style="color: #f59e0b;"></i>
                             <input type="text" id="custom_poster_pattern" name="custom_poster_pattern" class="gemini-input"
                                 value="{{ user.get('custom_poster_pattern', '') }}"
                                 placeholder="https://domain.com/poster/{imdb_id}.jpg">
                         </div>
                         <p class="text-secondary small mt-2 mb-0" style="font-size: 0.75rem; line-height: 1.4;">
-                            Supported placeholders: <code style="color: #a855f7;">{imdb_id}</code>, <code style="color: #a855f7;">{mal_id}</code>, <code style="color: #a855f7;">{kitsu_id}</code>, <code style="color: #a855f7;">{anilist_id}</code>, <code style="color: #a855f7;">{tmdb_id}</code>, <code style="color: #a855f7;">{tvdb_id}</code>
+                            Supported placeholders: 
+                            <code style="color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 0.15rem 0.4rem; border-radius: 4px; font-family: inherit; font-size: 0.73rem;">{imdb_id}</code>, 
+                            <code style="color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 0.15rem 0.4rem; border-radius: 4px; font-family: inherit; font-size: 0.73rem;">{mal_id}</code>, 
+                            <code style="color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 0.15rem 0.4rem; border-radius: 4px; font-family: inherit; font-size: 0.73rem;">{kitsu_id}</code>, 
+                            <code style="color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 0.15rem 0.4rem; border-radius: 4px; font-family: inherit; font-size: 0.73rem;">{anilist_id}</code>, 
+                            <code style="color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 0.15rem 0.4rem; border-radius: 4px; font-family: inherit; font-size: 0.73rem;">{tmdb_id}</code>, 
+                            <code style="color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 0.15rem 0.4rem; border-radius: 4px; font-family: inherit; font-size: 0.73rem;">{tvdb_id}</code>
                         </p>
                     </div>
                 </div>
