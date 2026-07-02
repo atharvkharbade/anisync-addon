@@ -682,7 +682,20 @@
                             <span id="combine-warning-text" class="text-warning small d-block mt-1 fw-medium d-none">
                                 <i class="fa-solid fa-circle-info me-1"></i>Connect at least two of MyAnimeList, AniList, or Simkl to enable watchlist combining.
                             </span>
-                        </label>
+                    </div>
+
+                    <div class="mb-4 mt-3" style="max-width: 400px;">
+                        <label class="form-label fw-medium d-block mb-1" for="title_language">Catalog Title Language</label>
+                        <span class="text-secondary small d-block mb-2">
+                            Choose your preferred language for anime titles in catalogs and detail pages.
+                            <span class="text-warning small d-block mt-1"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</span>
+                        </span>
+                        <select class="rec-select" id="title_language" name="title_language">
+                            <option value="english" {% if user.get('title_language', 'english') == 'english' %}selected{% endif %}>English (Default)</option>
+                            <option value="default" {% if user.get('title_language') == 'default' %}selected{% endif %}>Default / Canonical</option>
+                            <option value="romaji" {% if user.get('title_language') == 'romaji' %}selected{% endif %}>Romaji</option>
+                            <option value="japanese" {% if user.get('title_language') == 'japanese' %}selected{% endif %}>Japanese</option>
+                        </select>
                     </div>
 
                     <!-- Custom Watchlist Sorting Toggle -->

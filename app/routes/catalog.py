@@ -41,6 +41,45 @@ def parse_iso_timestamp(ts_str: str) -> int:
 
 
 
+def get_anilist_title(title_obj: dict, title_lang: str) -> str:
+    if not title_obj:
+        return "Unknown"
+    if title_lang == "english":
+        return title_obj.get("english") or title_obj.get("userPreferred") or title_obj.get("romaji") or "Unknown"
+    elif title_lang == "romaji":
+        return title_obj.get("romaji") or title_obj.get("userPreferred") or title_obj.get("english") or "Unknown"
+    elif title_lang == "japanese":
+        return title_obj.get("native") or title_obj.get("romaji") or title_obj.get("userPreferred") or "Unknown"
+    else:  # default / canonical
+        return title_obj.get("userPreferred") or title_obj.get("english") or title_obj.get("romaji") or "Unknown"
+
+
+def get_kitsu_title(attrs: dict, title_lang: str) -> str:
+    if not attrs:
+        return "Unknown"
+    titles = attrs.get("titles", {})
+    if title_lang == "english":
+        return titles.get("en") or titles.get("en_us") or attrs.get("canonicalTitle") or titles.get("en_jp") or "Unknown"
+    elif title_lang == "romaji":
+        return titles.get("en_jp") or attrs.get("canonicalTitle") or titles.get("en") or "Unknown"
+    elif title_lang == "japanese":
+        return titles.get("ja_jp") or titles.get("en_jp") or attrs.get("canonicalTitle") or "Unknown"
+    else:  # default / canonical
+        return attrs.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown"
+
+
+def get_mal_title(node: dict, title_lang: str) -> str:
+    if not node:
+        return ""
+    alt_titles = node.get("alternative_titles", {})
+    if title_lang == "english":
+        return alt_titles.get("en") or node.get("title") or ""
+    elif title_lang == "japanese":
+        return alt_titles.get("ja") or node.get("title") or ""
+    else:  # romaji or default
+        return node.get("title") or ""
+
+
 async def get_cached_mal_user_anime_list(user_id: str, token: str, status: str) -> list:
     from app.services.db import db
 
@@ -609,9 +648,18 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
 
     from app.services.rpdb import get_rpdb_poster_url
 
+    title_lang = user.get("title_language", "english") if user else "english"
     formatted_metas = []
     for m in metas_list:
         m_copy = m.copy()
+        if "title_obj" in m_copy:
+            t_obj = m_copy["title_obj"]
+            if t_obj:
+                if "canonicalTitle" in t_obj or "titles" in t_obj:
+                    m_copy["name"] = get_kitsu_title(t_obj, title_lang)
+                else:
+                    m_copy["name"] = get_anilist_title(t_obj, title_lang)
+
         item_type = m_copy.get("type")
         if item_type not in ["series", "movie"]:
             if item_type in custom_types_map:
@@ -827,6 +875,7 @@ async def update_discovery_catalogs_cache() -> dict:
                 "id": stremio_id,
                 "type": item_type,
                 "name": name,
+                "title_obj": title_pref,
                 "poster": poster,
                 "description": desc
             })
@@ -900,6 +949,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
     if not user:
         logging.warning("Catalog request: Unknown user_id=%s", user_id)
         return await respond_with({"metas": []})
+
+    title_lang = user.get("title_language", "english")
 
     from app.services.db import is_anilist_in_cooldown
     if is_anilist_in_cooldown(user):
@@ -988,7 +1039,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     item_type = "movie" if subtype == "movie" else "series"
 
                     titles = attrs.get("titles", {})
-                    title = attrs.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown"
+                    title_lang = user.get("title_language", "english")
+                    title = get_kitsu_title(attrs, title_lang)
+                    title_obj = {
+                        "canonicalTitle": attrs.get("canonicalTitle"),
+                        "titles": titles
+                    }
                     poster = (
                         attrs.get("posterImage", {}).get("large")
                         or attrs.get("posterImage", {}).get("medium")
@@ -1003,6 +1059,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             "id": f"kitsu:{item['id']}",
                             "type": item_type,
                             "name": title,
+                            "title_obj": title_obj,
                             "poster": poster,
                             "description": synopsis[:200] + "..." if len(synopsis) > 200 else synopsis,
                         }
@@ -1649,7 +1706,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     media = item["anilist_item"]["media"]
                     progress = item["anilist_item"].get("progress", 0)
                     total_eps = media.get("episodes") or "?"
-                    name = media["title"]["userPreferred"] or media["title"]["english"] or ""
+                    name = get_anilist_title(media.get("title"), title_lang)
                     poster = (
                         (media.get("coverImage") or {}).get("large")
                         or (media.get("coverImage") or {}).get("medium")
@@ -1662,7 +1719,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     node = item["mal_item"]["node"]
                     progress = max(progress, node.get("my_list_status", {}).get("num_episodes_watched", 0))
                     total_eps = node.get("num_episodes") or "?"
-                    name = node.get("title", "")
+                    name = get_mal_title(node, title_lang)
                     poster = (
                         poster
                         or node.get("main_picture", {}).get("large")
@@ -2227,7 +2284,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     else (False, False, 0, 0, False)
                 )
 
-                name = node.get("title", "")
+                name = get_mal_title(node, title_lang)
 
                 poster = node.get("main_picture", {}).get("large") or node.get("main_picture", {}).get("medium") or ""
 
@@ -2451,7 +2508,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if anilist_status in ["CURRENT", "PLANNING"]:
                     is_new_ep, _, _, _ = compute_al_flags(entry)
 
-                name = media["title"]["userPreferred"] or media["title"]["english"] or ""
+                name = get_anilist_title(media.get("title"), title_lang)
 
                 poster = (media["coverImage"] or {}).get("large") or (media["coverImage"] or {}).get("medium") or ""
 

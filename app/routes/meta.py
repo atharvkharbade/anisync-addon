@@ -90,6 +90,7 @@ def map_kitsu_to_stremio(
     cinemeta_data: dict = None,
     show_watched_tags: bool = False,
     watched_progress: int = 0,
+    title_language: str = "english",
 ) -> dict:
     data = kitsu_data.get("data", {})
     if not data:
@@ -99,7 +100,15 @@ def map_kitsu_to_stremio(
 
     attributes = data.get("attributes", {})
     titles = attributes.get("titles", {})
-    title = attributes.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown Title"
+    
+    if title_language == "english":
+        title = titles.get("en") or titles.get("en_us") or attributes.get("canonicalTitle") or titles.get("en_jp") or "Unknown Title"
+    elif title_language == "romaji":
+        title = titles.get("en_jp") or attributes.get("canonicalTitle") or titles.get("en") or "Unknown Title"
+    elif title_language == "japanese":
+        title = titles.get("ja_jp") or titles.get("en_jp") or attributes.get("canonicalTitle") or "Unknown Title"
+    else:  # default / canonical
+        title = attributes.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown Title"
     synopsis = attributes.get("synopsis", "")
     anizp_images = anizp_data.get("images", []) if anizp_data else []
     anizp_fanart = None
@@ -210,12 +219,34 @@ def map_kitsu_to_stremio(
             # Extract attributes from Kitsu episode if available
             attrs = kitsu_ep.get("attributes", {}) if kitsu_ep else {}
 
-            ep_title = (
-                attrs.get("canonicalTitle")
-                or anizp_ep.get("title", {}).get("en")
-                or anizp_ep.get("title", {}).get("x-jat")
-                or f"Episode {ep_num}"
-            )
+            if title_language == "english":
+                ep_title = (
+                    anizp_ep.get("title", {}).get("en")
+                    or attrs.get("canonicalTitle")
+                    or anizp_ep.get("title", {}).get("x-jat")
+                    or f"Episode {ep_num}"
+                )
+            elif title_language == "romaji":
+                ep_title = (
+                    anizp_ep.get("title", {}).get("x-jat")
+                    or attrs.get("canonicalTitle")
+                    or anizp_ep.get("title", {}).get("en")
+                    or f"Episode {ep_num}"
+                )
+            elif title_language == "japanese":
+                ep_title = (
+                    anizp_ep.get("title", {}).get("ja")
+                    or anizp_ep.get("title", {}).get("x-jat")
+                    or attrs.get("canonicalTitle")
+                    or f"Episode {ep_num}"
+                )
+            else:  # default / canonical
+                ep_title = (
+                    attrs.get("canonicalTitle")
+                    or anizp_ep.get("title", {}).get("en")
+                    or anizp_ep.get("title", {}).get("x-jat")
+                    or f"Episode {ep_num}"
+                )
             released = attrs.get("airdate") or anizp_ep.get("airdate")
             overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
             thumbnail = (
@@ -402,6 +433,8 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
             watched_progress = get_user_watch_progress(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
 
+        title_lang = user.get("title_language", "english") if user else "english"
+
         # Offload CPU-bound mapping to worker threads
         run_loop = asyncio.get_running_loop()
         meta = await asyncio.to_thread(
@@ -415,6 +448,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             cinemeta_data=cinemeta_data,
             show_watched_tags=show_watched,
             watched_progress=watched_progress,
+            title_language=title_lang,
         )
 
         # Look up description in recommendations cache to retain the trace prefix

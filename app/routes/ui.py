@@ -202,6 +202,9 @@ async def configure(user_id: str = ""):
             except (ValueError, TypeError):
                 user["new_episode_interval"] = 24
 
+        if "title_language" in form:
+            user["title_language"] = form.get("title_language", "english")
+
         # Save visible catalogs selection list in custom sorted order
         if "sorted_catalogs" in form:
             sorted_input = form.get("sorted_catalogs") or ""
