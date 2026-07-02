@@ -312,6 +312,15 @@
         color: #fff !important;
     }
 
+    .nested-subcard {
+        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        padding: 1rem 1.15rem;
+        margin-top: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
     /* Custom Dropdown select menu styling */
     .custom-select-wrapper {
         position: relative;
@@ -707,9 +716,8 @@
                 </div>
 
                 <!-- Search Sub-Options (only visible when enabled) -->
-                <div id="search-options-container"
-                    style="{% if not user.get('enable_search', True) %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
-                    class="mb-3">
+                <div id="search-options-container" class="nested-subcard"
+                    style="{% if not user.get('enable_search', True) %}display: none;{% endif %}">
                     <div class="form-check form-switch mb-0">
                         {% set p_prov = user.get('poster_provider', 'none') %}
                         {% set is_p_valid = (p_prov == 'none' or (p_prov == 'rpdb' and user.get('rpdb_api_key')) or
@@ -749,9 +757,8 @@
                 </div>
 
                 <!-- Watchlist Sub-Options (only visible when enabled) -->
-                <div id="watchlist-options-container"
-                    style="{% if not user.get('enable_catalogs', True) or user.get('is_guest') %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
-                    class="mb-3">
+                <div id="watchlist-options-container" class="nested-subcard"
+                    style="{% if not user.get('enable_catalogs', True) or user.get('is_guest') %}display: none;{% endif %}">
 
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="sort_by_new_episodes" {% if
@@ -1083,9 +1090,8 @@
                 </div>
 
                 <!-- Sub-toggle for shuffling -->
-                <div id="discovery-sub-options"
-                    style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
-                    class="mb-3">
+                <div id="discovery-sub-options" class="nested-subcard"
+                    style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %}">
                     <div class="form-check form-switch mb-0">
                         <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {%
                             if user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
@@ -1338,9 +1344,8 @@
                     </div>
 
                     <!-- Recommendations Sub-Options (only visible when enabled) -->
-                    <div id="recommendations-options"
-                        style="{% if not user.get('enable_recommendations', True) or user.get('is_guest') %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
-                        class="mb-3">
+                    <div id="recommendations-options" class="nested-subcard"
+                        style="{% if not user.get('enable_recommendations', True) or user.get('is_guest') %}display: none;{% endif %}">
 
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" role="switch"
