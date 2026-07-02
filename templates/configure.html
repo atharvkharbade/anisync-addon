@@ -682,20 +682,7 @@
                             <span id="combine-warning-text" class="text-warning small d-block mt-1 fw-medium d-none">
                                 <i class="fa-solid fa-circle-info me-1"></i>Connect at least two of MyAnimeList, AniList, or Simkl to enable watchlist combining.
                             </span>
-                    </div>
-
-                    <div class="mb-4 mt-3" style="max-width: 400px;">
-                        <label class="form-label fw-medium d-block mb-1" for="title_language">Catalog Title Language</label>
-                        <span class="text-secondary small d-block mb-2">
-                            Choose your preferred language for anime titles in catalogs and detail pages.
-                            <span class="text-warning small d-block mt-1"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</span>
-                        </span>
-                        <select class="rec-select" id="title_language" name="title_language">
-                            <option value="english" {% if user.get('title_language', 'english') == 'english' %}selected{% endif %}>English (Default)</option>
-                            <option value="default" {% if user.get('title_language') == 'default' %}selected{% endif %}>Default / Canonical</option>
-                            <option value="romaji" {% if user.get('title_language') == 'romaji' %}selected{% endif %}>Romaji</option>
-                            <option value="japanese" {% if user.get('title_language') == 'japanese' %}selected{% endif %}>Japanese</option>
-                        </select>
+                        </label>
                     </div>
 
                     <!-- Custom Watchlist Sorting Toggle -->
@@ -909,6 +896,28 @@
                                 Randomly shuffle the order of discovery catalogs on every reload.
                             </span>
                         </label>
+                    </div>
+                </div>
+
+                <!-- Catalog Title Language Preference -->
+                <div class="mb-4 mt-3" style="max-width: 400px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
+                    <label class="rec-label mb-2"><i class="fa-solid fa-language text-warning me-2"></i>Catalog Title Language</label>
+                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                        Choose your preferred language for anime titles in catalogs and detail pages.
+                        <span class="text-warning-emphasis d-block mt-1" style="color: #e0a92e !important;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</span>
+                    </p>
+                    <input type="hidden" id="title_language" name="title_language" value="{{ user.get('title_language', 'english') }}">
+                    <div class="custom-select-wrapper" data-input-id="title_language">
+                        <div class="custom-select">
+                            <span class="custom-select-text">English (Default)</span>
+                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                        </div>
+                        <div class="custom-options-menu">
+                            <div class="custom-option-item" data-value="english">English (Default)</div>
+                            <div class="custom-option-item" data-value="default">Default / Canonical</div>
+                            <div class="custom-option-item" data-value="romaji">Romaji</div>
+                            <div class="custom-option-item" data-value="japanese">Japanese</div>
+                        </div>
                     </div>
                 </div>
 
