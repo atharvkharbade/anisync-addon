@@ -20,11 +20,23 @@
         color: #ffffff;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
+    .how-it-works-box {
+        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    @media (max-width: 576px) {
+        .how-it-works-box {
+            background: transparent;
+            border: none;
+            padding-left: 0.25rem !important;
+            padding-right: 0.25rem !important;
+        }
+    }
 </style>
 
 <div class="row justify-content-center mt-2 mt-sm-4">
     <div class="col-12 col-sm-10 col-md-8 col-lg-6">
-        <div class="card-dark p-4 p-sm-5 text-center">
+        <div class="card-dark p-3.5 p-sm-5 text-center">
             <!-- Glowing Brand Logo -->
             <div class="mb-3 d-inline-block">
                 <svg width="76" height="76" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 24px rgba(2, 169, 255, 0.35));">
@@ -51,31 +63,31 @@
             </div>
 
             <h1 class="fw-bold mb-2 fs-3 fs-sm-1" style="letter-spacing: -0.02em;">AniSync</h1>
-            <p class="text-secondary mb-4" style="font-size:1rem; line-height: 1.6;">
+            <p class="text-secondary mb-4" style="font-size:0.98rem; line-height: 1.5;">
                 Sync your watch progress automatically to <strong class="text-white">MyAnimeList</strong>, <strong class="text-white">AniList</strong>, and <strong class="text-white">Simkl</strong>.
             </p>
 
             <!-- How It Works Inset Card -->
-            <div class="text-start mb-4 p-3.5 p-sm-4 rounded-3" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+            <div class="how-it-works-box text-start mb-4 p-3.5 p-sm-4 rounded-3">
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <i class="fa-solid fa-circle-play text-info fs-6"></i>
                     <h6 class="fw-semibold text-white mb-0 text-uppercase" style="letter-spacing:.06em; font-size: 0.85rem;">How it works</h6>
                 </div>
-                <div class="d-flex flex-column gap-2" style="font-size: 0.9rem;">
-                    <div class="d-flex align-items-center gap-2.5">
-                        <i class="fa-solid fa-plug-circle-check text-success fs-6" style="width: 22px; text-align: center;"></i>
+                <div class="d-flex flex-column gap-2.5" style="font-size: 0.9rem;">
+                    <div class="d-flex align-items-start gap-2.5">
+                        <i class="fa-solid fa-plug-circle-check text-success fs-6 mt-1" style="width: 20px; flex-shrink: 0; text-align: center;"></i>
                         <span class="text-light">Connect your MyAnimeList, AniList, or Simkl accounts</span>
                     </div>
-                    <div class="d-flex align-items-center gap-2.5">
-                        <i class="fa-solid fa-link text-warning fs-6" style="width: 22px; text-align: center;"></i>
+                    <div class="d-flex align-items-start gap-2.5">
+                        <i class="fa-solid fa-link text-warning fs-6 mt-1" style="width: 20px; flex-shrink: 0; text-align: center;"></i>
                         <span class="text-light">Install the manifest URL into your Stremio app</span>
                     </div>
-                    <div class="d-flex align-items-center gap-2.5">
-                        <i class="fa-solid fa-film text-info fs-6" style="width: 22px; text-align: center;"></i>
+                    <div class="d-flex align-items-start gap-2.5">
+                        <i class="fa-solid fa-film text-info fs-6 mt-1" style="width: 20px; flex-shrink: 0; text-align: center;"></i>
                         <span class="text-light">Stream via built-in catalog search or external Anime Kitsu addon</span>
                     </div>
-                    <div class="d-flex align-items-center gap-2.5">
-                        <i class="fa-solid fa-chart-line text-primary fs-6" style="width: 22px; text-align: center;"></i>
+                    <div class="d-flex align-items-start gap-2.5">
+                        <i class="fa-solid fa-chart-line text-primary fs-6 mt-1" style="width: 20px; flex-shrink: 0; text-align: center;"></i>
                         <span class="text-light">Progress syncs automatically in the background</span>
                     </div>
                 </div>
