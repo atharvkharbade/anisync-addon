@@ -147,18 +147,6 @@
         .btn-pulse-anilist {
             animation: pulse-border-anilist 2.2s infinite;
         }
-        .bell-pulse {
-            display: inline-block;
-            animation: bell-bounce 2.5s infinite ease-in-out;
-        }
-        @keyframes bell-bounce {
-            0%, 100% { transform: rotate(0deg); }
-            10% { transform: rotate(14deg); }
-            20% { transform: rotate(-12deg); }
-            30% { transform: rotate(8deg); }
-            40% { transform: rotate(-4deg); }
-            50% { transform: rotate(0deg); }
-        }
         .btn-whats-new {
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.14);
@@ -184,8 +172,8 @@
                 <span>AniSync</span>
             </a>
             <div class="d-flex gap-2 align-items-center">
-                <button type="button" class="btn btn-whats-new d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#whatsNewModal" onclick="fetchGitHubReleases();">
-                    <i class="fa-regular fa-bell text-warning bell-pulse me-2"></i><span class="d-none d-sm-inline font-semibold">What's New</span>
+                <button type="button" class="btn btn-whats-new d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#whatsNewModal" onclick="fetchGitHubReleases();">
+                    <i class="fa-regular fa-bell text-warning" style="margin-right: 6px;"></i><span class="d-none d-sm-inline font-semibold">What's New</span>
                 </button>
                 <a href="{{ url_for('auth.logout') }}" class="btn btn-logout">
                     <i class="fa-solid fa-right-from-bracket me-2"></i><span class="d-none d-sm-inline">Logout</span>
