@@ -147,8 +147,28 @@
         .btn-pulse-anilist {
             animation: pulse-border-anilist 2.2s infinite;
         }
-        .btn-pulse-simkl {
-            animation: pulse-border-simkl 2.2s infinite;
+        .emoji-whats-new {
+            display: inline-block;
+            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6));
+            animation: sparkle-pulse 2s infinite ease-in-out;
+        }
+        @keyframes sparkle-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(8deg); }
+        }
+        .btn-whats-new {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #e2e8f0;
+            font-size: 0.85rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .btn-whats-new:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
         }
     </style>
 </head>
@@ -160,13 +180,82 @@
                 <img src="/logo.png?v=7" width="24" height="24" class="me-2 rounded" style="object-fit: contain;">
                 <span>AniSync</span>
             </a>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 align-items-center">
+                <button type="button" class="btn btn-whats-new d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#whatsNewModal">
+                    <span class="emoji-whats-new">✨</span><span class="d-none d-sm-inline font-semibold">What's New</span>
+                </button>
                 <a href="{{ url_for('auth.logout') }}" class="btn btn-logout">
                     <i class="fa-solid fa-right-from-bracket me-2"></i><span class="d-none d-sm-inline">Logout</span>
                 </a>
             </div>
         </div>
     </nav>
+
+    <!-- What's New Modal -->
+    <div class="modal fade" id="whatsNewModal" tabindex="-1" aria-labelledby="whatsNewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content text-start" style="background: #141416; border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; border-radius: 14px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);">
+                <div class="modal-header border-bottom border-white border-opacity-10 px-4 py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4">✨</span>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="whatsNewModalLabel">What's New in AniSync</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-3" style="max-height: 70vh;">
+                    <!-- Release v1.4.0 (Beta) -->
+                    <div class="mb-4 pb-3 border-bottom border-white border-opacity-10">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
+                                <span class="badge bg-primary text-white me-2" style="font-size: 0.75rem; padding: 0.3em 0.65em;">BETA</span>
+                                v1.4.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">(Latest Beta)</span>
+                            </h6>
+                        </div>
+                        <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
+                            <li><strong class="text-light">Multi-Tracker Recommendations</strong>: AI recommendations now analyze watch history across all your connected accounts (MyAnimeList, AniList, and Simkl).</li>
+                            <li><strong class="text-light">Consolidated Accounts Card</strong>: Single master card for MyAnimeList, AniList, and Simkl with individual sync toggles and sleek <code class="bg-dark px-1.5 py-0.5 rounded text-success">✔ Username</code> status badges.</li>
+                            <li><strong class="text-light">Guest Mode</strong>: You can now browse and customize discovery catalogs without needing to log in to any tracker.</li>
+                            <li><strong class="text-light">Metadata & Poster Options</strong>: Switch between Kitsu, MyAnimeList, and AniList for metadata, plus added <strong>TOP Posters</strong> (with API key validation) and <strong>Custom poster URL</strong> support.</li>
+                            <li><strong class="text-light">Fresh Landing Page & UI Polish</strong>: Redesigned front page with a 4-step "How it works" guide, responsive mobile layout, and minimal Save Preferences button.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Release v1.3.0 -->
+                    <div class="mb-4 pb-3 border-bottom border-white border-opacity-10">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
+                                v1.3.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Simkl, Sorting & Watched Tags</span>
+                            </h6>
+                        </div>
+                        <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
+                            <li><strong class="text-light">Simkl Tracker Support</strong>: Full Simkl integration for real-time progress sync, combined watchlists, and logo badges alongside MAL and AniList.</li>
+                            <li><strong class="text-light">Watchlist Custom Sorting</strong>: Sort your watchlists by Title, Score, Last Updated, or Airing Date right from the configuration dashboard.</li>
+                            <li><strong class="text-light"><code class="bg-dark px-1.5 py-0.5 rounded text-info">[Watched]</code> Episode Tags</strong>: Automatically marks completed episodes as <code class="bg-dark px-1.5 py-0.5 rounded text-info">[Watched]</code> in Stremio based on your watch history across all connected trackers.</li>
+                            <li><strong class="text-light">RPDB Poster Ratings</strong>: Added support for Rating Poster DB (RPDB) overlays on poster covers.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Release v1.0.0 -->
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
+                                v1.0.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Initial Launch</span>
+                            </h6>
+                        </div>
+                        <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
+                            <li><strong class="text-light">Real-time Progress Sync</strong>: Instant watch progress tracking for MyAnimeList and AniList.</li>
+                            <li><strong class="text-light">Combined Watchlists</strong>: Merged Plan to Watch, Watching, and Completed lists across trackers into unified Stremio catalogs.</li>
+                            <li><strong class="text-light">Filler Episode Tags</strong>: Displayed filler episode indicators so you know which episodes to skip.</li>
+                            <li><strong class="text-light">New Episode Overlays</strong>: Added visual overlays on posters for newly released episodes.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-white border-opacity-10 px-4 py-2.5">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
     {% endif %}
 
     <div class="container pt-4 pb-2 {% if session.get('user') %}flash-wrap{% endif %}">
