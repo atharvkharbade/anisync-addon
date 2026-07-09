@@ -73,48 +73,39 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             pointer-events: none;
         }
         .custom-toast {
-            min-width: 250px;
-            max-width: 380px;
-            background: rgba(22, 22, 22, 0.92);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-left: 4px solid #02a9ff;
-            border-radius: 10px;
-            padding: 12px 18px;
-            color: #e0e0e0;
+            min-width: 220px;
+            max-width: 440px;
+            background: rgba(18, 18, 20, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 9999px;
+            padding: 9px 20px;
+            color: #f1f5f9;
             font-size: 0.88rem;
+            font-weight: 500;
             display: flex;
             align-items: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             pointer-events: auto;
-            transform: translateY(-120%) scale(0.9);
+            transform: translateY(-100%) scale(0.92);
             opacity: 0;
-            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .custom-toast.show {
             transform: translateY(0) scale(1);
             opacity: 1;
         }
-        .custom-toast.success {
-            border-left-color: #2ec4b6;
-        }
-        .custom-toast.error {
-            border-left-color: #e71d36;
-        }
-        .custom-toast.warning {
-            border-left-color: #ff9f1c;
-        }
-        .custom-toast.info {
-            border-left-color: #02a9ff;
-        }
         @media (max-width: 576px) {
             .toast-container {
-                top: 16px;
+                top: auto;
+                bottom: 24px;
                 left: 50%;
                 transform: translateX(-50%);
                 width: 90%;
@@ -122,8 +113,12 @@
             .custom-toast {
                 min-width: 0;
                 max-width: 100%;
-                width: 100%;
-                justify-content: center;
+                width: auto;
+                padding: 10px 18px;
+                transform: translateY(100%) scale(0.92);
+            }
+            .custom-toast.show {
+                transform: translateY(0) scale(1);
             }
         }
         @keyframes pulse-border-mal {
@@ -241,13 +236,13 @@
             const toast = document.createElement('div');
             toast.className = `custom-toast ${type}`;
 
-            let icon = '<i class="fa-solid fa-circle-info me-2 text-info"></i>';
+            let icon = '<i class="fa-solid fa-circle-info me-1.5 text-info" style="font-size:0.95rem;"></i>';
             if (type === 'success') {
-                icon = '<i class="fa-solid fa-circle-check me-2 text-success"></i>';
+                icon = '<i class="fa-solid fa-circle-check me-1.5 text-success" style="font-size:0.95rem;"></i>';
             } else if (type === 'error') {
-                icon = '<i class="fa-solid fa-circle-exclamation me-2 text-danger"></i>';
+                icon = '<i class="fa-solid fa-circle-exclamation me-1.5 text-danger" style="font-size:0.95rem;"></i>';
             } else if (type === 'warning') {
-                icon = '<i class="fa-solid fa-circle-exclamation me-2 text-warning"></i>';
+                icon = '<i class="fa-solid fa-triangle-exclamation me-1.5 text-warning" style="font-size:0.95rem;"></i>';
             }
 
             toast.innerHTML = `${icon}<span>${message}</span>`;
