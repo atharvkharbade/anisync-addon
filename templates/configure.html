@@ -519,8 +519,8 @@
                     </div>
                     {% else %}
                     <div class="pt-1">
-                        <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-sm btn-mal w-100 px-3 py-1.5 justify-content-center" style="font-size: 0.8rem;">
-                            <i class="fa-solid fa-right-to-bracket me-1"></i>Connect MyAnimeList
+                        <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-sm btn-mal w-100 w-sm-auto px-3 py-1.5 justify-content-center" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
                         </a>
                     </div>
                     {% endif %}
@@ -565,8 +565,8 @@
                     </div>
                     {% else %}
                     <div class="pt-1">
-                        <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-sm btn-anilist w-100 px-3 py-1.5 justify-content-center" style="font-size: 0.8rem;">
-                            <i class="fa-solid fa-right-to-bracket me-1"></i>Connect AniList
+                        <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-sm btn-anilist w-100 w-sm-auto px-3 py-1.5 justify-content-center" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
                         </a>
                     </div>
                     {% endif %}
@@ -611,8 +611,8 @@
                     </div>
                     {% else %}
                     <div class="pt-1">
-                        <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-sm btn-simkl w-100 px-3 py-1.5 justify-content-center" style="font-size: 0.8rem;">
-                            <i class="fa-solid fa-right-to-bracket me-1"></i>Connect Simkl
+                        <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-sm btn-simkl w-100 w-sm-auto px-3 py-1.5 justify-content-center" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
                         </a>
                     </div>
                     {% endif %}
@@ -622,9 +622,9 @@
         </div>
 
         <form method="POST" action="{{ url_for('ui.configure') }}" id="prefs-form">
-            <!-- Metadata & Language Preferences Card -->
+            <!-- Metadata Preferences Card -->
             <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-database me-2" style="color: #38bdf8;"></i>Metadata & Language Preferences</h6>
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-database me-2" style="color: #38bdf8;"></i>Metadata Preferences</h6>
                 <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
                     Select your preferred metadata provider (Kitsu, MAL, AniList) and catalog title language (English, Romaji, Native).
                 </p>
@@ -750,20 +750,18 @@
                 <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
                     value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
 
-                <div class="form-check form-switch mb-3" {% if user.get('is_guest')
-                    %}style="opacity: 0.5; cursor: not-allowed;" {% endif %}>
+                {% if not user.get('is_guest') %}
+                <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" role="switch" id="sync_unlisted" {% if
-                        user.get('sync_unlisted', False) and not user.get('is_guest') %}checked{% endif %} {% if
-                        user.get('is_guest') %}disabled{% endif %}>
+                        user.get('sync_unlisted', False) %}checked{% endif %}>
                     <label class="form-check-label ms-1" for="sync_unlisted">
-                        <span class="fw-medium d-block">Sync unlisted anime {% if user.get('is_guest') %}<span
-                                class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or Simkl)</span>{%
-                            endif %}</span>
+                        <span class="fw-medium d-block">Sync unlisted anime</span>
                         <span class="text-secondary small d-block">
                             Auto-add anime to your list when you start watching, even if not on your list yet.
                         </span>
                     </label>
                 </div>
+                {% endif %}
 
                 <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" role="switch" id="enable_search" {% if
@@ -801,15 +799,12 @@
                     </div>
                 </div>
 
-                <div class="form-check form-switch mb-3" {% if user.get('is_guest')
-                    %}style="opacity: 0.5; cursor: not-allowed;" {% endif %}>
+                {% if not user.get('is_guest') %}
+                <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" role="switch" id="enable_catalogs" {% if
-                        user.get('enable_catalogs', True) and not user.get('is_guest') %}checked{% endif %} {% if
-                        user.get('is_guest') %}disabled{% endif %}>
+                        user.get('enable_catalogs', True) %}checked{% endif %}>
                     <label class="form-check-label ms-1" for="enable_catalogs">
-                        <span class="fw-medium d-block">Enable Watchlist Catalogs {% if user.get('is_guest') %}<span
-                                class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or Simkl)</span>{%
-                            endif %}</span>
+                        <span class="fw-medium d-block">Enable Watchlist Catalogs</span>
                         <span class="text-secondary small d-block">
                             Expose your watchlist categories inside the app. Disable if you only want progress tracking
                             without extra catalogs.
@@ -819,7 +814,7 @@
 
                 <!-- Watchlist Sub-Options (only visible when enabled) -->
                 <div id="watchlist-options-container" class="nested-subcard"
-                    style="{% if not user.get('enable_catalogs', True) or user.get('is_guest') %}display: none;{% endif %}">
+                    style="{% if not user.get('enable_catalogs', True) %}display: none;{% endif %}">
 
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="sort_by_new_episodes" {% if
@@ -1139,14 +1134,163 @@
 
             </div>
 
-            <!-- Poster & Art Customization Card -->
-            <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster & Art Customization</h6>
-
-                <div id="poster-provider-section">
+                <!-- Discovery Catalogs Card -->
+                <div class="card-dark p-3 p-sm-4 mb-3">
+                    <h6 class="fw-semibold mb-3"><i class="fa-solid fa-compass me-2" style="color: #38bdf8;"></i>Anime Discovery Catalogs</h6>
                     <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                        Enhance anime poster covers with Rating Poster DB (RPDB) overlays, TOP Posters, or a custom poster URL.
+                        Shows popular anime discovery catalogs (Spotlight, Trending, Top Airing, Seasonal Showcase, etc.) in your app.
                     </p>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if user.get('enable_discovery_catalogs', True) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="enable_discovery_catalogs">
+                            <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
+                            <span class="text-secondary small d-block">
+                                Enable general public discovery catalogs in Stremio.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div id="discovery-sub-options" class="nested-subcard" style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %}">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {% if user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
+                            <label class="form-check-label ms-1" for="shuffle_discovery_catalogs">
+                                <span class="fw-medium d-block">Shuffle Catalogs on Request</span>
+                                <span class="text-secondary small d-block">
+                                    Randomly shuffle the order of discovery catalogs on every reload.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendations Card (Hidden for Guest Users) -->
+                {% if not user.get('is_guest') %}
+                <div class="card-dark p-3 p-sm-4 mb-3">
+                    <h6 class="fw-semibold mb-3"><i
+                            class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>Recommendations</h6>
+
+                    <input type="hidden" id="enable_recommendations_val" name="enable_recommendations"
+                        value="{{ 'true' if user.get('enable_recommendations', True) else 'false' }}">
+                    <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
+                        value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="enable_recommendations" {% if
+                            user.get('enable_recommendations', True) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="enable_recommendations">
+                            <span class="fw-medium d-block">Enable Recommendations Catalogs</span>
+                            <span class="text-secondary small d-block">
+                                Enable personalized anime recommendations based on your tracking history.
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Recommendations Sub-Options (only visible when enabled) -->
+                    <div id="recommendations-options" class="nested-subcard"
+                        style="{% if not user.get('enable_recommendations', True) %}display: none;{% endif %}">
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                id="recommendations_filter_watched" {% if user.get('recommendations_filter_watched',
+                                True) %}checked{% endif %}>
+                            <label class="form-check-label ms-1" for="recommendations_filter_watched">
+                                <span class="fw-medium d-block">Filter Watched Shows</span>
+                                <span class="text-secondary small d-block">
+                                    Exclude shows already in your completed, watching, paused, or dropped lists from
+                                    recommendations.
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Genre Exclusions -->
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Movie
+                                    Genres</label>
+                                <div class="genre-scroll-container">
+                                    {% for genre in anime_genres %}
+                                    <label class="genre-checkbox-label">
+                                        <input type="checkbox" name="rec_excluded_movie_genres" value="{{ genre }}"
+                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_movie_genres',
+                                            []) %}checked{% endif %}>
+                                        {{ genre }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Series
+                                    Genres</label>
+                                <div class="genre-scroll-container">
+                                    {% for genre in anime_genres %}
+                                    <label class="genre-checkbox-label">
+                                        <input type="checkbox" name="rec_excluded_series_genres" value="{{ genre }}"
+                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_series_genres',
+                                            []) %}checked{% endif %}>
+                                        {{ genre }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gemini AI Section Replica -->
+                        <div id="gemini-key-section" style="margin-top: 1.5rem;">
+                            <label class="rec-label mb-2">Gemini AI (Optional)</label>
+                            <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                                Used to generate personalized, AI-powered explanations for recommended anime based on
+                                your unique watch history.
+                            </p>
+
+                            <div class="gemini-input-wrapper position-relative">
+                                <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
+                                    value="{{ user.get('gemini_api_key', '') }}"
+                                    placeholder="Paste your Gemini API key here">
+                                <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
+                                    style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                                <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
+                                    title="Validate Key">
+                                    <i id="gemini-check-icon"
+                                        class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                        style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                                </button>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span id="gemini-validation-status"
+                                    class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                    {% if user.get('gemini_api_key') %}
+                                    {% if user.get('gemini_key_valid') == False %}
+                                    Invalid Gemini API key
+                                    {% else %}
+                                    API key verified ✓
+                                    {% endif %}
+                                    {% else %}
+                                    Not verified
+                                    {% endif %}
+                                </span>
+                                <a href="https://aistudio.google.com/" target="_blank"
+                                    class="small text-info text-decoration-none" style="font-size:0.75rem;">
+                                    Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
+                                        style="font-size: 0.65rem;"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Poster Art Customization Card -->
+                <div class="card-dark p-3 p-sm-4 mb-3">
+                    <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art Customization</h6>
+
+                    <div id="poster-provider-section">
+                        <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                            Enhance anime poster covers with Rating Poster DB (RPDB) overlays, TOP Posters, or a custom poster URL.
+                        </p>
 
                         <div class="custom-select-wrapper mb-3" id="poster_provider_wrapper"
                             data-input-id="poster_provider" style="max-width: 400px;">
@@ -1314,157 +1458,6 @@
 
                 </div>
 
-            <!-- Anime Discovery Catalogs Card -->
-            <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-compass me-2" style="color: #38bdf8;"></i>Anime Discovery Catalogs</h6>
-                <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                    Browse curated discovery catalogs (Trending, Top Airing, Highest Rated, Most Popular) with optional item shuffling.
-                </p>
-
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if user.get('enable_discovery_catalogs', True) %}checked{% endif %}>
-                    <label class="form-check-label ms-1" for="enable_discovery_catalogs">
-                        <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
-                        <span class="text-secondary small d-block">
-                            Exposes general public discovery catalogs (Spotlight, Weekly Release Calendar, Seasonal Showcase, Trending, Top Airing, Highest Rated, and Most Popular).
-                        </span>
-                    </label>
-                </div>
-
-                <div id="discovery-sub-options" class="nested-subcard" style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %}">
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {% if user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
-                        <label class="form-check-label ms-1" for="shuffle_discovery_catalogs">
-                            <span class="fw-medium d-block">Shuffle Catalogs on Request</span>
-                            <span class="text-secondary small d-block">
-                                Randomly shuffle the order of discovery catalogs on every reload.
-                            </span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recommendations Card -->
-                <div class="card-dark p-3 p-sm-4 mb-3">
-                    <h6 class="fw-semibold mb-3"><i
-                            class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>Recommendations</h6>
-
-                    <input type="hidden" id="enable_recommendations_val" name="enable_recommendations"
-                        value="{{ 'true' if user.get('enable_recommendations', True) else 'false' }}">
-                    <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
-                        value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
-
-                    <div class="form-check form-switch mb-3" {% if user.get('is_guest')
-                        %}style="opacity: 0.5; cursor: not-allowed;" {% endif %}>
-                        <input class="form-check-input" type="checkbox" role="switch" id="enable_recommendations" {% if
-                            user.get('enable_recommendations', True) and not user.get('is_guest') %}checked{% endif %}
-                            {% if user.get('is_guest') %}disabled{% endif %}>
-                        <label class="form-check-label ms-1" for="enable_recommendations">
-                            <span class="fw-medium d-block">Enable Recommendations Catalogs {% if user.get('is_guest')
-                                %}<span class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or
-                                    Simkl)</span>{% endif %}</span>
-                            <span class="text-secondary small d-block">
-                                Enable personalized anime recommendations based on your tracking history.
-                            </span>
-                        </label>
-                    </div>
-
-                    <!-- Recommendations Sub-Options (only visible when enabled) -->
-                    <div id="recommendations-options" class="nested-subcard"
-                        style="{% if not user.get('enable_recommendations', True) or user.get('is_guest') %}display: none;{% endif %}">
-
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" role="switch"
-                                id="recommendations_filter_watched" {% if user.get('recommendations_filter_watched',
-                                True) %}checked{% endif %}>
-                            <label class="form-check-label ms-1" for="recommendations_filter_watched">
-                                <span class="fw-medium d-block">Filter Watched Shows</span>
-                                <span class="text-secondary small d-block">
-                                    Exclude shows already in your completed, watching, paused, or dropped lists from
-                                    recommendations.
-                                </span>
-                            </label>
-                        </div>
-
-                        <!-- Genre Exclusions -->
-                        <div class="row mb-3">
-                            <div class="col-md-6 mb-3 mb-md-0">
-                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Movie
-                                    Genres</label>
-                                <div class="genre-scroll-container">
-                                    {% for genre in anime_genres %}
-                                    <label class="genre-checkbox-label">
-                                        <input type="checkbox" name="rec_excluded_movie_genres" value="{{ genre }}"
-                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_movie_genres',
-                                            []) %}checked{% endif %}>
-                                        {{ genre }}
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Series
-                                    Genres</label>
-                                <div class="genre-scroll-container">
-                                    {% for genre in anime_genres %}
-                                    <label class="genre-checkbox-label">
-                                        <input type="checkbox" name="rec_excluded_series_genres" value="{{ genre }}"
-                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_series_genres',
-                                            []) %}checked{% endif %}>
-                                        {{ genre }}
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Gemini AI Section Replica -->
-                        <div id="gemini-key-section" style="margin-top: 1.5rem;">
-                            <label class="rec-label mb-2">Gemini AI (Optional)</label>
-                            <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                                Used to generate personalized, AI-powered explanations for recommended anime based on
-                                your unique watch history.
-                            </p>
-
-                            <div class="gemini-input-wrapper position-relative">
-                                <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
-                                    value="{{ user.get('gemini_api_key', '') }}"
-                                    placeholder="Paste your Gemini API key here">
-                                <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
-                                    style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
-                                    <i class="fa-regular fa-eye"></i>
-                                </button>
-                                <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
-                                    title="Validate Key">
-                                    <i id="gemini-check-icon"
-                                        class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
-                                        style="font-size: 1.1rem; transition: color 0.2s;"></i>
-                                </button>
-                            </div>
-
-                            <div class="d-flex justify-content-between align-items-center mt-2">
-                                <span id="gemini-validation-status"
-                                    class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
-                                    {% if user.get('gemini_api_key') %}
-                                    {% if user.get('gemini_key_valid') == False %}
-                                    Invalid Gemini API key
-                                    {% else %}
-                                    API key verified ✓
-                                    {% endif %}
-                                    {% else %}
-                                    Not verified
-                                    {% endif %}
-                                </span>
-                                <a href="https://aistudio.google.com/" target="_blank"
-                                    class="small text-info text-decoration-none" style="font-size:0.75rem;">
-                                    Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
-                                        style="font-size: 0.65rem;"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Catalogs Management Card -->
                 {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or
                 user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True) %}
@@ -1474,7 +1467,7 @@
                     user.get('enable_discovery_catalogs', True) %}style="display: none;" {% endif %}>
                     <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
                         Management</h6>
-                    <p class="text-secondary small mb-3">Toggle visibility and **drag-and-drop** to reorder the catalogs
+                    <p class="text-secondary small mb-3">Toggle visibility and <strong class="fw-semibold text-light">drag-and-drop</strong> to reorder the catalogs
                         exactly as they should appear in your app.</p>
 
                     <!-- Hidden input to store ordered comma-separated IDs -->
@@ -1910,105 +1903,70 @@
 
             malItems.forEach(item => {
                 const cb = item.querySelector('.catalog-checkbox');
-                const isChecked = cb && cb.checked;
-                const showItem = enableCatalogs || (allDisabled && isChecked);
-
-                if (!showItem || combineEnabled) {
+                if (!enableCatalogs || combineEnabled || !malToken) {
                     item.classList.add("d-none");
-                    if (cb && !allDisabled) cb.checked = false;
+                    if (cb && (combineEnabled || !enableCatalogs)) cb.checked = false;
                 } else {
-                    if (malToken) {
-                        item.classList.remove("d-none");
-                        if (!isInitialLoad && enableCatalogs) {
-                            if (cb) cb.checked = true;
-                        }
-                    }
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad && cb) cb.checked = true;
                 }
             });
 
             alItems.forEach(item => {
                 const cb = item.querySelector('.catalog-checkbox');
-                const isChecked = cb && cb.checked;
-                const showItem = enableCatalogs || (allDisabled && isChecked);
-
-                if (!showItem || combineEnabled) {
+                if (!enableCatalogs || combineEnabled || !alToken) {
                     item.classList.add("d-none");
-                    if (cb && !allDisabled) cb.checked = false;
+                    if (cb && (combineEnabled || !enableCatalogs)) cb.checked = false;
                 } else {
-                    if (alToken) {
-                        item.classList.remove("d-none");
-                        if (!isInitialLoad && enableCatalogs) {
-                            if (cb) cb.checked = true;
-                        }
-                    }
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad && cb) cb.checked = true;
                 }
             });
 
             simklItems.forEach(item => {
                 const cb = item.querySelector('.catalog-checkbox');
-                const isChecked = cb && cb.checked;
-                const showItem = enableCatalogs || (allDisabled && isChecked);
-
-                if (!showItem || combineEnabled) {
+                if (!enableCatalogs || combineEnabled || !simklToken) {
                     item.classList.add("d-none");
-                    if (cb && !allDisabled) cb.checked = false;
+                    if (cb && (combineEnabled || !enableCatalogs)) cb.checked = false;
                 } else {
-                    if (simklToken) {
-                        item.classList.remove("d-none");
-                        if (!isInitialLoad && enableCatalogs) {
-                            if (cb) cb.checked = true;
-                        }
-                    }
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad && cb) cb.checked = true;
                 }
             });
 
             combItems.forEach(item => {
                 const cb = item.querySelector('.catalog-checkbox');
-                const isChecked = cb && cb.checked;
-                const showItem = enableCatalogs || (allDisabled && isChecked);
-
-                if (!showItem || !combineEnabled) {
+                const hasAnyToken = malToken || alToken || simklToken;
+                if (!enableCatalogs || !combineEnabled || !hasAnyToken) {
                     item.classList.add("d-none");
-                    if (cb && !allDisabled) cb.checked = false;
+                    if (cb && (!combineEnabled || !enableCatalogs)) cb.checked = false;
                 } else {
                     item.classList.remove("d-none");
-                    if (!isInitialLoad && enableCatalogs) {
-                        if (cb) cb.checked = true;
-                    }
+                    if (!isInitialLoad && cb) cb.checked = true;
                 }
             });
 
             const recItems = document.querySelectorAll('.catalog-order-item[data-source="rec"]');
             recItems.forEach(item => {
                 const cb = item.querySelector('.catalog-checkbox');
-                const isChecked = cb && cb.checked;
-                const showItem = enableRecs || (allDisabled && isChecked);
-
-                if (showItem) {
-                    item.classList.remove("d-none");
-                    if (!isInitialLoad && enableRecs) {
-                        if (cb) cb.checked = true;
-                    }
-                } else {
+                if (!enableRecs) {
                     item.classList.add("d-none");
-                    if (cb && !allDisabled) cb.checked = false;
+                    if (cb) cb.checked = false;
+                } else {
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad && cb) cb.checked = true;
                 }
             });
 
             const discoveryItems = document.querySelectorAll('.catalog-order-item[data-source="discovery"]');
             discoveryItems.forEach(item => {
                 const cb = item.querySelector('.catalog-checkbox');
-                const isChecked = cb && cb.checked;
-                const showItem = enableDiscovery || (allDisabled && isChecked);
-
-                if (showItem) {
-                    item.classList.remove("d-none");
-                    if (!isInitialLoad && enableDiscovery) {
-                        if (cb) cb.checked = true;
-                    }
-                } else {
+                if (!enableDiscovery) {
                     item.classList.add("d-none");
-                    if (cb && !allDisabled) cb.checked = false;
+                    if (cb) cb.checked = false;
+                } else {
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad && cb) cb.checked = true;
                 }
             });
 
