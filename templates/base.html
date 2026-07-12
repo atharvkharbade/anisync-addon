@@ -342,15 +342,15 @@
                     
                     html += `
                         <div class="${isLast ? '' : 'mb-4 pb-3 border-bottom border-white border-opacity-10'}">
-                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
-                                <div class="d-flex align-items-center gap-2">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between mb-2 gap-2">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
                                     <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
                                         ${isBeta ? '<span class="badge bg-primary text-white me-2" style="font-size: 0.72rem; padding:0.3em 0.6em;">BETA</span>' : ''}
                                         ${r.tag_name} ${r.name && r.name !== r.tag_name ? '<span class="text-secondary font-monospace fs-7 fw-normal ms-1">— ' + r.name + '</span>' : ''}
                                     </h6>
                                 </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <small class="text-secondary opacity-75 me-1">${pubDate}</small>
+                                <div class="d-flex align-items-center justify-content-between justify-content-sm-end w-100 w-sm-auto gap-2">
+                                    <small class="text-secondary opacity-75">${pubDate}</small>
                                     <a href="${releaseUrl}" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View ${r.tag_name} on GitHub">
                                         <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Release
                                     </a>
@@ -374,11 +374,19 @@
         function renderFallbackReleases(container) {
             container.innerHTML = `
                 <div class="mb-4 pb-3 border-bottom border-white border-opacity-10">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
-                            <span class="badge bg-primary text-white me-2" style="font-size: 0.72rem;">BETA</span>
-                            v1.4.0-beta <span class="text-secondary font-monospace fs-7 fw-normal ms-1">(Latest Beta)</span>
-                        </h6>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-2 gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
+                                <span class="badge bg-primary text-white me-2" style="font-size: 0.72rem; padding:0.3em 0.6em;">BETA</span>
+                                v1.4.0-beta <span class="text-secondary font-monospace fs-7 fw-normal ms-1">(Latest Beta)</span>
+                            </h6>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between justify-content-sm-end w-100 w-sm-auto gap-2">
+                            <small class="text-secondary opacity-75">Aug 5, 2026</small>
+                            <a href="https://github.com/atharvkharbade/anisync-addon/releases/tag/v1.4.0-beta" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View v1.4.0-beta on GitHub">
+                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Release
+                            </a>
+                        </div>
                     </div>
                     <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
                         <li><strong class="text-light">Multi-Tracker Recommendations</strong>: AI recommendations now analyze watch history across all your connected accounts (MyAnimeList, AniList, and Simkl).</li>
@@ -388,8 +396,16 @@
                     </ul>
                 </div>
                 <div class="mb-4 pb-3 border-bottom border-white border-opacity-10">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">v1.3.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Simkl & Watched Tags</span></h6>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-2 gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">v1.3.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Simkl & Watched Tags</span></h6>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between justify-content-sm-end w-100 w-sm-auto gap-2">
+                            <small class="text-secondary opacity-75">Jun 17, 2026</small>
+                            <a href="https://github.com/atharvkharbade/anisync-addon/releases/tag/v1.3.0" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View v1.3.0 on GitHub">
+                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Release
+                            </a>
+                        </div>
                     </div>
                     <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
                         <li><strong class="text-light">Simkl Support</strong>: Full Simkl integration for real-time progress sync, combined watchlists, and logo badges.</li>
@@ -397,8 +413,16 @@
                     </ul>
                 </div>
                 <div>
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">v1.0.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Initial Launch</span></h6>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-2 gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">v1.0.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Initial Launch</span></h6>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between justify-content-sm-end w-100 w-sm-auto gap-2">
+                            <small class="text-secondary opacity-75">Jun 5, 2026</small>
+                            <a href="https://github.com/atharvkharbade/anisync-addon/releases/tag/v1.0.0" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View v1.0.0 on GitHub">
+                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Release
+                            </a>
+                        </div>
                     </div>
                     <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
                         <li><strong class="text-light">Real-time Sync</strong>: Instant watch progress tracking for MyAnimeList and AniList.</li>
