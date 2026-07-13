@@ -1715,7 +1715,8 @@
                         }
 
                         // Update RPDB status dynamically
-                        const rpdbKeyVal = document.getElementById("rpdb_api_key").value.trim();
+                        const rpdbKeyEl = document.getElementById("rpdb_api_key");
+                        const rpdbKeyVal = rpdbKeyEl ? rpdbKeyEl.value.trim() : "";
                         const rpdbCheckIcon = document.getElementById("rpdb-check-icon");
                         const rpdbStatusSpan = document.getElementById("rpdb-validation-status");
                         if (rpdbCheckIcon && rpdbStatusSpan) {
@@ -1741,7 +1742,8 @@
                         }
 
                         // Update TOP Posters status dynamically
-                        const topKeyVal = document.getElementById("top_poster_key").value.trim();
+                        const topKeyEl = document.getElementById("top_poster_key");
+                        const topKeyVal = topKeyEl ? topKeyEl.value.trim() : "";
                         const topCheckIcon = document.getElementById("top-check-icon");
                         const topStatusSpan = document.getElementById("top-validation-status");
                         if (topCheckIcon && topStatusSpan) {
@@ -1763,7 +1765,8 @@
                         }
 
                         // Update Gemini status dynamically
-                        const geminiKeyVal = document.getElementById("gemini_api_key").value.trim();
+                        const geminiKeyEl = document.getElementById("gemini_api_key");
+                        const geminiKeyVal = geminiKeyEl ? geminiKeyEl.value.trim() : "";
                         const geminiCheckIcon = document.getElementById("gemini-check-icon");
                         const geminiStatusSpan = document.getElementById("gemini-validation-status");
                         if (geminiCheckIcon && geminiStatusSpan) {
