@@ -1654,7 +1654,7 @@ async def update_popular_fallbacks_cache():
     query = """
     query {
       Page(page: 1, perPage: 80) {
-        media(type: ANIME, sort: POPULARITY_DESC) {
+        media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
           id
           idMal
           status

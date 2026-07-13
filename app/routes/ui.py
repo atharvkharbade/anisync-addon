@@ -141,6 +141,7 @@ async def guest_login():
         "enable_catalogs": False,
         "enable_recommendations": False,
         "enable_search": True,
+        "hide_nsfw": True,
         "title_language": "english",
         "metadata_provider": "kitsu",
         "catalogs": [
@@ -207,6 +208,8 @@ async def configure(user_id: str = ""):
             user["rpdb_in_search"] = form.get("rpdb_in_search") == "true"
         if "show_filler_tags" in form:
             user["show_filler_tags"] = form.get("show_filler_tags") == "true"
+        if "hide_nsfw" in form:
+            user["hide_nsfw"] = form.get("hide_nsfw") == "true"
         if "show_watched_tags" in form:
             user["show_watched_tags"] = form.get("show_watched_tags") == "true"
 

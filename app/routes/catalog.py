@@ -598,6 +598,21 @@ async def background_fetch_and_cache_filler(mal_id: str, episode: int):
         currently_fetching_pairs.discard((str(mal_id), episode))
 
 
+def is_nsfw_meta(m: dict) -> bool:
+    if not isinstance(m, dict):
+        return False
+    if m.get("is_adult") is True or m.get("isAdult") is True or m.get("nsfw") is True:
+        return True
+    rating = str(m.get("rating") or m.get("age_rating") or m.get("ageRating") or "").lower().strip()
+    if rating in ["rx", "r18", "hentai"] or "hentai" in rating or rating.startswith("rx"):
+        return True
+    genres = m.get("genres") or []
+    if isinstance(genres, list):
+        if any(str(g).lower().strip() == "hentai" for g in genres):
+            return True
+    return False
+
+
 def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalog_id: str | None = None) -> list:
     custom_types_map = {
         "Watching": "anime",
@@ -615,8 +630,11 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
     from app.services.poster_service import get_rpdb_poster_url
 
     title_lang = user.get("title_language", "english") if user else "english"
+    hide_nsfw = user.get("hide_nsfw", True) if user else True
     formatted_metas = []
     for m in metas_list:
+        if hide_nsfw and is_nsfw_meta(m):
+            continue
         m_copy = m.copy()
         if "title_obj" in m_copy:
             t_obj = m_copy["title_obj"]
@@ -1292,6 +1310,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             "title_obj": title_obj,
                             "poster": poster,
                             "description": synopsis[:200] + "..." if len(synopsis) > 200 else synopsis,
+                            "ageRating": attrs.get("ageRating"),
+                            "nsfw": attrs.get("nsfw"),
                         }
                     )
 

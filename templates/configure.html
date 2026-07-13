@@ -719,6 +719,8 @@
                     value="{{ 'true' if user.get('rpdb_in_search', True) else 'false' }}">
                 <input type="hidden" id="show_filler_tags_val" name="show_filler_tags"
                     value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                <input type="hidden" id="hide_nsfw_val" name="hide_nsfw"
+                    value="{{ 'true' if user.get('hide_nsfw', True) else 'false' }}">
                 <input type="hidden" id="show_watched_tags_val" name="show_watched_tags"
                     value="{{ 'true' if user.get('show_watched_tags', False) else 'false' }}">
                 <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
@@ -806,6 +808,17 @@
                         <span class="fw-medium d-block">Show filler tags on episodes</span>
                         <span class="text-secondary small d-block">
                             Prepends a [Filler] tag to episode titles in the Stremio episode list.
+                        </span>
+                    </label>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="hide_nsfw" {% if
+                        user.get('hide_nsfw', True) %}checked{% endif %}>
+                    <label class="form-check-label ms-1" for="hide_nsfw">
+                        <span class="fw-medium d-block">Hide Explicit Adult Content (NSFW)</span>
+                        <span class="text-secondary small d-block">
+                            Filters out 18+ adult content from search, discovery catalogs, and recommendations.
                         </span>
                     </label>
                 </div>
@@ -2389,6 +2402,10 @@
         const showFiller = document.getElementById('show_filler_tags');
         const showFillerVal = document.getElementById('show_filler_tags_val');
         if (showFiller && showFillerVal) showFillerVal.value = showFiller.checked ? 'true' : 'false';
+
+        const hideNsfw = document.getElementById('hide_nsfw');
+        const hideNsfwVal = document.getElementById('hide_nsfw_val');
+        if (hideNsfw && hideNsfwVal) hideNsfwVal.value = hideNsfw.checked ? 'true' : 'false';
 
         const showWatched = document.getElementById('show_watched_tags');
         const showWatchedVal = document.getElementById('show_watched_tags_val');
