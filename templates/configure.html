@@ -799,6 +799,17 @@
                     </div>
                 </div>
 
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="show_filler_tags" {% if
+                        user.get('show_filler_tags', True) %}checked{% endif %}>
+                    <label class="form-check-label ms-1" for="show_filler_tags">
+                        <span class="fw-medium d-block">Show filler tags on episodes</span>
+                        <span class="text-secondary small d-block">
+                            Prepends a [Filler] tag to episode titles in the Stremio episode list.
+                        </span>
+                    </label>
+                </div>
+
                 {% if not user.get('is_guest') %}
                 <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" role="switch" id="enable_catalogs" {% if
@@ -828,17 +839,6 @@
                             <span class="text-warning small d-block mt-1 fw-medium">
                                 <i class="fa-solid fa-circle-info me-1"></i>Shows with new episodes will always be
                                 pinned to the front, regardless of your custom sorting preferences.
-                            </span>
-                        </label>
-                    </div>
-
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" role="switch" id="show_filler_tags" {% if
-                            user.get('show_filler_tags', True) %}checked{% endif %}>
-                        <label class="form-check-label ms-1" for="show_filler_tags">
-                            <span class="fw-medium d-block">Show filler tags on episodes</span>
-                            <span class="text-secondary small d-block">
-                                Prepends a [Filler] tag to episode titles in the Stremio episode list.
                             </span>
                         </label>
                     </div>
