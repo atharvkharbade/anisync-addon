@@ -132,9 +132,9 @@
     .genre-scroll-container {
         height: 200px;
         overflow-y: auto;
-        border: 1px solid #2a2a2a;
-        background-color: #0d0d0d;
-        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background-color: rgba(0, 0, 0, 0.25);
+        border-radius: 10px;
         padding: 0.5rem;
     }
 
@@ -168,7 +168,7 @@
     }
 
     .genre-checkbox-label:hover {
-        background-color: #1a1a1a;
+        background-color: rgba(255, 255, 255, 0.05);
         color: #fff;
     }
 
@@ -206,10 +206,10 @@
     .gemini-input-wrapper {
         display: flex;
         align-items: center;
-        background-color: #0d0d0d;
-        border: 1px solid #2a2a2a;
-        border-radius: 8px;
-        padding: 0.5rem 0.75rem;
+        background-color: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 0.55rem 0.85rem;
         transition: border-color 0.2s;
     }
 
@@ -1274,7 +1274,9 @@
 
                         <!-- Gemini AI Section Replica -->
                         <div id="gemini-key-section" style="margin-top: 1.5rem;">
-                            <label class="rec-label mb-2">Gemini AI (Optional)</label>
+                            <label class="rec-label mb-2 fw-semibold" style="background: linear-gradient(135deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                <i class="fa-solid fa-sparkles me-1.5" style="-webkit-text-fill-color: initial; color: #38bdf8;"></i>Gemini AI (Optional)
+                            </label>
                             <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
                                 Used to generate personalized, AI-powered explanations for recommended anime based on
                                 your unique watch history.
@@ -1296,21 +1298,21 @@
                                 </button>
                             </div>
 
-                            <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div class="d-flex justify-content-between align-items-center mt-2.5 px-2">
                                 <span id="gemini-validation-status"
-                                    class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                    class="badge {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}badge-status-expired{% else %}badge-status-connected{% endif %}{% else %}badge-status-disconnected{% endif %} rounded-pill px-2.5 py-1 small">
                                     {% if user.get('gemini_api_key') %}
                                     {% if user.get('gemini_key_valid') == False %}
-                                    Invalid Gemini API key
+                                    <i class="fa-solid fa-circle-xmark me-1"></i>Invalid Gemini API key
                                     {% else %}
-                                    API key verified ✓
+                                    <i class="fa-solid fa-circle-check me-1"></i>API key verified
                                     {% endif %}
                                     {% else %}
-                                    Not verified
+                                    <i class="fa-solid fa-circle-info me-1"></i>Not verified
                                     {% endif %}
                                 </span>
                                 <a href="https://aistudio.google.com/" target="_blank"
-                                    class="small text-info text-decoration-none" style="font-size:0.75rem;">
+                                    class="small text-info text-decoration-none" style="font-size:0.78rem;">
                                     Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
                                         style="font-size: 0.65rem;"></i>
                                 </a>
@@ -1809,17 +1811,17 @@
                             if (geminiKeyVal) {
                                 if (result.gemini_valid) {
                                     geminiCheckIcon.className = "fa-solid fa-circle-check text-success";
-                                    geminiStatusSpan.className = "small text-success fw-medium";
-                                    geminiStatusSpan.textContent = "API key verified ✓";
+                                    geminiStatusSpan.className = "badge badge-status-connected rounded-pill px-2.5 py-1 small";
+                                    geminiStatusSpan.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i>API key verified';
                                 } else {
                                     geminiCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
-                                    geminiStatusSpan.className = "small text-danger";
-                                    geminiStatusSpan.textContent = "Invalid Gemini API key";
+                                    geminiStatusSpan.className = "badge badge-status-expired rounded-pill px-2.5 py-1 small";
+                                    geminiStatusSpan.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i>Invalid Gemini API key';
                                 }
                             } else {
                                 geminiCheckIcon.className = "fa-solid fa-circle-check text-secondary";
-                                geminiStatusSpan.className = "small text-secondary";
-                                geminiStatusSpan.textContent = "Not verified";
+                                geminiStatusSpan.className = "badge badge-status-disconnected rounded-pill px-2.5 py-1 small";
+                                geminiStatusSpan.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Not verified';
                             }
                         }
                     } else {
@@ -2183,13 +2185,13 @@
             validateBtn.addEventListener("click", async function () {
                 const apiKey = keyInput.value.trim();
                 if (!apiKey) {
-                    statusSpan.textContent = "Key cannot be empty";
-                    statusSpan.className = "small text-danger";
+                    geminiStatusSpan.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i>Key cannot be empty';
+                    geminiStatusSpan.className = "badge badge-status-expired rounded-pill px-2.5 py-1 small";
                     checkIcon.className = "fa-solid fa-circle-check text-danger";
                     return;
                 }
-                statusSpan.textContent = "Verifying...";
-                statusSpan.className = "small text-info";
+                geminiStatusSpan.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i>Verifying...';
+                geminiStatusSpan.className = "badge badge-status-disconnected rounded-pill px-2.5 py-1 small";
                 checkIcon.className = "fa-solid fa-circle-notch fa-spin text-info";
                 validateBtn.disabled = true;
                 try {
@@ -2202,12 +2204,12 @@
                     });
                     const result = await response.json();
                     if (response.ok && result.status === "success") {
-                        statusSpan.textContent = result.message;
-                        statusSpan.className = "small text-success fw-semibold";
+                        geminiStatusSpan.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i>API key verified';
+                        geminiStatusSpan.className = "badge badge-status-connected rounded-pill px-2.5 py-1 small";
                         checkIcon.className = "fa-solid fa-circle-check text-success";
                     } else {
-                        statusSpan.textContent = result.message || "Invalid API key";
-                        statusSpan.className = "small text-danger";
+                        geminiStatusSpan.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i>' + (result.message || "Invalid API key");
+                        geminiStatusSpan.className = "badge badge-status-expired rounded-pill px-2.5 py-1 small";
                         checkIcon.className = "fa-solid fa-circle-xmark text-danger";
                     }
                 } catch (err) {
