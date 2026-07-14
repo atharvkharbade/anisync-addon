@@ -292,16 +292,6 @@
         text-decoration: none;
     }
 
-    @media (min-width: 576px) {
-
-        .btn-mal,
-        .btn-anilist,
-        .btn-simkl,
-        .btn-disconnect {
-            min-width: 195px;
-        }
-    }
-
     @media (max-width: 575.98px) {
 
         .btn-mal,
@@ -519,7 +509,7 @@
                     </div>
                     {% else %}
                     <div class="pt-1">
-                        <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-sm btn-mal w-100 w-sm-auto px-3 py-1.5 justify-content-center" style="font-size: 0.8rem;">
+                        <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-sm btn-mal px-3 py-1.5 align-items-center" style="font-size: 0.8rem;">
                             <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
                         </a>
                     </div>
@@ -565,7 +555,7 @@
                     </div>
                     {% else %}
                     <div class="pt-1">
-                        <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-sm btn-anilist w-100 w-sm-auto px-3 py-1.5 justify-content-center" style="font-size: 0.8rem;">
+                        <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-sm btn-anilist px-3 py-1.5 align-items-center" style="font-size: 0.8rem;">
                             <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
                         </a>
                     </div>
@@ -611,7 +601,7 @@
                     </div>
                     {% else %}
                     <div class="pt-1">
-                        <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-sm btn-simkl w-100 w-sm-auto px-3 py-1.5 justify-content-center" style="font-size: 0.8rem;">
+                        <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-sm btn-simkl px-3 py-1.5 align-items-center" style="font-size: 0.8rem;">
                             <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
                         </a>
                     </div>
