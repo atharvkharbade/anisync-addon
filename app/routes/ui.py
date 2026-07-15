@@ -474,7 +474,7 @@ async def check_gemini_api_key_valid(api_key: str) -> tuple[bool, str]:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
                 resp = await client.post(url, json=payload)
                 if resp.status_code == 200:
-                    return True, f"API key verified ({model}) ✓"
+                    return True, "API key verified"
                 else:
                     try:
                         last_error = resp.json().get("error", {}).get("message", "Invalid API key")

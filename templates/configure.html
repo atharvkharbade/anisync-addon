@@ -1284,7 +1284,7 @@
                                 <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
                                     value="{{ user.get('gemini_api_key', '') }}"
                                     placeholder="Paste your Gemini API key here">
-                                <button type="button" class="gemini-btn" id="toggle-gemini-visibility" onclick="toggleGeminiVisibility()"
+                                <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
                                     style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
                                     <i class="fa-regular fa-eye" id="gemini-eye-icon"></i>
                                 </button>
@@ -1298,19 +1298,20 @@
 
                             <div class="d-flex justify-content-between align-items-center mt-2.5">
                                 <span id="gemini-validation-status"
-                                    class="small ms-3 {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                    class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}"
+                                    style="margin-left: 0.85rem;">
                                     {% if user.get('gemini_api_key') %}
                                     {% if user.get('gemini_key_valid') == False %}
                                     Invalid Gemini API key
                                     {% else %}
-                                    API key verified ✓
+                                    API key verified
                                     {% endif %}
                                     {% else %}
                                     Not verified
                                     {% endif %}
                                 </span>
                                 <a href="https://aistudio.google.com/" target="_blank"
-                                    class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
+                                    class="small text-info text-decoration-none" style="font-size:0.78rem; margin-right: 0.85rem;">
                                     Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
                                         style="font-size: 0.65rem;"></i>
                                 </a>
@@ -1810,7 +1811,7 @@
                                 if (result.gemini_valid) {
                                     geminiCheckIcon.className = "fa-solid fa-circle-check text-success";
                                     geminiStatusSpan.className = "small text-success fw-medium";
-                                    geminiStatusSpan.textContent = "API key verified ✓";
+                                    geminiStatusSpan.textContent = "API key verified";
                                 } else {
                                     geminiCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
                                     geminiStatusSpan.className = "small text-danger";
@@ -2162,7 +2163,8 @@
             enableRecsCheckbox.addEventListener("change", () => syncCatalogManagement(false));
         }
 
-        function toggleGeminiVisibility() {
+        function toggleGeminiVisibility(e) {
+            if (e) e.preventDefault();
             const keyInput = document.getElementById("gemini_api_key");
             const eyeIcon = document.getElementById("gemini-eye-icon");
             if (keyInput && eyeIcon) {
@@ -2190,12 +2192,12 @@
                 const apiKey = keyInput.value.trim();
                 if (!apiKey) {
                     geminiStatusSpan.textContent = "Key cannot be empty";
-                    geminiStatusSpan.className = "small text-danger ms-3";
+                    geminiStatusSpan.className = "small text-danger";
                     checkIcon.className = "fa-solid fa-circle-check text-danger";
                     return;
                 }
                 geminiStatusSpan.textContent = "Verifying...";
-                geminiStatusSpan.className = "small text-info ms-3";
+                geminiStatusSpan.className = "small text-info";
                 checkIcon.className = "fa-solid fa-circle-notch fa-spin text-info";
                 validateBtn.disabled = true;
                 try {
@@ -2208,17 +2210,17 @@
                     });
                     const result = await response.json();
                     if (response.ok && result.status === "success") {
-                        geminiStatusSpan.textContent = result.message;
-                        geminiStatusSpan.className = "small text-success fw-semibold ms-3";
+                        geminiStatusSpan.textContent = "API key verified";
+                        geminiStatusSpan.className = "small text-success fw-semibold";
                         checkIcon.className = "fa-solid fa-circle-check text-success";
                     } else {
                         geminiStatusSpan.textContent = result.message || "Invalid API key";
-                        geminiStatusSpan.className = "small text-danger ms-3";
+                        geminiStatusSpan.className = "small text-danger";
                         checkIcon.className = "fa-solid fa-circle-xmark text-danger";
                     }
                 } catch (err) {
                     geminiStatusSpan.textContent = "Verification failed";
-                    geminiStatusSpan.className = "small text-danger ms-3";
+                    geminiStatusSpan.className = "small text-danger";
                     checkIcon.className = "fa-solid fa-circle-xmark text-danger";
                 } finally {
                     validateBtn.disabled = false;
@@ -2230,7 +2232,7 @@
             keyInput.addEventListener("input", function () {
                 checkIcon.className = "fa-solid fa-circle-check text-secondary";
                 geminiStatusSpan.textContent = "Not verified";
-                geminiStatusSpan.className = "small text-secondary ms-3";
+                geminiStatusSpan.className = "small text-secondary";
             });
         }
 
