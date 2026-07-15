@@ -2162,24 +2162,19 @@
             enableRecsCheckbox.addEventListener("change", () => syncCatalogManagement(false));
         }
 
-        document.addEventListener("click", function (e) {
-            const toggleBtn = e.target.closest("#toggle-gemini-visibility");
-            if (toggleBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                const keyInput = document.getElementById("gemini_api_key");
-                const eyeIcon = document.getElementById("gemini-eye-icon");
-                if (keyInput) {
-                    const isPassword = keyInput.type === "password" || keyInput.getAttribute("type") === "password";
-                    const newType = isPassword ? "text" : "password";
-                    keyInput.type = newType;
-                    keyInput.setAttribute("type", newType);
-                    if (eyeIcon) {
-                        eyeIcon.className = isPassword ? "fa-regular fa-eye-slash" : "fa-regular fa-eye";
-                    }
+        const keyInput = document.getElementById("gemini_api_key");
+        const toggleBtn = document.getElementById("toggle-gemini-visibility");
+        if (toggleBtn && keyInput) {
+            toggleBtn.addEventListener("click", function () {
+                if (keyInput.type === "password") {
+                    keyInput.type = "text";
+                    toggleBtn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+                } else {
+                    keyInput.type = "password";
+                    toggleBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
                 }
-            }
-        });
+            });
+        }
 
         const validateBtn = document.getElementById("validate-gemini-btn");
         const checkIcon = document.getElementById("gemini-check-icon");
