@@ -120,6 +120,7 @@ async def mal_callback():
             }
         )
         existing.pop("mal_token_expired", None)
+        existing.pop("mal_expired_at", None)
         store_user(existing)
 
         await flash("Connected to MyAnimeList!", "success")
@@ -154,6 +155,7 @@ async def refresh_mal():
             }
         )
         user.pop("mal_token_expired", None)
+        user.pop("mal_expired_at", None)
         store_user(user)
         await flash("MAL session refreshed.", "success")
     except Exception as e:
@@ -264,6 +266,7 @@ async def anilist_save():
         )
         user.pop("anilist_last_auth_error_at", None)
         user.pop("anilist_token_expired", None)
+        user.pop("anilist_expired_at", None)
         store_user(user)
         return {"ok": True, "username": anilist_username}
 
@@ -287,6 +290,7 @@ async def disconnect_mal():
         user.pop("name", None)
         user.pop("mal_picture", None)
         user.pop("mal_token_expired", None)
+        user.pop("mal_expired_at", None)
 
         from app.services.db import invalidate_user_watchlist_cache
 
@@ -320,6 +324,7 @@ async def disconnect_anilist():
         user.pop("anilist_username", None)
         user.pop("anilist_picture", None)
         user.pop("anilist_token_expired", None)
+        user.pop("anilist_expired_at", None)
 
         from app.services.db import invalidate_user_watchlist_cache
 
@@ -455,6 +460,7 @@ async def simkl_callback():
             }
         )
         user.pop("simkl_token_expired", None)
+        user.pop("simkl_expired_at", None)
         store_user(user)
 
         # Invalidate watchlist cache so it re-fetches with Simkl items included
@@ -485,6 +491,7 @@ async def disconnect_simkl():
         user.pop("simkl_avatar", None)
         user.pop("simkl_id", None)
         user.pop("simkl_token_expired", None)
+        user.pop("simkl_expired_at", None)
 
         from app.services.db import invalidate_user_watchlist_cache
 
