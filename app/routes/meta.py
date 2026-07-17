@@ -486,7 +486,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
                 meta["description"] = found_desc
 
         # Apply user preferred Metadata Provider override (MAL / AniList with Kitsu fallback)
-        await apply_metadata_provider_override(meta, user, mal_id, anilist_id)
+        mal_data_override = await apply_metadata_provider_override(meta, user, mal_id, anilist_id)
 
         # Apply custom poster provider if configured
         if (user.get("poster_provider") and user.get("poster_provider") != "none") or user.get("rpdb_api_key"):
@@ -522,7 +522,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             except Exception as e:
                 logging.debug("Could not fetch AniList media status for airing countdown: %s", e)
 
-        next_airing_hdr = build_next_airing_header(al_data)
+        next_airing_hdr = build_next_airing_header(al_data, mal_data=mal_data_override if 'mal_data_override' in locals() else None)
         if next_airing_hdr:
             dynamic_headers.append(next_airing_hdr)
 
@@ -578,33 +578,32 @@ def build_user_status_header(user_id: str, mal_id: str | None, anilist_id: str |
     return f"[{' • '.join(parts)}]"
 
 
-def build_next_airing_header(anilist_data: dict | None = None) -> str | None:
-    if not anilist_data:
-        return None
+def build_next_airing_header(anilist_data: dict | None = None, mal_data: dict | None = None) -> str | None:
+    if anilist_data:
+        next_ep = anilist_data.get("nextAiringEpisode")
+        if next_ep:
+            ep_num = next_ep.get("episode")
+            time_until = next_ep.get("timeUntilAiring")
+            if time_until is not None and ep_num is not None and time_until > 0:
+                if time_until < 3600:
+                    mins = max(1, time_until // 60)
+                    time_str = f"in {mins}m"
+                elif time_until < 86400:
+                    hours = max(1, time_until // 3600)
+                    time_str = f"in {hours}h"
+                else:
+                    days = max(1, time_until // 86400)
+                    time_str = f"in {days}d"
+                return f"[Next Airing: Episode {ep_num} releases {time_str}]"
 
-    next_ep = anilist_data.get("nextAiringEpisode")
-    if not next_ep:
-        return None
+    if mal_data:
+        broadcast = mal_data.get("broadcast") or {}
+        day = broadcast.get("day")
+        time_str = broadcast.get("time")
+        if day and time_str:
+            return f"[Next Airing: Broadcasts {day} at {time_str} JST]"
 
-    ep_num = next_ep.get("episode")
-    time_until = next_ep.get("timeUntilAiring")
-    if time_until is None or ep_num is None:
-        return None
-
-    if time_until <= 0:
-        return None
-
-    if time_until < 3600:
-        mins = max(1, time_until // 60)
-        time_str = f"in {mins}m"
-    elif time_until < 86400:
-        hours = max(1, time_until // 3600)
-        time_str = f"in {hours}h"
-    else:
-        days = max(1, time_until // 86400)
-        time_str = f"in {days}d"
-
-    return f"[Next Airing: Episode {ep_num} releases {time_str}]"
+    return None
 
 
 def build_filler_arc_header(anizp_data: dict | None, watched_progress: int = 0) -> str | None:
@@ -705,13 +704,15 @@ def build_expired_trackers_notice(user: dict | None) -> str | None:
     return f"Your {trackers_str} {session_word} expired. You can re-login via the website."
 
 
-async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str | None, anilist_id: str | None):
+async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str | None, anilist_id: str | None) -> dict | None:
     provider = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
+    mal_data_ret = None
     if provider == "mal" and mal_id:
         try:
             from app.api.jikan import get_anime_by_id
             mal_data = await get_anime_by_id(mal_id)
             if mal_data:
+                mal_data_ret = mal_data
                 images = mal_data.get("images", {})
                 jpg_img = images.get("jpg", {}) or images.get("webp", {})
                 poster_url = jpg_img.get("large_image_url") or jpg_img.get("image_url")
@@ -748,3 +749,5 @@ async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str |
                     meta["imdbRating"] = f"{avg_score / 10:.1f}"
         except Exception as e:
             logging.warning("Failed to apply AniList metadata override for anilist_id=%s: %s", anilist_id, e)
+
+    return mal_data_ret
