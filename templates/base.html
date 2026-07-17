@@ -205,7 +205,7 @@
     </div>
     {% endif %}
 
-    <div class="container pt-4 pb-2 {% if session.get('user') %}flash-wrap{% endif %}">
+    <div class="container pt-2 pt-sm-4 pb-2 {% if session.get('user') %}flash-wrap{% endif %}">
         {% block content %}{% endblock %}
     </div>
 
