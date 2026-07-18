@@ -29,6 +29,7 @@ def is_trusted_url(url: str) -> bool:
             "kitsu.io",
             "metahub.space",
             "ratingposterdb.com",
+            "topposters.com",
             "tmdb.org",
             "thetvdb.com",
         )
@@ -61,7 +62,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
     try:
         # Fetch the original poster image using pooled client
         client = get_client()
-        resp = await client.get(original_url, timeout=8)
+        resp = await client.get(original_url, timeout=8, follow_redirects=True)
         if resp.status_code != 200:
             logging.warning("Failed to fetch original poster from CDN: %s (status %s)", original_url, resp.status_code)
             return redirect(original_url)
