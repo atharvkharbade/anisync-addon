@@ -219,6 +219,11 @@ async def resolve(kitsu_id: str) -> tuple[str | None, str | None]:
       2. ani.zip (api.ani.zip)   — fallback 1
       3. Fribb  (GitHub raw)     — fallback 2
     """
+    if not kitsu_id:
+        return None, None
+    if isinstance(kitsu_id, str):
+        kitsu_id = kitsu_id.replace("kitsu:", "").strip()
+
     cached = get_cached_ids(kitsu_id)
     if cached:
         return cached.get("mal_id"), cached.get("anilist_id")
@@ -357,15 +362,10 @@ async def fetch_anime_info_by_anilist_id(anilist_id: str) -> tuple[str | None, s
 
 
 async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
-    """
-    Returns kitsu_id (str) for a given mal_id.
-    Checks MongoDB cache first, then tries APIs in order:
-      1. ARM (arm.haglund.dev)
-      2. Fribb (GitHub raw)
-      3. Title-based fallback (AniList title lookup -> Kitsu text search)
-    """
     if not mal_id:
         return None
+    if isinstance(mal_id, str):
+        mal_id = mal_id.replace("mal:", "").strip()
     cached = get_cached_ids_by_mal(mal_id)
     if cached and cached.get("kitsu_id"):
         return str(cached["kitsu_id"])
@@ -437,16 +437,10 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
 
 
 async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
-    """
-    Returns kitsu_id (str) for a given anilist_id.
-    Checks MongoDB cache first, then tries APIs in order:
-      1. ARM (arm.haglund.dev)
-      2. ani.zip (api.ani.zip)
-      3. Fribb (GitHub raw)
-      4. Title-based fallback (AniList title lookup -> Kitsu text search)
-    """
     if not anilist_id:
         return None
+    if isinstance(anilist_id, str):
+        anilist_id = anilist_id.replace("anilist:", "").strip()
     cached = get_cached_ids_by_anilist(anilist_id)
     if cached and cached.get("kitsu_id"):
         return str(cached["kitsu_id"])
@@ -522,12 +516,10 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
 
 
 async def resolve_simkl_to_kitsu(simkl_id: str) -> str | None:
-    """
-    Returns kitsu_id (str) for a given simkl_id.
-    Checks MongoDB cache first, then queries local watchlist cache, then Simkl API.
-    """
     if not simkl_id:
         return None
+    if isinstance(simkl_id, str):
+        simkl_id = simkl_id.replace("simkl:", "").strip()
     cached = get_cached_ids_by_simkl(simkl_id)
     if cached and cached.get("kitsu_id"):
         return str(cached["kitsu_id"])
