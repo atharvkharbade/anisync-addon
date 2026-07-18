@@ -31,7 +31,7 @@ async def validate_top_poster_api_key(api_key: str) -> bool:
     try:
         client = get_client()
         resp = await client.get(url, timeout=8)
-        if resp.status_code == 200:
+        if resp.status_code in [200, 302, 307]:
             return True
         url_alt = f"https://topposters.com/api/{api_key}/imdb/poster-default/tt0111161.jpg"
         resp_alt = await client.get(url_alt, timeout=8)
