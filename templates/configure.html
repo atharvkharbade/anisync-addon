@@ -1293,7 +1293,7 @@
                         </div>
 
                         <!-- Gemini AI Section Replica -->
-                        <div id="gemini-key-section" style="margin-top: 1.5rem; max-width: 400px;">
+                        <div id="gemini-key-section" style="margin-top: 1.5rem;">
                             <label class="rec-label mb-2">GEMINI AI (OPTIONAL)</label>
                             <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
                                 Used to generate personalized, AI-powered explanations for recommended anime based on
@@ -1316,9 +1316,9 @@
                                 </button>
                             </div>
 
-                            <div class="d-flex justify-content-between align-items-center mt-2.5">
+                            <div class="d-flex justify-content-between align-items-center mt-2" style="max-width: 400px;">
                                 <span id="gemini-validation-status"
-                                    class="small ms-3 {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                    class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
                                     {% if user.get('gemini_api_key') %}
                                     {% if user.get('gemini_key_valid') == False %}
                                     Invalid Gemini API key
@@ -1330,7 +1330,7 @@
                                     {% endif %}
                                 </span>
                                 <a href="https://aistudio.google.com/" target="_blank"
-                                    class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
+                                    class="small text-info text-decoration-none" style="font-size:0.75rem;">
                                     Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
                                         style="font-size: 0.65rem;"></i>
                                 </a>
