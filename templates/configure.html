@@ -1300,40 +1300,43 @@
                                 your unique watch history.
                             </p>
 
-                            <div class="gemini-input-wrapper position-relative">
-                                <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
-                                    value="{{ user.get('gemini_api_key', '') }}"
-                                    placeholder="Paste your Gemini API key here">
-                                <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
-                                    style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
-                                    <i class="fa-regular fa-eye" id="gemini-eye-icon"></i>
-                                </button>
-                                <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
-                                    title="Validate Key">
-                                    <i id="gemini-check-icon"
-                                        class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
-                                        style="font-size: 1.1rem; transition: color 0.2s;"></i>
-                                </button>
-                            </div>
+                            <div style="max-width: 400px;">
+                                <div class="gemini-input-wrapper position-relative">
+                                    <i class="fa-solid fa-key gemini-icon" style="color: #02a9ff;"></i>
+                                    <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
+                                        value="{{ user.get('gemini_api_key', '') }}"
+                                        placeholder="Paste your Gemini API key here">
+                                    <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
+                                        style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                        <i class="fa-regular fa-eye" id="gemini-eye-icon"></i>
+                                    </button>
+                                    <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
+                                        title="Validate Key">
+                                        <i id="gemini-check-icon"
+                                            class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                            style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                                    </button>
+                                </div>
 
-                            <div class="d-flex justify-content-between align-items-center mt-2" style="max-width: 400px;">
-                                <span id="gemini-validation-status"
-                                    class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
-                                    {% if user.get('gemini_api_key') %}
-                                    {% if user.get('gemini_key_valid') == False %}
-                                    Invalid Gemini API key
-                                    {% else %}
-                                    API key verified
-                                    {% endif %}
-                                    {% else %}
-                                    Not verified
-                                    {% endif %}
-                                </span>
-                                <a href="https://aistudio.google.com/" target="_blank"
-                                    class="small text-info text-decoration-none" style="font-size:0.75rem;">
-                                    Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
-                                        style="font-size: 0.65rem;"></i>
-                                </a>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span id="gemini-validation-status"
+                                        class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                        {% if user.get('gemini_api_key') %}
+                                        {% if user.get('gemini_key_valid') == False %}
+                                        Invalid Gemini API key
+                                        {% else %}
+                                        API key verified
+                                        {% endif %}
+                                        {% else %}
+                                        Not verified
+                                        {% endif %}
+                                    </span>
+                                    <a href="https://aistudio.google.com/" target="_blank"
+                                        class="small text-info text-decoration-none" style="font-size:0.75rem;">
+                                        Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
+                                            style="font-size: 0.65rem;"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
