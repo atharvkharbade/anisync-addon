@@ -1507,6 +1507,33 @@
                                 <strong class="text-warning">{tvdb_id}</strong>
                             </p>
                         </div>
+
+                        <!-- New Episode Overlay Design -->
+                        <div class="mt-4 pt-3 border-top border-secondary border-opacity-10" style="max-width: 400px;">
+                            <label class="rec-label mb-2 small text-secondary">New Episode Overlay Style</label>
+                            <div class="custom-select-wrapper" id="badge_style_wrapper" data-input-id="badge_style">
+                                {% set current_badge_style = user.get('badge_style', 'classic') %}
+                                <input type="hidden" id="badge_style" name="badge_style" value="{{ current_badge_style }}">
+                                <div class="custom-select">
+                                    <span id="badge_style_display" class="custom-select-text d-flex align-items-center">
+                                        {% if current_badge_style == 'modern' %}
+                                        <i class="fa-solid fa-wand-magic-sparkles text-info me-2"></i>Modern (Top Adaptive Pill + Trackers)
+                                        {% else %}
+                                        <i class="fa-solid fa-grip-lines text-warning me-2"></i>Classic (Bottom Accent Bar)
+                                        {% endif %}
+                                    </span>
+                                    <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                </div>
+                                <div class="custom-options-menu">
+                                    <div class="custom-option-item d-flex align-items-center" data-value="classic">
+                                        <i class="fa-solid fa-grip-lines text-warning me-2"></i>Classic (Bottom Accent Bar)
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="modern">
+                                        <i class="fa-solid fa-wand-magic-sparkles text-info me-2"></i>Modern (Top Adaptive Pill + Trackers)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
