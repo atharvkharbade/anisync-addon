@@ -1341,63 +1341,97 @@
                     <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art Customization</h6>
 
                     <div id="poster-provider-section">
-                        <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                            Enhance anime poster covers with Rating Poster DB (RPDB) overlays, TOP Posters, or a custom poster URL.
-                        </p>
-
-                        <div class="custom-select-wrapper mb-3" id="poster_provider_wrapper"
-                            data-input-id="poster_provider" style="max-width: 400px;">
-                            {% set current_provider = user.get('poster_provider', 'none') %}
-                            <input type="hidden" id="poster_provider" name="poster_provider"
-                                value="{{ current_provider }}">
-                            <div class="custom-select">
-                                <span id="poster_provider_display" class="custom-select-text d-flex align-items-center">
-                                    {% if current_provider == 'rpdb' %}
-                                    <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0"
-                                        style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating
-                                    Poster DB (RPDB)
-                                    {% elif current_provider == 'top_poster' or current_provider == 'topposters' %}
-                                    <img src="/assets/topposters_logo.png" width="18" height="18"
-                                        class="me-2 flex-shrink-0"
-                                        style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP
-                                    Posters
-                                    {% elif current_provider == 'custom' %}
-                                    <span
-                                        class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
-                                        style="width:18px; height:18px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:4px; font-size:10px;"><i
-                                            class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
-                                    {% else %}
-                                    <span
-                                        class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
-                                        style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i
-                                            class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
-                                    {% endif %}
-                                </span>
-                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                        <!-- New Episode Overlay Design -->
+                        <div style="max-width: 400px;" class="mb-4">
+                            <label class="rec-label mb-2 small text-secondary">NEW EPISODE OVERLAY STYLE</label>
+                            <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                                Choose how new episode badges appear on poster covers. Classic uses a solid bottom accent bar, while Modern uses a top adaptive color pill with tracker indicators.
+                            </p>
+                            <div class="custom-select-wrapper" id="badge_style_wrapper" data-input-id="badge_style">
+                                {% set current_badge_style = user.get('badge_style', 'classic') %}
+                                <input type="hidden" id="badge_style" name="badge_style" value="{{ current_badge_style }}">
+                                <div class="custom-select">
+                                    <span id="badge_style_display" class="custom-select-text d-flex align-items-center">
+                                        {% if current_badge_style == 'modern' %}
+                                        <i class="fa-solid fa-wand-magic-sparkles text-info me-2"></i>Modern
+                                        {% else %}
+                                        <i class="fa-solid fa-window-minimize text-warning me-2"></i>Classic
+                                        {% endif %}
+                                    </span>
+                                    <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                </div>
+                                <div class="custom-options-menu">
+                                    <div class="custom-option-item d-flex align-items-center" data-value="classic">
+                                        <i class="fa-solid fa-window-minimize text-warning me-2"></i>Classic
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="modern">
+                                        <i class="fa-solid fa-wand-magic-sparkles text-info me-2"></i>Modern
+                                    </div>
+                                </div>
                             </div>
-                            <div class="custom-options-menu">
-                                <div class="custom-option-item d-flex align-items-center" data-value="none">
-                                    <span
-                                        class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
-                                        style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i
-                                            class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
+                        </div>
+
+                        <!-- Divider & Poster Provider Section -->
+                        <div class="pt-3 border-top border-secondary border-opacity-10">
+                            <label class="rec-label mb-2 small text-secondary">POSTER ART COVER PROVIDER</label>
+                            <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                                Enhance anime poster covers with Rating Poster DB (RPDB) overlays, TOP Posters, or a custom poster URL.
+                            </p>
+
+                            <div class="custom-select-wrapper mb-3" id="poster_provider_wrapper"
+                                data-input-id="poster_provider" style="max-width: 400px;">
+                                {% set current_provider = user.get('poster_provider', 'none') %}
+                                <input type="hidden" id="poster_provider" name="poster_provider"
+                                    value="{{ current_provider }}">
+                                <div class="custom-select">
+                                    <span id="poster_provider_display" class="custom-select-text d-flex align-items-center">
+                                        {% if current_provider == 'rpdb' %}
+                                        <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0"
+                                            style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating
+                                        Poster DB (RPDB)
+                                        {% elif current_provider == 'top_poster' or current_provider == 'topposters' %}
+                                        <img src="/assets/topposters_logo.png" width="18" height="18"
+                                            class="me-2 flex-shrink-0"
+                                            style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP
+                                        Posters
+                                        {% elif current_provider == 'custom' %}
+                                        <span
+                                            class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
+                                            style="width:18px; height:18px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:4px; font-size:10px;"><i
+                                                class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
+                                        {% else %}
+                                        <span
+                                            class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
+                                            style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i
+                                                class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
+                                        {% endif %}
+                                    </span>
+                                    <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
                                 </div>
-                                <div class="custom-option-item d-flex align-items-center" data-value="rpdb">
-                                    <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0"
-                                        style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating
-                                    Poster DB (RPDB)
-                                </div>
-                                <div class="custom-option-item d-flex align-items-center" data-value="top_poster">
-                                    <img src="/assets/topposters_logo.png" width="18" height="18"
-                                        class="me-2 flex-shrink-0"
-                                        style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP
-                                    Posters
-                                </div>
-                                <div class="custom-option-item d-flex align-items-center" data-value="custom">
-                                    <span
-                                        class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
-                                        style="width:18px; height:18px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:4px; font-size:10px;"><i
-                                            class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
+                                <div class="custom-options-menu">
+                                    <div class="custom-option-item d-flex align-items-center" data-value="none">
+                                        <span
+                                            class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
+                                            style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i
+                                                class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="rpdb">
+                                        <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0"
+                                            style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating
+                                        Poster DB (RPDB)
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="top_poster">
+                                        <img src="/assets/topposters_logo.png" width="18" height="18"
+                                            class="me-2 flex-shrink-0"
+                                            style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP
+                                        Posters
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="custom">
+                                        <span
+                                            class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
+                                            style="width:18px; height:18px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:4px; font-size:10px;"><i
+                                                class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1506,33 +1540,6 @@
                                 <strong class="text-warning">{tmdb_id}</strong>,
                                 <strong class="text-warning">{tvdb_id}</strong>
                             </p>
-                        </div>
-
-                        <!-- New Episode Overlay Design -->
-                        <div class="mt-4 pt-3 border-top border-secondary border-opacity-10" style="max-width: 400px;">
-                            <label class="rec-label mb-2 small text-secondary">New Episode Overlay Style</label>
-                            <div class="custom-select-wrapper" id="badge_style_wrapper" data-input-id="badge_style">
-                                {% set current_badge_style = user.get('badge_style', 'classic') %}
-                                <input type="hidden" id="badge_style" name="badge_style" value="{{ current_badge_style }}">
-                                <div class="custom-select">
-                                    <span id="badge_style_display" class="custom-select-text d-flex align-items-center">
-                                        {% if current_badge_style == 'modern' %}
-                                        <i class="fa-solid fa-wand-magic-sparkles text-info me-2"></i>Modern
-                                        {% else %}
-                                        <i class="fa-solid fa-window-minimize text-warning me-2"></i>Classic
-                                        {% endif %}
-                                    </span>
-                                    <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                                </div>
-                                <div class="custom-options-menu">
-                                    <div class="custom-option-item d-flex align-items-center" data-value="classic">
-                                        <i class="fa-solid fa-window-minimize text-warning me-2"></i>Classic
-                                    </div>
-                                    <div class="custom-option-item d-flex align-items-center" data-value="modern">
-                                        <i class="fa-solid fa-wand-magic-sparkles text-info me-2"></i>Modern
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
