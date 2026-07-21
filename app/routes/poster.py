@@ -80,7 +80,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
         w, h = img.size  # w=225, h=350
 
         tracker = request.args.get("tracker", "").lower()
-        badge_style = request.args.get("style", "classic").lower()
+        badge_style = request.args.get("style", "modern").lower()
 
         # Create overlay image for transparent drawing
         overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))

@@ -2026,7 +2026,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if is_new_ep and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
                     m_id_for_url = mal_id if mal_id else (anilist_id if anilist_id else f"simkl_{simkl_id}")
-                    badge_style = user.get("badge_style", "classic")
+                    badge_style = user.get("badge_style", "modern")
                     active_trackers = []
                     if item.get("mal_item"):
                         active_trackers.append("mal")
@@ -2325,7 +2325,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 if is_new_ep and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
-                    badge_style = user.get("badge_style", "classic")
+                    badge_style = user.get("badge_style", "modern")
                     poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/simkl_{simkl_id}_simkl_v21.jpg?url={encoded_url}&badge=new&tracker=simkl&style={badge_style}&v=newep_graphical_v21"
 
                 kitsu_id = kitsu_mappings.get(f"simkl:{simkl_id}")
@@ -2572,7 +2572,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 if is_new_ep and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
-                    badge_style = user.get("badge_style", "classic")
+                    badge_style = user.get("badge_style", "modern")
                     poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{mal_id}_mal_v21.jpg?url={encoded_url}&badge=new&tracker=mal&style={badge_style}&v=newep_graphical_v21"
 
                 kitsu_id = kitsu_mappings.get(f"mal:{mal_id}")
@@ -2797,7 +2797,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 if is_new_ep and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
-                    badge_style = user.get("badge_style", "classic")
+                    badge_style = user.get("badge_style", "modern")
                     poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{al_id}_anilist_v21.jpg?url={encoded_url}&badge=new&tracker=anilist&style={badge_style}&v=newep_graphical_v21"
 
                 kitsu_id = kitsu_mappings.get(f"anilist:{al_id}")

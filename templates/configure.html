@@ -1348,7 +1348,7 @@
                                 Choose how new episode badges appear on poster covers. Classic uses a solid bottom accent bar, while Modern uses a top adaptive color pill with tracker indicators.
                             </p>
                             <div class="custom-select-wrapper" id="badge_style_wrapper" data-input-id="badge_style">
-                                {% set current_badge_style = user.get('badge_style', 'classic') %}
+                                {% set current_badge_style = user.get('badge_style', 'modern') %}
                                 <input type="hidden" id="badge_style" name="badge_style" value="{{ current_badge_style }}">
                                 <div class="custom-select">
                                     <span id="badge_style_display" class="custom-select-text d-flex align-items-center">

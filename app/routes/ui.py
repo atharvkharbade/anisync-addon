@@ -312,7 +312,7 @@ async def configure(user_id: str = ""):
         if "poster_provider" in form:
             user["poster_provider"] = form.get("poster_provider", "none").strip()
         if "badge_style" in form:
-            user["badge_style"] = form.get("badge_style", "classic").strip()
+            user["badge_style"] = form.get("badge_style", "modern").strip()
         if "top_poster_key" in form:
             user["top_poster_key"] = form.get("top_poster_key", "").strip()
         if "custom_poster_pattern" in form:
