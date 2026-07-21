@@ -166,7 +166,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
                 # 2. Bottom Tracker Names inside matching adaptive rounded box container
                 try:
-                    font_bottom = ImageFont.truetype(font_path, 12)
+                    font_bottom = ImageFont.truetype(font_path, 15)
                 except Exception:
                     font_bottom = font
 
@@ -174,7 +174,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 if draw_mal:
                     tracker_names.append("MAL")
                 if draw_al:
-                    tracker_names.append("AniList")
+                    tracker_names.append("AL")
                 if draw_simkl:
                     tracker_names.append("Simkl")
 
@@ -206,13 +206,13 @@ async def serve_modified_poster(user_id: str, media_id: str):
                     btw = right_b - left_b
                     bth = bottom_b - top_b
                 except Exception:
-                    btw, bth = 70, 12
+                    btw, bth = 70, 14
                     left_b, top_b = 0, 0
 
-                bot_box_w = btw + 22
-                bot_box_h = bth + 10
+                bot_box_w = btw + 26
+                bot_box_h = bth + 14
                 bot_box_x1 = (w - bot_box_w) / 2
-                bot_box_y1 = h - bot_box_h - 10
+                bot_box_y1 = h - bot_box_h - 18
                 bot_box_x2 = bot_box_x1 + bot_box_w
                 bot_box_y2 = bot_box_y1 + bot_box_h
 
