@@ -1345,7 +1345,7 @@
                         <div style="max-width: 400px;" class="mb-4">
                             <label class="rec-label mb-2 small text-secondary">NEW EPISODE OVERLAY STYLE</label>
                             <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                                Choose how new episode overlays appear on poster covers. Classic uses a solid bottom accent bar, while Modern uses dual adaptive rounded chips for new episode status and active trackers.
+                                Choose your poster style. Classic adds a solid bar at the bottom, while Modern uses sleek top and bottom badges that match the poster's colors.
                             </p>
                             <div class="custom-select-wrapper" id="badge_style_wrapper" data-input-id="badge_style">
                                 {% set current_badge_style = user.get('badge_style', 'modern') %}
@@ -1355,14 +1355,14 @@
                                         {% if current_badge_style == 'modern' %}
                                         <i class="fa-solid fa-wand-magic-sparkles text-info me-2"></i>Modern
                                         {% else %}
-                                        <i class="fa-solid fa-border-bottom text-warning me-2"></i>Classic
+                                        <i class="fa-solid fa-square-minus text-warning me-2"></i>Classic
                                         {% endif %}
                                     </span>
                                     <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
                                 </div>
                                 <div class="custom-options-menu">
                                     <div class="custom-option-item d-flex align-items-center" data-value="classic">
-                                        <i class="fa-solid fa-border-bottom text-warning me-2"></i>Classic
+                                        <i class="fa-solid fa-square-minus text-warning me-2"></i>Classic
                                     </div>
                                     <div class="custom-option-item d-flex align-items-center" data-value="modern">
                                         <i class="fa-solid fa-wand-magic-sparkles text-info me-2"></i>Modern
