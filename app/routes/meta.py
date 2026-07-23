@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import urllib.parse
 
 from quart import Blueprint
 
@@ -424,45 +425,6 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             cached_ids = get_cached_ids(kitsu_id)
             if cached_ids:
                 simkl_id = cached_ids.get("simkl_id")
-                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url
         show_filler = user.get("show_filler_tags", True) if user else True
         show_watched = user.get("show_watched_tags", False) if user else False
         watched_progress = 0
