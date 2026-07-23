@@ -424,7 +424,45 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             cached_ids = get_cached_ids(kitsu_id)
             if cached_ids:
                 simkl_id = cached_ids.get("simkl_id")
-
+                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url
         show_filler = user.get("show_filler_tags", True) if user else True
         show_watched = user.get("show_watched_tags", False) if user else False
         watched_progress = 0
@@ -739,8 +777,9 @@ async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str |
                 banner_url = al_data.get("bannerImage")
                 if banner_url:
                     encoded_banner = urllib.parse.quote_plus(banner_url)
+                    host_url = request.host_url.rstrip("/")
                     meta["background"] = (
-                        f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/background/"
+                        f"{host_url}/{user_id}/background/"
                         f"anilist_{anilist_id}_bg22.jpg?url={encoded_banner}"
                     )
                 desc = al_data.get("description")
