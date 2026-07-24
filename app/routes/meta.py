@@ -743,7 +743,7 @@ async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str |
                     uid = user.get("uid", "") if user else ""
                     meta["background"] = (
                         f"{host_url}/{uid}/background/"
-                        f"anilist_{anilist_id}_bg22.jpg?url={encoded_banner}"
+                        f"anilist_{anilist_id}_bg23.jpg?url={encoded_banner}"
                     )
                 desc = al_data.get("description")
                 if desc:
