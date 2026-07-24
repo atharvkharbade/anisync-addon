@@ -156,6 +156,25 @@
             border-color: rgba(255, 255, 255, 0.25);
             color: #ffffff;
         }
+        .btn-kofi {
+            background: rgba(255, 94, 91, 0.12);
+            border: 1px solid rgba(255, 94, 91, 0.3);
+            color: #ff5e5b;
+            font-size: 0.85rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .btn-kofi:hover {
+            background: #ff5e5b;
+            border-color: #ff5e5b;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(255, 94, 91, 0.35);
+        }
+        .btn-kofi:hover i {
+            color: #ffffff !important;
+        }
     </style>
 </head>
 <body>
@@ -167,6 +186,9 @@
                 <span>AniSync</span>
             </a>
             <div class="d-flex gap-2 align-items-center">
+                <a href="https://ko-fi.com/atharvkharbade" target="_blank" rel="noopener noreferrer" class="btn btn-kofi d-inline-flex align-items-center justify-content-center me-1">
+                    <i class="fa-solid fa-mug-hot me-1.5" style="color: #ff5e5b;"></i><span class="d-none d-sm-inline font-semibold ms-1">Support</span>
+                </a>
                 <button type="button" class="btn btn-whats-new d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#whatsNewModal" onclick="fetchGitHubReleases();">
                     <i class="fa-regular fa-bell text-warning"></i><span class="d-none d-sm-inline font-semibold ms-2">What's New</span>
                 </button>
@@ -214,6 +236,10 @@
         <div class="d-flex justify-content-center align-items-center gap-3">
             <a href="https://github.com/atharvkharbade/anisync-addon" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
                 <i class="fa-brands fa-github fs-6"></i> GitHub
+            </a>
+            <span style="color: #334155; font-size: 0.8rem;">•</span>
+            <a href="https://ko-fi.com/atharvkharbade" target="_blank" rel="noopener noreferrer" class="github-link d-inline-flex align-items-center gap-2" style="color: #ff5e5b;">
+                <i class="fa-solid fa-mug-hot fs-6" style="color: #ff5e5b;"></i> Support on Ko-fi
             </a>
             <span style="color: #334155; font-size: 0.8rem;">•</span>
             <a href="https://github.com/atharvkharbade/anisync-addon/issues" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
