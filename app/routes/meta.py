@@ -2,7 +2,7 @@ import asyncio
 import logging
 import urllib.parse
 
-from quart import Blueprint
+from quart import Blueprint, request
 
 from app.lib.id_resolver import resolve, resolve_anilist_to_kitsu, resolve_mal_to_kitsu, resolve_simkl_to_kitsu
 from app.routes.utils import is_valid_user_id, rate_limit, respond_with
