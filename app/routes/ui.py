@@ -390,7 +390,7 @@ async def check_gemini_api_key_valid(api_key: str) -> tuple[bool, str]:
     if not api_key:
         return False, "Key cannot be empty"
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={api_key}"
         payload = {"contents": [{"parts": [{"text": "Hello, respond with OK if you read this."}]}]}
         async with httpx.AsyncClient(timeout=5) as client:
             resp = await client.post(url, json=payload)
