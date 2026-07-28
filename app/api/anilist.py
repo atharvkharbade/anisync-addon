@@ -181,6 +181,8 @@ query ($userId: Int, $status: MediaListStatus) {
           title {
             userPreferred
             english
+            romaji
+            native
           }
           coverImage {
             large
