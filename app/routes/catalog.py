@@ -1690,9 +1690,13 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 elif item.get("simkl_item"):
                     show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
                     simkl_status_str = show_obj.get("status", "")
-                    is_airing = simkl_status_str in ["airing", "currently airing"]
                     if item.get("mal_id") and bulk_details:
                         al_media = bulk_details.get(item["mal_id"]) or {}
+                    if al_media:
+                        al_status_str = al_media.get("status", "")
+                        is_airing = al_status_str in ["RELEASING", "NOT_YET_RELEASED"]
+                    else:
+                        is_airing = simkl_status_str in ["airing", "currently airing"]
 
                 # Extract progress
                 progress = 0
@@ -1855,9 +1859,13 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
                         )
                         simkl_status_str = show_obj.get("status", "")
-                        is_airing = simkl_status_str in ["airing", "currently airing"]
                         if item.get("mal_id") and bulk_details:
                             al_media = bulk_details.get(item["mal_id"]) or {}
+                        if al_media:
+                            al_status_str = al_media.get("status", "")
+                            is_airing = al_status_str in ["RELEASING", "NOT_YET_RELEASED"]
+                        else:
+                            is_airing = simkl_status_str in ["airing", "currently airing"]
 
                     progress = 0
                     if item.get("mal_item"):
