@@ -733,10 +733,13 @@ async def generate_genre_recommendations(
 
         # Choose title based on language
         title_pref = media.get("title", {})
-        if rec_language == "ja":
-            title = title_pref.get("romaji") or title_pref.get("userPreferred") or title_pref.get("english")
+        title_lang = (user.get("title_language", "english") or "english").lower() if user else "english"
+        if title_lang == "japanese":
+            title = title_pref.get("native") or title_pref.get("userPreferred") or title_pref.get("english") or "Unknown Title"
+        elif title_lang == "romaji":
+            title = title_pref.get("romaji") or title_pref.get("userPreferred") or title_pref.get("english") or "Unknown Title"
         else:
-            title = title_pref.get("english") or title_pref.get("userPreferred") or title_pref.get("romaji")
+            title = title_pref.get("english") or title_pref.get("userPreferred") or title_pref.get("romaji") or "Unknown Title"
 
         if filter_watched and title.lower() in watched_titles:
             continue
@@ -747,17 +750,18 @@ async def generate_genre_recommendations(
         poster = (media.get("coverImage") or {}).get("large") or (media.get("coverImage") or {}).get("medium") or ""
 
         key = f"mal:{mid}" if mid else f"anilist:{aid}"
-        description = media.get("description", "")
-        if description:
-            import re
+        syn = clean_html(media.get("description") or "")
+        desc_header = f"Popular {genre} anime based on your taste."
+        full_desc = f"{desc_header}  \n\n{syn}" if syn else desc_header
 
-            description = re.sub("<[^<]+?>", "", description)
-            if len(description) > 200:
-                description = description[:200] + "..."
-        else:
-            description = f"Popular anime in {genre}."
-
-        recs.append({"id": key, "type": item_type, "name": title, "poster": poster, "description": description})
+        recs.append({
+            "id": key,
+            "type": item_type,
+            "name": title,
+            "poster": poster,
+            "description": full_desc,
+            "synopsis": syn,
+        })
     return recs
 
 
@@ -1524,7 +1528,13 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                         continue
             if item["id"] not in shown_ids_set:
                 shown_ids_set.add(item["id"])
-                padded_items.append(item)
+                item_copy = item.copy()
+                curr_desc = item_copy.get("description", "")
+                if default_desc and "\n\n" not in curr_desc:
+                    syn = item_copy.get("synopsis") or curr_desc
+                    item_copy["description"] = f"{default_desc}  \n\n{syn}" if syn else default_desc
+                padded_items.append(item_copy)
+
         for fb_item in fallback_list:
             if len(padded_items) >= min_count:
                 break
@@ -1542,12 +1552,9 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                     continue
             shown_ids_set.add(fb_item["id"])
             item_copy = fb_item.copy()
+            fb_desc = item_copy.get("synopsis") or item_copy.get("description") or ""
             if default_desc:
-                fb_desc = item_copy.get("description") or ""
-                if fb_desc:
-                    item_copy["description"] = f"{default_desc}  \n\n{fb_desc}"
-                else:
-                    item_copy["description"] = default_desc
+                item_copy["description"] = f"{default_desc}  \n\n{fb_desc}" if fb_desc else default_desc
             padded_items.append(item_copy)
 
         # Second pass safety fallback (allow reuse of shown_ids across catalogs if we could not satisfy min_count)
@@ -1569,17 +1576,21 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                     if tracker == "anilist" and ext_id in watched_anilist_ids:
                         continue
                 item_copy = fb_item.copy()
+                fb_desc = item_copy.get("synopsis") or item_copy.get("description") or ""
                 if default_desc:
-                    fb_desc = item_copy.get("description") or ""
-                    if fb_desc:
-                        item_copy["description"] = f"{default_desc}  \n\n{fb_desc}"
-                    else:
-                        item_copy["description"] = default_desc
+                    item_copy["description"] = f"{default_desc}  \n\n{fb_desc}" if fb_desc else default_desc
                 padded_items.append(item_copy)
         return padded_items
 
     # 1. Deduplicate & pad Top Picks
-    top_picks = pad_catalog(top_picks, fallbacks, shown_ids, watched_titles_filter, min_count=15)
+    top_picks = pad_catalog(
+        top_picks,
+        fallbacks,
+        shown_ids,
+        watched_titles_filter,
+        min_count=15,
+        default_desc="Popular community recommendation.",
+    )
     # 2. Deduplicate & pad Loved Items
     loved_items = pad_catalog(
         loved_items,
@@ -1605,7 +1616,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         shown_ids,
         watched_titles_filter,
         min_count=15,
-        default_desc="Popular genre collection.",
+        default_desc=f"Popular {genre_1_name} collection.",
     )
     genre_2_items = pad_catalog(
         genre_2_items,
@@ -1613,7 +1624,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         shown_ids,
         watched_titles_filter,
         min_count=15,
-        default_desc="Popular genre collection.",
+        default_desc=f"Popular {genre_2_name} collection.",
     )
 
     # Enforce sorting order preference (Default, Series First, Movies First)

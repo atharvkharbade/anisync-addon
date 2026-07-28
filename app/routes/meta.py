@@ -554,21 +554,23 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
 def extract_rec_prefix(desc: str | None) -> tuple[str | None, str | None]:
     """
-    If description contains a recommendation reason prefix (e.g. 'Inspired by your history...',
-    'AniList Community Recommendation', 'MAL Community Recommendation', or Gemini reasoning),
+    If description contains a recommendation reason prefix (e.g. 'Inspired by...',
+    'Community Recommendation', 'Popular ... collection', or Gemini reasoning),
     extract the prefix and the underlying synopsis.
     """
     if not desc:
         return None, None
 
     known_markers = [
-        "inspired by your history:",
-        "anilist community recommendation",
-        "mal community recommendation",
+        "inspired by",
         "community recommendation",
-        "recommended based on your history",
-        "popular anime in",
-        "franchise sequel, prequel, or spin-off",
+        "recommended",
+        "popular",
+        "trending",
+        "franchise",
+        "because you",
+        "collection",
+        "based on your",
     ]
 
     parts = desc.split("\n\n", 1)
