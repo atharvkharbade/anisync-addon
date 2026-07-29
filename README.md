@@ -10,54 +10,162 @@
 [![Docker Support](https://img.shields.io/badge/docker-ready-2496ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![Stremio Addon](https://img.shields.io/badge/stremio-addon-8a2be2.svg)](https://stremio.com)
 
-**AniSync** is a power-user-focused Stremio addon that automatically synchronizes your anime progress with MyAnimeList, AniList and Simkl in real-time. It enriches Stremio with poster badges (including support for RPDB overlays), airing indicators, episode filler & watched tags and personalized catalogs directly synced with your watchlists.
+**AniSync** is a power-user-focused Stremio addon that seamlessly bridges your anime tracking experience across **MyAnimeList**, **AniList**, and **Simkl**. It enriches Stremio with real-time watchlist synchronization, customizable multi-tracker poster badges, multi-provider metadata (Kitsu, MAL, AniList), title language localization, progress-aware filler warnings, live airing countdowns, and personalized recommendations.
 
 ---
 
 ## 🌟 Features
 
-### 📺 Poster Badges & Airing Indicators
-Whenever a new episode drops for a show on your watchlist, AniSync overlays a clean `NEW EPISODE` banner directly on the poster in Stremio. If you connect multiple trackers, it overlays MyAnimeList, AniList and Simkl logos side-by-side.
-* **RPDB Integration**: Optionally supply a Rating Poster DB (RPDB) API key to overlay rating logos directly on your posters.
+### 📺 Multi-Tracker Poster Badges & `NEW EPISODE` Overlays
+Whenever a new episode drops for a show on your watchlist, AniSync overlays an eye-catching `NEW EPISODE` indicator directly on the poster in Stremio. If you connect multiple tracking services, AniSync displays side-by-side tracker logos (**MAL**, **AniList**, **Simkl**).
 
-![Combined Tracker Poster Badges](docs/images/stremio_poster_badges.png)
+Choose between two distinct aesthetic overlay designs in your configuration:
+* **Modern Design**: Sleek bottom pill badges with compact tracker logos.
+* **Classic Design**: High-contrast top header ribbon with distinct bottom tracker badges.
+* **RPDB Integration**: Optionally supply your Rating Poster DB (RPDB) API key to overlay rating badges directly on posters.
 
-### 🗂️ Combined Watchlist Catalogs
-Connect MyAnimeList, AniList and Simkl simultaneously. AniSync merges and deduplicates your lists into single, clean catalogs in Stremio, auto-merging progress across trackers and supporting AniList re-watching series.
+<p align="center">
+  <b>Modern Design</b><br>
+  <img src="docs/images/stremio_poster_badges_modern.png" alt="Modern Poster Badges" width="95%" />
+</p>
+
+<p align="center">
+  <b>Classic Design</b><br>
+  <img src="docs/images/stremio_poster_badges_classic.png" alt="Classic Poster Badges" width="95%" />
+</p>
+
+---
+
+### 🗂️ Synchronized Watchlist Catalogs
+Connect MyAnimeList, AniList, and Simkl simultaneously. AniSync deduplicates and organizes your anime into clean, unified catalogs:
+* **Combined Watchlists**: Merges *Watching*, *Plan to Watch*, *Completed*, *On Hold*, and *Dropped* across all connected accounts.
+* **Granular Catalog Manager**: Enable, disable, or reorder combined catalogs vs. dedicated individual tracker rows to tailor your Stremio home screen.
+* **Multi-Account Auto-Merge**: Automatically merges progress across trackers and handles AniList re-watching series seamlessly.
 
 ![Stremio Combined Catalogs](docs/images/stremio_combined_watchlists.png)
 
-### 🤖 Personalized Anime Recommendations
-Get custom anime recommendation rows injected directly into Stremio based on your watch history and tastes.
-* **Gemini AI Enhancement**: Optionally supply a Gemini API key to personalize recommendation titles and generate custom themed lists.
+---
+
+### 🤖 Intelligent Personalized Recommendations (100% Explained)
+Discover new anime with personalized recommendation rows injected directly into Stremio:
+* **100% Recommendation Reasons**: Every suggested anime explains *why* it appears on your home screen (e.g. *"Inspired by your favorites: Hunter x Hunter"*, *"Popular Dark Fantasy based on your taste"*, or *"Popular community recommendation"*).
+* **Gemini AI Natural Language Explanations**: Optionally connect a Google Gemini API key for natural language suggestions tailored to your unique taste.
+* **5 Dedicated Rows**: *Top Picks for You*, *Inspired by your Favorites*, *More from your Watchlist*, *Because you Watched [Anime]*, and *Curated Genre Collections*.
 
 ![Stremio Recommendations](docs/images/stremio_gemini_recs.png)
 
-### 🚫 Episode Filler Indicators (`[Filler]`)
-Fetches episode lists via the Jikan API and prepends a `[Filler]` tag directly to the episode titles in Stremio's player detail overlay, letting you know exactly which episodes are safe to skip.
+---
+
+### 🚫 Progress-Aware Filler Arc Warnings & Inline `[Filler]` Tags
+Never wonder if an episode is canon again:
+* **Dynamic Filler Arc Notices**: Injects intelligent progress-aware alerts directly into the series summary:
+  * `[Current Filler Arc: Episodes 101–106]` if you are currently watching inside a filler block.
+  * `[Upcoming Filler Arc: Episodes 101–106]` if a filler arc approaches within your next 10 episodes.
+  * `[Filler Guide: ...]` if you are starting a show with standalone filler episodes.
+* **Inline Episode Tags**: Shows a `[Filler]` tag directly beside episode titles in Stremio's player and season list.
 
 ![Inline episode filler tag details](docs/images/stremio_filler_indicators.png)
 
+---
+
 ### ✅ Episode Watched Indicators (`[Watched]`)
-A unique feature that prepends a `[Watched]` tag directly to the episode titles in Stremio for all episodes you have already completed. By reading your watch progress from MyAnimeList, AniList or Simkl. AniSync lets you see exactly where you left off at a glance inside Stremio's player and detail views.
+Prepends a `[Watched]` badge to completed episodes in Stremio by reading your synchronized progress from MyAnimeList, AniList, or Simkl. Instantly see where you left off without opening external tracking apps.
 
 ![Inline episode watched tag details](docs/images/stremio_watched_indicators.png)
+
+---
+
+### ⚡ Multi-Provider Metadata Engine
+Choose your preferred anime database:
+* **Kitsu (Default)**: Rock-solid foundational metadata and high-speed streaming resolution.
+* **MyAnimeList (MAL)**: Full MAL synopsis, community scores, and official studio descriptions.
+* **AniList**: AniList synopsis formatting, average scores, and vibrant backdrop banners.
+* *Universal Fallback*: All streaming resolution stays fully compatible with Stremio's torrent and streaming addons.
+
+---
+
+### 🌐 Universal Title Language Localization
+Switch titles addon-wide with one click in `/configure`:
+* **English**: Official localized English titles (e.g. *Attack on Titan*, *Case Closed*).
+* **Romaji**: Standard Romanized Japanese titles (e.g. *Shingeki no Kyojin*, *Meitantei Conan*).
+* **Japanese (Native)**: Original Kanji/Kana titles (e.g. *進撃の巨人*, *名探偵コナン*).
+
+---
+
+### ⏳ Real-Time Next Airing Countdowns
+Stay on top of weekly episode releases:
+* Injects a live `[Next Airing: Episode X releases in Y days]` schedule header into the synopsis of currently airing anime.
+* Powered by live AniList GraphQL & MAL broadcast feeds.
+* Intelligently suppresses stale historical broadcast schedules on completed series.
+
+---
+
+### 🧭 Rich Discovery Catalogs
+Explore trending and top-rated anime curated directly from the anime community:
+* **AniList Trending Now**: The hottest anime currently gaining popularity.
+* **AniList All-Time Popular**: The most popular anime across the entire AniList database.
+* **MyAnimeList Top Airing**: Highest-rated anime currently airing this season.
+* **MyAnimeList Most Popular**: Most added and watched anime on MyAnimeList.
+
+---
+
+### 🚀 Status-Aware Caching Architecture
+AniSync features an intelligent dual-tier MongoDB caching engine:
+* **Airing / Releasing Anime (2-Hour TTL)**: Ensures new episode drops, filler tags, and airing countdowns update immediately.
+* **Completed Anime (7-Day TTL)**: Accelerates massive 1,000+ episode series (like *One Piece* and *Detective Conan*) by **~90%** (17s ➡️ <1.9s) for instantaneous loading.
 
 ---
 
 ## 📥 Installation
 
 1. Visit the **[AniSync Configuration Dashboard](https://anisync.qzz.io)**
-2. Authenticate with **MyAnimeList**, **AniList** and/or **Simkl**
-3. Save your preferences and click **Direct Install** or copy the **Manifest URL** into Stremio.
+2. Authenticate with **MyAnimeList**, **AniList**, and/or **Simkl**.
+3. Customize your preferred metadata provider, title language, poster overlay style, and catalog rows.
+4. Click **Install Addon** or copy the **Manifest URL** into Stremio.
 
 ---
 
 ## 🛠️ Self-Hosting
 
-### Docker Compose
+### 1. Environment Configuration
 
-You can easily deploy AniSync using Docker. Create a `.env` file from `.env.example` (which includes configuration for general and domain-specific SOCKS5/HTTP proxies to bypass tracker rate limits) and run:
+Create a `.env` file based on `.env.example`:
+
+```env
+# ── App & Security ─────────────────────────────────────────────────────────
+SECRET_KEY=generate_a_secure_random_string_here
+FLASK_DEBUG=0
+FLASK_RUN_HOST=yourdomain.com
+
+# ── MongoDB ───────────────────────────────────────────────────────────────
+MONGO_URI=mongodb://mongo:27017
+MONGO_DB=anisync
+
+# ── Tracker OAuth Credentials ─────────────────────────────────────────────
+# MyAnimeList (https://myanimelist.net/apiconfig)
+MAL_CLIENT_ID=your_mal_client_id
+MAL_CLIENT_SECRET=your_mal_client_secret
+
+# AniList (https://anilist.co/settings/developer)
+ANILIST_CLIENT_ID=your_anilist_client_id
+ANILIST_CLIENT_SECRET=your_anilist_client_secret
+
+# Simkl (https://simkl.com/settings/developer)
+SIMKL_CLIENT_ID=your_simkl_client_id
+SIMKL_CLIENT_SECRET=your_simkl_client_secret
+
+# ── Proxy & Rate-Limit Mitigation (Optional) ──────────────────────────────
+# Route API requests through HTTP, HTTPS, or SOCKS5 proxies
+PROXY_URL=
+PROXY_MAL=
+PROXY_ANILIST=
+PROXY_SIMKL=
+PROXY_JIKAN=
+PROXY_KITSU=
+PROXY_ANIZP=
+```
+
+### 2. Docker Compose
 
 ```yaml
 services:
@@ -114,7 +222,7 @@ networks:
 
 ## ⚠️ Disclaimer
 
-**AniSync** is a tool for synchronizing progress and managing metadata from anime tracking services. It does not host, store or distribute any media or video content. The developer does not endorse or promote access to copyrighted content. Users are solely responsible for complying with all applicable laws and the terms of service of any addons or services they use with AniSync.
+**AniSync** is a tool for synchronizing watch progress and organizing metadata from anime tracking services. It does not host, store, stream, or distribute any media or video content. Users are solely responsible for complying with the terms of service of any third-party services used in conjunction with AniSync.
 
 ---
 
