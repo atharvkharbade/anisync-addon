@@ -26,12 +26,12 @@ Choose between two distinct aesthetic overlay designs in your configuration:
 
 <p align="center">
   <b>Modern Design</b><br>
-  <img src="docs/images/stremio_poster_badges_modern.png" alt="Modern Poster Badges" width="95%" />
+  <img src="docs/images/New_Episode_Overlay_Modern.png" alt="Modern Poster Badges" width="95%" />
 </p>
 
 <p align="center">
   <b>Classic Design</b><br>
-  <img src="docs/images/stremio_poster_badges_classic.png" alt="Classic Poster Badges" width="95%" />
+  <img src="docs/images/New_Episode_Overlay_Classic.png" alt="Classic Poster Badges" width="95%" />
 </p>
 
 ---
@@ -42,7 +42,7 @@ Connect MyAnimeList, AniList, and Simkl simultaneously. AniSync deduplicates and
 * **Granular Catalog Manager**: Enable, disable, or reorder combined catalogs vs. dedicated individual tracker rows to tailor your Stremio home screen.
 * **Multi-Account Auto-Merge**: Automatically merges progress across trackers and handles AniList re-watching series seamlessly.
 
-![Stremio Combined Catalogs](docs/images/stremio_combined_watchlists.png)
+![Stremio Combined Catalogs](docs/images/Combined_Tracker_Watchlist.png)
 
 ---
 
@@ -52,7 +52,7 @@ Discover new anime with personalized recommendation rows injected directly into 
 * **Gemini AI Natural Language Explanations**: Optionally connect a Google Gemini API key for natural language suggestions tailored to your unique taste.
 * **5 Dedicated Rows**: *Top Picks for You*, *Inspired by your Favorites*, *More from your Watchlist*, *Because you Watched [Anime]*, and *Curated Genre Collections*.
 
-![Stremio Recommendations](docs/images/stremio_gemini_recs.png)
+![Stremio Recommendations](docs/images/Anime_Recommendations.png)
 
 ---
 
@@ -64,14 +64,14 @@ Never wonder if an episode is canon again:
   * `[Filler Guide: ...]` if you are starting a show with standalone filler episodes.
 * **Inline Episode Tags**: Shows a `[Filler]` tag directly beside episode titles in Stremio's player and season list.
 
-![Inline episode filler tag details](docs/images/stremio_filler_indicators.png)
+![Inline episode filler tag details](docs/images/Episode_Filler.png)
 
 ---
 
 ### ✅ Episode Watched Indicators (`[Watched]`)
 Prepends a `[Watched]` badge to completed episodes in Stremio by reading your synchronized progress from MyAnimeList, AniList, or Simkl. Instantly see where you left off without opening external tracking apps.
 
-![Inline episode watched tag details](docs/images/stremio_watched_indicators.png)
+![Inline episode watched tag details](docs/images/Watched_Episode.png)
 
 ---
 
