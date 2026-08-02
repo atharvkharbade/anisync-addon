@@ -485,6 +485,9 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             if found_desc:
                 meta["description"] = found_desc
 
+        # Apply user preferred Metadata Provider override (MAL / AniList with Kitsu fallback)
+        await apply_metadata_provider_override(meta, user, mal_id, anilist_id)
+
         # Apply RPDB poster if configured
         if user.get("rpdb_api_key"):
             from app.services.rpdb import get_rpdb_poster_url
@@ -502,3 +505,48 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)
         return await respond_with({"meta": {}})
+
+
+async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str | None, anilist_id: str | None):
+    provider = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
+    if provider == "mal" and mal_id:
+        try:
+            from app.api.jikan import get_anime_by_id
+            mal_data = await get_anime_by_id(mal_id)
+            if mal_data:
+                images = mal_data.get("images", {})
+                jpg_img = images.get("jpg", {}) or images.get("webp", {})
+                poster_url = jpg_img.get("large_image_url") or jpg_img.get("image_url")
+                if poster_url:
+                    meta["poster"] = poster_url
+                synopsis = mal_data.get("synopsis")
+                if synopsis:
+                    meta["description"] = synopsis
+                score = mal_data.get("score")
+                if score:
+                    meta["imdbRating"] = str(score)
+        except Exception as e:
+            logging.warning("Failed to apply MAL metadata override for mal_id=%s: %s", mal_id, e)
+    elif provider == "anilist" and anilist_id:
+        try:
+            from app.api.anilist import get_media_status
+            token = user.get("anilist_token", "") if user else ""
+            al_data = await get_media_status(token, int(anilist_id))
+            if al_data:
+                cover = al_data.get("coverImage", {})
+                poster_url = cover.get("extraLarge") or cover.get("large")
+                if poster_url:
+                    meta["poster"] = poster_url
+                banner_url = al_data.get("bannerImage")
+                if banner_url:
+                    meta["background"] = banner_url
+                desc = al_data.get("description")
+                if desc:
+                    import re
+                    clean_desc = re.sub(r'<[^>]+>', '', desc)
+                    meta["description"] = clean_desc
+                avg_score = al_data.get("averageScore")
+                if avg_score:
+                    meta["imdbRating"] = f"{avg_score / 10:.1f}"
+        except Exception as e:
+            logging.warning("Failed to apply AniList metadata override for anilist_id=%s: %s", anilist_id, e)

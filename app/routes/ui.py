@@ -142,6 +142,7 @@ async def guest_login():
         "enable_recommendations": False,
         "enable_search": True,
         "title_language": "english",
+        "metadata_provider": "kitsu",
         "created_at": datetime.datetime.utcnow(),
     }
     store_user(guest_user)
@@ -231,6 +232,9 @@ async def configure(user_id: str = ""):
 
         if "title_language" in form:
             user["title_language"] = form.get("title_language", "english")
+
+        if "metadata_provider" in form:
+            user["metadata_provider"] = form.get("metadata_provider", "kitsu").lower()
 
         # Save visible catalogs selection list in custom sorted order
         if "sorted_catalogs" in form:
