@@ -156,6 +156,19 @@ CATALOGS = [
     },
     {
         "type": "anime",
+        "id": "anisync_spotlight",
+        "name": "AniSync Spotlight",
+        "extra": [
+            {
+                "name": "genre",
+                "options": ["Feature Films", "New Movies", "OVAs & Specials", "Classic Masterpieces"],
+                "isRequired": False,
+            },
+            {"name": "skip"},
+        ],
+    },
+    {
+        "type": "anime",
         "id": "anisync_seasonal",
         "name": "Seasonal Showcase",
         "extra": [
@@ -203,19 +216,6 @@ CATALOGS = [
         "id": "anisync_most_popular",
         "name": "Most Popular",
         "extra": [{"name": "skip"}],
-    },
-    {
-        "type": "anime",
-        "id": "anisync_spotlight",
-        "name": "AniSync Spotlight",
-        "extra": [
-            {
-                "name": "genre",
-                "options": ["Feature Films", "New Movies", "OVAs & Specials", "Classic Masterpieces"],
-                "isRequired": False,
-            },
-            {"name": "skip"},
-        ],
     },
     {
         "type": "anime",
@@ -454,13 +454,13 @@ async def user_manifest(user_id: str):
     active_catalogs = []
     rec_catalog_ids = ["anisync_rec", "anisync_loved", "anisync_liked"]
     discovery_catalog_ids = [
+        "anisync_spotlight",
         "anisync_seasonal",
         "anisync_schedule",
         "anisync_trending",
         "anisync_top_airing",
         "anisync_highest_rated",
         "anisync_most_popular",
-        "anisync_spotlight",
     ]
 
     # 1. Add custom sorted catalogs first (if user has saved preferences)
