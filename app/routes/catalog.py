@@ -734,77 +734,140 @@ async def update_discovery_catalogs_cache() -> dict:
     from app.services.db import db
     from app.lib.id_resolver import bulk_resolve_to_kitsu
 
-    query = """
-    query {
-      trending: Page(page: 1, perPage: 50) {
-        media(type: ANIME, sort: TRENDING_DESC, isAdult: false) {
+    now = datetime.datetime.utcnow()
+    month = now.month
+    year = now.year
+    if month in [1, 2, 3]:
+        cur_season = "WINTER"
+    elif month in [4, 5, 6]:
+        cur_season = "SPRING"
+    elif month in [7, 8, 9]:
+        cur_season = "SUMMER"
+    else:
+        cur_season = "FALL"
+
+    query = f"""
+    query {{
+      trending: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, sort: TRENDING_DESC, isAdult: false) {{
           id
           idMal
           format
           duration
-          title {
+          title {{
             english
             userPreferred
             romaji
-          }
-          coverImage {
+          }}
+          coverImage {{
             large
-          }
+          }}
           description
-        }
-      }
-      highestRated: Page(page: 1, perPage: 50) {
-        media(type: ANIME, sort: SCORE_DESC, isAdult: false) {
+        }}
+      }}
+      highestRated: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, sort: SCORE_DESC, isAdult: false) {{
           id
           idMal
           format
           duration
-          title {
+          title {{
             english
             userPreferred
             romaji
-          }
-          coverImage {
+          }}
+          coverImage {{
             large
-          }
+          }}
           description
-        }
-      }
-      mostPopular: Page(page: 1, perPage: 50) {
-        media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
+        }}
+      }}
+      mostPopular: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {{
           id
           idMal
           format
           duration
-          title {
+          title {{
             english
             userPreferred
             romaji
-          }
-          coverImage {
+          }}
+          coverImage {{
             large
-          }
+          }}
           description
-        }
-      }
-      topAiring: Page(page: 1, perPage: 50) {
-        media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {
+        }}
+      }}
+      topAiring: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {{
           id
           idMal
           format
           duration
-          title {
+          title {{
             english
             userPreferred
             romaji
-          }
-          coverImage {
+          }}
+          coverImage {{
             large
-          }
+          }}
           description
-        }
-      }
-    }
+        }}
+      }}
+      seasonal: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, season: {cur_season}, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
+          id
+          idMal
+          format
+          duration
+          title {{
+            english
+            userPreferred
+            romaji
+          }}
+          coverImage {{
+            large
+          }}
+          description
+        }}
+      }}
+      schedule: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC, isAdult: false) {{
+          id
+          idMal
+          format
+          duration
+          title {{
+            english
+            userPreferred
+            romaji
+          }}
+          coverImage {{
+            large
+          }}
+          description
+        }}
+      }}
+      spotlight: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, format: MOVIE, sort: SCORE_DESC, isAdult: false) {{
+          id
+          idMal
+          format
+          duration
+          title {{
+            english
+            userPreferred
+            romaji
+          }}
+          coverImage {{
+            large
+          }}
+          description
+        }}
+      }}
+    }}
     """
 
     res = await anilist_api._gql(None, query)
@@ -812,7 +875,8 @@ async def update_discovery_catalogs_cache() -> dict:
 
     mal_ids = []
     anilist_ids = []
-    for key in ["trending", "highestRated", "mostPopular", "topAiring"]:
+    all_keys = ["trending", "highestRated", "mostPopular", "topAiring", "seasonal", "schedule", "spotlight"]
+    for key in all_keys:
         media_list = data.get(key, {}).get("media", [])
         for m in media_list:
             aid = str(m["id"])
@@ -821,17 +885,19 @@ async def update_discovery_catalogs_cache() -> dict:
             if mid:
                 mal_ids.append(mid)
 
-    kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, anilist_ids=anilist_ids)
+    kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, anilist_ids=anilist_ids, skip_external=True)
 
     key_mapping = {
         "trending": "anisync_trending",
         "highestRated": "anisync_highest_rated",
         "mostPopular": "anisync_most_popular",
-        "topAiring": "anisync_top_airing"
+        "topAiring": "anisync_top_airing",
+        "seasonal": "anisync_seasonal",
+        "schedule": "anisync_schedule",
+        "spotlight": "anisync_spotlight",
     }
 
-    now = datetime.datetime.utcnow()
-    expires_at = now + datetime.timedelta(hours=6)
+    expires_at = now + datetime.timedelta(hours=12)
     discovery_col = db.get_collection("discovery_catalogs_cache")
 
     result_metas = {}
@@ -880,6 +946,8 @@ async def update_discovery_catalogs_cache() -> dict:
                 "description": desc
             })
 
+        result_metas[catalog_id] = metas
+
         try:
             discovery_col.update_one(
                 {"catalog_id": catalog_id},
@@ -909,8 +977,8 @@ async def discovery_catalogs_loop():
             logging.info("Discovery catalogs cache successfully updated.")
         except Exception as e:
             logging.error("Error in discovery catalogs pre-fetch loop: %s", e)
-        # Sleep for 6 hours (matching cache TTL) minus a 5-minute buffer
-        await asyncio.sleep(6 * 3600 - 300)
+        # Sleep for 12 hours (matching 12h cache TTL) minus a 5-minute buffer
+        await asyncio.sleep(12 * 3600 - 300)
 
 
 def trigger_discovery_catalogs_prefetch():
@@ -963,7 +1031,16 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
     metas = []
 
     # --- Discovery Catalogs ---
-    if catalog_id in ["anisync_trending", "anisync_highest_rated", "anisync_most_popular", "anisync_top_airing"]:
+    discovery_cat_ids = [
+        "anisync_trending",
+        "anisync_highest_rated",
+        "anisync_most_popular",
+        "anisync_top_airing",
+        "anisync_seasonal",
+        "anisync_schedule",
+        "anisync_spotlight",
+    ]
+    if catalog_id in discovery_cat_ids:
         if not user.get("enable_discovery_catalogs", True):
             return await respond_with({"metas": []})
 
@@ -991,8 +1068,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 else:
                     metas = []
 
-        # Shuffle if enabled
-        if user.get("shuffle_discovery_catalogs", False):
+        # Shuffle if enabled (excluding schedule catalog to preserve release order)
+        if user.get("shuffle_discovery_catalogs", False) and catalog_id != "anisync_schedule":
             import random
             metas = list(metas)
             random.shuffle(metas)

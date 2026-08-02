@@ -581,7 +581,7 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> str | None:
 
 
 async def bulk_resolve_to_kitsu(
-    mal_ids: list[str] = None, anilist_ids: list[str] = None, simkl_ids: list[str] = None
+    mal_ids: list[str] = None, anilist_ids: list[str] = None, simkl_ids: list[str] = None, skip_external: bool = False
 ) -> dict:
     """
     Returns a dict mapping (mal_id/anilist_id/simkl_id) -> kitsu_id.
@@ -645,6 +645,9 @@ async def bulk_resolve_to_kitsu(
                         resolved[f"anilist:{doc['anilist_id']}"] = k_id
         except Exception as e:
             logging.error("bulk_resolve_to_kitsu: fribb query failed: %s", e)
+
+    if skip_external:
+        return resolved
 
     # 3. Individual on-the-fly resolution
     remaining_mal = [x for x in (mal_ids or []) if f"mal:{x}" not in resolved]

@@ -180,6 +180,45 @@ CATALOGS = [
     },
     {
         "type": "anime",
+        "id": "anisync_seasonal",
+        "name": "Seasonal Showcase",
+        "extra": [
+            {
+                "name": "genre",
+                "options": ["Current Season", "Next Season", "Upcoming", "Winter", "Spring", "Summer", "Fall"],
+                "isRequired": False,
+            },
+            {"name": "skip"},
+        ],
+    },
+    {
+        "type": "anime",
+        "id": "anisync_schedule",
+        "name": "Weekly Release Calendar",
+        "extra": [
+            {
+                "name": "genre",
+                "options": ["Airing Today", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "isRequired": False,
+            },
+            {"name": "skip"},
+        ],
+    },
+    {
+        "type": "anime",
+        "id": "anisync_spotlight",
+        "name": "AniSync Spotlight",
+        "extra": [
+            {
+                "name": "genre",
+                "options": ["Feature Films", "New Movies", "OVAs & Specials", "Classic Masterpieces"],
+                "isRequired": False,
+            },
+            {"name": "skip"},
+        ],
+    },
+    {
+        "type": "anime",
         "id": "anisync_search",
         "name": "Search",
         "extra": [{"name": "search", "isRequired": True}, {"name": "skip"}],
@@ -409,7 +448,15 @@ async def user_manifest(user_id: str):
 
     active_catalogs = []
     rec_catalog_ids = ["anisync_rec", "anisync_loved", "anisync_liked"]
-    discovery_catalog_ids = ["anisync_trending", "anisync_top_airing", "anisync_highest_rated", "anisync_most_popular"]
+    discovery_catalog_ids = [
+        "anisync_trending",
+        "anisync_top_airing",
+        "anisync_highest_rated",
+        "anisync_most_popular",
+        "anisync_seasonal",
+        "anisync_schedule",
+        "anisync_spotlight",
+    ]
 
     # 1. Add custom sorted catalogs first (if user has saved preferences)
     if user_catalogs is not None:
@@ -457,8 +504,6 @@ async def user_manifest(user_id: str):
                     continue
             elif cat_id in discovery_catalog_ids:
                 if not enable_discovery_catalogs:
-                    continue
-                if "enable_discovery_catalogs" in user and cat_id not in user_catalogs:
                     continue
             else:
                 if not enable_catalogs:
