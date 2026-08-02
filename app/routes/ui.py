@@ -143,6 +143,15 @@ async def guest_login():
         "enable_search": True,
         "title_language": "english",
         "metadata_provider": "kitsu",
+        "catalogs": [
+            "anisync_trending",
+            "anisync_top_airing",
+            "anisync_highest_rated",
+            "anisync_most_popular",
+            "anisync_seasonal",
+            "anisync_schedule",
+            "anisync_spotlight",
+        ],
         "created_at": datetime.datetime.utcnow(),
     }
     store_user(guest_user)
