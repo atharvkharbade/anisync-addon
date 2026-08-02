@@ -918,7 +918,7 @@ async def update_discovery_catalogs_cache() -> dict:
         jikan_pop, jikan_airing, jikan_top, jikan_movies, jikan_season_now, jikan_schedule, jikan_fav = [], [], [], [], [], [], []
 
     jikan_map = {
-        "anisync_trending": jikan_season_now,
+        "anisync_trending": jikan_fav,
         "anisync_most_popular": jikan_pop,
         "anisync_top_airing": jikan_airing,
         "anisync_highest_rated": jikan_top,
