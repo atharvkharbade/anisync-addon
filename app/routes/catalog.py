@@ -877,8 +877,19 @@ async def update_discovery_catalogs_cache() -> dict:
     except Exception as e:
         logging.warning("AniList GraphQL discovery fetch failed (%s), relying on Jikan data...", e)
 
-    # Fetch Jikan discovery lists in parallel
+    # Fetch Jikan and Kitsu discovery lists in parallel
     from app.api.jikan import get_top_anime, get_airing_schedule, get_season_now
+
+    async def fetch_kitsu_discovery(query_str: str) -> list:
+        try:
+            client = get_client()
+            res = await client.get(f"https://kitsu.io/api/edge/anime?{query_str}", timeout=4.0)
+            if res.status_code == 200:
+                return res.json().get("data") or []
+        except Exception as ex:
+            logging.warning("Kitsu discovery fetch error (%s): %s", query_str, ex)
+        return []
+
     try:
         jikan_pop_task = asyncio.create_task(get_top_anime(filter_by="bypopularity", page=1))
         jikan_airing_task = asyncio.create_task(get_top_anime(filter_by="airing", page=1))
@@ -888,6 +899,12 @@ async def update_discovery_catalogs_cache() -> dict:
         jikan_schedule_task = asyncio.create_task(get_airing_schedule(page=1))
         jikan_fav_task = asyncio.create_task(get_top_anime(filter_by="favorite", page=1))
 
+        kitsu_pop_task = asyncio.create_task(fetch_kitsu_discovery("sort=-userCount&page[limit]=25"))
+        kitsu_rating_task = asyncio.create_task(fetch_kitsu_discovery("sort=-averageRating&page[limit]=25"))
+        kitsu_airing_task = asyncio.create_task(fetch_kitsu_discovery("filter[status]=current&sort=-userCount&page[limit]=25"))
+        kitsu_season_task = asyncio.create_task(fetch_kitsu_discovery("filter[status]=current&sort=-createdAt&page[limit]=25"))
+        kitsu_movie_task = asyncio.create_task(fetch_kitsu_discovery("filter[subtype]=movie&sort=-averageRating&page[limit]=25"))
+
         (
             jikan_pop,
             jikan_airing,
@@ -896,6 +913,11 @@ async def update_discovery_catalogs_cache() -> dict:
             jikan_season_now,
             jikan_schedule,
             jikan_fav,
+            kitsu_pop,
+            kitsu_rating,
+            kitsu_airing,
+            kitsu_season,
+            kitsu_movie,
         ) = await asyncio.gather(
             jikan_pop_task,
             jikan_airing_task,
@@ -904,6 +926,11 @@ async def update_discovery_catalogs_cache() -> dict:
             jikan_season_task,
             jikan_schedule_task,
             jikan_fav_task,
+            kitsu_pop_task,
+            kitsu_rating_task,
+            kitsu_airing_task,
+            kitsu_season_task,
+            kitsu_movie_task,
             return_exceptions=True,
         )
         jikan_pop = jikan_pop if isinstance(jikan_pop, list) else []
@@ -913,9 +940,16 @@ async def update_discovery_catalogs_cache() -> dict:
         jikan_season_now = jikan_season_now if isinstance(jikan_season_now, list) else []
         jikan_schedule = jikan_schedule if isinstance(jikan_schedule, list) else []
         jikan_fav = jikan_fav if isinstance(jikan_fav, list) else []
+
+        kitsu_pop = kitsu_pop if isinstance(kitsu_pop, list) else []
+        kitsu_rating = kitsu_rating if isinstance(kitsu_rating, list) else []
+        kitsu_airing = kitsu_airing if isinstance(kitsu_airing, list) else []
+        kitsu_season = kitsu_season if isinstance(kitsu_season, list) else []
+        kitsu_movie = kitsu_movie if isinstance(kitsu_movie, list) else []
     except Exception as ex:
-        logging.warning("Jikan parallel discovery fetch warning: %s", ex)
+        logging.warning("Parallel discovery fetch warning: %s", ex)
         jikan_pop, jikan_airing, jikan_top, jikan_movies, jikan_season_now, jikan_schedule, jikan_fav = [], [], [], [], [], [], []
+        kitsu_pop, kitsu_rating, kitsu_airing, kitsu_season, kitsu_movie = [], [], [], [], []
 
     jikan_map = {
         "anisync_trending": jikan_fav,
@@ -925,6 +959,16 @@ async def update_discovery_catalogs_cache() -> dict:
         "anisync_spotlight": jikan_movies,
         "anisync_seasonal": jikan_season_now,
         "anisync_schedule": jikan_schedule,
+    }
+
+    kitsu_map = {
+        "anisync_trending": kitsu_season,
+        "anisync_most_popular": kitsu_pop,
+        "anisync_top_airing": kitsu_airing,
+        "anisync_highest_rated": kitsu_rating,
+        "anisync_spotlight": kitsu_movie,
+        "anisync_seasonal": kitsu_season,
+        "anisync_schedule": kitsu_airing,
     }
 
     mal_ids = []
@@ -1039,6 +1083,37 @@ async def update_discovery_catalogs_cache() -> dict:
                 "title_obj": {"english": j_name, "romaji": j_name},
                 "poster": j_poster,
                 "description": j_desc
+            })
+
+        # Enrich with Kitsu discovery items if catalog has fewer than 25 items
+        k_items = kitsu_map.get(catalog_id, [])
+        for k_item in k_items:
+            if len(metas) >= 25:
+                break
+            k_id = k_item.get("id")
+            if not k_id:
+                continue
+            stremio_id = f"kitsu:{k_id}"
+            if any(m["id"] == stremio_id for m in metas):
+                continue
+            attr = k_item.get("attributes") or {}
+            k_name = attr.get("canonicalTitle") or (attr.get("titles") or {}).get("en") or "Unknown"
+            k_desc = attr.get("synopsis") or attr.get("description") or ""
+            k_desc = re.sub("<[^<]+?>", "", k_desc)
+            k_desc = k_desc.replace("\n", " ").replace("  ", " ").strip()
+            if len(k_desc) > 200:
+                k_desc = k_desc[:200] + "..."
+            p_obj = attr.get("posterImage") or {}
+            k_poster = p_obj.get("large") or p_obj.get("medium") or p_obj.get("small") or ""
+            k_type = "movie" if attr.get("subtype") == "movie" else "series"
+
+            metas.append({
+                "id": stremio_id,
+                "type": k_type,
+                "name": k_name,
+                "title_obj": {"english": k_name, "romaji": k_name},
+                "poster": k_poster,
+                "description": k_desc
             })
 
         result_metas[catalog_id] = metas
