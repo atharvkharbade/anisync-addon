@@ -364,15 +364,16 @@
         </div>
 
         {% if user.get('is_guest') %}
-        <div class="alert alert-info border-0 rounded-4 p-3 mb-4 shadow-sm" style="background: linear-gradient(135deg, rgba(2,169,255,0.15), rgba(0,242,254,0.1)); border-left: 4px solid #02a9ff !important;">
-            <div class="d-flex align-items-start">
-                <i class="fa-solid fa-user-secret fs-4 me-3 text-info mt-1"></i>
+        <div class="card-dark p-3 p-sm-4 mb-4 border-0 position-relative overflow-hidden" style="background: rgba(2, 169, 255, 0.06); border-left: 3px solid #02a9ff !important;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 42px; height: 42px; background: rgba(2, 169, 255, 0.12); color: #02a9ff;">
+                    <i class="fa-solid fa-user-secret fs-5"></i>
+                </div>
                 <div>
-                    <h6 class="fw-bold mb-1 text-white">Guest Mode Active — Standalone Anime Discovery</h6>
-                    <p class="small text-secondary mb-0">
-                        You can customize, reorder, and stream all 7 Discovery Catalogs in Stremio.
-                        To enable watch progress tracking or personal recommendations, sign in with <a href="{{ url_for('auth.authorize_mal') }}" class="text-info fw-semibold text-decoration-underline">MyAnimeList</a>, <a href="{{ url_for('auth.authorize_anilist') }}" class="text-info fw-semibold text-decoration-underline">AniList</a>, or <a href="{{ url_for('auth.authorize_simkl') }}" class="text-info fw-semibold text-decoration-underline">Simkl</a> anytime.
-                    </p>
+                    <div class="fw-semibold text-white mb-1" style="font-size: 0.98rem;">Guest Mode Active</div>
+                    <div class="text-secondary small" style="line-height: 1.45;">
+                        You can customize and reorder only Discovery catalogs. To enable watch progress tracking or personal recommendations, sign in with <a href="{{ url_for('auth.authorize_mal') }}" class="text-info fw-medium">MyAnimeList</a>, <a href="{{ url_for('auth.authorize_anilist') }}" class="text-info fw-medium">AniList</a>, or <a href="{{ url_for('auth.authorize_simkl') }}" class="text-info fw-medium">Simkl</a>.
+                    </div>
                 </div>
             </div>
         </div>
@@ -593,11 +594,11 @@
                 <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
                     value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
 
-                <div class="form-check form-switch mb-3">
+                <div class="form-check form-switch mb-3" {% if user.get('is_guest') %}style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
                     <input class="form-check-input" type="checkbox" role="switch" id="sync_unlisted" {% if
-                        user.get('sync_unlisted', False) %}checked{% endif %}>
+                        user.get('sync_unlisted', False) and not user.get('is_guest') %}checked{% endif %} {% if user.get('is_guest') %}disabled{% endif %}>
                     <label class="form-check-label ms-1" for="sync_unlisted">
-                        <span class="fw-medium d-block">Sync unlisted anime</span>
+                        <span class="fw-medium d-block">Sync unlisted anime {% if user.get('is_guest') %}<span class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or Simkl)</span>{% endif %}</span>
                         <span class="text-secondary small d-block">
                             Auto-add anime to your list when you start watching, even if not on your list yet.
                         </span>
@@ -635,11 +636,11 @@
                     </div>
                 </div>
 
-                <div class="form-check form-switch mb-3">
+                <div class="form-check form-switch mb-3" {% if user.get('is_guest') %}style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
                     <input class="form-check-input" type="checkbox" role="switch" id="enable_catalogs" {% if
-                        user.get('enable_catalogs', True) %}checked{% endif %}>
+                        user.get('enable_catalogs', True) and not user.get('is_guest') %}checked{% endif %} {% if user.get('is_guest') %}disabled{% endif %}>
                     <label class="form-check-label ms-1" for="enable_catalogs">
-                        <span class="fw-medium d-block">Enable Watchlist Catalogs</span>
+                        <span class="fw-medium d-block">Enable Watchlist Catalogs {% if user.get('is_guest') %}<span class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or Simkl)</span>{% endif %}</span>
                         <span class="text-secondary small d-block">
                             Expose your watchlist categories inside the app. Disable if you only want progress tracking
                             without extra catalogs.
@@ -993,11 +994,11 @@
                 <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
                     value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
 
-                <div class="form-check form-switch mb-3">
+                <div class="form-check form-switch mb-3" {% if user.get('is_guest') %}style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
                     <input class="form-check-input" type="checkbox" role="switch" id="enable_recommendations" {% if
-                        user.get('enable_recommendations', True) %}checked{% endif %}>
+                        user.get('enable_recommendations', True) and not user.get('is_guest') %}checked{% endif %} {% if user.get('is_guest') %}disabled{% endif %}>
                     <label class="form-check-label ms-1" for="enable_recommendations">
-                        <span class="fw-medium d-block">Enable Recommendations Catalogs</span>
+                        <span class="fw-medium d-block">Enable Recommendations Catalogs {% if user.get('is_guest') %}<span class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or Simkl)</span>{% endif %}</span>
                         <span class="text-secondary small d-block">
                             Enable personalized anime recommendations based on your tracking history.
                         </span>
