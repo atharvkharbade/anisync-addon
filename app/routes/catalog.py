@@ -883,9 +883,17 @@ async def update_discovery_catalogs_cache() -> dict:
     async def fetch_kitsu_discovery(query_str: str) -> list:
         try:
             client = get_client()
-            res = await client.get(f"https://kitsu.io/api/edge/anime?{query_str}", timeout=4.0)
+            res = await client.get(
+                f"https://kitsu.io/api/edge/anime?{query_str}",
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
+                timeout=4.0,
+            )
             if res.status_code == 200:
-                return res.json().get("data") or []
+                data = res.json()
+                if isinstance(data, dict):
+                    return data.get("data") or []
+            else:
+                logging.warning("Kitsu discovery returned HTTP %s for %s", res.status_code, query_str)
         except Exception as ex:
             logging.warning("Kitsu discovery fetch error (%s): %s", query_str, ex)
         return []
