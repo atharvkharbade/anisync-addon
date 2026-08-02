@@ -961,29 +961,29 @@
                         <div class="custom-select">
                             <span class="custom-select-text d-flex align-items-center">
                                 {% if user.get('title_language', 'english') == 'default' %}
-                                    <span class="me-2" style="font-size: 1rem; line-height: 1;">🌐</span>Default / Canonical
+                                    <i class="fa-solid fa-globe me-2 text-info" style="font-size:0.85rem; width:16px;"></i>Default / Canonical
                                 {% elif user.get('title_language', 'english') == 'romaji' %}
-                                    <span class="me-2" style="font-size: 1rem; line-height: 1;">🌸</span>Romaji
+                                    <i class="fa-solid fa-torii-gate me-2 text-danger" style="font-size:0.85rem; width:16px;"></i>Romaji
                                 {% elif user.get('title_language', 'english') == 'japanese' %}
-                                    <span class="me-2" style="font-size: 1rem; line-height: 1;">🇯🇵</span>Japanese
+                                    <i class="fa-solid fa-language me-2 text-warning" style="font-size:0.85rem; width:16px;"></i>Japanese
                                 {% else %}
-                                    <span class="me-2" style="font-size: 1rem; line-height: 1;">🇺🇸</span>English (Default)
+                                    <i class="fa-solid fa-earth-americas me-2 text-primary" style="font-size:0.85rem; width:16px;"></i>English (Default)
                                 {% endif %}
                             </span>
                             <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
                         </div>
                         <div class="custom-options-menu">
                             <div class="custom-option-item d-flex align-items-center" data-value="english">
-                                <span class="me-2" style="font-size: 1rem; line-height: 1;">🇺🇸</span>English (Default)
+                                <i class="fa-solid fa-earth-americas me-2 text-primary" style="font-size:0.85rem; width:16px;"></i>English (Default)
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="default">
-                                <span class="me-2" style="font-size: 1rem; line-height: 1;">🌐</span>Default / Canonical
+                                <i class="fa-solid fa-globe me-2 text-info" style="font-size:0.85rem; width:16px;"></i>Default / Canonical
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="romaji">
-                                <span class="me-2" style="font-size: 1rem; line-height: 1;">🌸</span>Romaji
+                                <i class="fa-solid fa-torii-gate me-2 text-danger" style="font-size:0.85rem; width:16px;"></i>Romaji
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="japanese">
-                                <span class="me-2" style="font-size: 1rem; line-height: 1;">🇯🇵</span>Japanese
+                                <i class="fa-solid fa-language me-2 text-warning" style="font-size:0.85rem; width:16px;"></i>Japanese
                             </div>
                         </div>
                     </div>
