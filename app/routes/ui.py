@@ -392,21 +392,27 @@ async def check_gemini_api_key_valid(api_key: str) -> tuple[bool, str]:
 
     if not api_key:
         return False, "Key cannot be empty"
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={api_key}"
-        payload = {"contents": [{"parts": [{"text": "Hello, respond with OK if you read this."}]}]}
-        async with httpx.AsyncClient(timeout=5) as client:
-            resp = await client.post(url, json=payload)
-            if resp.status_code == 200:
-                return True, "API key verified ✓"
-            else:
-                try:
-                    error_msg = resp.json().get("error", {}).get("message", "Invalid API key")
-                except Exception:
-                    error_msg = "Invalid API key"
-                return False, error_msg
-    except Exception as e:
-        return False, f"Validation failed: {str(e)}"
+
+    models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"]
+    payload = {"contents": [{"parts": [{"text": "Hello, respond with OK if you read this."}]}]}
+    last_error = "Invalid API key"
+
+    async with httpx.AsyncClient(timeout=5) as client:
+        for model in models:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+                resp = await client.post(url, json=payload)
+                if resp.status_code == 200:
+                    return True, f"API key verified ({model}) ✓"
+                else:
+                    try:
+                        last_error = resp.json().get("error", {}).get("message", "Invalid API key")
+                    except Exception:
+                        last_error = f"HTTP {resp.status_code}"
+            except Exception as e:
+                last_error = f"Validation failed: {str(e)}"
+
+    return False, last_error
 
 
 @ui_bp.route("/gemini/validation", methods=["POST"])

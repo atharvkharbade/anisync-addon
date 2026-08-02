@@ -1949,14 +1949,27 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
             Return only the raw JSON.
             """
             try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={gemini_api_key}"
+                models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"]
                 payload = {
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {"responseMimeType": "application/json"},
                 }
                 client = get_client()
-                resp = await client.post(url, json=payload, timeout=15)
-                if resp.status_code == 200:
+                resp = None
+                for model in models:
+                    try:
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_api_key}"
+                        r = await client.post(url, json=payload, timeout=15)
+                        if r.status_code == 200:
+                            resp = r
+                            logger.info("Successfully generated AI recommendations via %s", model)
+                            break
+                        else:
+                            logger.warning("Gemini model %s returned status %s, attempting next fallback model...", model, r.status_code)
+                    except Exception as model_err:
+                        logger.warning("Gemini model %s failed (%s), attempting next fallback model...", model, model_err)
+
+                if resp and resp.status_code == 200:
                     res_json = resp.json()
                     text = res_json["candidates"][0]["content"]["parts"][0]["text"]
                     ai_explanations = json.loads(text)
