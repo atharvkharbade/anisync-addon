@@ -14,7 +14,9 @@ _jikan_semaphore: Optional[asyncio.Semaphore] = None
 def get_jikan_semaphore() -> asyncio.Semaphore:
     global _jikan_semaphore
     if _jikan_semaphore is None:
-        _jikan_semaphore = asyncio.Semaphore(3)
+        custom_url = getattr(Config, "CUSTOM_JIKAN_URL", "").strip()
+        limit = 15 if custom_url else 3
+        _jikan_semaphore = asyncio.Semaphore(limit)
     return _jikan_semaphore
 
 
