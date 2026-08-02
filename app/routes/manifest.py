@@ -169,12 +169,12 @@ CATALOGS = [
     },
     {
         "type": "anime",
-        "id": "anisync_seasonal",
-        "name": "Seasonal Showcase",
+        "id": "anisync_schedule",
+        "name": "Weekly Release Calendar",
         "extra": [
             {
                 "name": "genre",
-                "options": ["Current Season", "Next Season", "Upcoming", "Winter", "Spring", "Summer", "Fall"],
+                "options": ["Airing Today", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
                 "isRequired": False,
             },
             {"name": "skip"},
@@ -182,12 +182,12 @@ CATALOGS = [
     },
     {
         "type": "anime",
-        "id": "anisync_schedule",
-        "name": "Weekly Release Calendar",
+        "id": "anisync_seasonal",
+        "name": "Seasonal Showcase",
         "extra": [
             {
                 "name": "genre",
-                "options": ["Airing Today", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "options": ["Current Season", "Next Season", "Upcoming", "Winter", "Spring", "Summer", "Fall"],
                 "isRequired": False,
             },
             {"name": "skip"},
@@ -455,8 +455,8 @@ async def user_manifest(user_id: str):
     rec_catalog_ids = ["anisync_rec", "anisync_loved", "anisync_liked"]
     discovery_catalog_ids = [
         "anisync_spotlight",
-        "anisync_seasonal",
         "anisync_schedule",
+        "anisync_seasonal",
         "anisync_trending",
         "anisync_top_airing",
         "anisync_highest_rated",
