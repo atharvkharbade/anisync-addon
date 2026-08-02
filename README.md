@@ -92,14 +92,6 @@ Switch titles addon-wide with one click in `/configure`:
 
 ---
 
-### ⏳ Real-Time Next Airing Countdowns
-Stay on top of weekly episode releases:
-* Injects a live `[Next Airing: Episode X releases in Y days]` schedule header into the synopsis of currently airing anime.
-* Powered by live AniList GraphQL & MAL broadcast feeds.
-* Intelligently suppresses stale historical broadcast schedules on completed series.
-
----
-
 ### 🧭 Rich Discovery Catalogs
 Explore curated discovery catalogs powered by real-time community databases:
 * **Spotlight**: Curated featured highlights and top picks.
@@ -109,6 +101,14 @@ Explore curated discovery catalogs powered by real-time community databases:
 * **Top Airing**: Highest-rated anime currently airing this season.
 * **All-Time Highest Rated**: The highest community-rated anime of all time.
 * **All-Time Most Popular**: The most added and watched anime across all trackers.
+
+---
+
+### ⏳ Real-Time Next Airing Countdowns
+Stay on top of weekly episode releases:
+* Injects a live `[Next Airing: Episode X releases in Y days]` schedule header into the synopsis of currently airing anime.
+* Powered by live AniList GraphQL & MAL broadcast feeds.
+* Intelligently suppresses stale historical broadcast schedules on completed series.
 
 ---
 
