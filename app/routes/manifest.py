@@ -414,9 +414,14 @@ async def user_manifest(user_id: str):
         return await respond_with(fallback)
 
     # Filter catalogs and resources based on active toggles
-    enable_catalogs = user.get("enable_catalogs", True)
+    if user.get("is_guest"):
+        enable_catalogs = False
+        enable_recommendations = False
+    else:
+        enable_catalogs = user.get("enable_catalogs", True)
+        enable_recommendations = user.get("enable_recommendations", True)
+
     enable_search = user.get("enable_search", True)
-    enable_recommendations = user.get("enable_recommendations", True)
     enable_discovery_catalogs = user.get("enable_discovery_catalogs", True)
     shuffle_discovery_catalogs = user.get("shuffle_discovery_catalogs", False)
 
