@@ -364,18 +364,14 @@
         </div>
 
         {% if user.get('is_guest') %}
-        <div class="card-dark p-3 p-sm-4 mb-4 border-0 position-relative overflow-hidden" style="background: rgba(2, 169, 255, 0.06); border-left: 3px solid #02a9ff !important;">
-            <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 42px; height: 42px; background: rgba(2, 169, 255, 0.12); color: #02a9ff;">
-                    <i class="fa-solid fa-user-secret fs-5"></i>
-                </div>
-                <div>
-                    <div class="fw-semibold text-white mb-1" style="font-size: 0.98rem;">Guest Mode Active</div>
-                    <div class="text-secondary small" style="line-height: 1.45;">
-                        You can customize and reorder only Discovery catalogs. To enable watch progress tracking or personal recommendations, sign in with <a href="{{ url_for('auth.authorize_mal') }}" class="text-info fw-medium">MyAnimeList</a>, <a href="{{ url_for('auth.authorize_anilist') }}" class="text-info fw-medium">AniList</a>, or <a href="{{ url_for('auth.authorize_simkl') }}" class="text-info fw-medium">Simkl</a>.
-                    </div>
-                </div>
+        <div class="card-dark p-3 p-sm-4 mb-3">
+            <div class="d-flex align-items-center mb-2">
+                <i class="fa-solid fa-user-secret me-2 text-info fs-5"></i>
+                <h6 class="fw-semibold mb-0 text-white">Guest Mode Active</h6>
             </div>
+            <p class="text-secondary small mb-0" style="line-height: 1.5;">
+                You can customize and reorder only Discovery catalogs. To enable watch progress tracking or personal recommendations, sign in with <a href="{{ url_for('auth.authorize_mal') }}" class="text-info fw-medium">MyAnimeList</a>, <a href="{{ url_for('auth.authorize_anilist') }}" class="text-info fw-medium">AniList</a>, or <a href="{{ url_for('auth.authorize_simkl') }}" class="text-info fw-medium">Simkl</a>.
+            </p>
         </div>
         {% endif %}
 
