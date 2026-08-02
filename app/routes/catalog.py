@@ -1020,6 +1020,37 @@ async def update_discovery_catalogs_cache() -> dict:
                 "description": j_desc
             })
 
+        # Fallback to top curated anime list if external APIs returned less than 5 items
+        if len(metas) < 5:
+            fallback_seed = [
+                {"id": "kitsu:745", "type": "series", "name": "Fullmetal Alchemist: Brotherhood", "poster": "https://media.kitsu.app/anime/cover_images/745/large.jpg", "description": "In this world, Alchemy, the science of understanding, deconstructing, and reconstructing matter, exists."},
+                {"id": "kitsu:46387", "type": "series", "name": "Frieren: Beyond Journey's End", "poster": "https://media.kitsu.app/anime/poster_images/46387/large.jpg", "description": "The adventure is over, but life goes on for an elf mage who begins to learn what it means to live."},
+                {"id": "kitsu:5639", "type": "series", "name": "Steins;Gate", "poster": "https://media.kitsu.app/anime/poster_images/5639/large.jpg", "description": "Rintaro Okabe is a self-proclaimed mad scientist who rents out a room in a shaky old building in Akihabara."},
+                {"id": "kitsu:7442", "type": "series", "name": "Attack on Titan", "poster": "https://media.kitsu.app/anime/poster_images/7442/large.jpg", "description": "Centuries ago, mankind was slaughtered to near extinction by monstrous humanoid creatures called Titans."},
+                {"id": "kitsu:6448", "type": "series", "name": "Hunter x Hunter (2011)", "poster": "https://media.kitsu.app/anime/poster_images/6448/large.jpg", "description": "Gon Freecss aspires to become a Hunter, an exceptional being capable of greatness."},
+                {"id": "kitsu:1260", "type": "series", "name": "Gintama", "poster": "https://media.kitsu.app/anime/poster_images/1260/large.jpg", "description": "Aliens known as Amanto have invaded Earth and taken over feudal Japan."},
+                {"id": "kitsu:43257", "type": "series", "name": "Bleach: Thousand-Year Blood War", "poster": "https://media.kitsu.app/anime/poster_images/43257/large.jpg", "description": "The peace is suddenly broken when warning sirens blare through the Soul Society."},
+                {"id": "kitsu:2535", "type": "series", "name": "Legend of the Galactic Heroes", "poster": "https://media.kitsu.app/anime/poster_images/2535/large.jpg", "description": "The 150-year interstellar war between the Galactic Empire and the Free Planets Alliance."},
+                {"id": "kitsu:727", "type": "series", "name": "Monster", "poster": "https://media.kitsu.app/anime/poster_images/727/large.jpg", "description": "Kenzou Tenma, an elite neurosurgeon in Germany, faces a moral decision that changes his life."},
+                {"id": "kitsu:1", "type": "series", "name": "Cowboy Bebop", "poster": "https://media.kitsu.app/anime/poster_images/1/large.jpg", "description": "In the year 2071, humanity has colonized the solar system, leaving Earth behind."},
+                {"id": "kitsu:1571", "type": "series", "name": "Code Geass: Lelouch of the Rebellion", "poster": "https://media.kitsu.app/anime/poster_images/1571/large.jpg", "description": "In the year 2010, the Holy Empire of Britannia conquers Japan."},
+                {"id": "kitsu:1376", "type": "series", "name": "Death Note", "poster": "https://media.kitsu.app/anime/poster_images/1376/large.jpg", "description": "A high school student discovers a supernatural notebook that grants him the ability to kill anyone."},
+                {"id": "kitsu:42765", "type": "series", "name": "Jujutsu Kaisen", "poster": "https://media.kitsu.app/anime/poster_images/42765/large.jpg", "description": "Idly indulging in unearthly activities with the Occult Club, high schooler Yuji Itadori spends his days."},
+                {"id": "kitsu:41370", "type": "series", "name": "Demon Slayer: Kimetsu no Yaiba", "poster": "https://media.kitsu.app/anime/poster_images/41370/large.jpg", "description": "Tanjiro Kamado's peaceful life is shattered when his family is slaughtered by demons."},
+                {"id": "kitsu:12", "type": "series", "name": "One Piece", "poster": "https://media.kitsu.app/anime/poster_images/12/large.jpg", "description": "Gol D. Roger was known as the 'Pirate King', the strongest and most infamous being."},
+                {"id": "kitsu:1555", "type": "series", "name": "Naruto Shippuden", "poster": "https://media.kitsu.app/anime/poster_images/1555/large.jpg", "description": "It has been two and a half years since Naruto Uzumaki left Konohagakure."},
+                {"id": "kitsu:41372", "type": "series", "name": "Vinland Saga", "poster": "https://media.kitsu.app/anime/poster_images/41372/large.jpg", "description": "Young Thorfinn grew up listening to the stories of old sailors that had traveled the ocean."},
+                {"id": "kitsu:176", "type": "movie", "name": "Spirited Away", "poster": "https://media.kitsu.app/anime/poster_images/176/large.jpg", "description": "Chihiro Ogino, a sullen 10-year-old girl, is less than thrilled when she and her parents find an abandoned amusement park."},
+                {"id": "kitsu:11949", "type": "movie", "name": "Your Name.", "poster": "https://media.kitsu.app/anime/poster_images/11949/large.jpg", "description": "Mitsuha Miyamizu, a high school girl, yearns to live the life of a boy in the bustling city of Tokyo."},
+                {"id": "kitsu:10340", "type": "movie", "name": "A Silent Voice", "poster": "https://media.kitsu.app/anime/poster_images/10340/large.jpg", "description": "Shouya Ishida is a high school student who bullied deaf classmate Shouko Nishimiya in middle school."},
+                {"id": "kitsu:178", "type": "movie", "name": "Princess Mononoke", "poster": "https://media.kitsu.app/anime/poster_images/178/large.jpg", "description": "When an Emishi village is attacked by a fierce demon boar, young prince Ashitaka risks his life."},
+                {"id": "kitsu:43448", "type": "series", "name": "Cyberpunk: Edgerunners", "poster": "https://media.kitsu.app/anime/poster_images/43448/large.jpg", "description": "A street kid trying to survive in a technology and body modification-obsessed city of the future."},
+                {"id": "kitsu:43806", "type": "series", "name": "Chainsaw Man", "poster": "https://media.kitsu.app/anime/poster_images/43806/large.jpg", "description": "Denji has a simple dream—to live a happy and peaceful life, spending time with a girl he likes."},
+                {"id": "kitsu:11438", "type": "series", "name": "Mob Psycho 100", "poster": "https://media.kitsu.app/anime/poster_images/11438/large.jpg", "description": "Eighth-grader Shigeo 'Mob' Kageyama has tapped into his inner wellspring of psychic prowess."},
+                {"id": "kitsu:12239", "type": "series", "name": "Violet Evergarden", "poster": "https://media.kitsu.app/anime/poster_images/12239/large.jpg", "description": "The Great War finally came to an end after four long years of conflict."}
+            ]
+            metas = fallback_seed
+
         result_metas[catalog_id] = metas
 
         try:
