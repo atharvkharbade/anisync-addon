@@ -880,8 +880,8 @@ async def update_discovery_catalogs_cache() -> dict:
     # Fetch Jikan discovery lists in parallel
     from app.api.jikan import get_top_anime, get_airing_schedule
     try:
-        jikan_pop_task = asyncio.create_task(get_top_anime(type_filter="bypopularity", page=1))
-        jikan_airing_task = asyncio.create_task(get_top_anime(type_filter="airing", page=1))
+        jikan_pop_task = asyncio.create_task(get_top_anime(filter_by="bypopularity", page=1))
+        jikan_airing_task = asyncio.create_task(get_top_anime(filter_by="airing", page=1))
         jikan_top_task = asyncio.create_task(get_top_anime(page=1))
         jikan_movie_task = asyncio.create_task(get_top_anime(type_filter="movie", page=1))
 

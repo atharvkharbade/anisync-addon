@@ -56,9 +56,20 @@ async def _jikan_request(endpoint: str, params: Optional[Dict[str, Any]] = None)
         for idx, base_url in enumerate(endpoints):
             full_url = f"{base_url}/{clean_endpoint}"
             try:
-                resp = await client.get(full_url, params=params, timeout=10.0)
+                resp = await client.get(full_url, params=params, timeout=3.5)
                 if resp.status_code == 200:
-                    return resp.json()
+                    data_json = resp.json()
+                    # If endpoint returns valid data or is not a data-list response, return it
+                    if data_json and (data_json.get("data") or "data" not in data_json):
+                        return data_json
+                    elif idx < len(endpoints) - 1:
+                        logging.warning(
+                            "Jikan endpoint %s returned empty data list for %s, trying next fallback...",
+                            base_url,
+                            full_url,
+                        )
+                        continue
+                    return data_json
                 elif resp.status_code == 404:
                     logging.warning("Jikan endpoint %s returned 404 for %s", base_url, full_url)
                     return None
@@ -119,10 +130,14 @@ async def get_airing_schedule(filter_day: Optional[str] = None, page: int = 1) -
     return res.get("data") if res else None
 
 
-async def get_top_anime(type_filter: Optional[str] = None, page: int = 1) -> Optional[List[Dict[str, Any]]]:
-    """Fetch top anime (e.g. type_filter='movie', 'ova', 'tv')."""
+async def get_top_anime(
+    type_filter: Optional[str] = None, page: int = 1, filter_by: Optional[str] = None
+) -> Optional[List[Dict[str, Any]]]:
+    """Fetch top anime (e.g. type_filter='movie', 'tv'; filter_by='bypopularity', 'airing', 'favorite')."""
     params: Dict[str, Any] = {"page": page}
     if type_filter:
         params["type"] = type_filter.lower()
+    if filter_by:
+        params["filter"] = filter_by.lower()
     res = await _jikan_request("/top/anime", params=params)
     return res.get("data") if res else None
