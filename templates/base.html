@@ -153,23 +153,23 @@
     </style>
 </head>
 <body>
+    {% if session.get('user') %}
     <nav class="navbar navbar-dark fixed-top py-2.5 px-3 px-sm-4" style="background:#111;border-bottom:1px solid #222;">
         <div class="container-fluid d-flex align-items-center justify-content-between p-0">
             <a class="navbar-brand d-flex align-items-center" href="/">
                 <img src="/logo.png?v=7" width="24" height="24" class="me-2 rounded" style="object-fit: contain;">
                 <span>AniSync</span>
             </a>
-            {% if session.get('user') %}
             <div class="d-flex gap-2">
                 <a href="{{ url_for('auth.logout') }}" class="btn btn-logout">
                     <i class="fa-solid fa-right-from-bracket me-1.5"></i><span class="d-none d-sm-inline">Logout</span>
                 </a>
             </div>
-            {% endif %}
         </div>
     </nav>
+    {% endif %}
 
-    <div class="container pt-4 pb-2 flash-wrap">
+    <div class="container pt-4 pb-2 {% if session.get('user') %}flash-wrap{% endif %}">
         {% block content %}{% endblock %}
     </div>
 
