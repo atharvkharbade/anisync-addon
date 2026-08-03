@@ -676,12 +676,12 @@
                             {% if user.get('rpdb_in_search', True) and is_p_valid %}checked{% endif %}
                             {% if not is_p_valid %}disabled{% endif %}>
                         <label class="form-check-label ms-1" for="rpdb_in_search">
-                            <span class="fw-medium d-block">Enable Poster Art Provider in Search Catalog</span>
+                            <span class="fw-medium d-block">Enable Poster Art in Search Catalog</span>
                             <span class="text-secondary small d-block">
-                                Replace standard anime posters with your selected Poster Art Provider (BetterPosters, RPDB, TOP Posters, or Custom) in search results.
+                                Replace standard anime posters with poster art in search results.
                             </span>
                             <span id="rpdb-search-warning-text" class="text-warning small d-block mt-1 fw-medium {% if is_p_valid %}d-none{% endif %}">
-                                <i class="fa-solid fa-circle-info me-1"></i>Provide a valid API key or pattern for your selected poster provider to enable rating posters.
+                                <i class="fa-solid fa-circle-info me-1"></i>Provide a valid API key or pattern for your selected poster provider to enable poster art.
                             </span>
                         </label>
                     </div>
