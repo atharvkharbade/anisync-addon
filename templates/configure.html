@@ -321,6 +321,33 @@
         margin-bottom: 1rem;
     }
 
+    .btn-save-preferences {
+        background: linear-gradient(135deg, #02a9ff 0%, #0077ff 100%);
+        color: #ffffff !important;
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        width: 100%;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 15px rgba(2, 169, 255, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-save-preferences:hover {
+        background: linear-gradient(135deg, #33b8ff 0%, #1a85ff 100%);
+        box-shadow: 0 6px 20px rgba(2, 169, 255, 0.45);
+        transform: translateY(-1px);
+    }
+
+    .btn-save-preferences:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 10px rgba(2, 169, 255, 0.3);
+    }
+
     /* Custom Dropdown select menu styling */
     .custom-select-wrapper {
         position: relative;
@@ -1558,8 +1585,8 @@
                 {% endif %}
 
                 <!-- Unified Save Button -->
-                <button type="submit" class="btn btn-outline-light btn-sm px-4 mt-2 mb-3" onclick="updateFormValues();">
-                    <i class="fa-solid fa-check me-1"></i>Save Preferences
+                <button type="submit" class="btn btn-save-preferences mt-2 mb-4" onclick="updateFormValues();">
+                    <i class="fa-solid fa-floppy-disk me-2"></i>Save Preferences
                 </button>
         </form>
 
