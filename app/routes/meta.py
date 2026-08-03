@@ -164,6 +164,7 @@ def map_kitsu_to_stremio(
     show_watched_tags: bool = False,
     watched_progress: int = 0,
     title_language: str = "english",
+    episodes_provider: str = "anizp",
 ) -> dict:
     data = kitsu_data.get("data", {})
     if not data:
@@ -321,13 +322,22 @@ def map_kitsu_to_stremio(
                     or f"Episode {ep_num}"
                 )
             released = attrs.get("airdate") or anizp_ep.get("airdate")
-            overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
-            thumbnail = (
-                anizp_ep.get("image")
-                or (attrs.get("thumbnail") or {}).get("original")
-                or (attrs.get("thumbnail") or {}).get("large")
-                or background
-            )
+            if episodes_provider == "kitsu":
+                overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
+                thumbnail = (
+                    (attrs.get("thumbnail") or {}).get("original")
+                    or (attrs.get("thumbnail") or {}).get("large")
+                    or anizp_ep.get("image")
+                    or background
+                )
+            else:  # anizp, mal, or default
+                overview = anizp_ep.get("overview") or anizp_ep.get("summary") or attrs.get("synopsis") or ""
+                thumbnail = (
+                    anizp_ep.get("image")
+                    or (attrs.get("thumbnail") or {}).get("original")
+                    or (attrs.get("thumbnail") or {}).get("large")
+                    or background
+                )
 
             # Check filler status
             is_filler = False
@@ -506,6 +516,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             watched_progress = get_user_watch_progress(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
 
         title_lang = user.get("title_language", "english") if user else "english"
+        effective_provs = get_effective_meta_providers(user)
 
         # Offload CPU-bound mapping to worker threads
         run_loop = asyncio.get_running_loop()
@@ -521,6 +532,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             show_watched_tags=show_watched,
             watched_progress=watched_progress,
             title_language=title_lang,
+            episodes_provider=effective_provs.get("episodes", "anizp"),
         )
 
         # Look up description in recommendations cache to retain the trace prefix
@@ -588,26 +600,30 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         if user_status_hdr:
             dynamic_headers.append(user_status_hdr)
 
+        airing_prov = effective_provs.get("airing", "anilist")
         al_data = None
-        if anilist_id:
+        if airing_prov == "anilist" and anilist_id:
             try:
                 from app.api.anilist import get_media_status
+
                 token = user.get("anilist_token", "") if user else ""
                 al_data = await get_media_status(token, int(anilist_id))
             except Exception as e:
                 logging.debug("Could not fetch AniList media status for airing countdown: %s", e)
 
-        mal_data_airing = mal_data_override if "mal_data_override" in locals() else None
-        if not mal_data_airing and mal_id and not al_data:
+        mal_data_airing = mal_data_override if (airing_prov == "mal" and mal_data_override) else None
+        if airing_prov == "mal" and not mal_data_airing and mal_id:
             try:
                 from app.api.jikan import get_anime_by_id
+
                 mal_data_airing = await get_anime_by_id(mal_id)
             except Exception:
                 pass
 
-        next_airing_hdr = build_next_airing_header(al_data, mal_data=mal_data_airing)
-        if next_airing_hdr:
-            dynamic_headers.append(next_airing_hdr)
+        if airing_prov != "kitsu":
+            next_airing_hdr = build_next_airing_header(al_data, mal_data=mal_data_airing)
+            if next_airing_hdr:
+                dynamic_headers.append(next_airing_hdr)
 
         filler_arc_hdr = build_filler_arc_header(anizp_data, watched_progress=watched_progress)
         if filler_arc_hdr:
@@ -829,59 +845,115 @@ def build_expired_trackers_notice(user: dict | None) -> str | None:
     return f"Your {trackers_str} {session_word} expired. You can re-login via the website."
 
 
-async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str | None, anilist_id: str | None, rec_prefix: str | None = None) -> dict | None:
-    provider = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
+def get_effective_meta_providers(user: dict | None) -> dict:
+    pref = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
+    if pref == "custom":
+        return {
+            "synopsis": (user.get("meta_synopsis_provider") or "kitsu").lower(),
+            "episodes": (user.get("meta_episodes_provider") or "anizp").lower(),
+            "artwork": (user.get("meta_artwork_provider") or "anilist").lower(),
+            "airing": (user.get("meta_airing_provider") or "anilist").lower(),
+        }
+    elif pref == "mal":
+        return {
+            "synopsis": "mal",
+            "episodes": "anizp",
+            "artwork": "mal",
+            "airing": "mal",
+        }
+    elif pref == "anilist":
+        return {
+            "synopsis": "anilist",
+            "episodes": "anizp",
+            "artwork": "anilist",
+            "airing": "anilist",
+        }
+    else:  # kitsu
+        return {
+            "synopsis": "kitsu",
+            "episodes": "anizp",
+            "artwork": "kitsu",
+            "airing": "anilist",
+        }
+
+
+async def apply_metadata_provider_override(
+    meta: dict,
+    user: dict,
+    mal_id: str | None,
+    anilist_id: str | None,
+    rec_prefix: str | None = None,
+) -> dict | None:
+    effective = get_effective_meta_providers(user)
+    synopsis_prov = effective["synopsis"]
+    artwork_prov = effective["artwork"]
+
     mal_data_ret = None
     if not rec_prefix:
         rec_prefix, _ = extract_rec_prefix(meta.get("description"))
 
-    if provider == "mal" and mal_id:
+    # 1. Fetch MAL data if needed for synopsis or artwork
+    mal_data = None
+    if (synopsis_prov == "mal" or artwork_prov == "mal") and mal_id:
         try:
             from app.api.jikan import get_anime_by_id
+
             mal_data = await get_anime_by_id(mal_id)
             if mal_data:
                 mal_data_ret = mal_data
-                images = mal_data.get("images", {})
-                jpg_img = images.get("jpg", {}) or images.get("webp", {})
-                poster_url = jpg_img.get("large_image_url") or jpg_img.get("image_url")
-                if poster_url:
-                    meta["poster"] = poster_url
-                synopsis = mal_data.get("synopsis")
-                if synopsis:
-                    meta["description"] = f"{rec_prefix}\n\n{synopsis}" if rec_prefix else synopsis
-                score = mal_data.get("score")
-                if score:
-                    meta["imdbRating"] = str(score)
         except Exception as e:
-            logging.warning("Failed to apply MAL metadata override for mal_id=%s: %s", mal_id, e)
-    elif provider == "anilist" and anilist_id:
+            logging.warning("Failed to fetch MAL metadata for mal_id=%s: %s", mal_id, e)
+
+    # 2. Fetch AniList data if needed for synopsis or artwork
+    al_data = None
+    if (synopsis_prov == "anilist" or artwork_prov == "anilist") and anilist_id:
         try:
             from app.api.anilist import get_media_status
+
             token = user.get("anilist_token", "") if user else ""
             al_data = await get_media_status(token, int(anilist_id))
-            if al_data:
-                cover = al_data.get("coverImage", {})
-                poster_url = cover.get("extraLarge") or cover.get("large")
-                if poster_url:
-                    meta["poster"] = poster_url
-                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    encoded_banner = urllib.parse.quote_plus(banner_url)
-                    host_url = request.host_url.rstrip("/")
-                    uid = user.get("uid", "") if user else ""
-                    meta["background"] = (
-                        f"{host_url}/{uid}/background/"
-                        f"anilist_{anilist_id}_bg23.jpg?url={encoded_banner}"
-                    )
-                desc = al_data.get("description")
-                if desc:
-                    import re
-                    clean_desc = re.sub(r'<[^>]+>', '', desc)
-                    meta["description"] = f"{rec_prefix}\n\n{clean_desc}" if rec_prefix else clean_desc
-                avg_score = al_data.get("averageScore")
-                if avg_score:
-                    meta["imdbRating"] = f"{avg_score / 10:.1f}"
         except Exception as e:
-            logging.warning("Failed to apply AniList metadata override for anilist_id=%s: %s", anilist_id, e)
+            logging.warning("Failed to fetch AniList metadata for anilist_id=%s: %s", anilist_id, e)
+
+    # 3. Apply Synopsis & Rating
+    if synopsis_prov == "mal" and mal_data:
+        synopsis = mal_data.get("synopsis")
+        if synopsis:
+            meta["description"] = f"{rec_prefix}\n\n{synopsis}" if rec_prefix else synopsis
+        score = mal_data.get("score")
+        if score:
+            meta["imdbRating"] = str(score)
+    elif synopsis_prov == "anilist" and al_data:
+        desc = al_data.get("description")
+        if desc:
+            import re
+
+            clean_desc = re.sub(r"<[^>]+>", "", desc)
+            meta["description"] = f"{rec_prefix}\n\n{clean_desc}" if rec_prefix else clean_desc
+        avg_score = al_data.get("averageScore")
+        if avg_score:
+            meta["imdbRating"] = f"{avg_score / 10:.1f}"
+
+    # 4. Apply Artwork (Poster & Background Banner)
+    if artwork_prov == "mal" and mal_data:
+        images = mal_data.get("images", {})
+        jpg_img = images.get("jpg", {}) or images.get("webp", {})
+        poster_url = jpg_img.get("large_image_url") or jpg_img.get("image_url")
+        if poster_url:
+            meta["poster"] = poster_url
+    elif artwork_prov == "anilist" and al_data:
+        cover = al_data.get("coverImage", {})
+        poster_url = cover.get("extraLarge") or cover.get("large")
+        if poster_url:
+            meta["poster"] = poster_url
+        banner_url = al_data.get("bannerImage")
+        if banner_url:
+            encoded_banner = urllib.parse.quote_plus(banner_url)
+            host_url = request.host_url.rstrip("/")
+            uid = user.get("uid", "") if user else ""
+            meta["background"] = (
+                f"{host_url}/{uid}/background/"
+                f"anilist_{anilist_id}_bg23.jpg?url={encoded_banner}"
+            )
 
     return mal_data_ret

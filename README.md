@@ -77,6 +77,7 @@ Choose where you want your anime summaries, ratings, and artwork to come from:
 * **Kitsu (Default)**: Fast metadata with reliable stream matching.
 * **MyAnimeList (MAL)**: Official MAL descriptions and community scores.
 * **AniList**: AniList summaries, average ratings, and banner backgrounds.
+* **Custom (Mix & Match)**: Total freedom to independently choose your preferred source for **Series Synopsis**, **Episode Summaries** (AniZip / Kitsu / MAL), **Visual Artwork**, and **Airing Countdowns**.
 
 ---
 
