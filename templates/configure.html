@@ -1006,46 +1006,112 @@
                     </div>
                 </div>
 
-                <!-- RPDB Integration Section -->
-                <div id="rpdb-key-section" style="margin-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
-                    <label class="rec-label mb-2"><i class="fa-solid fa-star text-warning me-2"></i>Rating Poster DB (RPDB) (Optional)</label>
+                <!-- Poster Art Provider Section -->
+                <div id="poster-provider-section" style="margin-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
+                    <label class="rec-label mb-2"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art Provider</label>
                     <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                        Enter your RPDB API key to replace standard anime posters in watchlist catalogs, recommendations, and detail pages with posters showing rating overlays and badges.
+                        Select your preferred poster provider for rating overlays, badges, or custom poster networks across your catalogs.
                     </p>
 
-                    <div class="gemini-input-wrapper position-relative">
-                        <i class="fa-solid fa-key gemini-icon" style="color: #ffc107;"></i>
-                        <input type="password" id="rpdb_api_key" name="rpdb_api_key" class="gemini-input"
-                            value="{{ user.get('rpdb_api_key', '') }}"
-                            placeholder="Paste your RPDB API key here">
-                        <button type="button" class="gemini-btn" id="toggle-rpdb-visibility"
-                            style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
-                            <i class="fa-regular fa-eye"></i>
-                        </button>
-                        <button type="button" class="gemini-btn p-0" id="validate-rpdb-btn" title="Validate Key">
-                            <i id="rpdb-check-icon"
-                                class="fa-solid {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
-                                style="font-size: 1.1rem; transition: color 0.2s;"></i>
-                        </button>
+                    <div class="custom-select-wrapper mb-3" id="poster_provider_wrapper" data-input-id="poster_provider">
+                        {% set current_provider = user.get('poster_provider', 'rpdb' if user.get('rpdb_api_key') else 'btttr') %}
+                        <input type="hidden" id="poster_provider" name="poster_provider" value="{{ current_provider }}">
+                        <div class="custom-select custom-select-trigger d-flex align-items-center justify-content-between p-2 rounded" style="background:#1a1a1a; border:1px solid #2a2a2a; cursor:pointer;">
+                            <span id="poster_provider_display" class="custom-select-text d-flex align-items-center">
+                                {% if current_provider == 'none' %}
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-ban" style="font-size:9px;"></i></span>Default (Original Covers)
+                                {% elif current_provider == 'rpdb' %}
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#f59e0b; border-radius:4px; font-size:10px;"><i class="fa-solid fa-key" style="font-size:9px;"></i></span>Rating Poster DB (RPDB)
+                                {% elif current_provider == 'top_poster' %}
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#6366f1; border-radius:4px; font-size:10px;"><i class="fa-solid fa-trophy" style="font-size:9px;"></i></span>Top Poster API
+                                {% elif current_provider == 'custom' %}
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ec4899; border-radius:4px; font-size:10px;"><i class="fa-solid fa-code" style="font-size:9px;"></i></span>Custom Poster URL Pattern
+                                {% else %}
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#10b981; border-radius:4px; font-size:10px;"><i class="fa-solid fa-star" style="font-size:9px;"></i></span>Btttr.cc (Free Rating Posters)
+                                {% endif %}
+                            </span>
+                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                        </div>
+                        <div class="custom-options-menu">
+                            <div class="custom-option-item d-flex align-items-center" data-value="btttr">
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#10b981; border-radius:4px; font-size:10px;"><i class="fa-solid fa-star" style="font-size:9px;"></i></span>Btttr.cc (Free Rating Posters)
+                            </div>
+                            <div class="custom-option-item d-flex align-items-center" data-value="rpdb">
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#f59e0b; border-radius:4px; font-size:10px;"><i class="fa-solid fa-key" style="font-size:9px;"></i></span>Rating Poster DB (RPDB)
+                            </div>
+                            <div class="custom-option-item d-flex align-items-center" data-value="top_poster">
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#6366f1; border-radius:4px; font-size:10px;"><i class="fa-solid fa-trophy" style="font-size:9px;"></i></span>Top Poster API
+                            </div>
+                            <div class="custom-option-item d-flex align-items-center" data-value="custom">
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ec4899; border-radius:4px; font-size:10px;"><i class="fa-solid fa-code" style="font-size:9px;"></i></span>Custom Poster URL Pattern
+                            </div>
+                            <div class="custom-option-item d-flex align-items-center" data-value="none">
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-ban" style="font-size:9px;"></i></span>Default (Original Covers)
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <span id="rpdb-validation-status" class="small {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
-                            {% if user.get('rpdb_api_key') %}
-                                {% if user.get('rpdb_key_valid') == False %}
-                                    Invalid or Expired API Key
+                    <!-- Dynamic Sub-Sections -->
+                    <!-- RPDB Container -->
+                    <div id="rpdb-key-container" class="poster-provider-field mt-3 {% if current_provider != 'rpdb' %}d-none{% endif %}">
+                        <label class="rec-label mb-2 small text-secondary">RPDB API Key</label>
+                        <div class="gemini-input-wrapper position-relative">
+                            <i class="fa-solid fa-key gemini-icon" style="color: #ffc107;"></i>
+                            <input type="password" id="rpdb_api_key" name="rpdb_api_key" class="gemini-input"
+                                value="{{ user.get('rpdb_api_key', '') }}"
+                                placeholder="Paste your RPDB API key here">
+                            <button type="button" class="gemini-btn" id="toggle-rpdb-visibility"
+                                style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                            <button type="button" class="gemini-btn p-0" id="validate-rpdb-btn" title="Validate Key">
+                                <i id="rpdb-check-icon"
+                                    class="fa-solid {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                    style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                            </button>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span id="rpdb-validation-status" class="small {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                {% if user.get('rpdb_api_key') %}
+                                    {% if user.get('rpdb_key_valid') == False %}
+                                        Invalid or Expired API Key
+                                    {% else %}
+                                        API key verified ✓
+                                    {% endif %}
                                 {% else %}
-                                    API key verified ✓
+                                    Not verified
                                 {% endif %}
-                            {% else %}
-                                Not verified
-                            {% endif %}
-                        </span>
-                        <a href="https://ratingposterdb.com/" target="_blank"
-                            class="small text-info text-decoration-none" style="font-size:0.75rem;">
-                            Get RPDB API Key <i
-                                class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
-                        </a>
+                            </span>
+                            <a href="https://ratingposterdb.com/" target="_blank"
+                                class="small text-info text-decoration-none" style="font-size:0.75rem;">
+                                Get RPDB API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Top Poster Container -->
+                    <div id="top-poster-container" class="poster-provider-field mt-3 {% if current_provider != 'top_poster' %}d-none{% endif %}">
+                        <label class="rec-label mb-2 small text-secondary">Top Poster API Key</label>
+                        <div class="gemini-input-wrapper position-relative">
+                            <i class="fa-solid fa-trophy gemini-icon" style="color: #6366f1;"></i>
+                            <input type="password" id="top_poster_key" name="top_poster_key" class="gemini-input"
+                                value="{{ user.get('top_poster_key', '') }}"
+                                placeholder="Paste your Top Poster API key here">
+                        </div>
+                    </div>
+
+                    <!-- Custom Pattern Container -->
+                    <div id="custom-pattern-container" class="poster-provider-field mt-3 {% if current_provider != 'custom' %}d-none{% endif %}">
+                        <label class="rec-label mb-2 small text-secondary">Custom Poster URL Pattern</label>
+                        <div class="gemini-input-wrapper position-relative">
+                            <i class="fa-solid fa-code gemini-icon" style="color: #ec4899;"></i>
+                            <input type="text" id="custom_poster_pattern" name="custom_poster_pattern" class="gemini-input"
+                                value="{{ user.get('custom_poster_pattern', '') }}"
+                                placeholder="https://domain.com/poster/{imdb_id}.jpg">
+                        </div>
+                        <p class="text-secondary small mt-2 mb-0" style="font-size: 0.75rem; line-height: 1.4;">
+                            Supported placeholders: <code>{imdb_id}</code>, <code>{mal_id}</code>, <code>{kitsu_id}</code>, <code>{anilist_id}</code>, <code>{tmdb_id}</code>, <code>{tvdb_id}</code>
+                        </p>
                     </div>
                 </div>
 
@@ -1357,9 +1423,26 @@
 
                     menuEl.classList.remove("show");
                     selectEl.classList.remove("active");
+
+                    if (inputId === "poster_provider") {
+                        syncPosterProviderFields();
+                    }
                 });
             });
         });
+
+        function syncPosterProviderFields() {
+            const providerInput = document.getElementById("poster_provider");
+            const val = providerInput ? providerInput.value : "btttr";
+            const rpdbContainer = document.getElementById("rpdb-key-container");
+            const topContainer = document.getElementById("top-poster-container");
+            const customContainer = document.getElementById("custom-pattern-container");
+
+            if (rpdbContainer) rpdbContainer.classList.toggle("d-none", val !== "rpdb");
+            if (topContainer) topContainer.classList.toggle("d-none", val !== "top_poster");
+            if (customContainer) customContainer.classList.toggle("d-none", val !== "custom");
+        }
+        syncPosterProviderFields();
 
         // Click outside to close all open custom dropdowns
         document.addEventListener("click", function () {

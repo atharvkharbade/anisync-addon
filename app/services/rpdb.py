@@ -222,26 +222,47 @@ def get_rpdb_poster_url(
     fallback_poster: str | None = None,
 ) -> str | None:
     """
-    Resolve and construct the RPDB poster URL for an item.
-    If mappings are missing from the cache, trigger a background task to fetch and cache them.
+    Resolve and construct the poster URL for an item based on user's poster_provider setting:
+    - 'none': Returns fallback_poster (original cover)
+    - 'btttr': Uses Btttr.cc rating poster endpoint (https://btttr.cc/poster/imdb/poster-default/{imdb_id}.jpg)
+    - 'rpdb': Uses RPDB (Rating Poster DB) with API key
+    - 'top_poster': Uses Top Poster API with API key
+    - 'custom': Formats custom URL pattern using available IDs ({imdb_id}, {mal_id}, {kitsu_id}, etc.)
     """
     if not user:
         return fallback_poster
 
+    # Determine provider (backward compatibility for existing rpdb_api_key users)
+    provider = user.get("poster_provider")
+    if not provider:
+        provider = "rpdb" if user.get("rpdb_api_key") else "none"
+
+    if provider == "none":
+        return fallback_poster
+
+    # Provider specific key validation
     rpdb_key = user.get("rpdb_api_key")
-    if not rpdb_key:
-        return fallback_poster
+    top_key = user.get("top_poster_key")
+    custom_pattern = user.get("custom_poster_pattern", "").strip()
 
-    # Check if key validation status is cached as invalid
-    if user.get("rpdb_key_valid") is False:
-        return fallback_poster
+    if provider == "rpdb":
+        if not rpdb_key:
+            return fallback_poster
+        if user.get("rpdb_key_valid") is False:
+            return fallback_poster
 
-    # Periodically re-validate in the background (once every 24 hours)
-    from datetime import datetime, timedelta
+        from datetime import datetime, timedelta
+        last_checked = user.get("rpdb_key_last_checked")
+        if (not last_checked or (datetime.utcnow() - last_checked) > timedelta(days=1)) and user.get("uid"):
+            check_rpdb_key_validity_background(user["uid"], rpdb_key)
 
-    last_checked = user.get("rpdb_key_last_checked")
-    if not last_checked or (datetime.utcnow() - last_checked) > timedelta(days=1):
-        check_rpdb_key_validity_background(user["uid"], rpdb_key)
+    elif provider == "top_poster":
+        if not top_key:
+            return fallback_poster
+
+    elif provider == "custom":
+        if not custom_pattern:
+            return fallback_poster
 
     from app.services.db import id_cache_collection
 
@@ -253,8 +274,12 @@ def get_rpdb_poster_url(
             pass
     if mal_id:
         query.append({"mal_id": str(mal_id)})
+        if str(mal_id).isdigit():
+            query.append({"mal_id": int(mal_id)})
     if anilist_id:
         query.append({"anilist_id": str(anilist_id)})
+        if str(anilist_id).isdigit():
+            query.append({"anilist_id": int(anilist_id)})
     if simkl_id:
         query.append({"simkl_id": str(simkl_id)})
         if str(simkl_id).isdigit():
@@ -272,8 +297,15 @@ def get_rpdb_poster_url(
                 imdb_id = doc.get("imdb_id")
                 tmdb_id = doc.get("tmdb_id")
                 tvdb_id = doc.get("tvdb_id")
+
+                if isinstance(imdb_id, list):
+                    imdb_id = imdb_id[0] if imdb_id else None
+                if isinstance(tmdb_id, dict):
+                    tmdb_id = tmdb_id.get("tv") or tmdb_id.get("movie")
+                if isinstance(tvdb_id, list):
+                    tvdb_id = tvdb_id[0] if tvdb_id else None
         except Exception as e:
-            logging.error("Failed to query id_cache for RPDB resolution: %s", e)
+            logging.error("Failed to query id_cache for poster resolution: %s", e)
 
     # Check fribb_mappings next (offline database with 15k+ entries)
     if not (imdb_id or tmdb_id or tvdb_id):
@@ -287,8 +319,12 @@ def get_rpdb_poster_url(
                 pass
         if mal_id:
             fribb_query.append({"mal_id": str(mal_id)})
+            if str(mal_id).isdigit():
+                fribb_query.append({"mal_id": int(mal_id)})
         if anilist_id:
             fribb_query.append({"anilist_id": str(anilist_id)})
+            if str(anilist_id).isdigit():
+                fribb_query.append({"anilist_id": int(anilist_id)})
         if simkl_id:
             fribb_query.append({"simkl_id": str(simkl_id)})
             if str(simkl_id).isdigit():
@@ -301,7 +337,14 @@ def get_rpdb_poster_url(
                     imdb_id = doc.get("imdb_id")
                     tmdb_id = doc.get("tmdb_id")
                     tvdb_id = doc.get("tvdb_id")
-                    # If we found mappings, write them back to id_cache so they are merged/cached
+
+                    if isinstance(imdb_id, list):
+                        imdb_id = imdb_id[0] if imdb_id else None
+                    if isinstance(tmdb_id, dict):
+                        tmdb_id = tmdb_id.get("tv") or tmdb_id.get("movie")
+                    if isinstance(tvdb_id, list):
+                        tvdb_id = tvdb_id[0] if tvdb_id else None
+
                     if imdb_id or tmdb_id or tvdb_id:
                         from app.services.db import cache_ids
 
@@ -315,28 +358,56 @@ def get_rpdb_poster_url(
                             tvdb_id=tvdb_id,
                         )
             except Exception as e:
-                logging.error("Failed to query fribb_mappings for RPDB: %s", e)
+                logging.error("Failed to query fribb_mappings for poster resolution: %s", e)
 
     # Trigger background mappings resolution if we still lack external IDs
     if not (imdb_id or tmdb_id or tvdb_id):
-        # We need kitsu_id, mal_id, or anilist_id to resolve mappings
         if kitsu_id or mal_id or anilist_id:
             try:
-                loop = asyncio.get_running_loop()
-                if loop.is_running():
-                    loop.create_task(
+                loop = asyncio.get_event_loop()
+                if loop and loop.is_running():
+                    asyncio.create_task(
                         background_resolve_external_ids(kitsu_id=kitsu_id, mal_id=mal_id, anilist_id=anilist_id)
                     )
-            except RuntimeError:
-                # No running event loop
+            except Exception:
                 pass
         return fallback_poster
 
-    # Determine media ID format
+    # Provider specific URL generation
+    if provider == "btttr":
+        if imdb_id:
+            return f"https://btttr.cc/poster/imdb/poster-default/{imdb_id}.jpg"
+        return fallback_poster
+
+    elif provider == "custom":
+        try:
+            # Substitute placeholders
+            url = custom_pattern
+            replacements = {
+                "{imdb_id}": imdb_id or "",
+                "{mal_id}": str(mal_id) if mal_id else "",
+                "{kitsu_id}": str(kitsu_id) if kitsu_id else "",
+                "{anilist_id}": str(anilist_id) if anilist_id else "",
+                "{tmdb_id}": str(tmdb_id) if tmdb_id else "",
+                "{tvdb_id}": str(tvdb_id) if tvdb_id else "",
+                "{rpdb_key}": rpdb_key or "",
+                "{top_key}": top_key or "",
+            }
+            # If pattern requires a placeholder that is empty, fallback
+            for placeholder, val in replacements.items():
+                if placeholder in url:
+                    if not val:
+                        return fallback_poster
+                    url = url.replace(placeholder, val)
+            return url
+        except Exception as e:
+            logging.error("Failed to evaluate custom poster pattern: %s", e)
+            return fallback_poster
+
+    # Determine media ID format for RPDB and Top Poster
     id_type = None
     media_id = None
 
-    # Priority: IMDb -> TMDB -> TVDB
     if imdb_id:
         id_type = "imdb"
         media_id = imdb_id
@@ -352,9 +423,12 @@ def get_rpdb_poster_url(
     if not id_type or not media_id:
         return fallback_poster
 
-    url = f"https://api.ratingposterdb.com/{rpdb_key}/{id_type}/poster-default/{media_id}.jpg"
+    if provider == "top_poster":
+        return f"https://topposters.com/api/{top_key}/{id_type}/poster-default/{media_id}.jpg"
 
-    tier = rpdb_key.split("-")[0].lower()
+    # Default to RPDB
+    url = f"https://api.ratingposterdb.com/{rpdb_key}/{id_type}/poster-default/{media_id}.jpg"
+    tier = rpdb_key.split("-")[0].lower() if rpdb_key else "t0"
     lang = user.get("rec_language", "en").split("-")[0].lower()
 
     params = {"fallback": "true"}
