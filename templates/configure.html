@@ -672,7 +672,7 @@
                     class="mb-3">
                     <div class="form-check form-switch mb-0">
                         {% set p_prov = user.get('poster_provider', 'none') %}
-                        {% set is_p_valid = (p_prov == 'none' or p_prov == 'btttr' or p_prov == 'betterposters' or (p_prov == 'rpdb' and user.get('rpdb_api_key')) or ((p_prov == 'top_poster' or p_prov == 'topposters') and user.get('top_poster_key')) or (p_prov == 'custom' and user.get('custom_poster_pattern'))) %}
+                        {% set is_p_valid = (p_prov == 'none' or (p_prov == 'rpdb' and user.get('rpdb_api_key')) or ((p_prov == 'top_poster' or p_prov == 'topposters') and user.get('top_poster_key')) or (p_prov == 'custom' and user.get('custom_poster_pattern'))) %}
                         <input class="form-check-input" type="checkbox" role="switch" id="rpdb_in_search"
                             {% if user.get('rpdb_in_search', True) and is_p_valid %}checked{% endif %}
                             {% if not is_p_valid %}disabled{% endif %}>
@@ -1016,9 +1016,7 @@
                         <input type="hidden" id="poster_provider" name="poster_provider" value="{{ current_provider }}">
                         <div class="custom-select">
                             <span id="poster_provider_display" class="custom-select-text d-flex align-items-center">
-                                {% if current_provider == 'btttr' or current_provider == 'betterposters' %}
-                                    <img src="/assets/betterposters_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">BetterPosters
-                                {% elif current_provider == 'rpdb' %}
+                                {% if current_provider == 'rpdb' %}
                                     <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating Poster DB (RPDB)
                                 {% elif current_provider == 'top_poster' or current_provider == 'topposters' %}
                                     <img src="/assets/topposters_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP Posters
@@ -1033,9 +1031,6 @@
                         <div class="custom-options-menu">
                             <div class="custom-option-item d-flex align-items-center" data-value="none">
                                 <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="btttr">
-                                <img src="/assets/betterposters_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">BetterPosters
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="rpdb">
                                 <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating Poster DB (RPDB)
@@ -1457,7 +1452,7 @@
 
         function syncPosterProviderFields() {
             const providerInput = document.getElementById("poster_provider");
-            const val = providerInput ? providerInput.value : "btttr";
+            const val = providerInput ? providerInput.value : "none";
             const rpdbContainer = document.getElementById("rpdb-key-container");
             const topContainer = document.getElementById("top-poster-container");
             const customContainer = document.getElementById("custom-pattern-container");
