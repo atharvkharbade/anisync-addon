@@ -61,6 +61,15 @@ async def _jikan_request(endpoint: str, params: Optional[Dict[str, Any]] = None)
                     data_json = resp.json()
                     # If endpoint returns valid data or is not a data-list response, return it
                     if data_json and (data_json.get("data") or "data" not in data_json):
+                        items = data_json.get("data")
+                        if isinstance(items, list) and len(items) < 15 and idx < len(endpoints) - 1:
+                            logging.warning(
+                                "Jikan endpoint %s returned sparse data list (%s items) for %s, trying next fallback...",
+                                base_url,
+                                len(items),
+                                full_url,
+                            )
+                            continue
                         return data_json
                     elif idx < len(endpoints) - 1:
                         logging.warning(

@@ -576,52 +576,18 @@ async def background_fetch_and_cache_filler(mal_id: str, episode: int):
             if cached is not None:
                 return
 
-            retries = 3
-            backoff = 2.0
-            success = False
-            for attempt in range(retries):
-                try:
-                    url = f"https://api.jikan.moe/v4/anime/{mal_id}/episodes?page={page}"
-                    client = get_client()
-                    resp = await client.get(url, timeout=10)
-                    if resp.status_code == 200:
-                        data = resp.json().get("data", [])
-                        for item in data:
-                            ep_num = item.get("mal_id")
-                            if ep_num:
-                                filler = bool(item.get("filler", False))
-                                set_jikan_filler_cache(mal_id, ep_num, filler)
-                        logging.info(
-                            "Cached Jikan filler page %s for mal_id=%s (found %s episodes)", page, mal_id, len(data)
-                        )
-                        success = True
-                        break
-                    elif resp.status_code == 404:
-                        logging.warning("Jikan returned 404 for mal_id=%s episodes page %s", mal_id, page)
-                        break
-                    elif resp.status_code == 429:
-                        logging.warning(
-                            "Jikan 429 rate limit hit on page %s for mal_id=%s, retrying in %s seconds...",
-                            page,
-                            mal_id,
-                            backoff,
-                        )
-                        await asyncio.sleep(backoff)
-                        backoff *= 2.0
-                    else:
-                        logging.error(
-                            "Jikan returned status %s on page %s for mal_id=%s", resp.status_code, page, mal_id
-                        )
-                        break
-                except Exception as e:
-                    logging.error(
-                        "Jikan background page fetch exception (attempt %s) for mal_id=%s page=%s: %s",
-                        attempt + 1,
-                        mal_id,
-                        page,
-                        e,
-                    )
-                    await asyncio.sleep(1.0)
+            from app.api.jikan import get_anime_episodes
+            episodes_data = await get_anime_episodes(mal_id, page=page)
+            if episodes_data is not None:
+                for item in episodes_data:
+                    ep_num = item.get("mal_id")
+                    if ep_num:
+                        filler = bool(item.get("filler", False))
+                        set_jikan_filler_cache(mal_id, ep_num, filler)
+                logging.info(
+                    "Cached Jikan filler page %s for mal_id=%s (found %s episodes)", page, mal_id, len(episodes_data)
+                )
+                success = True
 
             # If we failed to fetch the page successfully, or if the episode is still not cached,
             # cache it as False to prevent infinite retries.
@@ -907,11 +873,11 @@ async def update_discovery_catalogs_cache() -> dict:
         jikan_schedule_task = asyncio.create_task(get_airing_schedule(page=1))
         jikan_fav_task = asyncio.create_task(get_top_anime(filter_by="favorite", page=1))
 
-        kitsu_pop_task = asyncio.create_task(fetch_kitsu_discovery("sort=-userCount&page[limit]=25"))
-        kitsu_rating_task = asyncio.create_task(fetch_kitsu_discovery("sort=-averageRating&page[limit]=25"))
-        kitsu_airing_task = asyncio.create_task(fetch_kitsu_discovery("filter[status]=current&sort=-userCount&page[limit]=25"))
-        kitsu_season_task = asyncio.create_task(fetch_kitsu_discovery("filter[status]=current&sort=-createdAt&page[limit]=25"))
-        kitsu_movie_task = asyncio.create_task(fetch_kitsu_discovery("filter[subtype]=movie&sort=-averageRating&page[limit]=25"))
+        kitsu_pop_task = asyncio.create_task(fetch_kitsu_discovery("sort=-userCount&page%5Blimit%5D=25"))
+        kitsu_rating_task = asyncio.create_task(fetch_kitsu_discovery("sort=-averageRating&page%5Blimit%5D=25"))
+        kitsu_airing_task = asyncio.create_task(fetch_kitsu_discovery("filter%5Bstatus%5D=current&sort=-userCount&page%5Blimit%5D=25"))
+        kitsu_season_task = asyncio.create_task(fetch_kitsu_discovery("filter%5Bstatus%5D=current&sort=-createdAt&page%5Blimit%5D=25"))
+        kitsu_movie_task = asyncio.create_task(fetch_kitsu_discovery("filter%5Bsubtype%5D=movie&sort=-averageRating&page%5Blimit%5D=25"))
 
         (
             jikan_pop,
