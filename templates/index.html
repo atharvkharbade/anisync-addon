@@ -1,65 +1,113 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<style>
+    .btn-guest {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #e2e8f0;
+        font-size: 0.92rem;
+        padding: 0.65rem 1.25rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-guest:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(56, 189, 248, 0.4);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+</style>
+
 <div class="row justify-content-center mt-2 mt-sm-4">
-    <div class="col-12 col-sm-10 col-md-7">
+    <div class="col-12 col-sm-10 col-md-7 col-lg-6">
         <div class="card-dark p-4 p-sm-5 text-center">
-            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="mb-3">
-                <defs>
-                    <linearGradient id="index-grad-left" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#00f2fe" />
-                        <stop offset="100%" stop-color="#02a9ff" />
-                    </linearGradient>
-                    <linearGradient id="index-grad-right" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#2ec4b6" />
-                        <stop offset="100%" stop-color="#00f2fe" />
-                    </linearGradient>
-                    <linearGradient id="index-grad-sync" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#02a9ff" />
-                        <stop offset="100%" stop-color="#2ec4b6" />
-                    </linearGradient>
-                </defs>
-                <path d="M12 2L4 18H8L12 10L16 18H20L12 2Z" fill="url(#index-grad-left)" />
-                <path d="M12 2L16 10H8L12 2Z" fill="url(#index-grad-right)" opacity="0.85" />
-                <path d="M6 15C8 12.5 16 12.5 18 15" stroke="url(#index-grad-sync)" stroke-width="2" stroke-linecap="round" />
-                <path d="M18 15L16.2 13.5M18 15L16.2 16.5" stroke="url(#index-grad-sync)" stroke-width="1.8" stroke-linecap="round" />
-                <path d="M6 15L7.8 16.5M6 15L7.8 13.5" stroke="url(#index-grad-sync)" stroke-width="1.8" stroke-linecap="round" />
-            </svg>
-            <h1 class="fw-bold mb-2 fs-3 fs-sm-1">AniSync</h1>
-            <p class="text-secondary mb-4" style="font-size:1.05rem;">
+            <!-- Glowing Brand Logo -->
+            <div class="mb-3 d-inline-block">
+                <svg width="76" height="76" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 24px rgba(2, 169, 255, 0.35));">
+                    <defs>
+                        <linearGradient id="index-grad-left" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#00f2fe" />
+                            <stop offset="100%" stop-color="#02a9ff" />
+                        </linearGradient>
+                        <linearGradient id="index-grad-right" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#2ec4b6" />
+                            <stop offset="100%" stop-color="#00f2fe" />
+                        </linearGradient>
+                        <linearGradient id="index-grad-sync" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#02a9ff" />
+                            <stop offset="100%" stop-color="#2ec4b6" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M12 2L4 18H8L12 10L16 18H20L12 2Z" fill="url(#index-grad-left)" />
+                    <path d="M12 2L16 10H8L12 2Z" fill="url(#index-grad-right)" opacity="0.85" />
+                    <path d="M6 15C8 12.5 16 12.5 18 15" stroke="url(#index-grad-sync)" stroke-width="2" stroke-linecap="round" />
+                    <path d="M18 15L16.2 13.5M18 15L16.2 16.5" stroke="url(#index-grad-sync)" stroke-width="1.8" stroke-linecap="round" />
+                    <path d="M6 15L7.8 16.5M6 15L7.8 13.5" stroke="url(#index-grad-sync)" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+            </div>
+
+            <h1 class="fw-bold mb-2 fs-3 fs-sm-1" style="letter-spacing: -0.02em;">AniSync</h1>
+            <p class="text-secondary mb-4" style="font-size:1.02rem; line-height: 1.5;">
                 Sync your watch progress to <strong class="text-white">MyAnimeList</strong>,
                 <strong class="text-white">AniList</strong>, and <strong class="text-white">Simkl</strong> automatically.
             </p>
 
-            <div class="text-start mb-4 px-1 px-sm-3">
-                <h6 class="text-info text-uppercase mb-3" style="letter-spacing:.08em;">How it works</h6>
-                <ul class="list-unstyled" style="line-height:2.2;">
-                    <li><i class="fa-solid fa-plug-circle-check text-success me-2"></i>Connect your MyAnimeList, AniList, or Simkl accounts</li>
-                    <li><i class="fa-solid fa-link text-warning me-2"></i>Install the manifest URL</li>
-                    <li><i class="fa-solid fa-film text-info me-2"></i>Stream via built-in catalog search or external Anime Kitsu addon</li>
-                    <li><i class="fa-solid fa-chart-line text-primary me-2"></i>Progress syncs automatically in the background</li>
-                </ul>
-                <p class="text-secondary small mt-2">
-                    <i class="fa-solid fa-circle-info me-1"></i>
+            <!-- How It Works Inset Card -->
+            <div class="text-start mb-4 p-3.5 p-sm-4 rounded-3" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="fa-solid fa-circle-play text-info fs-6"></i>
+                    <h6 class="fw-semibold text-white mb-0 text-uppercase" style="letter-spacing:.06em; font-size: 0.85rem;">How it works</h6>
+                </div>
+                <div class="d-flex flex-column gap-2.5" style="font-size: 0.9rem;">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <i class="fa-solid fa-plug-circle-check text-success fs-6" style="width: 20px; text-align: center;"></i>
+                        <span class="text-light">Connect your MyAnimeList, AniList, or Simkl accounts</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2.5">
+                        <i class="fa-solid fa-link text-warning fs-6" style="width: 20px; text-align: center;"></i>
+                        <span class="text-light">Install the manifest URL into your Stremio app</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2.5">
+                        <i class="fa-solid fa-film text-info fs-6" style="width: 20px; text-align: center;"></i>
+                        <span class="text-light">Stream via built-in catalog search or external Anime Kitsu addon</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2.5">
+                        <i class="fa-solid fa-chart-line text-primary fs-6" style="width: 20px; text-align: center;"></i>
+                        <span class="text-light">Progress syncs automatically in the background</span>
+                    </div>
+                </div>
+                <div class="pt-3 mt-3 border-top border-white border-opacity-10 text-secondary" style="font-size: 0.78rem;">
+                    <i class="fa-solid fa-circle-info me-1 text-info opacity-75"></i>
                     Tracking triggers when the episode loads, not when it finishes.
-                </p>
+                </div>
             </div>
 
-            <div class="d-flex flex-column gap-3 align-items-center mt-4">
-                <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal btn-lg px-4 w-100" style="max-width:320px;">
+            <!-- Auth Buttons Section -->
+            <div class="d-flex flex-column gap-2.5 align-items-center w-100 mx-auto" style="max-width: 340px;">
+                <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal btn-lg px-4 w-100 fw-semibold" style="font-size: 0.95rem; padding: 0.65rem 1.25rem;">
                     <i class="fa-solid fa-right-to-bracket me-2"></i>Sign in with MyAnimeList
                 </a>
-                <div class="text-secondary small">or</div>
-                <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist btn-lg px-4 w-100" style="max-width:320px;">
+                <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist btn-lg px-4 w-100 fw-semibold" style="font-size: 0.95rem; padding: 0.65rem 1.25rem;">
                     <i class="fa-solid fa-right-to-bracket me-2"></i>Sign in with AniList
                 </a>
-                <div class="text-secondary small">or</div>
-                <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-simkl btn-lg px-4 w-100" style="max-width:320px;">
+                <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-simkl btn-lg px-4 w-100 fw-semibold" style="font-size: 0.95rem; padding: 0.65rem 1.25rem;">
                     <i class="fa-solid fa-right-to-bracket me-2"></i>Sign in with Simkl
                 </a>
-                <div class="text-secondary small">or</div>
-                <a href="{{ url_for('ui.guest_login') }}" class="btn btn-outline-info btn-lg px-4 w-100" style="max-width:320px; border-width: 2px;">
-                    <i class="fa-solid fa-user-secret me-2"></i>Continue as Guest
+
+                <!-- Divider -->
+                <div class="d-flex align-items-center my-1.5 w-100 text-secondary small opacity-75">
+                    <hr class="flex-grow-1 border-secondary opacity-25 me-2 my-0">
+                    <span style="font-size: 0.8rem;">or</span>
+                    <hr class="flex-grow-1 border-secondary opacity-25 ms-2 my-0">
+                </div>
+
+                <!-- Guest Mode Button -->
+                <a href="{{ url_for('ui.guest_login') }}" class="btn btn-guest btn-lg px-4 w-100 fw-medium">
+                    <i class="fa-solid fa-user-secret me-2 text-info"></i>Continue as Guest
                 </a>
             </div>
         </div>
