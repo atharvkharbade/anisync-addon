@@ -257,7 +257,10 @@
         color: #dc3545;
     }
 
-    .btn-mal, .btn-anilist, .btn-simkl, .btn-disconnect {
+    .btn-mal,
+    .btn-anilist,
+    .btn-simkl,
+    .btn-disconnect {
         border-radius: 8px;
         font-weight: 600;
         font-size: 0.85rem;
@@ -269,28 +272,41 @@
         border: none;
         text-decoration: none;
     }
+
     @media (min-width: 576px) {
-        .btn-mal, .btn-anilist, .btn-simkl, .btn-disconnect {
+
+        .btn-mal,
+        .btn-anilist,
+        .btn-simkl,
+        .btn-disconnect {
             min-width: 195px;
         }
     }
+
     @media (max-width: 575.98px) {
-        .btn-mal, .btn-anilist, .btn-simkl, .btn-disconnect {
+
+        .btn-mal,
+        .btn-anilist,
+        .btn-simkl,
+        .btn-disconnect {
             flex: 1 1 0;
             min-width: 0;
             padding: 0.55rem 0.5rem;
         }
     }
+
     .btn-disconnect {
         background: rgba(220, 53, 69, 0.08);
         border: 1px solid rgba(220, 53, 69, 0.35);
         color: #f38b8b;
     }
+
     .btn-disconnect:hover {
         background: rgba(220, 53, 69, 0.2);
         border-color: #e74c3c;
         color: #fff;
     }
+
     .bg-simkl {
         background-color: #e27d00 !important;
         color: #fff !important;
@@ -302,6 +318,7 @@
         user-select: none;
         width: 100%;
     }
+
     .custom-select {
         display: flex;
         justify-content: space-between;
@@ -316,12 +333,15 @@
         cursor: pointer;
         transition: border-color 0.2s, background-color 0.2s;
     }
+
     .custom-select:hover {
         background-color: #121212;
     }
+
     .custom-select.active {
         border-color: #02a9ff;
     }
+
     .custom-options-menu {
         position: absolute;
         top: calc(100% + 4px);
@@ -336,9 +356,11 @@
         max-height: 200px;
         overflow-y: auto;
     }
+
     .custom-options-menu.show {
         display: block;
     }
+
     .custom-option-item {
         padding: 0.5rem 0.75rem;
         font-size: 0.85rem;
@@ -346,10 +368,12 @@
         cursor: pointer;
         transition: background-color 0.2s, color 0.2s;
     }
+
     .custom-option-item:hover {
         background-color: #1a1a1a;
         color: #fff;
     }
+
     .custom-option-item.selected {
         background-color: #02a9ff;
         color: #fff;
@@ -389,7 +413,11 @@
                 <h6 class="fw-semibold mb-0 text-white">Guest Mode Active</h6>
             </div>
             <p class="text-secondary small mb-0" style="line-height: 1.5;">
-                You can customize and reorder only Discovery catalogs. To enable watch progress tracking or personal recommendations, sign in with <a href="{{ url_for('auth.authorize_mal') }}" class="text-info fw-medium">MyAnimeList</a>, <a href="{{ url_for('auth.authorize_anilist') }}" class="text-info fw-medium">AniList</a>, or <a href="{{ url_for('auth.authorize_simkl') }}" class="text-info fw-medium">Simkl</a>.
+                You can customize and reorder only Discovery catalogs. To enable watch progress tracking or personal
+                recommendations, sign in with <a href="{{ url_for('auth.authorize_mal') }}"
+                    class="text-info fw-medium">MyAnimeList</a>, <a href="{{ url_for('auth.authorize_anilist') }}"
+                    class="text-info fw-medium">AniList</a>, or <a href="{{ url_for('auth.authorize_simkl') }}"
+                    class="text-info fw-medium">Simkl</a>.
             </p>
         </div>
         {% endif %}
@@ -403,16 +431,16 @@
                     <span class="fw-semibold">MyAnimeList</span>
                 </div>
                 {% if user.get('mal_access_token') %}
-                    {% if user.get('mal_token_expired') %}
-                    <span class="text-danger small fw-semibold">
-                        <i class="fa-solid fa-circle-exclamation me-1"></i>Authentication Expired
-                    </span>
-                    {% else %}
-                    <span class="text-success small">
-                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('name') %} as {{ user['name']
-                        }}{% endif %}
-                    </span>
-                    {% endif %}
+                {% if user.get('mal_token_expired') %}
+                <span class="text-danger small fw-semibold">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i>Authentication Expired
+                </span>
+                {% else %}
+                <span class="text-success small">
+                    <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('name') %} as {{ user['name']
+                    }}{% endif %}
+                </span>
+                {% endif %}
                 {% else %}
                 <span class="text-secondary small">
                     <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
@@ -422,7 +450,8 @@
 
             {% if user.get('mal_access_token') %}
             <div class="d-flex gap-2 mb-3">
-                <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal {% if user.get('mal_token_expired') %}btn-pulse-mal{% endif %}">
+                <a href="{{ url_for('auth.authorize_mal') }}"
+                    class="btn btn-mal {% if user.get('mal_token_expired') %}btn-pulse-mal{% endif %}">
                     <i class="fa-solid fa-rotate me-2"></i>Reconnect
                 </a>
                 <a href="{{ url_for('auth.disconnect_mal') }}" class="btn btn-disconnect">
@@ -439,8 +468,9 @@
 
             {% if user.get('mal_access_token') %}
             <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" role="switch" id="mal_enabled"
-                    {% if user.get('mal_enabled', True) %}checked{% endif %} {% if user.get('mal_token_expired') %}disabled{% endif %}>
+                <input class="form-check-input" type="checkbox" role="switch" id="mal_enabled" {% if
+                    user.get('mal_enabled', True) %}checked{% endif %} {% if user.get('mal_token_expired') %}disabled{%
+                    endif %}>
                 <label class="form-check-label text-secondary small" for="mal_enabled">
                     MAL tracking enabled
                 </label>
@@ -457,16 +487,16 @@
                     <span class="fw-semibold">AniList</span>
                 </div>
                 {% if user.get('anilist_token') %}
-                    {% if user.get('anilist_token_expired') %}
-                    <span class="text-danger small fw-semibold">
-                        <i class="fa-solid fa-circle-exclamation me-1"></i>Authentication Expired
-                    </span>
-                    {% else %}
-                    <span class="text-success small">
-                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('anilist_username') %} as {{
-                        user['anilist_username'] }}{% endif %}
-                    </span>
-                    {% endif %}
+                {% if user.get('anilist_token_expired') %}
+                <span class="text-danger small fw-semibold">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i>Authentication Expired
+                </span>
+                {% else %}
+                <span class="text-success small">
+                    <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('anilist_username') %} as {{
+                    user['anilist_username'] }}{% endif %}
+                </span>
+                {% endif %}
                 {% else %}
                 <span class="text-secondary small">
                     <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
@@ -476,7 +506,8 @@
 
             {% if user.get('anilist_token') %}
             <div class="d-flex gap-2 mb-3">
-                <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-anilist {% if user.get('anilist_token_expired') %}btn-pulse-anilist{% endif %}">
+                <a href="{{ url_for('auth.authorize_anilist') }}"
+                    class="btn btn-anilist {% if user.get('anilist_token_expired') %}btn-pulse-anilist{% endif %}">
                     <i class="fa-solid fa-rotate me-2"></i>Reconnect
                 </a>
                 <a href="{{ url_for('auth.disconnect_anilist') }}" class="btn btn-disconnect">
@@ -493,8 +524,9 @@
 
             {% if user.get('anilist_token') %}
             <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" id="anilist_enabled"
-                    {% if user.get('anilist_enabled', True) %}checked{% endif %} {% if user.get('anilist_token_expired') %}disabled{% endif %}>
+                <input class="form-check-input" type="checkbox" role="switch" id="anilist_enabled" {% if
+                    user.get('anilist_enabled', True) %}checked{% endif %} {% if user.get('anilist_token_expired')
+                    %}disabled{% endif %}>
                 <label class="form-check-label text-secondary small" for="anilist_enabled">
                     AniList tracking enabled
                 </label>
@@ -511,16 +543,16 @@
                     <span class="fw-semibold">Simkl</span>
                 </div>
                 {% if user.get('simkl_access_token') %}
-                    {% if user.get('simkl_token_expired') %}
-                    <span class="text-danger small fw-semibold">
-                        <i class="fa-solid fa-circle-exclamation me-1"></i>Authentication Expired
-                    </span>
-                    {% else %}
-                    <span class="text-success small">
-                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('simkl_username') %} as {{
-                        user['simkl_username'] }}{% endif %}
-                    </span>
-                    {% endif %}
+                {% if user.get('simkl_token_expired') %}
+                <span class="text-danger small fw-semibold">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i>Authentication Expired
+                </span>
+                {% else %}
+                <span class="text-success small">
+                    <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('simkl_username') %} as {{
+                    user['simkl_username'] }}{% endif %}
+                </span>
+                {% endif %}
                 {% else %}
                 <span class="text-secondary small">
                     <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
@@ -530,7 +562,8 @@
 
             {% if user.get('simkl_access_token') %}
             <div class="d-flex gap-2 mb-3">
-                <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-simkl {% if user.get('simkl_token_expired') %}btn-pulse-simkl{% endif %}">
+                <a href="{{ url_for('auth.authorize_simkl') }}"
+                    class="btn btn-simkl {% if user.get('simkl_token_expired') %}btn-pulse-simkl{% endif %}">
                     <i class="fa-solid fa-rotate me-2"></i>Reconnect
                 </a>
                 <a href="{{ url_for('auth.disconnect_simkl') }}" class="btn btn-disconnect">
@@ -547,8 +580,9 @@
 
             {% if user.get('simkl_access_token') %}
             <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" id="simkl_enabled"
-                    {% if user.get('simkl_enabled', True) %}checked{% endif %} {% if user.get('simkl_token_expired') %}disabled{% endif %}>
+                <input class="form-check-input" type="checkbox" role="switch" id="simkl_enabled" {% if
+                    user.get('simkl_enabled', True) %}checked{% endif %} {% if user.get('simkl_token_expired')
+                    %}disabled{% endif %}>
                 <label class="form-check-label text-secondary small" for="simkl_enabled">
                     Simkl tracking enabled
                 </label>
@@ -557,44 +591,44 @@
         </div>
 
         <form method="POST" action="{{ url_for('ui.configure') }}" id="prefs-form">
-            <!-- Catalog & Search Settings Card -->
+            <!-- Metadata Provider Card -->
             <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-sliders me-2 text-warning"></i>Catalog & Search Settings</h6>
-
-                <!-- Metadata Provider Preference (Available for all users including Guests) -->
-                <div class="mb-4">
-                    <label class="rec-label mb-2" style="color: #38bdf8 !important;"><i class="fa-solid fa-database me-2" style="color: #38bdf8 !important;"></i>Metadata Provider</label>
-                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                        Select your preferred metadata provider for posters, banners, synopses, and episode listings.
-                    </p>
-                    <input type="hidden" id="metadata_provider" name="metadata_provider" value="{{ user.get('metadata_provider', 'kitsu') }}">
-                    <div class="custom-select-wrapper" data-input-id="metadata_provider" style="max-width: 400px;">
-                        <div class="custom-select">
-                            <span class="custom-select-text d-flex align-items-center">
-                                {% if user.get('metadata_provider', 'kitsu') == 'mal' %}
-                                    <img src="/assets/mal_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">MyAnimeList
-                                {% elif user.get('metadata_provider', 'kitsu') == 'anilist' %}
-                                    <img src="/assets/anilist_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">AniList
-                                {% else %}
-                                    <img src="/assets/kitsu_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">Kitsu (Default)
-                                {% endif %}
-                            </span>
-                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                        </div>
-                        <div class="custom-options-menu">
-                            <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
-                                <img src="/assets/kitsu_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">Kitsu (Default)
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="mal">
+                <h6 class="fw-semibold mb-3" style="color: #38bdf8 !important;"><i class="fa-solid fa-database me-2" style="color: #38bdf8 !important;"></i>Metadata Provider</h6>
+                <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                    Select your preferred metadata provider for posters, banners, synopses, and episode listings.
+                </p>
+                <input type="hidden" id="metadata_provider" name="metadata_provider" value="{{ user.get('metadata_provider', 'kitsu') }}">
+                <div class="custom-select-wrapper mb-2" data-input-id="metadata_provider" style="max-width: 400px;">
+                    <div class="custom-select">
+                        <span class="custom-select-text d-flex align-items-center">
+                            {% if user.get('metadata_provider', 'kitsu') == 'mal' %}
                                 <img src="/assets/mal_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">MyAnimeList
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="anilist">
+                            {% elif user.get('metadata_provider', 'kitsu') == 'anilist' %}
                                 <img src="/assets/anilist_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">AniList
-                            </div>
+                            {% else %}
+                                <img src="/assets/kitsu_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">Kitsu (Default)
+                            {% endif %}
+                        </span>
+                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                    </div>
+                    <div class="custom-options-menu">
+                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
+                            <img src="/assets/kitsu_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">Kitsu (Default)
+                        </div>
+                        <div class="custom-option-item d-flex align-items-center" data-value="mal">
+                            <img src="/assets/mal_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">MyAnimeList
+                        </div>
+                        <div class="custom-option-item d-flex align-items-center" data-value="anilist">
+                            <img src="/assets/anilist_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">AniList
                         </div>
                     </div>
-                    <span class="text-warning-emphasis d-block mt-2" style="color: #e0a92e !important; font-size: 0.75rem;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Kitsu if metadata is missing from selected provider.</span>
                 </div>
+                <span class="text-warning-emphasis d-block" style="color: #e0a92e !important; font-size: 0.75rem;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Kitsu if metadata is missing from selected provider.</span>
+            </div>
+
+            <!-- General Preferences Card -->
+            <div class="card-dark p-3 p-sm-4 mb-3">
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-sliders me-2 text-warning"></i>General Preferences</h6>
                 <input type="hidden" id="mal_enabled_val" name="mal_enabled"
                     value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
                 <input type="hidden" id="anilist_enabled_val" name="anilist_enabled"
@@ -644,11 +678,15 @@
                 <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
                     value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
 
-                <div class="form-check form-switch mb-3" {% if user.get('is_guest') %}style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
+                <div class="form-check form-switch mb-3" {% if user.get('is_guest')
+                    %}style="opacity: 0.5; cursor: not-allowed;" {% endif %}>
                     <input class="form-check-input" type="checkbox" role="switch" id="sync_unlisted" {% if
-                        user.get('sync_unlisted', False) and not user.get('is_guest') %}checked{% endif %} {% if user.get('is_guest') %}disabled{% endif %}>
+                        user.get('sync_unlisted', False) and not user.get('is_guest') %}checked{% endif %} {% if
+                        user.get('is_guest') %}disabled{% endif %}>
                     <label class="form-check-label ms-1" for="sync_unlisted">
-                        <span class="fw-medium d-block">Sync unlisted anime {% if user.get('is_guest') %}<span class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or Simkl)</span>{% endif %}</span>
+                        <span class="fw-medium d-block">Sync unlisted anime {% if user.get('is_guest') %}<span
+                                class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or Simkl)</span>{%
+                            endif %}</span>
                         <span class="text-secondary small d-block">
                             Auto-add anime to your list when you start watching, even if not on your list yet.
                         </span>
@@ -672,27 +710,35 @@
                     class="mb-3">
                     <div class="form-check form-switch mb-0">
                         {% set p_prov = user.get('poster_provider', 'none') %}
-                        {% set is_p_valid = (p_prov == 'none' or (p_prov == 'rpdb' and user.get('rpdb_api_key')) or ((p_prov == 'top_poster' or p_prov == 'topposters') and user.get('top_poster_key')) or (p_prov == 'custom' and user.get('custom_poster_pattern'))) %}
-                        <input class="form-check-input" type="checkbox" role="switch" id="rpdb_in_search"
-                            {% if user.get('rpdb_in_search', True) and is_p_valid %}checked{% endif %}
-                            {% if not is_p_valid %}disabled{% endif %}>
+                        {% set is_p_valid = (p_prov == 'none' or (p_prov == 'rpdb' and user.get('rpdb_api_key')) or
+                        ((p_prov == 'top_poster' or p_prov == 'topposters') and user.get('top_poster_key')) or (p_prov
+                        == 'custom' and user.get('custom_poster_pattern'))) %}
+                        <input class="form-check-input" type="checkbox" role="switch" id="rpdb_in_search" {% if
+                            user.get('rpdb_in_search', True) and is_p_valid %}checked{% endif %} {% if not is_p_valid
+                            %}disabled{% endif %}>
                         <label class="form-check-label ms-1" for="rpdb_in_search">
                             <span class="fw-medium d-block">Enable Poster Art in Search Catalog</span>
                             <span class="text-secondary small d-block">
                                 Replace standard anime posters with poster art in search results.
                             </span>
-                            <span id="rpdb-search-warning-text" class="text-warning small d-block mt-1 fw-medium {% if is_p_valid %}d-none{% endif %}">
-                                <i class="fa-solid fa-circle-info me-1"></i>Provide a valid API key or pattern for your selected poster provider to enable poster art.
+                            <span id="rpdb-search-warning-text"
+                                class="text-warning small d-block mt-1 fw-medium {% if is_p_valid %}d-none{% endif %}">
+                                <i class="fa-solid fa-circle-info me-1"></i>Provide a valid API key or pattern for your
+                                selected poster provider to enable poster art.
                             </span>
                         </label>
                     </div>
                 </div>
 
-                <div class="form-check form-switch mb-3" {% if user.get('is_guest') %}style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
+                <div class="form-check form-switch mb-3" {% if user.get('is_guest')
+                    %}style="opacity: 0.5; cursor: not-allowed;" {% endif %}>
                     <input class="form-check-input" type="checkbox" role="switch" id="enable_catalogs" {% if
-                        user.get('enable_catalogs', True) and not user.get('is_guest') %}checked{% endif %} {% if user.get('is_guest') %}disabled{% endif %}>
+                        user.get('enable_catalogs', True) and not user.get('is_guest') %}checked{% endif %} {% if
+                        user.get('is_guest') %}disabled{% endif %}>
                     <label class="form-check-label ms-1" for="enable_catalogs">
-                        <span class="fw-medium d-block">Enable Watchlist Catalogs {% if user.get('is_guest') %}<span class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or Simkl)</span>{% endif %}</span>
+                        <span class="fw-medium d-block">Enable Watchlist Catalogs {% if user.get('is_guest') %}<span
+                                class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or Simkl)</span>{%
+                            endif %}</span>
                         <span class="text-secondary small d-block">
                             Expose your watchlist categories inside the app. Disable if you only want progress tracking
                             without extra catalogs.
@@ -715,7 +761,8 @@
                                 pushes them to the front of your watching catalog.
                             </span>
                             <span class="text-warning small d-block mt-1 fw-medium">
-                                <i class="fa-solid fa-circle-info me-1"></i>Shows with new episodes will always be pinned to the front, regardless of your custom sorting preferences.
+                                <i class="fa-solid fa-circle-info me-1"></i>Shows with new episodes will always be
+                                pinned to the front, regardless of your custom sorting preferences.
                             </span>
                         </label>
                     </div>
@@ -747,10 +794,12 @@
                         <label class="form-check-label ms-1" for="combine_watchlists">
                             <span class="fw-medium d-block">Combine Watchlist Catalogs</span>
                             <span class="text-secondary small d-block">
-                                Merges MyAnimeList, AniList, and Simkl watchlists into unified, deduplicated catalogs in Stremio. (AniList's Repeating entries are automatically merged into Watching).
+                                Merges MyAnimeList, AniList, and Simkl watchlists into unified, deduplicated catalogs in
+                                Stremio. (AniList's Repeating entries are automatically merged into Watching).
                             </span>
                             <span id="combine-warning-text" class="text-warning small d-block mt-1 fw-medium d-none">
-                                <i class="fa-solid fa-circle-info me-1"></i>Connect at least two of MyAnimeList, AniList, or Simkl to enable watchlist combining.
+                                <i class="fa-solid fa-circle-info me-1"></i>Connect at least two of MyAnimeList,
+                                AniList, or Simkl to enable watchlist combining.
                             </span>
                         </label>
                     </div>
@@ -768,8 +817,11 @@
                     </div>
 
                     <!-- Custom Sorting Options Sub-Container -->
-                    <div id="custom-sorting-container" style="{% if not user.get('custom_sort_enabled', False) %}display: none;{% endif %}" class="mb-3 ps-0 ps-sm-3">
-                        <p class="text-secondary small mb-3">Set your sorting preference for each watchlist category:</p>
+                    <div id="custom-sorting-container"
+                        style="{% if not user.get('custom_sort_enabled', False) %}display: none;{% endif %}"
+                        class="mb-3 ps-0 ps-sm-3">
+                        <p class="text-secondary small mb-3">Set your sorting preference for each watchlist category:
+                        </p>
 
                         <!-- Watching Sort -->
                         <div class="row g-2 mb-3 align-items-center">
@@ -780,14 +832,25 @@
                                 <div class="custom-select-wrapper" data-input-id="custom_sort_watching_by_val">
                                     <div class="custom-select">
                                         <span class="custom-select-text">Default</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                                        <i class="fa-solid fa-chevron-down text-secondary"
+                                            style="font-size:0.75rem;"></i>
                                     </div>
                                     <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="default"><i class="fa-solid fa-bars me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                        <div class="custom-option-item" data-value="score"><i class="fa-solid fa-star me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                        <div class="custom-option-item" data-value="airing_date"><i class="fa-solid fa-calendar-days me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Airing Date</div>
-                                        <div class="custom-option-item" data-value="last_updated"><i class="fa-solid fa-clock-rotate-left me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                        <div class="custom-option-item" data-value="title"><i class="fa-solid fa-font me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Title</div>
+                                        <div class="custom-option-item" data-value="default"><i
+                                                class="fa-solid fa-bars me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Default</div>
+                                        <div class="custom-option-item" data-value="score"><i
+                                                class="fa-solid fa-star me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
+                                        <div class="custom-option-item" data-value="airing_date"><i
+                                                class="fa-solid fa-calendar-days me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Airing Date</div>
+                                        <div class="custom-option-item" data-value="last_updated"><i
+                                                class="fa-solid fa-clock-rotate-left me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
+                                        <div class="custom-option-item" data-value="title"><i
+                                                class="fa-solid fa-font me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Title</div>
                                     </div>
                                 </div>
                             </div>
@@ -795,11 +858,16 @@
                                 <div class="custom-select-wrapper" data-input-id="custom_sort_watching_order_val">
                                     <div class="custom-select">
                                         <span class="custom-select-text">Descending</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                                        <i class="fa-solid fa-chevron-down text-secondary"
+                                            style="font-size:0.75rem;"></i>
                                     </div>
                                     <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="desc"><i class="fa-solid fa-arrow-down-wide-short me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                        <div class="custom-option-item" data-value="asc"><i class="fa-solid fa-arrow-up-wide-short me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                        <div class="custom-option-item" data-value="desc"><i
+                                                class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Descending</div>
+                                        <div class="custom-option-item" data-value="asc"><i
+                                                class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Ascending</div>
                                     </div>
                                 </div>
                             </div>
@@ -814,14 +882,25 @@
                                 <div class="custom-select-wrapper" data-input-id="custom_sort_planning_by_val">
                                     <div class="custom-select">
                                         <span class="custom-select-text">Default</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                                        <i class="fa-solid fa-chevron-down text-secondary"
+                                            style="font-size:0.75rem;"></i>
                                     </div>
                                     <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="default"><i class="fa-solid fa-bars me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                        <div class="custom-option-item" data-value="score"><i class="fa-solid fa-star me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                        <div class="custom-option-item" data-value="airing_date"><i class="fa-solid fa-calendar-days me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Airing Date</div>
-                                        <div class="custom-option-item" data-value="last_updated"><i class="fa-solid fa-clock-rotate-left me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                        <div class="custom-option-item" data-value="title"><i class="fa-solid fa-font me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Title</div>
+                                        <div class="custom-option-item" data-value="default"><i
+                                                class="fa-solid fa-bars me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Default</div>
+                                        <div class="custom-option-item" data-value="score"><i
+                                                class="fa-solid fa-star me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
+                                        <div class="custom-option-item" data-value="airing_date"><i
+                                                class="fa-solid fa-calendar-days me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Airing Date</div>
+                                        <div class="custom-option-item" data-value="last_updated"><i
+                                                class="fa-solid fa-clock-rotate-left me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
+                                        <div class="custom-option-item" data-value="title"><i
+                                                class="fa-solid fa-font me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Title</div>
                                     </div>
                                 </div>
                             </div>
@@ -829,11 +908,16 @@
                                 <div class="custom-select-wrapper" data-input-id="custom_sort_planning_order_val">
                                     <div class="custom-select">
                                         <span class="custom-select-text">Descending</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                                        <i class="fa-solid fa-chevron-down text-secondary"
+                                            style="font-size:0.75rem;"></i>
                                     </div>
                                     <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="desc"><i class="fa-solid fa-arrow-down-wide-short me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                        <div class="custom-option-item" data-value="asc"><i class="fa-solid fa-arrow-up-wide-short me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                        <div class="custom-option-item" data-value="desc"><i
+                                                class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Descending</div>
+                                        <div class="custom-option-item" data-value="asc"><i
+                                                class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Ascending</div>
                                     </div>
                                 </div>
                             </div>
@@ -848,13 +932,22 @@
                                 <div class="custom-select-wrapper" data-input-id="custom_sort_completed_by_val">
                                     <div class="custom-select">
                                         <span class="custom-select-text">Default</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                                        <i class="fa-solid fa-chevron-down text-secondary"
+                                            style="font-size:0.75rem;"></i>
                                     </div>
                                     <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="default"><i class="fa-solid fa-bars me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                        <div class="custom-option-item" data-value="score"><i class="fa-solid fa-star me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                        <div class="custom-option-item" data-value="last_updated"><i class="fa-solid fa-clock-rotate-left me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                        <div class="custom-option-item" data-value="title"><i class="fa-solid fa-font me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Title</div>
+                                        <div class="custom-option-item" data-value="default"><i
+                                                class="fa-solid fa-bars me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Default</div>
+                                        <div class="custom-option-item" data-value="score"><i
+                                                class="fa-solid fa-star me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
+                                        <div class="custom-option-item" data-value="last_updated"><i
+                                                class="fa-solid fa-clock-rotate-left me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
+                                        <div class="custom-option-item" data-value="title"><i
+                                                class="fa-solid fa-font me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Title</div>
                                     </div>
                                 </div>
                             </div>
@@ -862,11 +955,16 @@
                                 <div class="custom-select-wrapper" data-input-id="custom_sort_completed_order_val">
                                     <div class="custom-select">
                                         <span class="custom-select-text">Descending</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                                        <i class="fa-solid fa-chevron-down text-secondary"
+                                            style="font-size:0.75rem;"></i>
                                     </div>
                                     <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="desc"><i class="fa-solid fa-arrow-down-wide-short me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                        <div class="custom-option-item" data-value="asc"><i class="fa-solid fa-arrow-up-wide-short me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                        <div class="custom-option-item" data-value="desc"><i
+                                                class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Descending</div>
+                                        <div class="custom-option-item" data-value="asc"><i
+                                                class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Ascending</div>
                                     </div>
                                 </div>
                             </div>
@@ -881,13 +979,22 @@
                                 <div class="custom-select-wrapper" data-input-id="custom_sort_on_hold_by_val">
                                     <div class="custom-select">
                                         <span class="custom-select-text">Default</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                                        <i class="fa-solid fa-chevron-down text-secondary"
+                                            style="font-size:0.75rem;"></i>
                                     </div>
                                     <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="default"><i class="fa-solid fa-bars me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                        <div class="custom-option-item" data-value="score"><i class="fa-solid fa-star me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                        <div class="custom-option-item" data-value="last_updated"><i class="fa-solid fa-clock-rotate-left me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                        <div class="custom-option-item" data-value="title"><i class="fa-solid fa-font me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Title</div>
+                                        <div class="custom-option-item" data-value="default"><i
+                                                class="fa-solid fa-bars me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Default</div>
+                                        <div class="custom-option-item" data-value="score"><i
+                                                class="fa-solid fa-star me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
+                                        <div class="custom-option-item" data-value="last_updated"><i
+                                                class="fa-solid fa-clock-rotate-left me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
+                                        <div class="custom-option-item" data-value="title"><i
+                                                class="fa-solid fa-font me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Title</div>
                                     </div>
                                 </div>
                             </div>
@@ -895,11 +1002,16 @@
                                 <div class="custom-select-wrapper" data-input-id="custom_sort_on_hold_order_val">
                                     <div class="custom-select">
                                         <span class="custom-select-text">Descending</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                                        <i class="fa-solid fa-chevron-down text-secondary"
+                                            style="font-size:0.75rem;"></i>
                                     </div>
                                     <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="desc"><i class="fa-solid fa-arrow-down-wide-short me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                        <div class="custom-option-item" data-value="asc"><i class="fa-solid fa-arrow-up-wide-short me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                        <div class="custom-option-item" data-value="desc"><i
+                                                class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Descending</div>
+                                        <div class="custom-option-item" data-value="asc"><i
+                                                class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Ascending</div>
                                     </div>
                                 </div>
                             </div>
@@ -914,13 +1026,22 @@
                                 <div class="custom-select-wrapper" data-input-id="custom_sort_dropped_by_val">
                                     <div class="custom-select">
                                         <span class="custom-select-text">Default</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                                        <i class="fa-solid fa-chevron-down text-secondary"
+                                            style="font-size:0.75rem;"></i>
                                     </div>
                                     <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="default"><i class="fa-solid fa-bars me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                        <div class="custom-option-item" data-value="score"><i class="fa-solid fa-star me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                        <div class="custom-option-item" data-value="last_updated"><i class="fa-solid fa-clock-rotate-left me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                        <div class="custom-option-item" data-value="title"><i class="fa-solid fa-font me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Title</div>
+                                        <div class="custom-option-item" data-value="default"><i
+                                                class="fa-solid fa-bars me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Default</div>
+                                        <div class="custom-option-item" data-value="score"><i
+                                                class="fa-solid fa-star me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
+                                        <div class="custom-option-item" data-value="last_updated"><i
+                                                class="fa-solid fa-clock-rotate-left me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
+                                        <div class="custom-option-item" data-value="title"><i
+                                                class="fa-solid fa-font me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Title</div>
                                     </div>
                                 </div>
                             </div>
@@ -928,11 +1049,16 @@
                                 <div class="custom-select-wrapper" data-input-id="custom_sort_dropped_order_val">
                                     <div class="custom-select">
                                         <span class="custom-select-text">Descending</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                                        <i class="fa-solid fa-chevron-down text-secondary"
+                                            style="font-size:0.75rem;"></i>
                                     </div>
                                     <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="desc"><i class="fa-solid fa-arrow-down-wide-short me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                        <div class="custom-option-item" data-value="asc"><i class="fa-solid fa-arrow-up-wide-short me-2 text-secondary" style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                        <div class="custom-option-item" data-value="desc"><i
+                                                class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Descending</div>
+                                        <div class="custom-option-item" data-value="asc"><i
+                                                class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
+                                                style="font-size:0.8rem; width:12px;"></i>Ascending</div>
                                     </div>
                                 </div>
                             </div>
@@ -948,7 +1074,8 @@
                     <label class="form-check-label ms-1" for="enable_discovery_catalogs">
                         <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
                         <span class="text-secondary small d-block">
-                            Enable general public discovery catalogs (Spotlight, Weekly Release Calendar, Seasonal Showcase, Trending, Top Airing, Highest Rated, and Most Popular).
+                            Enable general public discovery catalogs (Spotlight, Weekly Release Calendar, Seasonal
+                            Showcase, Trending, Top Airing, Highest Rated, and Most Popular).
                         </span>
                     </label>
                 </div>
@@ -958,8 +1085,8 @@
                     style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
                     class="mb-3">
                     <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {% if
-                            user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
+                        <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {%
+                            if user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
                         <label class="form-check-label ms-1" for="shuffle_discovery_catalogs">
                             <span class="fw-medium d-block">Shuffle Catalogs on Request</span>
                             <span class="text-secondary small d-block">
@@ -969,407 +1096,462 @@
                     </div>
                 </div>
 
-                <!-- Catalog Title Language Preference -->
-                <div class="mb-4 mt-3" style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;">
-                    <label class="rec-label mb-2" style="color: #f59e0b !important;"><i class="fa-solid fa-language me-2" style="color: #f59e0b !important;"></i>Catalog Title Language</label>
-                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                        Choose your preferred language for anime titles in catalogs and detail pages.
-                    </p>
-                    <input type="hidden" id="title_language" name="title_language" value="{{ user.get('title_language', 'english') }}">
-                    <div class="custom-select-wrapper" data-input-id="title_language" style="max-width: 400px;">
-                        <div class="custom-select">
-                            <span class="custom-select-text d-flex align-items-center">
-                                {% if user.get('title_language', 'english') == 'romaji' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
-                                {% elif user.get('title_language', 'english') == 'japanese' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
-                                {% else %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
-                                {% endif %}
-                            </span>
-                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                        </div>
-                        <div class="custom-options-menu">
-                            <div class="custom-option-item d-flex align-items-center" data-value="english">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="romaji">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="japanese">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
-                            </div>
-                        </div>
-                    </div>
-                    <span class="text-warning-emphasis d-block mt-2" style="color: #e0a92e !important; font-size: 0.75rem;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</span>
-                </div>
-
-            <!-- Poster Art Card -->
-            <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art</h6>
-
-                <div id="poster-provider-section">
-                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                        Select your preferred poster provider for custom poster artwork across your catalogs.
-                    </p>
-
-                    <div class="custom-select-wrapper mb-3" id="poster_provider_wrapper" data-input-id="poster_provider" style="max-width: 400px;">
-                        {% set current_provider = user.get('poster_provider', 'none') %}
-                        <input type="hidden" id="poster_provider" name="poster_provider" value="{{ current_provider }}">
-                        <div class="custom-select">
-                            <span id="poster_provider_display" class="custom-select-text d-flex align-items-center">
-                                {% if current_provider == 'rpdb' %}
-                                    <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating Poster DB (RPDB)
-                                {% elif current_provider == 'top_poster' or current_provider == 'topposters' %}
-                                    <img src="/assets/topposters_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP Posters
-                                {% elif current_provider == 'custom' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:4px; font-size:10px;"><i class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
-                                {% else %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
-                                {% endif %}
-                            </span>
-                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                        </div>
-                        <div class="custom-options-menu">
-                            <div class="custom-option-item d-flex align-items-center" data-value="none">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="rpdb">
-                                <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating Poster DB (RPDB)
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="top_poster">
-                                <img src="/assets/topposters_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP Posters
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="custom">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:4px; font-size:10px;"><i class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dynamic Sub-Sections -->
-                    <!-- RPDB Container -->
-                    <div id="rpdb-key-container" class="poster-provider-field mt-3 {% if current_provider != 'rpdb' %}d-none{% endif %}" style="max-width: 400px;">
-                        <label class="rec-label mb-2 small text-secondary">RPDB API Key</label>
-                        <div class="gemini-input-wrapper position-relative">
-                            <i class="fa-solid fa-key gemini-icon" style="color: #ffc107;"></i>
-                            <input type="password" id="rpdb_api_key" name="rpdb_api_key" class="gemini-input"
-                                value="{{ user.get('rpdb_api_key', '') }}"
-                                placeholder="Paste your RPDB API key here">
-                            <button type="button" class="gemini-btn" id="toggle-rpdb-visibility"
-                                style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
-                                <i class="fa-regular fa-eye"></i>
-                            </button>
-                            <button type="button" class="gemini-btn p-0" id="validate-rpdb-btn" title="Validate Key">
-                                <i id="rpdb-check-icon"
-                                    class="fa-solid {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
-                                    style="font-size: 1.1rem; transition: color 0.2s;"></i>
-                            </button>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span id="rpdb-validation-status" class="small {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
-                                {% if user.get('rpdb_api_key') %}
-                                    {% if user.get('rpdb_key_valid') == False %}
-                                        Invalid or Expired API Key
-                                    {% else %}
-                                        API key verified ✓
-                                    {% endif %}
-                                {% else %}
-                                    Not verified
-                                {% endif %}
-                            </span>
-                            <a href="https://ratingposterdb.com/" target="_blank"
-                                class="small text-info text-decoration-none" style="font-size:0.75rem;">
-                                Get RPDB API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Top Poster Container -->
-                    <div id="top-poster-container" class="poster-provider-field mt-3 {% if current_provider != 'top_poster' %}d-none{% endif %}" style="max-width: 400px;">
-                        <label class="rec-label mb-2 small text-secondary">TOP Posters API Key</label>
-                        <div class="gemini-input-wrapper position-relative">
-                            <i class="fa-solid fa-key gemini-icon" style="color: #ef4444;"></i>
-                            <input type="password" id="top_poster_key" name="top_poster_key" class="gemini-input"
-                                value="{{ user.get('top_poster_key', '') }}"
-                                placeholder="Paste your TOP Posters API key here">
-                            <button type="button" class="gemini-btn" id="toggle-top-visibility"
-                                style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
-                                <i class="fa-regular fa-eye"></i>
-                            </button>
-                            <button type="button" class="gemini-btn p-0" id="validate-top-btn" title="Validate Key">
-                                <i id="top-check-icon"
-                                    class="fa-solid {% if user.get('top_poster_key') %}{% if user.get('top_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
-                                    style="font-size: 1.1rem; transition: color 0.2s;"></i>
-                            </button>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span id="top-validation-status" class="small {% if user.get('top_poster_key') %}{% if user.get('top_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
-                                {% if user.get('top_poster_key') %}
-                                    {% if user.get('top_key_valid') == False %}
-                                        Invalid or Expired API Key
-                                    {% else %}
-                                        API key verified ✓
-                                    {% endif %}
-                                {% else %}
-                                    Not verified
-                                {% endif %}
-                            </span>
-                            <a href="https://top-posters.com/" target="_blank"
-                                class="small text-info text-decoration-none" style="font-size:0.75rem;">
-                                Get TOP Posters API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Custom Pattern Container -->
-                    <div id="custom-pattern-container" class="poster-provider-field mt-3 {% if current_provider != 'custom' %}d-none{% endif %}" style="max-width: 400px;">
-                        <label class="rec-label mb-2 small text-secondary">Custom Poster URL</label>
-                        <div class="gemini-input-wrapper position-relative">
-                            <i class="fa-solid fa-link gemini-icon" style="color: #f59e0b;"></i>
-                            <input type="text" id="custom_poster_pattern" name="custom_poster_pattern" class="gemini-input"
-                                value="{{ user.get('custom_poster_pattern', '') }}"
-                                placeholder="https://domain.com/poster/{imdb_id}.jpg">
-                        </div>
-                        <p class="text-secondary small mt-2 mb-0" style="font-size: 0.75rem; line-height: 1.4;">
-                            Supported placeholders: 
-                            <strong class="text-warning">{imdb_id}</strong>, 
-                            <strong class="text-warning">{mal_id}</strong>, 
-                            <strong class="text-warning">{kitsu_id}</strong>, 
-                            <strong class="text-warning">{anilist_id}</strong>, 
-                            <strong class="text-warning">{tmdb_id}</strong>, 
-                            <strong class="text-warning">{tvdb_id}</strong>
-                        </p>
-                    </div>
-                </div>
-
             </div>
 
-            <!-- Recommendations Card -->
+            <!-- Catalog Title Language Card -->
             <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i
-                        class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>Recommendations</h6>
-
-                <input type="hidden" id="enable_recommendations_val" name="enable_recommendations"
-                    value="{{ 'true' if user.get('enable_recommendations', True) else 'false' }}">
-                <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
-                    value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
-
-                <div class="form-check form-switch mb-3" {% if user.get('is_guest') %}style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
-                    <input class="form-check-input" type="checkbox" role="switch" id="enable_recommendations" {% if
-                        user.get('enable_recommendations', True) and not user.get('is_guest') %}checked{% endif %} {% if user.get('is_guest') %}disabled{% endif %}>
-                    <label class="form-check-label ms-1" for="enable_recommendations">
-                        <span class="fw-medium d-block">Enable Recommendations Catalogs {% if user.get('is_guest') %}<span class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or Simkl)</span>{% endif %}</span>
-                        <span class="text-secondary small d-block">
-                            Enable personalized anime recommendations based on your tracking history.
+                <h6 class="fw-semibold mb-3" style="color: #f59e0b !important;"><i class="fa-solid fa-language me-2" style="color: #f59e0b !important;"></i>Catalog Title Language</h6>
+                <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                    Choose your preferred language for anime titles in catalogs and detail pages.
+                </p>
+                <input type="hidden" id="title_language" name="title_language" value="{{ user.get('title_language', 'english') }}">
+                <div class="custom-select-wrapper mb-2" data-input-id="title_language" style="max-width: 400px;">
+                    <div class="custom-select">
+                        <span class="custom-select-text d-flex align-items-center">
+                            {% if user.get('title_language', 'english') == 'romaji' %}
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
+                            {% elif user.get('title_language', 'english') == 'japanese' %}
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
+                            {% else %}
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
+                            {% endif %}
                         </span>
-                    </label>
+                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                    </div>
+                    <div class="custom-options-menu">
+                        <div class="custom-option-item d-flex align-items-center" data-value="english">
+                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
+                        </div>
+                        <div class="custom-option-item d-flex align-items-center" data-value="romaji">
+                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
+                        </div>
+                        <div class="custom-option-item d-flex align-items-center" data-value="japanese">
+                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
+                        </div>
+                    </div>
+                </div>
+                <span class="text-warning-emphasis d-block" style="color: #e0a92e !important; font-size: 0.75rem;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</span>
+            </div>
+
+                <!-- Poster Art Card -->
+                <div class="card-dark p-3 p-sm-4 mb-3">
+                    <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art</h6>
+
+                    <div id="poster-provider-section">
+                        <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                            Select your preferred poster provider for custom poster artwork across your catalogs.
+                        </p>
+
+                        <div class="custom-select-wrapper mb-3" id="poster_provider_wrapper"
+                            data-input-id="poster_provider" style="max-width: 400px;">
+                            {% set current_provider = user.get('poster_provider', 'none') %}
+                            <input type="hidden" id="poster_provider" name="poster_provider"
+                                value="{{ current_provider }}">
+                            <div class="custom-select">
+                                <span id="poster_provider_display" class="custom-select-text d-flex align-items-center">
+                                    {% if current_provider == 'rpdb' %}
+                                    <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0"
+                                        style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating
+                                    Poster DB (RPDB)
+                                    {% elif current_provider == 'top_poster' or current_provider == 'topposters' %}
+                                    <img src="/assets/topposters_logo.png" width="18" height="18"
+                                        class="me-2 flex-shrink-0"
+                                        style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP
+                                    Posters
+                                    {% elif current_provider == 'custom' %}
+                                    <span
+                                        class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
+                                        style="width:18px; height:18px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:4px; font-size:10px;"><i
+                                            class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
+                                    {% else %}
+                                    <span
+                                        class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
+                                        style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i
+                                            class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
+                                    {% endif %}
+                                </span>
+                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                            </div>
+                            <div class="custom-options-menu">
+                                <div class="custom-option-item d-flex align-items-center" data-value="none">
+                                    <span
+                                        class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
+                                        style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i
+                                            class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="rpdb">
+                                    <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0"
+                                        style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating
+                                    Poster DB (RPDB)
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="top_poster">
+                                    <img src="/assets/topposters_logo.png" width="18" height="18"
+                                        class="me-2 flex-shrink-0"
+                                        style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP
+                                    Posters
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="custom">
+                                    <span
+                                        class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
+                                        style="width:18px; height:18px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:4px; font-size:10px;"><i
+                                            class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Sub-Sections -->
+                        <!-- RPDB Container -->
+                        <div id="rpdb-key-container"
+                            class="poster-provider-field mt-3 {% if current_provider != 'rpdb' %}d-none{% endif %}"
+                            style="max-width: 400px;">
+                            <label class="rec-label mb-2 small text-secondary">RPDB API Key</label>
+                            <div class="gemini-input-wrapper position-relative">
+                                <i class="fa-solid fa-key gemini-icon" style="color: #ffc107;"></i>
+                                <input type="password" id="rpdb_api_key" name="rpdb_api_key" class="gemini-input"
+                                    value="{{ user.get('rpdb_api_key', '') }}"
+                                    placeholder="Paste your RPDB API key here">
+                                <button type="button" class="gemini-btn" id="toggle-rpdb-visibility"
+                                    style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                                <button type="button" class="gemini-btn p-0" id="validate-rpdb-btn"
+                                    title="Validate Key">
+                                    <i id="rpdb-check-icon"
+                                        class="fa-solid {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                        style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                                </button>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span id="rpdb-validation-status"
+                                    class="small {% if user.get('rpdb_api_key') %}{% if user.get('rpdb_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                    {% if user.get('rpdb_api_key') %}
+                                    {% if user.get('rpdb_key_valid') == False %}
+                                    Invalid or Expired API Key
+                                    {% else %}
+                                    API key verified ✓
+                                    {% endif %}
+                                    {% else %}
+                                    Not verified
+                                    {% endif %}
+                                </span>
+                                <a href="https://ratingposterdb.com/" target="_blank"
+                                    class="small text-info text-decoration-none" style="font-size:0.75rem;">
+                                    Get RPDB API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
+                                        style="font-size: 0.65rem;"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Top Poster Container -->
+                        <div id="top-poster-container"
+                            class="poster-provider-field mt-3 {% if current_provider != 'top_poster' %}d-none{% endif %}"
+                            style="max-width: 400px;">
+                            <label class="rec-label mb-2 small text-secondary">TOP Posters API Key</label>
+                            <div class="gemini-input-wrapper position-relative">
+                                <i class="fa-solid fa-key gemini-icon" style="color: #ef4444;"></i>
+                                <input type="password" id="top_poster_key" name="top_poster_key" class="gemini-input"
+                                    value="{{ user.get('top_poster_key', '') }}"
+                                    placeholder="Paste your TOP Posters API key here">
+                                <button type="button" class="gemini-btn" id="toggle-top-visibility"
+                                    style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                                <button type="button" class="gemini-btn p-0" id="validate-top-btn" title="Validate Key">
+                                    <i id="top-check-icon"
+                                        class="fa-solid {% if user.get('top_poster_key') %}{% if user.get('top_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                        style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                                </button>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span id="top-validation-status"
+                                    class="small {% if user.get('top_poster_key') %}{% if user.get('top_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                    {% if user.get('top_poster_key') %}
+                                    {% if user.get('top_key_valid') == False %}
+                                    Invalid or Expired API Key
+                                    {% else %}
+                                    API key verified ✓
+                                    {% endif %}
+                                    {% else %}
+                                    Not verified
+                                    {% endif %}
+                                </span>
+                                <a href="https://top-posters.com/" target="_blank"
+                                    class="small text-info text-decoration-none" style="font-size:0.75rem;">
+                                    Get TOP Posters API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
+                                        style="font-size: 0.65rem;"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Custom Pattern Container -->
+                        <div id="custom-pattern-container"
+                            class="poster-provider-field mt-3 {% if current_provider != 'custom' %}d-none{% endif %}"
+                            style="max-width: 400px;">
+                            <label class="rec-label mb-2 small text-secondary">Custom Poster URL</label>
+                            <div class="gemini-input-wrapper position-relative">
+                                <i class="fa-solid fa-link gemini-icon" style="color: #f59e0b;"></i>
+                                <input type="text" id="custom_poster_pattern" name="custom_poster_pattern"
+                                    class="gemini-input" value="{{ user.get('custom_poster_pattern', '') }}"
+                                    placeholder="https://domain.com/poster/{imdb_id}.jpg">
+                            </div>
+                            <p class="text-secondary small mt-2 mb-0" style="font-size: 0.75rem; line-height: 1.4;">
+                                Supported placeholders:
+                                <strong class="text-warning">{imdb_id}</strong>,
+                                <strong class="text-warning">{mal_id}</strong>,
+                                <strong class="text-warning">{kitsu_id}</strong>,
+                                <strong class="text-warning">{anilist_id}</strong>,
+                                <strong class="text-warning">{tmdb_id}</strong>,
+                                <strong class="text-warning">{tvdb_id}</strong>
+                            </p>
+                        </div>
+                    </div>
+
                 </div>
 
-                <!-- Recommendations Sub-Options (only visible when enabled) -->
-                <div id="recommendations-options"
-                    style="{% if not user.get('enable_recommendations', True) or user.get('is_guest') %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
-                    class="mb-3">
+                <!-- Recommendations Card -->
+                <div class="card-dark p-3 p-sm-4 mb-3">
+                    <h6 class="fw-semibold mb-3"><i
+                            class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>Recommendations</h6>
 
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" role="switch"
-                            id="recommendations_filter_watched" {% if user.get('recommendations_filter_watched', True)
-                            %}checked{% endif %}>
-                        <label class="form-check-label ms-1" for="recommendations_filter_watched">
-                            <span class="fw-medium d-block">Filter Watched Shows</span>
+                    <input type="hidden" id="enable_recommendations_val" name="enable_recommendations"
+                        value="{{ 'true' if user.get('enable_recommendations', True) else 'false' }}">
+                    <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
+                        value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
+
+                    <div class="form-check form-switch mb-3" {% if user.get('is_guest')
+                        %}style="opacity: 0.5; cursor: not-allowed;" {% endif %}>
+                        <input class="form-check-input" type="checkbox" role="switch" id="enable_recommendations" {% if
+                            user.get('enable_recommendations', True) and not user.get('is_guest') %}checked{% endif %}
+                            {% if user.get('is_guest') %}disabled{% endif %}>
+                        <label class="form-check-label ms-1" for="enable_recommendations">
+                            <span class="fw-medium d-block">Enable Recommendations Catalogs {% if user.get('is_guest')
+                                %}<span class="text-secondary small fw-normal ms-1">(Requires MAL, AniList, or
+                                    Simkl)</span>{% endif %}</span>
                             <span class="text-secondary small d-block">
-                                Exclude shows already in your completed, watching, paused, or dropped lists from
-                                recommendations.
+                                Enable personalized anime recommendations based on your tracking history.
                             </span>
                         </label>
                     </div>
 
-                    <!-- Genre Exclusions -->
-                    <div class="row mb-3">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Movie Genres</label>
-                            <div class="genre-scroll-container">
-                                {% for genre in anime_genres %}
-                                <label class="genre-checkbox-label">
-                                    <input type="checkbox" name="rec_excluded_movie_genres" value="{{ genre }}" class="genre-checkbox"
-                                        {% if genre in user.get('rec_excluded_movie_genres', []) %}checked{% endif %}>
-                                    {{ genre }}
-                                </label>
-                                {% endfor %}
+                    <!-- Recommendations Sub-Options (only visible when enabled) -->
+                    <div id="recommendations-options"
+                        style="{% if not user.get('enable_recommendations', True) or user.get('is_guest') %}display: none;{% endif %} border-left: 2px solid rgba(255, 193, 7, 0.2); padding-left: 1rem; margin-left: 0.5rem;"
+                        class="mb-3">
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                id="recommendations_filter_watched" {% if user.get('recommendations_filter_watched',
+                                True) %}checked{% endif %}>
+                            <label class="form-check-label ms-1" for="recommendations_filter_watched">
+                                <span class="fw-medium d-block">Filter Watched Shows</span>
+                                <span class="text-secondary small d-block">
+                                    Exclude shows already in your completed, watching, paused, or dropped lists from
+                                    recommendations.
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Genre Exclusions -->
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Movie
+                                    Genres</label>
+                                <div class="genre-scroll-container">
+                                    {% for genre in anime_genres %}
+                                    <label class="genre-checkbox-label">
+                                        <input type="checkbox" name="rec_excluded_movie_genres" value="{{ genre }}"
+                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_movie_genres',
+                                            []) %}checked{% endif %}>
+                                        {{ genre }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Series
+                                    Genres</label>
+                                <div class="genre-scroll-container">
+                                    {% for genre in anime_genres %}
+                                    <label class="genre-checkbox-label">
+                                        <input type="checkbox" name="rec_excluded_series_genres" value="{{ genre }}"
+                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_series_genres',
+                                            []) %}checked{% endif %}>
+                                        {{ genre }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Series Genres</label>
-                            <div class="genre-scroll-container">
-                                {% for genre in anime_genres %}
-                                <label class="genre-checkbox-label">
-                                    <input type="checkbox" name="rec_excluded_series_genres" value="{{ genre }}" class="genre-checkbox"
-                                        {% if genre in user.get('rec_excluded_series_genres', []) %}checked{% endif %}>
-                                    {{ genre }}
-                                </label>
-                                {% endfor %}
+
+                        <!-- Gemini AI Section Replica -->
+                        <div id="gemini-key-section" style="margin-top: 1.5rem;">
+                            <label class="rec-label mb-2">Gemini AI (Optional)</label>
+                            <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                                Used to generate personalized, AI-powered explanations for recommended anime based on
+                                your unique watch history.
+                            </p>
+
+                            <div class="gemini-input-wrapper position-relative">
+                                <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
+                                    value="{{ user.get('gemini_api_key', '') }}"
+                                    placeholder="Paste your Gemini API key here">
+                                <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
+                                    style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                                <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
+                                    title="Validate Key">
+                                    <i id="gemini-check-icon"
+                                        class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                        style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                                </button>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Gemini AI Section Replica -->
-                    <div id="gemini-key-section" style="margin-top: 1.5rem;">
-                        <label class="rec-label mb-2">Gemini AI (Optional)</label>
-                        <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                            Used to generate personalized, AI-powered explanations for recommended anime based on your unique watch history.
-                        </p>
-
-                        <div class="gemini-input-wrapper position-relative">
-                            <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
-                                value="{{ user.get('gemini_api_key', '') }}"
-                                placeholder="Paste your Gemini API key here">
-                            <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
-                                style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
-                                <i class="fa-regular fa-eye"></i>
-                            </button>
-                            <button type="button" class="gemini-btn p-0" id="validate-gemini-btn" title="Validate Key">
-                                <i id="gemini-check-icon"
-                                    class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
-                                    style="font-size: 1.1rem; transition: color 0.2s;"></i>
-                            </button>
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span id="gemini-validation-status" class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
-                                {% if user.get('gemini_api_key') %}
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span id="gemini-validation-status"
+                                    class="small {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                    {% if user.get('gemini_api_key') %}
                                     {% if user.get('gemini_key_valid') == False %}
-                                        Invalid Gemini API key
+                                    Invalid Gemini API key
                                     {% else %}
-                                        API key verified ✓
+                                    API key verified ✓
                                     {% endif %}
-                                {% else %}
+                                    {% else %}
                                     Not verified
-                                {% endif %}
-                            </span>
-                            <a href="https://aistudio.google.com/" target="_blank"
-                                class="small text-info text-decoration-none" style="font-size:0.75rem;">
-                                Get Gemini API Key <i
-                                    class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Catalogs Management Card -->
-            {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True) %}
-            <div class="card-dark p-3 p-sm-4 mb-3" id="catalog-management-card"
-                 {% if not user.get('mal_access_token') and not user.get('anilist_token') and not user.get('simkl_access_token') and not user.get('enable_recommendations', True) and not user.get('enable_discovery_catalogs', True) %}style="display: none;"{% endif %}>
-                <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
-                    Management</h6>
-                <p class="text-secondary small mb-3">Toggle visibility and **drag-and-drop** to reorder the catalogs
-                    exactly as they should appear in your app.</p>
-
-                <!-- Hidden input to store ordered comma-separated IDs -->
-                <input type="hidden" id="sorted_catalogs" name="sorted_catalogs" value="">
-
-                <div id="drag-drop-catalog-list" class="mb-4">
-                    {%
-                    set default_order = [
-                    ('mal_watching', 'MAL: Watching', 'mal'),
-                    ('mal_plan_to_watch', 'MAL: Plan to Watch', 'mal'),
-                    ('mal_completed', 'MAL: Completed', 'mal'),
-                    ('mal_on_hold', 'MAL: On Hold', 'mal'),
-                    ('mal_dropped', 'MAL: Dropped', 'mal'),
-                    ('anilist_watching', 'AniList: Watching', 'anilist'),
-                    ('anilist_planning', 'AniList: Planning', 'anilist'),
-                    ('anilist_completed', 'AniList: Completed', 'anilist'),
-                    ('anilist_paused', 'AniList: Paused', 'anilist'),
-                    ('anilist_dropped', 'AniList: Dropped', 'anilist'),
-                    ('anilist_repeating', 'AniList: Repeating', 'anilist'),
-                    ('simkl_watching', 'Simkl: Watching', 'simkl'),
-                    ('simkl_plantowatch', 'Simkl: Plan to Watch', 'simkl'),
-                    ('simkl_completed', 'Simkl: Completed', 'simkl'),
-                    ('simkl_hold', 'Simkl: On Hold', 'simkl'),
-                    ('simkl_dropped', 'Simkl: Dropped', 'simkl'),
-                    ('comb_watching', 'Watching', 'combined'),
-                    ('comb_plan_to_watch', 'Plan to Watch', 'combined'),
-                    ('comb_completed', 'Completed', 'combined'),
-                    ('comb_paused_on_hold', 'On Hold', 'combined'),
-                    ('comb_dropped', 'Dropped', 'combined'),
-                    ('anisync_rec', 'Top Picks', 'rec'),
-                    ('anisync_loved', 'Inspired by your Favorites', 'rec'),
-                    ('anisync_liked', 'More from your Watchlist', 'rec'),
-                    ('anisync_spotlight', 'Spotlight', 'discovery'),
-                    ('anisync_schedule', 'Weekly Release Calendar', 'discovery'),
-                    ('anisync_seasonal', 'Seasonal Showcase', 'discovery'),
-                    ('anisync_trending', 'Trending', 'discovery'),
-                    ('anisync_top_airing', 'Top Airing', 'discovery'),
-                    ('anisync_highest_rated', 'Highest Rated', 'discovery'),
-                    ('anisync_most_popular', 'Most Popular', 'discovery')
-                    ]
-                    %}
-
-                    {% set active_user_order = [] %}
-
-                    <!-- 1. Construct user-sorted list first -->
-                    {% if user.get('catalogs') is not none %}
-                    {% for sorted_id in user.get('catalogs', []) %}
-                    {% for item_id, item_name, item_source in default_order %}
-                    {% if item_id == sorted_id %}
-                    {% if (item_source == 'mal' and user.get('mal_access_token')) or
-                          (item_source == 'anilist' and user.get('anilist_token')) or
-                          (item_source == 'simkl' and user.get('simkl_access_token')) or
-                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token'))) or
-                          item_source == 'rec' or
-                          item_source == 'discovery' %}
-                    {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
-                    {% endif %}
-                    {% endif %}
-                    {% endfor %}
-                    {% endfor %}
-                    {% endif %}
-
-                    <!-- 2. Append any unselected/new catalogs from the source default order -->
-                    {% for item_id, item_name, item_source in default_order %}
-                    {% if (item_source == 'mal' and user.get('mal_access_token')) or
-                          (item_source == 'anilist' and user.get('anilist_token')) or
-                          (item_source == 'simkl' and user.get('simkl_access_token')) or
-                          (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token'))) or
-                          item_source == 'rec' or
-                          item_source == 'discovery' %}
-                    {% if item_id not in user.get('catalogs', []) %}
-                    {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
-                    {% endif %}
-                    {% endif %}
-                    {% endfor %}
-
-                    <!-- 3. Render the orderable items -->
-                    {% for item_id, item_name, item_source in active_user_order %}
-                    <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
-                        draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}"
-                        style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
-                        <div class="d-flex align-items-center">
-                            <i class="fa-solid fa-grip-vertical text-secondary me-3" style="cursor: move;"></i>
-                            <div class="form-check mb-0">
-                                <input class="form-check-input catalog-checkbox" type="checkbox" id="cat_{{ item_id }}"
-                                    name="cat_{{ item_id }}" {% if user.get('catalogs') is none or item_id in
-                                    user.get('catalogs', []) or (item_source == 'discovery' and 'enable_discovery_catalogs' not in user) %}checked{% endif %}>
-                                <label class="form-check-label small fw-medium text-light" for="cat_{{ item_id }}"
-                                    style="user-select: none;">
-                                    {{ item_name }}
-                                </label>
+                                    {% endif %}
+                                </span>
+                                <a href="https://aistudio.google.com/" target="_blank"
+                                    class="small text-info text-decoration-none" style="font-size:0.75rem;">
+                                    Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
+                                        style="font-size: 0.65rem;"></i>
+                                </a>
                             </div>
                         </div>
-                        <span
-                            class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}"
-                            style="font-size:0.68rem; letter-spacing:0.02em;">
-                            {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery' else item_source | upper) }}
-                        </span>
                     </div>
-                    {% endfor %}
                 </div>
-            </div>
-            {% endif %}
 
-            <!-- Unified Save Button -->
-            <button type="submit" class="btn btn-outline-light btn-sm px-4 mt-2 mb-3" onclick="updateFormValues();">
-                <i class="fa-solid fa-check me-1"></i>Save Preferences
-            </button>
+                <!-- Catalogs Management Card -->
+                {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or
+                user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True) %}
+                <div class="card-dark p-3 p-sm-4 mb-3" id="catalog-management-card" {% if not
+                    user.get('mal_access_token') and not user.get('anilist_token') and not
+                    user.get('simkl_access_token') and not user.get('enable_recommendations', True) and not
+                    user.get('enable_discovery_catalogs', True) %}style="display: none;" {% endif %}>
+                    <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
+                        Management</h6>
+                    <p class="text-secondary small mb-3">Toggle visibility and **drag-and-drop** to reorder the catalogs
+                        exactly as they should appear in your app.</p>
+
+                    <!-- Hidden input to store ordered comma-separated IDs -->
+                    <input type="hidden" id="sorted_catalogs" name="sorted_catalogs" value="">
+
+                    <div id="drag-drop-catalog-list" class="mb-4">
+                        {%
+                        set default_order = [
+                        ('mal_watching', 'MAL: Watching', 'mal'),
+                        ('mal_plan_to_watch', 'MAL: Plan to Watch', 'mal'),
+                        ('mal_completed', 'MAL: Completed', 'mal'),
+                        ('mal_on_hold', 'MAL: On Hold', 'mal'),
+                        ('mal_dropped', 'MAL: Dropped', 'mal'),
+                        ('anilist_watching', 'AniList: Watching', 'anilist'),
+                        ('anilist_planning', 'AniList: Planning', 'anilist'),
+                        ('anilist_completed', 'AniList: Completed', 'anilist'),
+                        ('anilist_paused', 'AniList: Paused', 'anilist'),
+                        ('anilist_dropped', 'AniList: Dropped', 'anilist'),
+                        ('anilist_repeating', 'AniList: Repeating', 'anilist'),
+                        ('simkl_watching', 'Simkl: Watching', 'simkl'),
+                        ('simkl_plantowatch', 'Simkl: Plan to Watch', 'simkl'),
+                        ('simkl_completed', 'Simkl: Completed', 'simkl'),
+                        ('simkl_hold', 'Simkl: On Hold', 'simkl'),
+                        ('simkl_dropped', 'Simkl: Dropped', 'simkl'),
+                        ('comb_watching', 'Watching', 'combined'),
+                        ('comb_plan_to_watch', 'Plan to Watch', 'combined'),
+                        ('comb_completed', 'Completed', 'combined'),
+                        ('comb_paused_on_hold', 'On Hold', 'combined'),
+                        ('comb_dropped', 'Dropped', 'combined'),
+                        ('anisync_rec', 'Top Picks', 'rec'),
+                        ('anisync_loved', 'Inspired by your Favorites', 'rec'),
+                        ('anisync_liked', 'More from your Watchlist', 'rec'),
+                        ('anisync_spotlight', 'Spotlight', 'discovery'),
+                        ('anisync_schedule', 'Weekly Release Calendar', 'discovery'),
+                        ('anisync_seasonal', 'Seasonal Showcase', 'discovery'),
+                        ('anisync_trending', 'Trending', 'discovery'),
+                        ('anisync_top_airing', 'Top Airing', 'discovery'),
+                        ('anisync_highest_rated', 'Highest Rated', 'discovery'),
+                        ('anisync_most_popular', 'Most Popular', 'discovery')
+                        ]
+                        %}
+
+                        {% set active_user_order = [] %}
+
+                        <!-- 1. Construct user-sorted list first -->
+                        {% if user.get('catalogs') is not none %}
+                        {% for sorted_id in user.get('catalogs', []) %}
+                        {% for item_id, item_name, item_source in default_order %}
+                        {% if item_id == sorted_id %}
+                        {% if (item_source == 'mal' and user.get('mal_access_token')) or
+                        (item_source == 'anilist' and user.get('anilist_token')) or
+                        (item_source == 'simkl' and user.get('simkl_access_token')) or
+                        (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or
+                        user.get('simkl_access_token'))) or
+                        item_source == 'rec' or
+                        item_source == 'discovery' %}
+                        {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
+                        {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                        {% endfor %}
+                        {% endif %}
+
+                        <!-- 2. Append any unselected/new catalogs from the source default order -->
+                        {% for item_id, item_name, item_source in default_order %}
+                        {% if (item_source == 'mal' and user.get('mal_access_token')) or
+                        (item_source == 'anilist' and user.get('anilist_token')) or
+                        (item_source == 'simkl' and user.get('simkl_access_token')) or
+                        (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or
+                        user.get('simkl_access_token'))) or
+                        item_source == 'rec' or
+                        item_source == 'discovery' %}
+                        {% if item_id not in user.get('catalogs', []) %}
+                        {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
+                        {% endif %}
+                        {% endif %}
+                        {% endfor %}
+
+                        <!-- 3. Render the orderable items -->
+                        {% for item_id, item_name, item_source in active_user_order %}
+                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
+                            draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}"
+                            style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-grip-vertical text-secondary me-3" style="cursor: move;"></i>
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input catalog-checkbox" type="checkbox"
+                                        id="cat_{{ item_id }}" name="cat_{{ item_id }}" {% if user.get('catalogs') is
+                                        none or item_id in user.get('catalogs', []) or (item_source=='discovery'
+                                        and 'enable_discovery_catalogs' not in user) %}checked{% endif %}>
+                                    <label class="form-check-label small fw-medium text-light" for="cat_{{ item_id }}"
+                                        style="user-select: none;">
+                                        {{ item_name }}
+                                    </label>
+                                </div>
+                            </div>
+                            <span
+                                class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}"
+                                style="font-size:0.68rem; letter-spacing:0.02em;">
+                                {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery'
+                                else item_source | upper) }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Unified Save Button -->
+                <button type="submit" class="btn btn-outline-light btn-sm px-4 mt-2 mb-3" onclick="updateFormValues();">
+                    <i class="fa-solid fa-check me-1"></i>Save Preferences
+                </button>
         </form>
 
         <!-- Install Card -->
