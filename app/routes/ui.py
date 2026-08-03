@@ -315,6 +315,7 @@ async def configure(user_id: str = ""):
 
         rpdb_task = None
         gemini_task = None
+        top_poster_task = None
         rpdb_key = user.get("rpdb_api_key", "")
         gemini_key = user.get("gemini_api_key", "")
 
@@ -328,6 +329,15 @@ async def configure(user_id: str = ""):
                 user["rpdb_key_valid"] = False
                 user["rpdb_key_last_checked"] = None
 
+        if "top_poster_key" in form:
+            top_key = form.get("top_poster_key", "").strip()
+            user["top_poster_key"] = top_key
+            if top_key:
+                from app.services.poster_service import validate_top_poster_api_key
+                top_poster_task = validate_top_poster_api_key(top_key)
+            else:
+                user["top_key_valid"] = False
+
         if "gemini_api_key" in form:
             gemini_key = form.get("gemini_api_key", "").strip()
             user["gemini_api_key"] = gemini_key
@@ -336,10 +346,12 @@ async def configure(user_id: str = ""):
             else:
                 user["gemini_key_valid"] = False
 
-        if rpdb_task or gemini_task:
+        if rpdb_task or gemini_task or top_poster_task:
             tasks = []
             if rpdb_task:
                 tasks.append(rpdb_task)
+            if top_poster_task:
+                tasks.append(top_poster_task)
             if gemini_task:
                 tasks.append(gemini_task)
 
@@ -350,6 +362,10 @@ async def configure(user_id: str = ""):
                 rpdb_valid = results[idx]
                 user["rpdb_key_valid"] = rpdb_valid
                 user["rpdb_key_last_checked"] = datetime.datetime.utcnow()
+                idx += 1
+            if top_poster_task:
+                top_valid = results[idx]
+                user["top_key_valid"] = top_valid
                 idx += 1
             if gemini_task:
                 gemini_valid = results[idx][0]
@@ -387,9 +403,12 @@ async def configure(user_id: str = ""):
 
             trigger_recommendation_update_background(uid, force=True)
 
+        top_key = user.get("top_poster_key", "")
         validation_failed_msg = []
         if rpdb_key and not user.get("rpdb_key_valid", False):
             validation_failed_msg.append("Invalid RPDB API key")
+        if top_key and not user.get("top_key_valid", False):
+            validation_failed_msg.append("Invalid TOP Posters API key")
         if gemini_key and not user.get("gemini_key_valid", False):
             validation_failed_msg.append("Invalid Gemini API key")
 
@@ -403,6 +422,7 @@ async def configure(user_id: str = ""):
                     "status": "warning",
                     "message": f"Preferences saved, but: {msg_str}",
                     "rpdb_valid": user.get("rpdb_key_valid", False),
+                    "top_valid": user.get("top_key_valid", False),
                     "gemini_valid": user.get("gemini_key_valid", False),
                 }
             await flash(f"Preferences saved, but: {msg_str}", "warning")
@@ -415,6 +435,7 @@ async def configure(user_id: str = ""):
                     "status": "success",
                     "message": "Preferences saved successfully!",
                     "rpdb_valid": user.get("rpdb_key_valid", False),
+                    "top_valid": user.get("top_key_valid", False),
                     "gemini_valid": user.get("gemini_key_valid", False),
                 }
             await flash("Preferences saved.", "success")
@@ -488,6 +509,25 @@ async def validate_rpdb_key():
             return {"status": "success", "message": "API key verified ✓"}
         else:
             return {"status": "error", "message": "Invalid RPDB API key"}, 400
+    except Exception as e:
+        return {"status": "error", "message": f"Validation failed: {str(e)}"}, 500
+
+
+@ui_bp.route("/top_poster/validation", methods=["POST"])
+@rate_limit(limit=10, period_seconds=60)
+async def validate_top_poster_key():
+    data = await request.get_json() or {}
+    api_key = data.get("api_key", "").strip()
+    if not api_key:
+        return {"status": "error", "message": "Key cannot be empty"}, 400
+    try:
+        from app.services.poster_service import validate_top_poster_api_key
+
+        is_valid = await validate_top_poster_api_key(api_key)
+        if is_valid:
+            return {"status": "success", "message": "API key verified ✓"}
+        else:
+            return {"status": "error", "message": "Invalid TOP Posters API key"}, 400
     except Exception as e:
         return {"status": "error", "message": f"Validation failed: {str(e)}"}, 500
 
