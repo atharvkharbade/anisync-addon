@@ -488,9 +488,9 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         # Apply user preferred Metadata Provider override (MAL / AniList with Kitsu fallback)
         await apply_metadata_provider_override(meta, user, mal_id, anilist_id)
 
-        # Apply RPDB poster if configured
-        if user.get("rpdb_api_key"):
-            from app.services.rpdb import get_rpdb_poster_url
+        # Apply custom poster provider if configured
+        if (user.get("poster_provider") and user.get("poster_provider") != "none") or user.get("rpdb_api_key"):
+            from app.services.poster_service import get_rpdb_poster_url
 
             meta["poster"] = get_rpdb_poster_url(
                 user=user,

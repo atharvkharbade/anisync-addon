@@ -612,7 +612,7 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
 
     import urllib.parse
 
-    from app.services.rpdb import get_rpdb_poster_url
+    from app.services.poster_service import get_rpdb_poster_url
 
     title_lang = user.get("title_language", "english") if user else "english"
     formatted_metas = []
