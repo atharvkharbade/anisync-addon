@@ -481,7 +481,7 @@
                                     </span>
                                 {% else %}
                                     <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 small">
-                                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('name') %} as {{ user['name'] }}{% endif %}
+                                        <i class="fa-solid fa-circle-check me-1"></i>{% if user.get('name') %}{{ user['name'] }}{% else %}Connected{% endif %}
                                     </span>
                                 {% endif %}
                             {% else %}
@@ -530,7 +530,7 @@
                                     </span>
                                 {% else %}
                                     <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 small">
-                                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('anilist_username') %} as {{ user['anilist_username'] }}{% endif %}
+                                        <i class="fa-solid fa-circle-check me-1"></i>{% if user.get('anilist_username') %}{{ user['anilist_username'] }}{% else %}Connected{% endif %}
                                     </span>
                                 {% endif %}
                             {% else %}
@@ -579,7 +579,7 @@
                                     </span>
                                 {% else %}
                                     <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 small">
-                                        <i class="fa-solid fa-circle-check me-1"></i>Connected{% if user.get('simkl_username') %} as {{ user['simkl_username'] }}{% endif %}
+                                        <i class="fa-solid fa-circle-check me-1"></i>{% if user.get('simkl_username') %}{{ user['simkl_username'] }}{% else %}Connected{% endif %}
                                     </span>
                                 {% endif %}
                             {% else %}
