@@ -26,8 +26,8 @@
     <style>
         body { background-color: #0d0d0d; color: #e0e0e0; min-height: 100vh; font-size: 15px; }
         .navbar-brand { font-weight: 700; letter-spacing: 0.03em; font-size: 1.1rem; }
-        .github-link { color: #888; transition: color 0.2s; text-decoration: none; }
-        .github-link:hover { color: #fff; }
+        .github-link { color: #a1a1aa; transition: all 0.2s ease; text-decoration: none; font-weight: 500; font-size: 0.9rem; }
+        .github-link:hover { color: #f59e0b; }
         .card-dark { background: #161616; border: 1px solid #2a2a2a; border-radius: 12px; }
         .btn-mal { background: #2e51a2; color: #fff; border: none; }
         .btn-mal:hover, .btn-mal:active { background: #3a64cc; color: #fff; }
@@ -152,15 +152,15 @@
         {% block content %}{% endblock %}
     </div>
 
-    <footer class="text-center py-4 mt-3" style="border-top: 1px solid #1e1e1e; color: #888;">
-        <p class="mb-1 text-secondary">AniSync. Elevating your tracking experience.</p>
-        <div class="mb-2 d-flex justify-content-center align-items-center gap-3" style="font-size: 0.82rem;">
-            <a href="https://github.com/atharvkharbade/anisync-addon" target="_blank" class="github-link d-inline-flex align-items-center gap-1">
-                <i class="fa-brands fa-github"></i> GitHub
+    <footer class="text-center py-5 mt-4" style="border-top: 1px solid rgba(255, 255, 255, 0.08); color: #94a3b8;">
+        <p class="mb-2 text-secondary fw-medium" style="font-size: 0.88rem; letter-spacing: 0.01em;">AniSync. Elevating your tracking experience.</p>
+        <div class="d-flex justify-content-center align-items-center gap-3">
+            <a href="https://github.com/atharvkharbade/anisync-addon" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
+                <i class="fa-brands fa-github fs-6"></i> GitHub
             </a>
-            <span style="color: #333;">•</span>
-            <a href="https://github.com/atharvkharbade/anisync-addon/issues" target="_blank" class="github-link d-inline-flex align-items-center gap-1">
-                Report an Issue
+            <span style="color: #334155; font-size: 0.8rem;">•</span>
+            <a href="https://github.com/atharvkharbade/anisync-addon/issues" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation fs-6"></i> Report an Issue
             </a>
         </div>
     </footer>
