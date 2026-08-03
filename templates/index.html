@@ -23,7 +23,7 @@
 </style>
 
 <div class="row justify-content-center mt-2 mt-sm-4">
-    <div class="col-12 col-sm-10 col-md-7 col-lg-6">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6">
         <div class="card-dark p-4 p-sm-5 text-center">
             <!-- Glowing Brand Logo -->
             <div class="mb-3 d-inline-block">
@@ -51,9 +51,8 @@
             </div>
 
             <h1 class="fw-bold mb-2 fs-3 fs-sm-1" style="letter-spacing: -0.02em;">AniSync</h1>
-            <p class="text-secondary mb-4" style="font-size:1.02rem; line-height: 1.5;">
-                Sync your watch progress to <strong class="text-white">MyAnimeList</strong>,
-                <strong class="text-white">AniList</strong>, and <strong class="text-white">Simkl</strong> automatically.
+            <p class="text-secondary mb-4" style="font-size:1rem; line-height: 1.6;">
+                Sync your watch progress automatically to <strong class="text-white">MyAnimeList</strong>, <strong class="text-white">AniList</strong>, and <strong class="text-white">Simkl</strong>.
             </p>
 
             <!-- How It Works Inset Card -->
@@ -62,21 +61,21 @@
                     <i class="fa-solid fa-circle-play text-info fs-6"></i>
                     <h6 class="fw-semibold text-white mb-0 text-uppercase" style="letter-spacing:.06em; font-size: 0.85rem;">How it works</h6>
                 </div>
-                <div class="d-flex flex-column gap-2.5" style="font-size: 0.9rem;">
+                <div class="d-flex flex-column gap-2" style="font-size: 0.9rem;">
                     <div class="d-flex align-items-center gap-2.5">
-                        <i class="fa-solid fa-plug-circle-check text-success fs-6" style="width: 20px; text-align: center;"></i>
+                        <i class="fa-solid fa-plug-circle-check text-success fs-6" style="width: 22px; text-align: center;"></i>
                         <span class="text-light">Connect your MyAnimeList, AniList, or Simkl accounts</span>
                     </div>
                     <div class="d-flex align-items-center gap-2.5">
-                        <i class="fa-solid fa-link text-warning fs-6" style="width: 20px; text-align: center;"></i>
+                        <i class="fa-solid fa-link text-warning fs-6" style="width: 22px; text-align: center;"></i>
                         <span class="text-light">Install the manifest URL into your Stremio app</span>
                     </div>
                     <div class="d-flex align-items-center gap-2.5">
-                        <i class="fa-solid fa-film text-info fs-6" style="width: 20px; text-align: center;"></i>
+                        <i class="fa-solid fa-film text-info fs-6" style="width: 22px; text-align: center;"></i>
                         <span class="text-light">Stream via built-in catalog search or external Anime Kitsu addon</span>
                     </div>
                     <div class="d-flex align-items-center gap-2.5">
-                        <i class="fa-solid fa-chart-line text-primary fs-6" style="width: 20px; text-align: center;"></i>
+                        <i class="fa-solid fa-chart-line text-primary fs-6" style="width: 22px; text-align: center;"></i>
                         <span class="text-light">Progress syncs automatically in the background</span>
                     </div>
                 </div>
@@ -87,7 +86,7 @@
             </div>
 
             <!-- Auth Buttons Section -->
-            <div class="d-flex flex-column gap-2.5 align-items-center w-100 mx-auto" style="max-width: 340px;">
+            <div class="d-flex flex-column align-items-center w-100 mx-auto" style="max-width: 340px; gap: 12px;">
                 <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-mal btn-lg px-4 w-100 fw-semibold" style="font-size: 0.95rem; padding: 0.65rem 1.25rem;">
                     <i class="fa-solid fa-right-to-bracket me-2"></i>Sign in with MyAnimeList
                 </a>
@@ -99,7 +98,7 @@
                 </a>
 
                 <!-- Divider -->
-                <div class="d-flex align-items-center my-1.5 w-100 text-secondary small opacity-75">
+                <div class="d-flex align-items-center my-1 w-100 text-secondary small opacity-75">
                     <hr class="flex-grow-1 border-secondary opacity-25 me-2 my-0">
                     <span style="font-size: 0.8rem;">or</span>
                     <hr class="flex-grow-1 border-secondary opacity-25 ms-2 my-0">
