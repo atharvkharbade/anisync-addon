@@ -1014,39 +1014,39 @@
                     </p>
 
                     <div class="custom-select-wrapper mb-3" id="poster_provider_wrapper" data-input-id="poster_provider">
-                        {% set current_provider = user.get('poster_provider', 'rpdb' if user.get('rpdb_api_key') else 'btttr') %}
+                        {% set current_provider = user.get('poster_provider', 'none') %}
                         <input type="hidden" id="poster_provider" name="poster_provider" value="{{ current_provider }}">
                         <div class="custom-select custom-select-trigger d-flex align-items-center justify-content-between p-2 rounded" style="background:#1a1a1a; border:1px solid #2a2a2a; cursor:pointer;">
                             <span id="poster_provider_display" class="custom-select-text d-flex align-items-center">
-                                {% if current_provider == 'none' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-ban" style="font-size:9px;"></i></span>Default (Original Covers)
+                                {% if current_provider == 'btttr' or current_provider == 'betterposters' %}
+                                    <img src="/assets/betterposters_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">BetterPosters
                                 {% elif current_provider == 'rpdb' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#f59e0b; border-radius:4px; font-size:10px;"><i class="fa-solid fa-key" style="font-size:9px;"></i></span>Rating Poster DB (RPDB)
-                                {% elif current_provider == 'top_poster' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#6366f1; border-radius:4px; font-size:10px;"><i class="fa-solid fa-trophy" style="font-size:9px;"></i></span>Top Poster API
+                                    <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating Poster DB (RPDB)
+                                {% elif current_provider == 'top_poster' or current_provider == 'topposters' %}
+                                    <img src="/assets/topposters_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP Posters
                                 {% elif current_provider == 'custom' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ec4899; border-radius:4px; font-size:10px;"><i class="fa-solid fa-code" style="font-size:9px;"></i></span>Custom Poster URL Pattern
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ec4899; border-radius:4px; font-size:10px;"><i class="fa-solid fa-code" style="font-size:9px;"></i></span>Custom
                                 {% else %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#10b981; border-radius:4px; font-size:10px;"><i class="fa-solid fa-star" style="font-size:9px;"></i></span>Btttr.cc (Free Rating Posters)
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
                                 {% endif %}
                             </span>
                             <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
                         </div>
                         <div class="custom-options-menu">
+                            <div class="custom-option-item d-flex align-items-center" data-value="none">
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
+                            </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="btttr">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#10b981; border-radius:4px; font-size:10px;"><i class="fa-solid fa-star" style="font-size:9px;"></i></span>Btttr.cc (Free Rating Posters)
+                                <img src="/assets/betterposters_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">BetterPosters
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="rpdb">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#f59e0b; border-radius:4px; font-size:10px;"><i class="fa-solid fa-key" style="font-size:9px;"></i></span>Rating Poster DB (RPDB)
+                                <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating Poster DB (RPDB)
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="top_poster">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#6366f1; border-radius:4px; font-size:10px;"><i class="fa-solid fa-trophy" style="font-size:9px;"></i></span>Top Poster API
+                                <img src="/assets/topposters_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP Posters
                             </div>
                             <div class="custom-option-item d-flex align-items-center" data-value="custom">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ec4899; border-radius:4px; font-size:10px;"><i class="fa-solid fa-code" style="font-size:9px;"></i></span>Custom Poster URL Pattern
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="none">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i class="fa-solid fa-ban" style="font-size:9px;"></i></span>Default (Original Covers)
+                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ec4899; border-radius:4px; font-size:10px;"><i class="fa-solid fa-code" style="font-size:9px;"></i></span>Custom
                             </div>
                         </div>
                     </div>
@@ -1091,12 +1091,12 @@
 
                     <!-- Top Poster Container -->
                     <div id="top-poster-container" class="poster-provider-field mt-3 {% if current_provider != 'top_poster' %}d-none{% endif %}">
-                        <label class="rec-label mb-2 small text-secondary">Top Poster API Key</label>
+                        <label class="rec-label mb-2 small text-secondary">TOP Posters API Key</label>
                         <div class="gemini-input-wrapper position-relative">
                             <i class="fa-solid fa-trophy gemini-icon" style="color: #6366f1;"></i>
                             <input type="password" id="top_poster_key" name="top_poster_key" class="gemini-input"
                                 value="{{ user.get('top_poster_key', '') }}"
-                                placeholder="Paste your Top Poster API key here">
+                                placeholder="Paste your TOP Posters API key here">
                         </div>
                     </div>
 
