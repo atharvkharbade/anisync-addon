@@ -1013,7 +1013,7 @@
                     <div class="custom-select-wrapper mb-3" id="poster_provider_wrapper" data-input-id="poster_provider">
                         {% set current_provider = user.get('poster_provider', 'none') %}
                         <input type="hidden" id="poster_provider" name="poster_provider" value="{{ current_provider }}">
-                        <div class="custom-select custom-select-trigger d-flex align-items-center justify-content-between p-2 rounded" style="background:#1a1a1a; border:1px solid #2a2a2a; cursor:pointer;">
+                        <div class="custom-select">
                             <span id="poster_provider_display" class="custom-select-text d-flex align-items-center">
                                 {% if current_provider == 'btttr' or current_provider == 'betterposters' %}
                                     <img src="/assets/betterposters_logo.png" width="18" height="18" class="me-2 flex-shrink-0" style="border-radius: 4px; vertical-align: middle; object-fit: contain;">BetterPosters
