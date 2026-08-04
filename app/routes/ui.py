@@ -146,6 +146,8 @@ async def guest_login():
         "metadata_provider": "kitsu",
         "meta_synopsis_provider": "kitsu",
         "meta_episodes_provider": "anizp",
+        "meta_poster_provider": "anilist",
+        "meta_backdrop_provider": "fanart",
         "meta_artwork_provider": "anilist",
         "meta_airing_provider": "anilist",
         "catalogs": [
@@ -257,6 +259,12 @@ async def configure(user_id: str = ""):
 
         if "meta_episodes_provider" in form:
             user["meta_episodes_provider"] = form.get("meta_episodes_provider", "anizp").lower()
+
+        if "meta_poster_provider" in form:
+            user["meta_poster_provider"] = form.get("meta_poster_provider", "anilist").lower()
+
+        if "meta_backdrop_provider" in form:
+            user["meta_backdrop_provider"] = form.get("meta_backdrop_provider", "fanart").lower()
 
         if "meta_artwork_provider" in form:
             user["meta_artwork_provider"] = form.get("meta_artwork_provider", "anilist").lower()

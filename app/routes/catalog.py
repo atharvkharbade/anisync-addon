@@ -1963,7 +1963,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 is_movie = False
                 provider_pref = (user.get("metadata_provider", "kitsu") or "kitsu").lower()
                 if provider_pref == "custom":
-                    provider_pref = (user.get("meta_artwork_provider") or "anilist").lower()
+                    provider_pref = (user.get("meta_poster_provider") or user.get("meta_artwork_provider") or "anilist").lower()
 
                 def extract_al():
                     nonlocal progress, total_eps, name, poster, is_movie
