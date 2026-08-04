@@ -356,12 +356,16 @@ async def logo_png():
 
 @manifest_bp.route("/assets/<filename>")
 async def serve_asset(filename: str):
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    asset_path = os.path.join(base_dir, "assets", filename)
-    if os.path.exists(asset_path):
-        response = await send_file(asset_path, mimetype="image/png" if filename.endswith(".png") else "image/jpeg")
-        response.headers["Cache-Control"] = "public, max-age=86400"
-        return response
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(curr_dir, "..", "assets", filename),
+        os.path.join(curr_dir, "..", "..", "assets", filename),
+    ]
+    for asset_path in candidates:
+        if os.path.exists(asset_path):
+            response = await send_file(asset_path, mimetype="image/png" if filename.endswith(".png") else "image/jpeg")
+            response.headers["Cache-Control"] = "public, max-age=86400"
+            return response
     return "Asset not found", 404
 
 
