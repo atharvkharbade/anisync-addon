@@ -501,17 +501,21 @@
                         </a>
                     </div>
                     {% else %}
-                    <div class="d-flex align-items-center justify-content-between gap-2">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <img src="/assets/mal_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
-                            <span class="fw-semibold">MyAnimeList</span>
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2.5">
+                        <div class="d-flex align-items-center justify-content-between justify-content-sm-start gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="/assets/mal_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                                <span class="fw-semibold">MyAnimeList</span>
+                            </div>
                             <span class="badge badge-status-disconnected rounded-pill px-2.5 py-1 small">
                                 <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
                             </span>
                         </div>
-                        <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-sm btn-mal px-3 py-1.5 align-items-center" style="font-size: 0.8rem;">
-                            <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
-                        </a>
+                        <div class="pt-1 pt-sm-0">
+                            <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-sm btn-mal w-100 w-sm-auto px-3 py-1.5 align-items-center justify-content-center" style="font-size: 0.8rem;">
+                                <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
+                            </a>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -547,17 +551,21 @@
                         </a>
                     </div>
                     {% else %}
-                    <div class="d-flex align-items-center justify-content-between gap-2">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <img src="/assets/anilist_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
-                            <span class="fw-semibold">AniList</span>
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2.5">
+                        <div class="d-flex align-items-center justify-content-between justify-content-sm-start gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="/assets/anilist_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                                <span class="fw-semibold">AniList</span>
+                            </div>
                             <span class="badge badge-status-disconnected rounded-pill px-2.5 py-1 small">
                                 <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
                             </span>
                         </div>
-                        <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-sm btn-anilist px-3 py-1.5 align-items-center" style="font-size: 0.8rem;">
-                            <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
-                        </a>
+                        <div class="pt-1 pt-sm-0">
+                            <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-sm btn-anilist w-100 w-sm-auto px-3 py-1.5 align-items-center justify-content-center" style="font-size: 0.8rem;">
+                                <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
+                            </a>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -593,17 +601,21 @@
                         </a>
                     </div>
                     {% else %}
-                    <div class="d-flex align-items-center justify-content-between gap-2">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <img src="/assets/simkl_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
-                            <span class="fw-semibold">Simkl</span>
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2.5">
+                        <div class="d-flex align-items-center justify-content-between justify-content-sm-start gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="/assets/simkl_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                                <span class="fw-semibold">Simkl</span>
+                            </div>
                             <span class="badge badge-status-disconnected rounded-pill px-2.5 py-1 small">
                                 <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
                             </span>
                         </div>
-                        <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-sm btn-simkl px-3 py-1.5 align-items-center" style="font-size: 0.8rem;">
-                            <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
-                        </a>
+                        <div class="pt-1 pt-sm-0">
+                            <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-sm btn-simkl w-100 w-sm-auto px-3 py-1.5 align-items-center justify-content-center" style="font-size: 0.8rem;">
+                                <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
+                            </a>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
