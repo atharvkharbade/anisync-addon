@@ -147,14 +147,17 @@
         .btn-pulse-anilist {
             animation: pulse-border-anilist 2.2s infinite;
         }
-        .emoji-whats-new {
+        .bell-pulse {
             display: inline-block;
-            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6));
-            animation: sparkle-pulse 2s infinite ease-in-out;
+            animation: bell-bounce 2.5s infinite ease-in-out;
         }
-        @keyframes sparkle-pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15) rotate(8deg); }
+        @keyframes bell-bounce {
+            0%, 100% { transform: rotate(0deg); }
+            10% { transform: rotate(14deg); }
+            20% { transform: rotate(-12deg); }
+            30% { transform: rotate(8deg); }
+            40% { transform: rotate(-4deg); }
+            50% { transform: rotate(0deg); }
         }
         .btn-whats-new {
             background: rgba(255, 255, 255, 0.06);
@@ -181,8 +184,8 @@
                 <span>AniSync</span>
             </a>
             <div class="d-flex gap-2 align-items-center">
-                <button type="button" class="btn btn-whats-new d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#whatsNewModal">
-                    <span class="emoji-whats-new">✨</span><span class="d-none d-sm-inline font-semibold">What's New</span>
+                <button type="button" class="btn btn-whats-new d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#whatsNewModal" onclick="fetchGitHubReleases();">
+                    <i class="fa-regular fa-bell text-warning bell-pulse"></i><span class="d-none d-sm-inline font-semibold">What's New</span>
                 </button>
                 <a href="{{ url_for('auth.logout') }}" class="btn btn-logout">
                     <i class="fa-solid fa-right-from-bracket me-2"></i><span class="d-none d-sm-inline">Logout</span>
@@ -197,60 +200,21 @@
             <div class="modal-content text-start" style="background: #141416; border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; border-radius: 14px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);">
                 <div class="modal-header border-bottom border-white border-opacity-10 px-4 py-3">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="fs-4">✨</span>
+                        <i class="fa-regular fa-bell text-warning fs-5"></i>
                         <h5 class="modal-title fw-bold text-white mb-0" id="whatsNewModalLabel">What's New in AniSync</h5>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body px-4 py-3" style="max-height: 70vh;">
-                    <!-- Release v1.4.0 (Beta) -->
-                    <div class="mb-4 pb-3 border-bottom border-white border-opacity-10">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
-                                <span class="badge bg-primary text-white me-2" style="font-size: 0.75rem; padding: 0.3em 0.65em;">BETA</span>
-                                v1.4.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">(Latest Beta)</span>
-                            </h6>
-                        </div>
-                        <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
-                            <li><strong class="text-light">Multi-Tracker Recommendations</strong>: AI recommendations now analyze watch history across all your connected accounts (MyAnimeList, AniList, and Simkl).</li>
-                            <li><strong class="text-light">Consolidated Accounts Card</strong>: Single master card for MyAnimeList, AniList, and Simkl with individual sync toggles and sleek <code class="bg-dark px-1.5 py-0.5 rounded text-success">✔ Username</code> status badges.</li>
-                            <li><strong class="text-light">Guest Mode</strong>: You can now browse and customize discovery catalogs without needing to log in to any tracker.</li>
-                            <li><strong class="text-light">Metadata & Poster Options</strong>: Switch between Kitsu, MyAnimeList, and AniList for metadata, plus added <strong>TOP Posters</strong> (with API key validation) and <strong>Custom poster URL</strong> support.</li>
-                            <li><strong class="text-light">Fresh Landing Page & UI Polish</strong>: Redesigned front page with a 4-step "How it works" guide, responsive mobile layout, and minimal Save Preferences button.</li>
-                        </ul>
-                    </div>
-
-                    <!-- Release v1.3.0 -->
-                    <div class="mb-4 pb-3 border-bottom border-white border-opacity-10">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
-                                v1.3.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Simkl, Sorting & Watched Tags</span>
-                            </h6>
-                        </div>
-                        <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
-                            <li><strong class="text-light">Simkl Tracker Support</strong>: Full Simkl integration for real-time progress sync, combined watchlists, and logo badges alongside MAL and AniList.</li>
-                            <li><strong class="text-light">Watchlist Custom Sorting</strong>: Sort your watchlists by Title, Score, Last Updated, or Airing Date right from the configuration dashboard.</li>
-                            <li><strong class="text-light"><code class="bg-dark px-1.5 py-0.5 rounded text-info">[Watched]</code> Episode Tags</strong>: Automatically marks completed episodes as <code class="bg-dark px-1.5 py-0.5 rounded text-info">[Watched]</code> in Stremio based on your watch history across all connected trackers.</li>
-                            <li><strong class="text-light">RPDB Poster Ratings</strong>: Added support for Rating Poster DB (RPDB) overlays on poster covers.</li>
-                        </ul>
-                    </div>
-
-                    <!-- Release v1.0.0 -->
-                    <div>
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
-                                v1.0.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Initial Launch</span>
-                            </h6>
-                        </div>
-                        <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
-                            <li><strong class="text-light">Real-time Progress Sync</strong>: Instant watch progress tracking for MyAnimeList and AniList.</li>
-                            <li><strong class="text-light">Combined Watchlists</strong>: Merged Plan to Watch, Watching, and Completed lists across trackers into unified Stremio catalogs.</li>
-                            <li><strong class="text-light">Filler Episode Tags</strong>: Displayed filler episode indicators so you know which episodes to skip.</li>
-                            <li><strong class="text-light">New Episode Overlays</strong>: Added visual overlays on posters for newly released episodes.</li>
-                        </ul>
+                <div class="modal-body px-4 py-3" id="whatsNewContent" style="max-height: 70vh;">
+                    <!-- Dynamically populated from GitHub Releases API -->
+                    <div class="text-center py-4 text-secondary">
+                        <i class="fa-solid fa-circle-notch fa-spin fs-4 text-info mb-2"></i><br>Fetching releases...
                     </div>
                 </div>
-                <div class="modal-footer border-top border-white border-opacity-10 px-4 py-2.5">
+                <div class="modal-footer border-top border-white border-opacity-10 px-4 py-2.5 d-flex justify-content-between">
+                    <a href="https://github.com/atharvkharbade/anisync-addon/releases" target="_blank" class="small text-secondary text-decoration-none">
+                        <i class="fa-brands fa-github me-1"></i>View on GitHub
+                    </a>
                     <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -320,6 +284,94 @@
                     document.execCommand('copy');
                     showToast("Copied to clipboard!", "success");
                 });
+        }
+
+        let releasesLoaded = false;
+        async function fetchGitHubReleases() {
+            if (releasesLoaded) return;
+            const container = document.getElementById('whatsNewContent');
+            if (!container) return;
+            
+            try {
+                const res = await fetch('https://api.github.com/repos/atharvkharbade/anisync-addon/releases');
+                if (!res.ok) throw new Error('Failed to fetch releases');
+                const releases = await res.json();
+                if (!releases || releases.length === 0) throw new Error('No releases found');
+                
+                let html = '';
+                releases.forEach((r, idx) => {
+                    const isBeta = r.prerelease || (r.tag_name && r.tag_name.includes('beta'));
+                    const pubDate = new Date(r.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                    const isLast = idx === releases.length - 1;
+                    
+                    let bodyHtml = (r.body || '')
+                        .replace(/^### (.*$)/gim, '<h6 class="fw-bold text-white mt-3 mb-1.5">$1</h6>')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-light">$1</strong>')
+                        .replace(/`(.*?)`/g, '<code class="bg-dark px-1.5 py-0.5 rounded text-info" style="font-size:0.85em;">$1</code>')
+                        .replace(/^- (.*$)/gim, '<li class="text-secondary small mb-1.5">$1</li>');
+                    
+                    if (bodyHtml.includes('<li')) {
+                        bodyHtml = bodyHtml.replace(/(<li.*<\/li>)/s, '<ul class="ps-3 mb-0 d-flex flex-column gap-1" style="line-height: 1.6;">$1</ul>');
+                    }
+                    
+                    html += `
+                        <div class="${isLast ? '' : 'mb-4 pb-3 border-bottom border-white border-opacity-10'}">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
+                                    ${isBeta ? '<span class="badge bg-primary text-white me-2" style="font-size: 0.72rem; padding:0.3em 0.6em;">BETA</span>' : ''}
+                                    ${r.tag_name} ${r.name && r.name !== r.tag_name ? '<span class="text-secondary font-monospace fs-7 fw-normal ms-1">— ' + r.name + '</span>' : ''}
+                                </h6>
+                                <small class="text-secondary opacity-75">${pubDate}</small>
+                            </div>
+                            <div class="release-body text-secondary small" style="line-height: 1.6;">
+                                ${bodyHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                releasesLoaded = true;
+            } catch (err) {
+                console.warn('GitHub API fetch error:', err);
+                renderFallbackReleases(container);
+            }
+        }
+
+        function renderFallbackReleases(container) {
+            container.innerHTML = `
+                <div class="mb-4 pb-3 border-bottom border-white border-opacity-10">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
+                            <span class="badge bg-primary text-white me-2" style="font-size: 0.72rem;">BETA</span>
+                            v1.4.0-beta <span class="text-secondary font-monospace fs-7 fw-normal ms-1">(Latest Beta)</span>
+                        </h6>
+                    </div>
+                    <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
+                        <li><strong class="text-light">Multi-Tracker Recommendations</strong>: AI recommendations now analyze watch history across all your connected accounts (MyAnimeList, AniList, and Simkl).</li>
+                        <li><strong class="text-light">Consolidated Accounts Card</strong>: Single master card for MyAnimeList, AniList, and Simkl with individual sync toggles and sleek <code class="bg-dark px-1.5 py-0.5 rounded text-success">✔ Username</code> status badges.</li>
+                        <li><strong class="text-light">Guest Mode</strong>: You can now browse and customize discovery catalogs without needing to log in to any tracker.</li>
+                        <li><strong class="text-light">Metadata & Poster Options</strong>: Switch between Kitsu, MyAnimeList, and AniList for metadata, plus added <strong>TOP Posters</strong> (with API key validation) and <strong>Custom poster URL</strong> support.</li>
+                    </ul>
+                </div>
+                <div class="mb-4 pb-3 border-bottom border-white border-opacity-10">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">v1.3.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Simkl & Watched Tags</span></h6>
+                    </div>
+                    <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
+                        <li><strong class="text-light">Simkl Support</strong>: Full Simkl integration for real-time progress sync, combined watchlists, and logo badges.</li>
+                        <li><strong class="text-light"><code class="bg-dark px-1.5 py-0.5 rounded text-info">[Watched]</code> Episode Tags</strong>: Automatically marks completed episodes as <code class="bg-dark px-1.5 py-0.5 rounded text-info">[Watched]</code> in Stremio.</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">v1.0.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Initial Launch</span></h6>
+                    </div>
+                    <ul class="text-secondary small mb-0 ps-3 d-flex flex-column gap-1.5" style="line-height: 1.6;">
+                        <li><strong class="text-light">Real-time Sync</strong>: Instant watch progress tracking for MyAnimeList and AniList.</li>
+                    </ul>
+                </div>
+            `;
         }
 
         // Render any server-side flashed messages as custom toasts on load
