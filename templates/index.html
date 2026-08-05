@@ -23,6 +23,9 @@
     .how-it-works-box {
         background: rgba(255, 255, 255, 0.025);
         border: 1px solid rgba(255, 255, 255, 0.06);
+        max-width: 470px;
+        margin-left: auto;
+        margin-right: auto;
     }
     @media (max-width: 576px) {
         .how-it-works-box {
@@ -30,6 +33,7 @@
             border: none;
             padding-left: 0.25rem !important;
             padding-right: 0.25rem !important;
+            max-width: 100%;
         }
     }
 </style>
@@ -68,12 +72,12 @@
             </p>
 
             <!-- How It Works Inset Card -->
-            <div class="how-it-works-box text-center mb-4 p-3.5 p-sm-4 rounded-3">
-                <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+            <div class="how-it-works-box text-start mb-4 p-3.5 p-sm-4 rounded-3">
+                <div class="d-flex align-items-center gap-2 mb-3">
                     <i class="fa-solid fa-circle-play text-info fs-6"></i>
                     <h6 class="fw-semibold text-white mb-0 text-uppercase" style="letter-spacing:.06em; font-size: 0.85rem;">How it works</h6>
                 </div>
-                <div class="d-inline-flex flex-column text-start gap-2.5 mx-auto" style="font-size: 0.9rem; max-width: 440px;">
+                <div class="d-flex flex-column text-start gap-2.5" style="font-size: 0.9rem;">
                     <div class="d-flex align-items-start gap-2.5">
                         <i class="fa-solid fa-plug-circle-check text-success fs-6 mt-1" style="width: 20px; flex-shrink: 0; text-align: center;"></i>
                         <span class="text-light">Connect your MyAnimeList, AniList, or Simkl tracker</span>
