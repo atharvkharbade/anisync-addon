@@ -501,10 +501,49 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
                 fallback_poster=meta.get("poster"),
             )
 
+        notice = build_expired_trackers_notice(user)
+        if notice:
+            curr_desc = meta.get("description", "")
+            meta["description"] = f"{notice}\n\n{curr_desc}" if curr_desc else notice
+
         return await respond_with({"meta": meta})
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)
         return await respond_with({"meta": {}})
+
+
+def build_expired_trackers_notice(user: dict | None) -> str | None:
+    if not user:
+        return None
+
+    import time
+    now = time.time()
+    grace_period = 7 * 86400  # 7 days in seconds
+    expired_names = []
+
+    trackers = [
+        ("AniList", "anilist_token_expired", "anilist_expired_at"),
+        ("MyAnimeList", "mal_token_expired", "mal_expired_at"),
+        ("Simkl", "simkl_token_expired", "simkl_expired_at"),
+    ]
+
+    for name, flag_key, timestamp_key in trackers:
+        if user.get(flag_key):
+            expired_at = user.get(timestamp_key)
+            if expired_at is None or (now - float(expired_at)) <= grace_period:
+                expired_names.append(name)
+
+    if not expired_names:
+        return None
+
+    if len(expired_names) == 1:
+        trackers_str = expired_names[0]
+    elif len(expired_names) == 2:
+        trackers_str = f"{expired_names[0]} & {expired_names[1]}"
+    else:
+        trackers_str = f"{', '.join(expired_names[:-1])} & {expired_names[-1]}"
+
+    return f"⚠️ Your {trackers_str} session has expired. You can re-login via the website."
 
 
 async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str | None, anilist_id: str | None):

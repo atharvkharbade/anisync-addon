@@ -293,6 +293,7 @@ def handle_invalid_anilist_token(user_id: str):
             user["anilist_consecutive_auth_errors"] = 0
             user.pop("anilist_last_auth_error_at", None)
             user["anilist_token_expired"] = True
+            user["anilist_expired_at"] = time.time()
             store_user(user)
             invalidate_user_watchlist_cache(user_id)
         else:
@@ -339,6 +340,7 @@ async def get_or_refresh_mal_token(user_id: str) -> str | None:
                 user["mal_consecutive_auth_errors"] = 0
                 user.pop("mal_last_auth_error_at", None)
                 user["mal_token_expired"] = True
+                user["mal_expired_at"] = datetime.utcnow().timestamp()
                 store_user(user)
                 invalidate_user_watchlist_cache(user_id)
                 return None
@@ -384,6 +386,7 @@ def handle_invalid_mal_token(user_id: str):
             user["mal_consecutive_auth_errors"] = 0
             user.pop("mal_last_auth_error_at", None)
             user["mal_token_expired"] = True
+            user["mal_expired_at"] = time.time()
             store_user(user)
             invalidate_user_watchlist_cache(user_id)
         else:
@@ -426,6 +429,7 @@ def handle_invalid_simkl_token(user_id: str):
             user["simkl_consecutive_auth_errors"] = 0
             user.pop("simkl_last_auth_error_at", None)
             user["simkl_token_expired"] = True
+            user["simkl_expired_at"] = time.time()
             store_user(user)
             invalidate_user_watchlist_cache(user_id)
         else:
