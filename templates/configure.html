@@ -472,29 +472,22 @@
 
                 <!-- MAL Account Row -->
                 <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                    {% if user.get('mal_access_token') %}
                     <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
                         <div class="d-flex align-items-center gap-2">
                             <img src="/assets/mal_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
                             <span class="fw-semibold">MyAnimeList</span>
                         </div>
-                        {% if user.get('mal_access_token') %}
-                            {% if user.get('mal_token_expired') %}
-                                <span class="badge badge-status-expired rounded-pill px-2.5 py-1 small">
-                                    <i class="fa-solid fa-circle-exclamation me-1"></i>Expired
-                                </span>
-                            {% else %}
-                                <span class="badge badge-status-connected rounded-pill px-2.5 py-1 small">
-                                    <i class="fa-solid fa-circle-check me-1"></i>{% if user.get('name') %}{{ user['name'] }}{% else %}Connected{% endif %}
-                                </span>
-                            {% endif %}
+                        {% if user.get('mal_token_expired') %}
+                            <span class="badge badge-status-expired rounded-pill px-2.5 py-1 small">
+                                <i class="fa-solid fa-circle-exclamation me-1"></i>Expired
+                            </span>
                         {% else %}
-                            <span class="badge badge-status-disconnected rounded-pill px-2.5 py-1 small">
-                                <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
+                            <span class="badge badge-status-connected rounded-pill px-2.5 py-1 small">
+                                <i class="fa-solid fa-circle-check me-1"></i>{% if user.get('name') %}{{ user['name'] }}{% else %}Connected{% endif %}
                             </span>
                         {% endif %}
                     </div>
-
-                    {% if user.get('mal_access_token') %}
                     <div class="form-check form-switch mb-2 pt-1 d-flex align-items-center gap-2">
                         <input class="form-check-input mt-0" type="checkbox" role="switch" id="mal_enabled" {% if user.get('mal_enabled', True) %}checked{% endif %} {% if user.get('mal_token_expired') %}disabled{% endif %}>
                         <label class="form-check-label text-secondary small fw-medium" for="mal_enabled">Sync Enabled</label>
@@ -508,7 +501,14 @@
                         </a>
                     </div>
                     {% else %}
-                    <div class="pt-1">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <img src="/assets/mal_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                            <span class="fw-semibold">MyAnimeList</span>
+                            <span class="badge badge-status-disconnected rounded-pill px-2.5 py-1 small">
+                                <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
+                            </span>
+                        </div>
                         <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-sm btn-mal px-3 py-1.5 align-items-center" style="font-size: 0.8rem;">
                             <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
                         </a>
@@ -518,29 +518,22 @@
 
                 <!-- AniList Account Row -->
                 <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                    {% if user.get('anilist_token') %}
                     <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
                         <div class="d-flex align-items-center gap-2">
                             <img src="/assets/anilist_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
                             <span class="fw-semibold">AniList</span>
                         </div>
-                        {% if user.get('anilist_token') %}
-                            {% if user.get('anilist_token_expired') %}
-                                <span class="badge badge-status-expired rounded-pill px-2.5 py-1 small">
-                                    <i class="fa-solid fa-circle-exclamation me-1"></i>Expired
-                                </span>
-                            {% else %}
-                                <span class="badge badge-status-connected rounded-pill px-2.5 py-1 small">
-                                    <i class="fa-solid fa-circle-check me-1"></i>{% if user.get('anilist_username') %}{{ user['anilist_username'] }}{% else %}Connected{% endif %}
-                                </span>
-                            {% endif %}
+                        {% if user.get('anilist_token_expired') %}
+                            <span class="badge badge-status-expired rounded-pill px-2.5 py-1 small">
+                                <i class="fa-solid fa-circle-exclamation me-1"></i>Expired
+                            </span>
                         {% else %}
-                            <span class="badge badge-status-disconnected rounded-pill px-2.5 py-1 small">
-                                <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
+                            <span class="badge badge-status-connected rounded-pill px-2.5 py-1 small">
+                                <i class="fa-solid fa-circle-check me-1"></i>{% if user.get('anilist_username') %}{{ user['anilist_username'] }}{% else %}Connected{% endif %}
                             </span>
                         {% endif %}
                     </div>
-
-                    {% if user.get('anilist_token') %}
                     <div class="form-check form-switch mb-2 pt-1 d-flex align-items-center gap-2">
                         <input class="form-check-input mt-0" type="checkbox" role="switch" id="anilist_enabled" {% if user.get('anilist_enabled', True) %}checked{% endif %} {% if user.get('anilist_token_expired') %}disabled{% endif %}>
                         <label class="form-check-label text-secondary small fw-medium" for="anilist_enabled">Sync Enabled</label>
@@ -554,7 +547,14 @@
                         </a>
                     </div>
                     {% else %}
-                    <div class="pt-1">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <img src="/assets/anilist_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                            <span class="fw-semibold">AniList</span>
+                            <span class="badge badge-status-disconnected rounded-pill px-2.5 py-1 small">
+                                <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
+                            </span>
+                        </div>
                         <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-sm btn-anilist px-3 py-1.5 align-items-center" style="font-size: 0.8rem;">
                             <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
                         </a>
@@ -564,29 +564,22 @@
 
                 <!-- Simkl Account Row -->
                 <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                    {% if user.get('simkl_access_token') %}
                     <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
                         <div class="d-flex align-items-center gap-2">
                             <img src="/assets/simkl_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
                             <span class="fw-semibold">Simkl</span>
                         </div>
-                        {% if user.get('simkl_access_token') %}
-                            {% if user.get('simkl_token_expired') %}
-                                <span class="badge badge-status-expired rounded-pill px-2.5 py-1 small">
-                                    <i class="fa-solid fa-circle-exclamation me-1"></i>Expired
-                                </span>
-                            {% else %}
-                                <span class="badge badge-status-connected rounded-pill px-2.5 py-1 small">
-                                    <i class="fa-solid fa-circle-check me-1"></i>{% if user.get('simkl_username') %}{{ user['simkl_username'] }}{% else %}Connected{% endif %}
-                                </span>
-                            {% endif %}
+                        {% if user.get('simkl_token_expired') %}
+                            <span class="badge badge-status-expired rounded-pill px-2.5 py-1 small">
+                                <i class="fa-solid fa-circle-exclamation me-1"></i>Expired
+                            </span>
                         {% else %}
-                            <span class="badge badge-status-disconnected rounded-pill px-2.5 py-1 small">
-                                <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
+                            <span class="badge badge-status-connected rounded-pill px-2.5 py-1 small">
+                                <i class="fa-solid fa-circle-check me-1"></i>{% if user.get('simkl_username') %}{{ user['simkl_username'] }}{% else %}Connected{% endif %}
                             </span>
                         {% endif %}
                     </div>
-
-                    {% if user.get('simkl_access_token') %}
                     <div class="form-check form-switch mb-2 pt-1 d-flex align-items-center gap-2">
                         <input class="form-check-input mt-0" type="checkbox" role="switch" id="simkl_enabled" {% if user.get('simkl_enabled', True) %}checked{% endif %} {% if user.get('simkl_token_expired') %}disabled{% endif %}>
                         <label class="form-check-label text-secondary small fw-medium" for="simkl_enabled">Sync Enabled</label>
@@ -600,7 +593,14 @@
                         </a>
                     </div>
                     {% else %}
-                    <div class="pt-1">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <img src="/assets/simkl_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                            <span class="fw-semibold">Simkl</span>
+                            <span class="badge badge-status-disconnected rounded-pill px-2.5 py-1 small">
+                                <i class="fa-solid fa-circle-xmark me-1"></i>Not connected
+                            </span>
+                        </div>
                         <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-sm btn-simkl px-3 py-1.5 align-items-center" style="font-size: 0.8rem;">
                             <i class="fa-solid fa-right-to-bracket me-1"></i>Connect
                         </a>
