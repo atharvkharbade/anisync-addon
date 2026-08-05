@@ -504,7 +504,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         notice = build_expired_trackers_notice(user)
         if notice:
             curr_desc = meta.get("description", "")
-            meta["description"] = f"{notice}\n\n{curr_desc}" if curr_desc else notice
+            meta["description"] = f"{notice}\n\n\n{curr_desc}" if curr_desc else notice
 
         return await respond_with({"meta": meta})
     except Exception as e:
@@ -538,12 +538,15 @@ def build_expired_trackers_notice(user: dict | None) -> str | None:
 
     if len(expired_names) == 1:
         trackers_str = expired_names[0]
+        session_word = "session has"
     elif len(expired_names) == 2:
         trackers_str = f"{expired_names[0]} & {expired_names[1]}"
+        session_word = "sessions have"
     else:
         trackers_str = f"{', '.join(expired_names[:-1])} & {expired_names[-1]}"
+        session_word = "sessions have"
 
-    return f"⚠️ Your {trackers_str} session has expired. You can re-login via the website."
+    return f"Your {trackers_str} {session_word} expired. You can re-login via the website."
 
 
 async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str | None, anilist_id: str | None):
