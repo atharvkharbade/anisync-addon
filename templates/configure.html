@@ -900,245 +900,266 @@
                     <div id="custom-sorting-container"
                         style="{% if not user.get('custom_sort_enabled', False) %}display: none;{% endif %}"
                         class="mb-3 ps-0 ps-sm-3">
-                        <p class="text-secondary small mb-3">Set your sorting preference for each watchlist category:
-                        </p>
+                        <p class="text-secondary small mb-3">Set your sorting preference for each watchlist category:</p>
+
+                        <!-- Column Header Bar -->
+                        <div class="d-none d-sm-flex row g-2 mb-2 px-3 text-secondary small fw-medium" style="font-size: 0.72rem; letter-spacing: 0.04em;">
+                            <div class="col-sm-4">CATEGORY</div>
+                            <div class="col-sm-4">SORT BY</div>
+                            <div class="col-sm-4">ORDER</div>
+                        </div>
 
                         <!-- Watching Sort -->
-                        <div class="row g-2 mb-3 align-items-center">
-                            <div class="col-12 col-sm-4 mb-1 mb-sm-0">
-                                <span class="small fw-semibold text-light">Watching</span>
-                            </div>
-                            <div class="col-6 col-sm-4">
-                                <div class="custom-select-wrapper" data-input-id="custom_sort_watching_by_val">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text">Default</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary"
-                                            style="font-size:0.75rem;"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="default"><i
-                                                class="fa-solid fa-bars me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                        <div class="custom-option-item" data-value="score"><i
-                                                class="fa-solid fa-star me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                        <div class="custom-option-item" data-value="airing_date"><i
-                                                class="fa-solid fa-calendar-days me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Airing Date</div>
-                                        <div class="custom-option-item" data-value="last_updated"><i
-                                                class="fa-solid fa-clock-rotate-left me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                        <div class="custom-option-item" data-value="title"><i
-                                                class="fa-solid fa-font me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Title</div>
+                        <div class="p-2.5 p-sm-3 rounded-3 mb-2.5" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
+                                    <i class="fa-solid fa-circle me-2" style="color: #22c55e; font-size: 0.55rem;"></i>
+                                    <span class="small fw-semibold text-light">Watching</span>
+                                </div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="custom-select-wrapper" data-input-id="custom_sort_watching_by_val">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text">Default</span>
+                                            <i class="fa-solid fa-chevron-down text-secondary"
+                                                style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item" data-value="default"><i
+                                                    class="fa-solid fa-bars me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Default</div>
+                                            <div class="custom-option-item" data-value="score"><i
+                                                    class="fa-solid fa-star me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
+                                            <div class="custom-option-item" data-value="airing_date"><i
+                                                    class="fa-solid fa-calendar-days me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Airing Date</div>
+                                            <div class="custom-option-item" data-value="last_updated"><i
+                                                    class="fa-solid fa-clock-rotate-left me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
+                                            <div class="custom-option-item" data-value="title"><i
+                                                    class="fa-solid fa-font me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Title</div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-6 col-sm-4">
-                                <div class="custom-select-wrapper" data-input-id="custom_sort_watching_order_val">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text">Descending</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary"
-                                            style="font-size:0.75rem;"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="desc"><i
-                                                class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                        <div class="custom-option-item" data-value="asc"><i
-                                                class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="custom-select-wrapper" data-input-id="custom_sort_watching_order_val">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text">Descending</span>
+                                            <i class="fa-solid fa-chevron-down text-secondary"
+                                                style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item" data-value="desc"><i
+                                                    class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Descending</div>
+                                            <div class="custom-option-item" data-value="asc"><i
+                                                    class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Plan to Watch Sort -->
-                        <div class="row g-2 mb-3 align-items-center">
-                            <div class="col-12 col-sm-4 mb-1 mb-sm-0">
-                                <span class="small fw-semibold text-light">Plan to Watch</span>
-                            </div>
-                            <div class="col-6 col-sm-4">
-                                <div class="custom-select-wrapper" data-input-id="custom_sort_planning_by_val">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text">Default</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary"
-                                            style="font-size:0.75rem;"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="default"><i
-                                                class="fa-solid fa-bars me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                        <div class="custom-option-item" data-value="score"><i
-                                                class="fa-solid fa-star me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                        <div class="custom-option-item" data-value="airing_date"><i
-                                                class="fa-solid fa-calendar-days me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Airing Date</div>
-                                        <div class="custom-option-item" data-value="last_updated"><i
-                                                class="fa-solid fa-clock-rotate-left me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                        <div class="custom-option-item" data-value="title"><i
-                                                class="fa-solid fa-font me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Title</div>
+                        <div class="p-2.5 p-sm-3 rounded-3 mb-2.5" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
+                                    <i class="fa-solid fa-circle me-2" style="color: #38bdf8; font-size: 0.55rem;"></i>
+                                    <span class="small fw-semibold text-light">Plan to Watch</span>
+                                </div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="custom-select-wrapper" data-input-id="custom_sort_planning_by_val">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text">Default</span>
+                                            <i class="fa-solid fa-chevron-down text-secondary"
+                                                style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item" data-value="default"><i
+                                                    class="fa-solid fa-bars me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Default</div>
+                                            <div class="custom-option-item" data-value="score"><i
+                                                    class="fa-solid fa-star me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
+                                            <div class="custom-option-item" data-value="airing_date"><i
+                                                    class="fa-solid fa-calendar-days me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Airing Date</div>
+                                            <div class="custom-option-item" data-value="last_updated"><i
+                                                    class="fa-solid fa-clock-rotate-left me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
+                                            <div class="custom-option-item" data-value="title"><i
+                                                    class="fa-solid fa-font me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Title</div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-6 col-sm-4">
-                                <div class="custom-select-wrapper" data-input-id="custom_sort_planning_order_val">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text">Descending</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary"
-                                            style="font-size:0.75rem;"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="desc"><i
-                                                class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                        <div class="custom-option-item" data-value="asc"><i
-                                                class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="custom-select-wrapper" data-input-id="custom_sort_planning_order_val">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text">Descending</span>
+                                            <i class="fa-solid fa-chevron-down text-secondary"
+                                                style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item" data-value="desc"><i
+                                                    class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Descending</div>
+                                            <div class="custom-option-item" data-value="asc"><i
+                                                    class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Completed Sort -->
-                        <div class="row g-2 mb-3 align-items-center">
-                            <div class="col-12 col-sm-4 mb-1 mb-sm-0">
-                                <span class="small fw-semibold text-light">Completed</span>
-                            </div>
-                            <div class="col-6 col-sm-4">
-                                <div class="custom-select-wrapper" data-input-id="custom_sort_completed_by_val">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text">Default</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary"
-                                            style="font-size:0.75rem;"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="default"><i
-                                                class="fa-solid fa-bars me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                        <div class="custom-option-item" data-value="score"><i
-                                                class="fa-solid fa-star me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                        <div class="custom-option-item" data-value="last_updated"><i
-                                                class="fa-solid fa-clock-rotate-left me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                        <div class="custom-option-item" data-value="title"><i
-                                                class="fa-solid fa-font me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Title</div>
+                        <div class="p-2.5 p-sm-3 rounded-3 mb-2.5" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
+                                    <i class="fa-solid fa-circle me-2" style="color: #a855f7; font-size: 0.55rem;"></i>
+                                    <span class="small fw-semibold text-light">Completed</span>
+                                </div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="custom-select-wrapper" data-input-id="custom_sort_completed_by_val">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text">Default</span>
+                                            <i class="fa-solid fa-chevron-down text-secondary"
+                                                style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item" data-value="default"><i
+                                                    class="fa-solid fa-bars me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Default</div>
+                                            <div class="custom-option-item" data-value="score"><i
+                                                    class="fa-solid fa-star me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
+                                            <div class="custom-option-item" data-value="last_updated"><i
+                                                    class="fa-solid fa-clock-rotate-left me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
+                                            <div class="custom-option-item" data-value="title"><i
+                                                    class="fa-solid fa-font me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Title</div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-6 col-sm-4">
-                                <div class="custom-select-wrapper" data-input-id="custom_sort_completed_order_val">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text">Descending</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary"
-                                            style="font-size:0.75rem;"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="desc"><i
-                                                class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                        <div class="custom-option-item" data-value="asc"><i
-                                                class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="custom-select-wrapper" data-input-id="custom_sort_completed_order_val">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text">Descending</span>
+                                            <i class="fa-solid fa-chevron-down text-secondary"
+                                                style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item" data-value="desc"><i
+                                                    class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Descending</div>
+                                            <div class="custom-option-item" data-value="asc"><i
+                                                    class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- On Hold Sort -->
-                        <div class="row g-2 mb-3 align-items-center">
-                            <div class="col-12 col-sm-4 mb-1 mb-sm-0">
-                                <span class="small fw-semibold text-light">On Hold / Paused</span>
-                            </div>
-                            <div class="col-6 col-sm-4">
-                                <div class="custom-select-wrapper" data-input-id="custom_sort_on_hold_by_val">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text">Default</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary"
-                                            style="font-size:0.75rem;"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="default"><i
-                                                class="fa-solid fa-bars me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                        <div class="custom-option-item" data-value="score"><i
-                                                class="fa-solid fa-star me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                        <div class="custom-option-item" data-value="last_updated"><i
-                                                class="fa-solid fa-clock-rotate-left me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                        <div class="custom-option-item" data-value="title"><i
-                                                class="fa-solid fa-font me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Title</div>
+                        <div class="p-2.5 p-sm-3 rounded-3 mb-2.5" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
+                                    <i class="fa-solid fa-circle me-2" style="color: #eab308; font-size: 0.55rem;"></i>
+                                    <span class="small fw-semibold text-light">On Hold / Paused</span>
+                                </div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="custom-select-wrapper" data-input-id="custom_sort_on_hold_by_val">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text">Default</span>
+                                            <i class="fa-solid fa-chevron-down text-secondary"
+                                                style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item" data-value="default"><i
+                                                    class="fa-solid fa-bars me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Default</div>
+                                            <div class="custom-option-item" data-value="score"><i
+                                                    class="fa-solid fa-star me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
+                                            <div class="custom-option-item" data-value="last_updated"><i
+                                                    class="fa-solid fa-clock-rotate-left me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
+                                            <div class="custom-option-item" data-value="title"><i
+                                                    class="fa-solid fa-font me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Title</div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-6 col-sm-4">
-                                <div class="custom-select-wrapper" data-input-id="custom_sort_on_hold_order_val">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text">Descending</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary"
-                                            style="font-size:0.75rem;"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="desc"><i
-                                                class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                        <div class="custom-option-item" data-value="asc"><i
-                                                class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="custom-select-wrapper" data-input-id="custom_sort_on_hold_order_val">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text">Descending</span>
+                                            <i class="fa-solid fa-chevron-down text-secondary"
+                                                style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item" data-value="desc"><i
+                                                    class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Descending</div>
+                                            <div class="custom-option-item" data-value="asc"><i
+                                                    class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Dropped Sort -->
-                        <div class="row g-2 mb-0 align-items-center">
-                            <div class="col-12 col-sm-4 mb-1 mb-sm-0">
-                                <span class="small fw-semibold text-light">Dropped</span>
-                            </div>
-                            <div class="col-6 col-sm-4">
-                                <div class="custom-select-wrapper" data-input-id="custom_sort_dropped_by_val">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text">Default</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary"
-                                            style="font-size:0.75rem;"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="default"><i
-                                                class="fa-solid fa-bars me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                        <div class="custom-option-item" data-value="score"><i
-                                                class="fa-solid fa-star me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                        <div class="custom-option-item" data-value="last_updated"><i
-                                                class="fa-solid fa-clock-rotate-left me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                        <div class="custom-option-item" data-value="title"><i
-                                                class="fa-solid fa-font me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Title</div>
+                        <div class="p-2.5 p-sm-3 rounded-3 mb-0" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
+                                    <i class="fa-solid fa-circle me-2" style="color: #ef4444; font-size: 0.55rem;"></i>
+                                    <span class="small fw-semibold text-light">Dropped</span>
+                                </div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="custom-select-wrapper" data-input-id="custom_sort_dropped_by_val">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text">Default</span>
+                                            <i class="fa-solid fa-chevron-down text-secondary"
+                                                style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item" data-value="default"><i
+                                                    class="fa-solid fa-bars me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Default</div>
+                                            <div class="custom-option-item" data-value="score"><i
+                                                    class="fa-solid fa-star me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
+                                            <div class="custom-option-item" data-value="last_updated"><i
+                                                    class="fa-solid fa-clock-rotate-left me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
+                                            <div class="custom-option-item" data-value="title"><i
+                                                    class="fa-solid fa-font me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Title</div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-6 col-sm-4">
-                                <div class="custom-select-wrapper" data-input-id="custom_sort_dropped_order_val">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text">Descending</span>
-                                        <i class="fa-solid fa-chevron-down text-secondary"
-                                            style="font-size:0.75rem;"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item" data-value="desc"><i
-                                                class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                        <div class="custom-option-item" data-value="asc"><i
-                                                class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
-                                                style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="custom-select-wrapper" data-input-id="custom_sort_dropped_order_val">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text">Descending</span>
+                                            <i class="fa-solid fa-chevron-down text-secondary"
+                                                style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item" data-value="desc"><i
+                                                    class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Descending</div>
+                                            <div class="custom-option-item" data-value="asc"><i
+                                                    class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
+                                                    style="font-size:0.8rem; width:12px;"></i>Ascending</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
