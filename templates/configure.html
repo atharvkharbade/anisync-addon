@@ -2085,9 +2085,10 @@
         if (enableSearchCheckbox) {
             enableSearchCheckbox.addEventListener("change", toggleSearchDependents);
         }
-        if (rpdbKeyEl) {
-            rpdbKeyEl.addEventListener("input", function () {
-                isRpdbKeyValid = rpdbKeyEl.value.trim() !== "";
+        const rpdbKeyInputEl = document.getElementById("rpdb_api_key");
+        if (rpdbKeyInputEl) {
+            rpdbKeyInputEl.addEventListener("input", function () {
+                isRpdbKeyValid = rpdbKeyInputEl.value.trim() !== "";
                 toggleSearchDependents();
             });
         }
