@@ -253,8 +253,20 @@
         color: #28a745;
     }
 
-    .gemini-status-icon.error {
-        color: #dc3545;
+    .catalog-sort-subcard {
+        background: transparent;
+        border: none;
+        padding: 0.25rem 0;
+        margin-bottom: 0.75rem;
+    }
+    @media (min-width: 576px) {
+        .catalog-sort-subcard {
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.65rem;
+        }
     }
 
     .badge-status-connected {
@@ -910,7 +922,7 @@
                         </div>
 
                         <!-- Watching Sort -->
-                        <div class="p-2.5 p-sm-3 rounded-3 mb-2.5" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                        <div class="catalog-sort-subcard">
                             <div class="row g-2 align-items-center">
                                 <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
                                     <i class="fa-solid fa-circle me-2" style="color: #22c55e; font-size: 0.55rem;"></i>
@@ -963,7 +975,7 @@
                         </div>
 
                         <!-- Plan to Watch Sort -->
-                        <div class="p-2.5 p-sm-3 rounded-3 mb-2.5" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                        <div class="catalog-sort-subcard">
                             <div class="row g-2 align-items-center">
                                 <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
                                     <i class="fa-solid fa-circle me-2" style="color: #38bdf8; font-size: 0.55rem;"></i>
@@ -1016,7 +1028,7 @@
                         </div>
 
                         <!-- Completed Sort -->
-                        <div class="p-2.5 p-sm-3 rounded-3 mb-2.5" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                        <div class="catalog-sort-subcard">
                             <div class="row g-2 align-items-center">
                                 <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
                                     <i class="fa-solid fa-circle me-2" style="color: #a855f7; font-size: 0.55rem;"></i>
@@ -1066,7 +1078,7 @@
                         </div>
 
                         <!-- On Hold Sort -->
-                        <div class="p-2.5 p-sm-3 rounded-3 mb-2.5" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                        <div class="catalog-sort-subcard">
                             <div class="row g-2 align-items-center">
                                 <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
                                     <i class="fa-solid fa-circle me-2" style="color: #eab308; font-size: 0.55rem;"></i>
@@ -1116,7 +1128,7 @@
                         </div>
 
                         <!-- Dropped Sort -->
-                        <div class="p-2.5 p-sm-3 rounded-3 mb-0" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);">
+                        <div class="catalog-sort-subcard">
                             <div class="row g-2 align-items-center">
                                 <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
                                     <i class="fa-solid fa-circle me-2" style="color: #ef4444; font-size: 0.55rem;"></i>
@@ -1162,7 +1174,6 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                         </div>
                     </div>
 
