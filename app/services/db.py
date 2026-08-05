@@ -49,6 +49,8 @@ try:
 
     db.get_collection("kitsu_search_cache").create_index([("query", 1), ("offset", 1)])
     db.get_collection("kitsu_search_cache").create_index("expires_at", expireAfterSeconds=0)
+
+    db.get_collection("banner_ratios").create_index("url", unique=True)
 except Exception as e:
     logging.error("Failed to initialize database indexes: %s", e)
 
