@@ -826,7 +826,7 @@
                     </label>
                 </div>
 
-                <div class="form-check form-switch mb-3">
+                <div class="form-check form-switch mb-0">
                     <input class="form-check-input" type="checkbox" role="switch" id="hide_nsfw" {% if
                         user.get('hide_nsfw', True) %}checked{% endif %}>
                     <label class="form-check-label ms-1" for="hide_nsfw">
@@ -836,8 +836,12 @@
                         </span>
                     </label>
                 </div>
+            </div>
 
-                {% if not user.get('is_guest') %}
+            <!-- Watchlist Catalogs Card -->
+            {% if not user.get('is_guest') %}
+            <div class="card-dark p-3 p-sm-4 mb-3" id="watchlist-catalogs-card">
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-list-check me-2" style="color: #02a9ff;"></i>Watchlist Catalogs</h6>
                 <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" role="switch" id="enable_catalogs" {% if
                         user.get('enable_catalogs', True) %}checked{% endif %}>
