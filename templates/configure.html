@@ -622,40 +622,79 @@
         </div>
 
         <form method="POST" action="{{ url_for('ui.configure') }}" id="prefs-form">
-            <!-- Metadata Provider Card -->
+            <!-- Metadata & Language Preferences Card -->
             <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-database me-2" style="color: #38bdf8;"></i>Metadata Provider</h6>
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-database me-2" style="color: #38bdf8;"></i>Metadata & Language Preferences</h6>
                 <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                    Select your preferred metadata provider for posters, banners, synopses, and episode listings.
+                    Select your preferred metadata provider (Kitsu, MAL, AniList) and catalog title language (English, Romaji, Native).
                 </p>
-                <input type="hidden" id="metadata_provider" name="metadata_provider" value="{{ user.get('metadata_provider', 'kitsu') }}">
-                <div style="max-width: 400px;">
-                    <div class="custom-select-wrapper mb-2" data-input-id="metadata_provider">
-                        <div class="custom-select">
-                            <span class="custom-select-text d-flex align-items-center">
-                                {% if user.get('metadata_provider', 'kitsu') == 'mal' %}
-                                    <img src="/assets/mal_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">MyAnimeList
-                                {% elif user.get('metadata_provider', 'kitsu') == 'anilist' %}
-                                    <img src="/assets/anilist_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">AniList
-                                {% else %}
+
+                <!-- Metadata Provider Option -->
+                <div class="mb-4">
+                    <label class="form-label small fw-semibold text-light mb-1">Primary Metadata Provider</label>
+                    <input type="hidden" id="metadata_provider" name="metadata_provider" value="{{ user.get('metadata_provider', 'kitsu') }}">
+                    <div style="max-width: 400px;">
+                        <div class="custom-select-wrapper mb-2" data-input-id="metadata_provider">
+                            <div class="custom-select">
+                                <span class="custom-select-text d-flex align-items-center">
+                                    {% if user.get('metadata_provider', 'kitsu') == 'mal' %}
+                                        <img src="/assets/mal_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">MyAnimeList
+                                    {% elif user.get('metadata_provider', 'kitsu') == 'anilist' %}
+                                        <img src="/assets/anilist_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">AniList
+                                    {% else %}
+                                        <img src="/assets/kitsu_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">Kitsu (Default)
+                                    {% endif %}
+                                </span>
+                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                            </div>
+                            <div class="custom-options-menu">
+                                <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
                                     <img src="/assets/kitsu_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">Kitsu (Default)
-                                {% endif %}
-                            </span>
-                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                        </div>
-                        <div class="custom-options-menu">
-                            <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
-                                <img src="/assets/kitsu_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">Kitsu (Default)
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="mal">
-                                <img src="/assets/mal_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">MyAnimeList
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="anilist">
-                                <img src="/assets/anilist_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">AniList
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="mal">
+                                    <img src="/assets/mal_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">MyAnimeList
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="anilist">
+                                    <img src="/assets/anilist_logo.png" width="18" height="18" class="me-2" style="border-radius: 4px; vertical-align: middle;">AniList
+                                </div>
                             </div>
                         </div>
+                        <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; color: #e0a92e !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Kitsu if metadata is missing from selected provider.</p>
                     </div>
-                    <p class="text-secondary small mt-2 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; color: #e0a92e !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Kitsu if metadata is missing from selected provider.</p>
+                </div>
+
+                <!-- Catalog Title Language Option -->
+                <div>
+                    <label class="form-label small fw-semibold text-light mb-1">Catalog Title Language</label>
+                    <input type="hidden" id="title_language" name="title_language" value="{{ user.get('title_language', 'english') }}">
+                    <div style="max-width: 400px;">
+                        <div class="custom-select-wrapper mb-2" data-input-id="title_language">
+                            <div class="custom-select">
+                                <span class="custom-select-text d-flex align-items-center">
+                                    {% if user.get('title_language', 'english') == 'romaji' %}
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
+                                    {% elif user.get('title_language', 'english') == 'japanese' %}
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
+                                    {% else %}
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
+                                    {% endif %}
+                                </span>
+                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                            </div>
+                            <div class="custom-options-menu">
+                                <div class="custom-option-item d-flex align-items-center" data-value="english">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="romaji">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="japanese">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; color: #e0a92e !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</p>
+                    </div>
                 </div>
             </div>
 
@@ -1098,81 +1137,20 @@
 
                 </div>
 
-                <!-- Discovery Catalogs Section -->
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if
-                        user.get('enable_discovery_catalogs', True) %}checked{% endif %}>
-                    <label class="form-check-label ms-1" for="enable_discovery_catalogs">
-                        <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
-                        <span class="text-secondary small d-block">
-                            Enable general public discovery catalogs (Spotlight, Weekly Release Calendar, Seasonal
-                            Showcase, Trending, Top Airing, Highest Rated, and Most Popular).
-                        </span>
-                    </label>
-                </div>
-
-                <!-- Sub-toggle for shuffling -->
-                <div id="discovery-sub-options" class="nested-subcard"
-                    style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %}">
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {%
-                            if user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
-                        <label class="form-check-label ms-1" for="shuffle_discovery_catalogs">
-                            <span class="fw-medium d-block">Shuffle Catalogs on Request</span>
-                            <span class="text-secondary small d-block">
-                                Randomly shuffle the order of discovery catalogs on every reload.
-                            </span>
-                        </label>
                     </div>
+
                 </div>
 
             </div>
 
-            <!-- Catalog Title Language Card -->
+            <!-- Poster & Art Customization Card -->
             <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-language me-2" style="color: #f59e0b;"></i>Catalog Title Language</h6>
-                <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                    Choose your preferred language for anime titles in catalogs and detail pages.
-                </p>
-                <input type="hidden" id="title_language" name="title_language" value="{{ user.get('title_language', 'english') }}">
-                <div style="max-width: 400px;">
-                    <div class="custom-select-wrapper mb-2" data-input-id="title_language">
-                        <div class="custom-select">
-                            <span class="custom-select-text d-flex align-items-center">
-                                {% if user.get('title_language', 'english') == 'romaji' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
-                                {% elif user.get('title_language', 'english') == 'japanese' %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
-                                {% else %}
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
-                                {% endif %}
-                            </span>
-                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                        </div>
-                        <div class="custom-options-menu">
-                            <div class="custom-option-item d-flex align-items-center" data-value="english">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="romaji">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
-                            </div>
-                            <div class="custom-option-item d-flex align-items-center" data-value="japanese">
-                                <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
-                            </div>
-                        </div>
-                    </div>
-                    <p class="text-secondary small mt-2 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; color: #e0a92e !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</p>
-                </div>
-            </div>
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster & Art Customization</h6>
 
-                <!-- Poster Art Card -->
-                <div class="card-dark p-3 p-sm-4 mb-3">
-                    <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art</h6>
-
-                    <div id="poster-provider-section">
-                        <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                            Select your preferred poster provider for custom poster artwork across your catalogs.
-                        </p>
+                <div id="poster-provider-section">
+                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                        Enhance anime poster covers with Rating Poster DB (RPDB) overlays, TOP Posters, or a custom poster URL.
+                    </p>
 
                         <div class="custom-select-wrapper mb-3" id="poster_provider_wrapper"
                             data-input-id="poster_provider" style="max-width: 400px;">
@@ -1340,7 +1318,39 @@
 
                 </div>
 
-                <!-- Recommendations Card -->
+            </div>
+
+            <!-- Anime Discovery Catalogs Card -->
+            <div class="card-dark p-3 p-sm-4 mb-3">
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-compass me-2" style="color: #38bdf8;"></i>Anime Discovery Catalogs</h6>
+                <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                    Browse curated discovery catalogs (Trending, Top Airing, Highest Rated, Most Popular) with optional item shuffling.
+                </p>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if user.get('enable_discovery_catalogs', True) %}checked{% endif %}>
+                    <label class="form-check-label ms-1" for="enable_discovery_catalogs">
+                        <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
+                        <span class="text-secondary small d-block">
+                            Exposes general public discovery catalogs (Spotlight, Weekly Release Calendar, Seasonal Showcase, Trending, Top Airing, Highest Rated, and Most Popular).
+                        </span>
+                    </label>
+                </div>
+
+                <div id="discovery-sub-options" class="nested-subcard" style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %}">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {% if user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="shuffle_discovery_catalogs">
+                            <span class="fw-medium d-block">Shuffle Catalogs on Request</span>
+                            <span class="text-secondary small d-block">
+                                Randomly shuffle the order of discovery catalogs on every reload.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations Card -->
                 <div class="card-dark p-3 p-sm-4 mb-3">
                     <h6 class="fw-semibold mb-3"><i
                             class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>Recommendations</h6>
