@@ -506,10 +506,166 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             curr_desc = meta.get("description", "")
             meta["description"] = f"{notice}\n\n\n{curr_desc}" if curr_desc else notice
 
+        # Collect dynamic metadata headers
+        dynamic_headers = []
+
+        user_status_hdr = build_user_status_header(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
+        if user_status_hdr:
+            dynamic_headers.append(user_status_hdr)
+
+        al_data = None
+        if anilist_id:
+            try:
+                from app.api.anilist import get_media_status
+                token = user.get("anilist_token", "") if user else ""
+                al_data = await get_media_status(token, int(anilist_id))
+            except Exception as e:
+                logging.debug("Could not fetch AniList media status for airing countdown: %s", e)
+
+        next_airing_hdr = build_next_airing_header(al_data)
+        if next_airing_hdr:
+            dynamic_headers.append(next_airing_hdr)
+
+        filler_arc_hdr = build_filler_arc_header(anizp_data, watched_progress=watched_progress)
+        if filler_arc_hdr:
+            dynamic_headers.append(filler_arc_hdr)
+
+        if dynamic_headers:
+            header_text = "\n".join(dynamic_headers)
+            curr_desc = meta.get("description", "")
+            meta["description"] = f"{header_text}\n\n{curr_desc}" if curr_desc else header_text
+
         return await respond_with({"meta": meta})
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)
         return await respond_with({"meta": {}})
+
+
+def build_user_status_header(user_id: str, mal_id: str | None, anilist_id: str | None, simkl_id: str | None) -> str | None:
+    from app.services.db import get_user_anime_meta_status
+
+    status_info = get_user_anime_meta_status(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
+    if not status_info:
+        return None
+
+    status = (status_info.get("status") or "").lower()
+    progress = status_info.get("progress") or 0
+    total_eps = status_info.get("total_episodes") or 0
+    score = status_info.get("score") or 0
+
+    status_display_map = {
+        "watching": "Watching",
+        "current": "Watching",
+        "completed": "Completed",
+        "planning": "Plan to Watch",
+        "plan_to_watch": "Plan to Watch",
+        "on_hold": "On Hold",
+        "paused": "On Hold",
+        "dropped": "Dropped",
+    }
+    status_title = status_display_map.get(status, status.capitalize() if status else "Tracked")
+
+    parts = [f"Status: {status_title}"]
+    if status in ["watching", "current", "on_hold", "paused", "dropped", "completed"] and progress > 0:
+        if total_eps > 0:
+            parts.append(f"Progress: {progress}/{total_eps} Ep")
+        else:
+            parts.append(f"Progress: {progress} Ep")
+
+    if score > 0:
+        parts.append(f"Your Rating: {score}/10")
+
+    return f"[{' • '.join(parts)}]"
+
+
+def build_next_airing_header(anilist_data: dict | None = None) -> str | None:
+    if not anilist_data:
+        return None
+
+    next_ep = anilist_data.get("nextAiringEpisode")
+    if not next_ep:
+        return None
+
+    ep_num = next_ep.get("episode")
+    time_until = next_ep.get("timeUntilAiring")
+    if time_until is None or ep_num is None:
+        return None
+
+    if time_until <= 0:
+        return None
+
+    if time_until < 3600:
+        mins = max(1, time_until // 60)
+        time_str = f"in {mins}m"
+    elif time_until < 86400:
+        hours = max(1, time_until // 3600)
+        time_str = f"in {hours}h"
+    else:
+        days = max(1, time_until // 86400)
+        time_str = f"in {days}d"
+
+    return f"[Next Airing: Episode {ep_num} releases {time_str}]"
+
+
+def build_filler_arc_header(anizp_data: dict | None, watched_progress: int = 0) -> str | None:
+    if not anizp_data:
+        return None
+
+    episodes = anizp_data.get("episodes") or {}
+    if not episodes:
+        return None
+
+    filler_eps = []
+    for ep_key, ep_info in episodes.items():
+        if isinstance(ep_info, dict) and ep_info.get("isFiller"):
+            try:
+                ep_num = int(ep_key)
+                filler_eps.append(ep_num)
+            except ValueError:
+                pass
+
+    if not filler_eps:
+        return None
+
+    filler_eps.sort()
+
+    ranges = []
+    start = filler_eps[0]
+    end = filler_eps[0]
+
+    for ep in filler_eps[1:]:
+        if ep == end + 1:
+            end = ep
+        else:
+            ranges.append((start, end))
+            start = ep
+            end = ep
+    ranges.append((start, end))
+
+    range_strs = []
+    for r_start, r_end in ranges:
+        if r_start == r_end:
+            range_strs.append(f"Ep {r_start}")
+        else:
+            range_strs.append(f"Episodes {r_start}–{r_end}")
+
+    if not range_strs:
+        return None
+
+    for r_start, r_end in ranges:
+        if r_start <= watched_progress <= r_end:
+            r_label = f"Ep {r_start}" if r_start == r_end else f"Episodes {r_start}–{r_end}"
+            return f"[Filler Arc Warning: You are currently in filler arc {r_label}]"
+
+    for r_start, r_end in ranges:
+        if watched_progress < r_start and (r_start - watched_progress) <= 10:
+            r_label = f"Ep {r_start}" if r_start == r_end else f"Episodes {r_start}–{r_end}"
+            return f"[Upcoming Filler Arc: {r_label}]"
+
+    if watched_progress == 0 and len(range_strs) <= 3:
+        return f"[Filler Guide: {', '.join(range_strs)} are non-canon fillers]"
+
+    return None
 
 
 def build_expired_trackers_notice(user: dict | None) -> str | None:

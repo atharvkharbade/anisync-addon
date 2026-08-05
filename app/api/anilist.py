@@ -24,9 +24,23 @@ MEDIA_QUERY = """
 query ($mediaId: Int) {
   Media(id: $mediaId, type: ANIME) {
     episodes
+    status
+    description
+    averageScore
+    coverImage {
+      large
+      extraLarge
+    }
+    bannerImage
+    nextAiringEpisode {
+      episode
+      airingAt
+      timeUntilAiring
+    }
     mediaListEntry {
       progress
       status
+      score
       repeat
     }
   }
