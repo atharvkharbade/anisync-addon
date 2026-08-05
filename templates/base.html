@@ -61,6 +61,14 @@
             .card-dark { border-radius: 10px; }
             .navbar { padding-left: 1rem !important; padding-right: 1rem !important; }
             .btn { font-size: 0.9rem; }
+            .btn-whats-new, .btn-logout {
+                width: 36px;
+                height: 36px;
+                padding: 0 !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
         }
 
         /* Toast Container & Notification Styles */
@@ -167,11 +175,11 @@
                 <span>AniSync</span>
             </a>
             <div class="d-flex gap-2 align-items-center">
-                <button type="button" class="btn btn-whats-new d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#whatsNewModal" onclick="fetchGitHubReleases();">
-                    <i class="fa-regular fa-bell text-warning" style="margin-right: 6px;"></i><span class="d-none d-sm-inline font-semibold">What's New</span>
+                <button type="button" class="btn btn-whats-new d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#whatsNewModal" onclick="fetchGitHubReleases();">
+                    <i class="fa-regular fa-bell text-warning"></i><span class="d-none d-sm-inline font-semibold ms-2">What's New</span>
                 </button>
-                <a href="{{ url_for('auth.logout') }}" class="btn btn-logout">
-                    <i class="fa-solid fa-right-from-bracket me-2"></i><span class="d-none d-sm-inline">Logout</span>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-logout d-inline-flex align-items-center justify-content-center">
+                    <i class="fa-solid fa-right-from-bracket"></i><span class="d-none d-sm-inline ms-2">Logout</span>
                 </a>
             </div>
         </div>
