@@ -1549,7 +1549,7 @@
 
                         <!-- 3. Render the orderable items -->
                         {% for item_id, item_name, item_source in active_user_order %}
-                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
+                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
                             draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}"
                             style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
                             <div class="d-flex align-items-center">
@@ -1558,7 +1558,7 @@
                                     <input class="form-check-input catalog-checkbox" type="checkbox"
                                         id="cat_{{ item_id }}" name="cat_{{ item_id }}" {% if user.get('catalogs') is
                                         none or item_id in user.get('catalogs', []) or (item_source=='discovery'
-                                        and 'enable_discovery_catalogs' not in user) %}checked{% endif %}>
+                                        and 'enable_discovery_catalogs' not in user) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
                                     <label class="form-check-label small fw-medium text-light" for="cat_{{ item_id }}"
                                         style="user-select: none;">
                                         {{ item_name }}
