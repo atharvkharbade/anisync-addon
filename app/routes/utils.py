@@ -27,10 +27,14 @@ def get_remote_ip() -> str:
 
 
 def is_valid_user_id(user_id: str) -> bool:
-    """Validate that the user ID follows standard numeric (MAL), AniList (al_digits), Simkl (simkl_digits), or Guest (guest_...) pattern."""
+    """Validate that the user ID follows standard numeric (MAL), AniList (al_digits), Simkl (simkl_digits), Guest (guest_...), or MongoDB Hex UID pattern."""
     if not user_id:
         return False
-    return bool(re.match(r"^(?:al_|simkl_)?[0-9]+$", user_id) or re.match(r"^guest_[a-zA-Z0-9_]+$", user_id))
+    return bool(
+        re.match(r"^(?:al_|simkl_)?[0-9]+$", user_id)
+        or re.match(r"^[0-9a-fA-F]{24}$", user_id)
+        or re.match(r"^guest_[a-zA-Z0-9_]+$", user_id)
+    )
 
 
 def rate_limit(limit: int, period_seconds: int = 60):

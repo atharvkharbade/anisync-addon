@@ -166,6 +166,7 @@ def map_kitsu_to_stremio(
     title_language: str = "english",
     episodes_provider: str = "anizp",
     backdrop_provider: str = "fanart",
+    poster_provider: str = "anilist",
 ) -> dict:
     data = kitsu_data.get("data", {})
     if not data:
@@ -198,7 +199,11 @@ def map_kitsu_to_stremio(
             anizp_logo = img.get("url")
 
     poster_data = attributes.get("posterImage") or {}
-    poster = anizp_poster or poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or ""
+    kitsu_poster = poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or ""
+    if poster_provider == "kitsu":
+        poster = kitsu_poster or anizp_poster or ""
+    else:
+        poster = anizp_poster or kitsu_poster or ""
     cover_data = attributes.get("coverImage") or {}
     kitsu_cover = cover_data.get("original") or cover_data.get("large") or cover_data.get("medium")
 
@@ -426,6 +431,7 @@ def map_kitsu_to_stremio(
 @meta_bp.route("/<user_id>/meta/<string:meta_type>/<string:meta_id>.json")
 @rate_limit(limit=60, period_seconds=60)
 async def handle_meta(user_id: str, meta_type: str, meta_id: str):
+    meta_id = urllib.parse.unquote(meta_id)
     if meta_type not in ["anime", "series", "movie"]:
         return await respond_with({"meta": {}})
 
@@ -540,6 +546,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             title_language=title_lang,
             episodes_provider=effective_provs.get("episodes", "anizp"),
             backdrop_provider=effective_provs.get("backdrop", "fanart"),
+            poster_provider=effective_provs.get("poster", "anilist"),
         )
 
         # Look up description in recommendations cache to retain the trace prefix
