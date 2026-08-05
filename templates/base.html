@@ -275,6 +275,55 @@
         }
 
         let releasesLoaded = false;
+        function parseReleaseMarkdown(md) {
+            if (!md) return '';
+            const lines = md.split('\n');
+            let out = '';
+            let inList = false;
+
+            lines.forEach(line => {
+                let trimmed = line.trim();
+                if (!trimmed) {
+                    if (inList) { out += '</ul>'; inList = false; }
+                    return;
+                }
+
+                // Headers (## or ###)
+                if (trimmed.startsWith('#')) {
+                    if (inList) { out += '</ul>'; inList = false; }
+                    const headerText = trimmed.replace(/^#+\s*/, '');
+                    out += `<h6 class="fw-bold text-white mt-3 mb-2" style="font-size: 0.95rem; letter-spacing: 0.02em;">${headerText}</h6>`;
+                    return;
+                }
+
+                // Bullet points (* or -)
+                if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+                    if (!inList) {
+                        out += '<ul class="ps-3 mb-2 d-flex flex-column gap-1.5" style="line-height: 1.6;">';
+                        inList = true;
+                    }
+                    let itemText = trimmed.replace(/^[\*\-]\s*/, '');
+                    
+                    // Format inline code / bolding
+                    itemText = itemText.replace(/\*\*(.*?)\*\*/g, '<strong class="text-light">$1</strong>');
+                    itemText = itemText.replace(/`(.*?)`/g, '<code class="bg-dark px-1.5 py-0.5 rounded text-info" style="font-size: 0.85em; border: 1px solid rgba(255,255,255,0.1);">$1</code>');
+                    
+                    out += `<li class="text-secondary small">${itemText}</li>`;
+                    return;
+                }
+
+                // Normal paragraph line
+                if (inList) { out += '</ul>'; inList = false; }
+                let text = trimmed
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-light">$1</strong>')
+                    .replace(/`(.*?)`/g, '<code class="bg-dark px-1.5 py-0.5 rounded text-info" style="font-size: 0.85em;">$1</code>');
+                out += `<p class="text-secondary small mb-2">${text}</p>`;
+            });
+
+            if (inList) out += '</ul>';
+            return out;
+        }
+
         async function fetchGitHubReleases() {
             if (releasesLoaded) return;
             const container = document.getElementById('whatsNewContent');
@@ -291,28 +340,27 @@
                     const isBeta = r.prerelease || (r.tag_name && r.tag_name.includes('beta'));
                     const pubDate = new Date(r.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
                     const isLast = idx === releases.length - 1;
-                    
-                    let bodyHtml = (r.body || '')
-                        .replace(/^### (.*$)/gim, '<h6 class="fw-bold text-white mt-3 mb-1.5">$1</h6>')
-                        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-light">$1</strong>')
-                        .replace(/`(.*?)`/g, '<code class="bg-dark px-1.5 py-0.5 rounded text-info" style="font-size:0.85em;">$1</code>')
-                        .replace(/^- (.*$)/gim, '<li class="text-secondary small mb-1.5">$1</li>');
-                    
-                    if (bodyHtml.includes('<li')) {
-                        bodyHtml = bodyHtml.replace(/(<li.*<\/li>)/s, '<ul class="ps-3 mb-0 d-flex flex-column gap-1" style="line-height: 1.6;">$1</ul>');
-                    }
+                    const parsedBody = parseReleaseMarkdown(r.body || '');
+                    const releaseUrl = r.html_url || `https://github.com/atharvkharbade/anisync-addon/releases/tag/${r.tag_name}`;
                     
                     html += `
                         <div class="${isLast ? '' : 'mb-4 pb-3 border-bottom border-white border-opacity-10'}">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
-                                    ${isBeta ? '<span class="badge bg-primary text-white me-2" style="font-size: 0.72rem; padding:0.3em 0.6em;">BETA</span>' : ''}
-                                    ${r.tag_name} ${r.name && r.name !== r.tag_name ? '<span class="text-secondary font-monospace fs-7 fw-normal ms-1">— ' + r.name + '</span>' : ''}
-                                </h6>
-                                <small class="text-secondary opacity-75">${pubDate}</small>
+                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
+                                        ${isBeta ? '<span class="badge bg-primary text-white me-2" style="font-size: 0.72rem; padding:0.3em 0.6em;">BETA</span>' : ''}
+                                        ${r.tag_name} ${r.name && r.name !== r.tag_name ? '<span class="text-secondary font-monospace fs-7 fw-normal ms-1">— ' + r.name + '</span>' : ''}
+                                    </h6>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="text-secondary opacity-75 me-1">${pubDate}</small>
+                                    <a href="${releaseUrl}" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View ${r.tag_name} on GitHub">
+                                        <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Release
+                                    </a>
+                                </div>
                             </div>
                             <div class="release-body text-secondary small" style="line-height: 1.6;">
-                                ${bodyHtml}
+                                ${parsedBody}
                             </div>
                         </div>
                     `;
