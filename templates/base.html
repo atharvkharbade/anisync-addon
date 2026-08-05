@@ -338,7 +338,9 @@
                 let html = '';
                 releases.forEach((r, idx) => {
                     const isBeta = r.prerelease || (r.tag_name && r.tag_name.includes('beta'));
-                    const pubDate = new Date(r.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                    let pubDate = new Date(r.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                    if (r.tag_name === 'v1.0.0') pubDate = 'Jun 5, 2026';
+                    if (r.tag_name === 'v1.3.0') pubDate = 'Jun 17, 2026';
                     const isLast = idx === releases.length - 1;
                     const parsedBody = parseReleaseMarkdown(r.body || '');
                     const releaseUrl = r.html_url || `https://github.com/atharvkharbade/anisync-addon/releases/tag/${r.tag_name}`;
