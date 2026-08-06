@@ -1887,42 +1887,48 @@
         </div>
 
         <!-- Danger Zone Card -->
-        <div class="card-dark p-3 p-sm-4 mb-3">
+        <div class="card-dark p-3 p-sm-4 mb-3" style="border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.03);">
             <h6 class="fw-semibold mb-1 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone</h6>
             <p class="text-secondary small mb-3">Permanently remove your saved preferences and disconnect all connected tracker accounts.</p>
-            <button type="button" class="btn btn-disconnect" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
-                <i class="fa-solid fa-trash-can me-2"></i>Delete User Configuration
+            <button type="button" class="btn btn-disconnect btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                <i class="fa-solid fa-trash-can me-2"></i>Delete User Records
             </button>
         </div>
 
     </div>
 </div>
 
-<!-- Delete User Configuration Modal -->
+<!-- Delete User Records Modal -->
 <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content card-dark shadow-lg" style="background: #161616; border: 1px solid #2a2a2a; border-radius: 12px; color: #e0e0e0;">
+        <div class="modal-content" style="background: #161618; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 14px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 20px rgba(239, 68, 68, 0.12); color: #f1f5f9;">
             <div class="modal-header border-0 pb-0 pt-4 px-4">
-                <h5 class="modal-title fw-bold text-white fs-6" id="deleteAccountModalLabel">
-                    <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Delete User Configuration?
-                </h5>
+                <div class="d-flex align-items-center gap-2.5">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 1.1rem;"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold text-white mb-0" id="deleteAccountModalLabel" style="font-size: 1.1rem;">Delete User Records?</h5>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body px-4 py-3">
-                <p class="text-secondary small mb-2" style="font-size: 0.9rem; line-height: 1.5;">
-                    Are you sure you want to delete your configuration? This will clear all your saved preferences and disconnect your connected tracker accounts.
+                <p class="text-secondary small mb-3" style="font-size: 0.9rem; line-height: 1.5; color: #ccc !important;">
+                    Are you sure you want to delete your user records? This will clear all your saved preferences and disconnect your connected tracker accounts.
                 </p>
-                <p class="text-danger small mb-0 fw-medium">
-                    <i class="fa-solid fa-circle-exclamation me-1"></i> This action cannot be undone.
-                </p>
+                <div class="p-3 rounded-3" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25);">
+                    <div class="d-flex align-items-center text-danger small fw-semibold">
+                        <i class="fa-solid fa-circle-exclamation me-2" style="font-size: 0.95rem;"></i>
+                        This action cannot be undone.
+                    </div>
+                </div>
             </div>
             <div class="modal-footer border-0 pt-2 pb-4 px-4 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal" style="border-radius: 8px;">
+                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; font-weight: 500; color: #ddd;">
                     Cancel
                 </button>
                 <form action="{{ url_for('ui.delete_account') }}" method="POST" class="d-inline mb-0">
-                    <button type="submit" class="btn btn-disconnect btn-sm px-3">
-                        <i class="fa-solid fa-trash-can me-1.5"></i>Delete Configuration
+                    <button type="submit" class="btn btn-danger btn-sm px-3.5 py-1.5" style="background: #ef4444; border: none; border-radius: 8px; font-weight: 600; color: #ffffff; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);">
+                        <i class="fa-solid fa-trash-can me-1.5"></i>Delete Records
                     </button>
                 </form>
             </div>
