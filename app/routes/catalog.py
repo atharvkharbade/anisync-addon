@@ -338,7 +338,9 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
                 if status == "FINISHED":
                     expires_at = now + datetime.timedelta(days=30)
                 elif next_ep and next_ep.get("airingAt"):
-                    expires_at = datetime.datetime.fromtimestamp(next_ep["airingAt"]) + datetime.timedelta(minutes=15)
+                    target_time = datetime.datetime.fromtimestamp(next_ep["airingAt"]) + datetime.timedelta(minutes=15)
+                    max_cap = now + datetime.timedelta(hours=12)
+                    expires_at = min(target_time, max_cap)
                 elif status == "NOT_YET_RELEASED":
                     expires_at = now + datetime.timedelta(days=1)
                 else:
