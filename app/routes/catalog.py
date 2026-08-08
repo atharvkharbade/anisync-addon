@@ -1952,52 +1952,72 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 total_eps = "?"
                 name = ""
                 poster = ""
-
                 is_movie = False
-                if item["anilist_item"]:
-                    media = item["anilist_item"]["media"]
-                    progress = item["anilist_item"].get("progress", 0)
-                    total_eps = media.get("episodes") or "?"
-                    name = get_anilist_title(media.get("title"), title_lang)
-                    poster = (
-                        (media.get("coverImage") or {}).get("large")
-                        or (media.get("coverImage") or {}).get("medium")
-                        or ""
-                    )
-                    if media.get("format") == "MOVIE":
-                        is_movie = True
+                provider_pref = (user.get("metadata_provider", "kitsu") or "kitsu").lower()
 
-                if not name and item["mal_item"]:
-                    node = item["mal_item"]["node"]
-                    progress = max(progress, node.get("my_list_status", {}).get("num_episodes_watched", 0))
-                    total_eps = node.get("num_episodes") or "?"
-                    name = get_mal_title(node, title_lang)
-                    poster = (
-                        poster
-                        or node.get("main_picture", {}).get("large")
-                        or node.get("main_picture", {}).get("medium")
-                        or ""
-                    )
-                    if node.get("media_type") == "movie":
-                        is_movie = True
+                def extract_al():
+                    nonlocal progress, total_eps, name, poster, is_movie
+                    if item["anilist_item"]:
+                        media = item["anilist_item"]["media"]
+                        progress = max(progress, item["anilist_item"].get("progress", 0))
+                        if total_eps == "?":
+                            total_eps = media.get("episodes") or "?"
+                        if not name:
+                            name = get_anilist_title(media.get("title"), title_lang)
+                        if not poster:
+                            poster = (media.get("coverImage") or {}).get("large") or (media.get("coverImage") or {}).get("medium") or ""
+                        if media.get("format") == "MOVIE":
+                            is_movie = True
 
-                if not name and item["simkl_item"]:
-                    show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
-                    simkl_progress = (
-                        item["simkl_item"].get("watched_episodes_count")
-                        or item["simkl_item"].get("episodes_watched")
-                        or item["simkl_item"].get("progress")
-                        or 0
-                    )
-                    progress = max(progress, simkl_progress)
-                    total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
-                    name = show_obj.get("title", "")
-                    simkl_poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
-                    if simkl_poster and not simkl_poster.startswith("http"):
-                        simkl_poster = f"https://simkl.in/posters/{simkl_poster}_m.jpg"
-                    poster = poster or simkl_poster
-                    if show_obj.get("anime_type") == "movie" or show_obj.get("type") == "movie":
-                        is_movie = True
+                def extract_mal():
+                    nonlocal progress, total_eps, name, poster, is_movie
+                    if item["mal_item"]:
+                        node = item["mal_item"]["node"]
+                        progress = max(progress, node.get("my_list_status", {}).get("num_episodes_watched", 0))
+                        if total_eps == "?":
+                            total_eps = node.get("num_episodes") or "?"
+                        if not name:
+                            name = get_mal_title(node, title_lang)
+                        if not poster:
+                            poster = node.get("main_picture", {}).get("large") or node.get("main_picture", {}).get("medium") or ""
+                        if node.get("media_type") == "movie":
+                            is_movie = True
+
+                def extract_simkl():
+                    nonlocal progress, total_eps, name, poster, is_movie
+                    if item["simkl_item"]:
+                        show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
+                        simkl_progress = (
+                            item["simkl_item"].get("watched_episodes_count")
+                            or item["simkl_item"].get("episodes_watched")
+                            or item["simkl_item"].get("progress")
+                            or 0
+                        )
+                        progress = max(progress, simkl_progress)
+                        if total_eps == "?":
+                            total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
+                        if not name:
+                            name = show_obj.get("title", "")
+                        if not poster:
+                            simkl_poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
+                            if simkl_poster and not simkl_poster.startswith("http"):
+                                simkl_poster = f"https://simkl.in/posters/{simkl_poster}_m.jpg"
+                            poster = simkl_poster
+                        if show_obj.get("anime_type") == "movie" or show_obj.get("type") == "movie":
+                            is_movie = True
+
+                if provider_pref == "mal":
+                    extract_mal()
+                    extract_al()
+                    extract_simkl()
+                elif provider_pref == "simkl":
+                    extract_simkl()
+                    extract_al()
+                    extract_mal()
+                else:  # anilist or kitsu
+                    extract_al()
+                    extract_mal()
+                    extract_simkl()
 
                 is_new_ep = False
                 if comb_status in ["watching", "plan_to_watch"]:
