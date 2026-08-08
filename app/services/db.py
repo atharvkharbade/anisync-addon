@@ -173,6 +173,8 @@ def get_valid_mal_user(user_id: str) -> tuple[dict, str | None]:
 
 def get_cached_ids(kitsu_id: str) -> dict | None:
     try:
+        if isinstance(kitsu_id, str):
+            kitsu_id = kitsu_id.replace("kitsu:", "").strip()
         return id_cache_collection.find_one({"kitsu_id": int(kitsu_id)})
     except (ValueError, TypeError):
         return None
