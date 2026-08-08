@@ -207,9 +207,12 @@
                 <span>AniSync</span>
             </a>
             <div class="d-flex gap-2 align-items-center">
+                {% set SHOW_SUPPORT_BUTTON = False %}
+                {% if SHOW_SUPPORT_BUTTON %}
                 <button type="button" class="btn btn-kofi d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#supportModal">
                     <i class="fa-solid fa-mug-hot" style="color: #ff5e5b;"></i><span class="d-none d-sm-inline font-semibold ms-2">Support</span>
                 </button>
+                {% endif %}
                 <button type="button" class="btn btn-whats-new d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#whatsNewModal" onclick="fetchGitHubReleases();">
                     <i class="fa-regular fa-bell text-warning"></i><span class="d-none d-sm-inline font-semibold ms-2">What's New</span>
                 </button>
@@ -287,10 +290,12 @@
                 <a href="https://github.com/atharvkharbade/anisync-addon" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
                     <i class="fa-brands fa-github fs-6"></i> GitHub
                 </a>
+                {% if SHOW_SUPPORT_BUTTON %}
                 <span style="color: #334155; font-size: 0.8rem;">•</span>
                 <button type="button" class="kofi-footer-link d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#supportModal">
                     <i class="fa-solid fa-mug-hot fs-6" style="color: #ff5e5b;"></i><span>Ko-fi</span>
                 </button>
+                {% endif %}
                 <span style="color: #334155; font-size: 0.8rem;">•</span>
                 <a href="https://github.com/atharvkharbade/anisync-addon/issues" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
                     <i class="fa-solid fa-circle-exclamation fs-6"></i> Issues
