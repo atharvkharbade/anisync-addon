@@ -110,7 +110,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logo_gap = 4
 
             if badge_style == "modern":
-                # --- MODERN DESIGN: Top Adaptive Pill + Bottom Tracker Indicators ---
+                # --- MODERN DESIGN: Top Adaptive Box + Bottom Tracker Text ---
                 # 1. Color extraction from top 25% of image
                 try:
                     top_crop = img.crop((0, 0, w, int(h * 0.25)))
@@ -123,87 +123,74 @@ async def serve_modified_poster(user_id: str, media_id: str):
                             r, g, b = max(r, 35), max(g, 55), max(b, 80)
                         elif luminance > 200:
                             r, g, b = int(r * 0.65), int(g * 0.65), int(b * 0.65)
-                        pill_rgb = (r, g, b)
+                        box_rgb = (r, g, b)
                     else:
-                        pill_rgb = (30, 55, 80)
+                        box_rgb = (30, 55, 80)
                 except Exception:
-                    pill_rgb = (30, 55, 80)
+                    box_rgb = (30, 55, 80)
 
-                pill_fill = (pill_rgb[0], pill_rgb[1], pill_rgb[2], 225)
-                pill_outline = (255, 255, 255, 70)
+                box_fill = (box_rgb[0], box_rgb[1], box_rgb[2], 230)
+                box_outline = (255, 255, 255, 80)
 
-                # Draw top rounded pill badge
+                # Setup enlarged fonts for clarity
+                try:
+                    font_top = ImageFont.truetype(font_path, 13)
+                    font_bottom = ImageFont.truetype(font_path, 12)
+                except Exception:
+                    font_top = font
+                    font_bottom = font
+
+                # Draw top rounded box badge (box-shaped with soft curved corners)
                 text_top = "NEW EPISODE"
                 try:
-                    left_t, top_t, right_t, bottom_t = font.getbbox(text_top)
+                    left_t, top_t, right_t, bottom_t = font_top.getbbox(text_top)
                     tw = right_t - left_t
                     th = bottom_t - top_t
                 except Exception:
-                    tw, th = 85, 10
+                    tw, th = 95, 12
                     left_t, top_t = 0, 0
 
-                pill_w = tw + 22
-                pill_h = th + 12
-                pill_x1 = (w - pill_w) / 2
-                pill_y1 = 12
-                pill_x2 = pill_x1 + pill_w
-                pill_y2 = pill_y1 + pill_h
+                box_w = tw + 24
+                box_h = th + 10
+                box_x1 = (w - box_w) / 2
+                box_y1 = 8
+                box_x2 = box_x1 + box_w
+                box_y2 = box_y1 + box_h
 
                 if hasattr(draw, "rounded_rectangle"):
-                    draw.rounded_rectangle([(pill_x1, pill_y1), (pill_x2, pill_y2)], radius=10, fill=pill_fill, outline=pill_outline)
+                    draw.rounded_rectangle([(box_x1, box_y1), (box_x2, box_y2)], radius=5, fill=box_fill, outline=box_outline)
                 else:
-                    draw.rectangle([(pill_x1, pill_y1), (pill_x2, pill_y2)], fill=pill_fill)
+                    draw.rectangle([(box_x1, box_y1), (box_x2, box_y2)], fill=box_fill)
 
-                tx = (pill_x1 + (pill_w - tw) / 2) - left_t
-                ty = (pill_y1 + (pill_h - th) / 2) - top_t
-                draw.text((tx, ty), text_top, font=font, fill=(255, 255, 255, 255))
+                tx = (box_x1 + (box_w - tw) / 2) - left_t
+                ty = (box_y1 + (box_h - th) / 2) - top_t
+                draw.text((tx, ty), text_top, font=font_top, fill=(255, 255, 255, 255))
 
-                # 2. Bottom tracker indicators bar
+                # 2. Bottom tracker indicators bar (clean text-only tracker names)
                 bar_h = 36
                 bar_y = h - bar_h
-                draw.rectangle([(0, bar_y), (w, h)], fill=(0, 0, 0, 215))
+                draw.rectangle([(0, bar_y), (w, h)], fill=(0, 0, 0, 220))
 
-                logos = []
                 tracker_names = []
                 if draw_mal:
-                    p = os.path.join(assets_dir, "mal_logo.png")
-                    if os.path.exists(p):
-                        logos.append(Image.open(p).convert("RGBA").resize((logo_w, logo_h), resample_filter))
-                        tracker_names.append("MAL")
+                    tracker_names.append("MAL")
                 if draw_al:
-                    p = os.path.join(assets_dir, "anilist_logo.png")
-                    if os.path.exists(p):
-                        logos.append(Image.open(p).convert("RGBA").resize((logo_w, logo_h), resample_filter))
-                        tracker_names.append("AniList")
+                    tracker_names.append("AniList")
                 if draw_simkl:
-                    p = os.path.join(assets_dir, "simkl_logo.png")
-                    if os.path.exists(p):
-                        logos.append(Image.open(p).convert("RGBA").resize((logo_w, logo_h), resample_filter))
-                        tracker_names.append("Simkl")
+                    tracker_names.append("Simkl")
 
-                bot_text = " • ".join(tracker_names) if tracker_names else "NEW"
+                bot_text = " • ".join(tracker_names) if tracker_names else "NEW EPISODE"
                 try:
-                    left_b, top_b, right_b, bottom_b = font_small.getbbox(bot_text)
+                    left_b, top_b, right_b, bottom_b = font_bottom.getbbox(bot_text)
                     btw = right_b - left_b
                     bth = bottom_b - top_b
                 except Exception:
-                    btw, bth = 50, 10
+                    btw, bth = 60, 12
                     left_b, top_b = 0, 0
 
-                total_logos_w = len(logos) * logo_w + (len(logos) - 1) * logo_gap if logos else 0
-                total_bot_w = total_logos_w + 6 + btw if total_logos_w > 0 else btw
-
-                bot_block_x = (w - total_bot_w) / 2
-                bot_center_y = bar_y + bar_h / 2
-
-                curr_x = bot_block_x
-                for logo in logos:
-                    overlay.paste(logo, (int(curr_x), int(bot_center_y - logo_h / 2)), logo)
-                    curr_x += logo_w + logo_gap
-
-                btx = (bot_block_x + total_logos_w + 6 if total_logos_w > 0 else bot_block_x) - left_b
-                bty = bot_center_y - bth / 2 - top_b
-                draw.text((btx, bty), bot_text, font=font_small, fill=(240, 240, 240, 255))
+                btx = ((w - btw) / 2) - left_b
+                bty = (bar_y + (bar_h - bth) / 2) - top_b
+                draw.text((btx, bty), bot_text, font=font_bottom, fill=(245, 245, 245, 255))
 
             else:
                 # --- CLASSIC DESIGN: Solid Bottom Bar ---
