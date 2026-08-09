@@ -10,6 +10,7 @@
 [![Docker Support](https://img.shields.io/badge/docker-ready-2496ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![Stremio Addon](https://img.shields.io/badge/stremio-addon-8a2be2.svg)](https://stremio.com)
 [![Nuvio Addon](https://img.shields.io/badge/nuvio-addon-ff4500.svg)](https://nuvio.tv)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b.svg?logo=ko-fi&logoColor=white)](https://ko-fi.com/atharvkharbade)
 
 **AniSync** is an anime addon built for Stremio and Nuvio that connects your tracking accounts (**MyAnimeList**, **AniList**, and **Simkl**) in one place. It syncs your watchlists, overlays new episode indicators on posters, shows filler warnings and watched tags, and gives you personalized recommendations and discovery catalogs.
 
@@ -231,6 +232,14 @@ networks:
   internal:
     driver: bridge
 ```
+
+---
+
+## ☕ Support the Project
+
+If you enjoy using AniSync and would like to support its ongoing development and server hosting costs, consider [buying me a coffee on Ko-fi](https://ko-fi.com/atharvkharbade)! Any support is greatly appreciated.
+
+---
 
 ## ⚠️ Disclaimer
 
