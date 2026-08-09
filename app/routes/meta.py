@@ -736,9 +736,6 @@ async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str |
                 poster_url = cover.get("extraLarge") or cover.get("large")
                 if poster_url:
                     meta["poster"] = poster_url
-                banner_url = al_data.get("bannerImage")
-                if banner_url:
-                    meta["background"] = banner_url
                 desc = al_data.get("description")
                 if desc:
                     import re
