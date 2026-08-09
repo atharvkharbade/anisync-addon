@@ -199,32 +199,6 @@
         </div>
     </nav>
 
-    <!-- Support AniSync Modal -->
-    <div class="modal fade" id="supportModal" tabindex="-1" aria-labelledby="supportModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content text-start" style="background: #141416; border: 1px solid rgba(255, 94, 91, 0.25); color: #e2e8f0; border-radius: 14px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);">
-                <div class="modal-header border-bottom border-white border-opacity-10 px-4 py-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-mug-hot fs-5" style="color: #ff5e5b;"></i>
-                        <h5 class="modal-title fw-bold text-white mb-0" id="supportModalLabel">Support AniSync</h5>
-                    </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center px-4 py-4">
-                    <p class="text-secondary mb-4" style="font-size: 0.92rem; line-height: 1.55;">
-                        AniSync is 100% free and open-source. If you love using it, consider supporting server hosting and maintenance costs!
-                    </p>
-                    <a href="https://ko-fi.com/atharvkharbade" target="_blank" rel="noopener noreferrer" class="btn fw-semibold px-4 py-2.5 text-white" style="background: linear-gradient(135deg, #ff5e5b, #e04845); border: none; border-radius: 8px; font-size: 0.92rem; box-shadow: 0 4px 16px rgba(255, 94, 91, 0.35); transition: all 0.2s ease;">
-                        <i class="fa-solid fa-mug-hot me-2"></i>Buy Me a Coffee on Ko-fi
-                    </a>
-                </div>
-                <div class="modal-footer border-top border-white border-opacity-10 px-4 py-2.5 d-flex justify-content-end">
-                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- What's New Modal -->
     <div class="modal fade" id="whatsNewModal" tabindex="-1" aria-labelledby="whatsNewModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
@@ -253,13 +227,39 @@
     </div>
     {% endif %}
 
+    <!-- Support AniSync Modal (Global) -->
+    <div class="modal fade" id="supportModal" tabindex="-1" aria-labelledby="supportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-start" style="background: #141416; border: 1px solid rgba(255, 94, 91, 0.25); color: #e2e8f0; border-radius: 14px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);">
+                <div class="modal-header border-bottom border-white border-opacity-10 px-4 py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-mug-hot fs-5" style="color: #ff5e5b;"></i>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="supportModalLabel">Support AniSync</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center px-4 py-4">
+                    <p class="text-secondary mb-4" style="font-size: 0.92rem; line-height: 1.55;">
+                        AniSync is 100% free and open-source. If you love using it, consider supporting server hosting and maintenance costs!
+                    </p>
+                    <a href="https://ko-fi.com/atharvkharbade" target="_blank" rel="noopener noreferrer" class="btn fw-semibold px-4 py-2.5 text-white" style="background: linear-gradient(135deg, #ff5e5b, #e04845); border: none; border-radius: 8px; font-size: 0.92rem; box-shadow: 0 4px 16px rgba(255, 94, 91, 0.35); transition: all 0.2s ease;">
+                        <i class="fa-solid fa-mug-hot me-2"></i>Buy Me a Coffee on Ko-fi
+                    </a>
+                </div>
+                <div class="modal-footer border-top border-white border-opacity-10 px-4 py-2.5 d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container pt-2 pt-sm-4 pb-2 {% if session.get('user') %}flash-wrap{% endif %}">
         {% block content %}{% endblock %}
     </div>
 
     <footer class="text-center py-4 mt-2" style="border-top: 1px solid rgba(255, 255, 255, 0.08); color: #94a3b8;">
         <p class="mb-2 text-secondary fw-medium" style="font-size: 0.88rem; letter-spacing: 0.01em;">Elevating your tracking experience.</p>
-        <div class="d-flex justify-content-center align-items-center gap-3">
+        <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
             <a href="https://github.com/atharvkharbade/anisync-addon" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
                 <i class="fa-brands fa-github fs-6"></i> GitHub
             </a>
@@ -267,6 +267,11 @@
             <a href="https://github.com/atharvkharbade/anisync-addon/issues" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
                 <i class="fa-solid fa-circle-exclamation fs-6"></i> Report an Issue
             </a>
+        </div>
+        <div>
+            <button type="button" class="btn btn-kofi d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#supportModal" style="font-size: 0.8rem; padding: 0.3rem 0.85rem;">
+                <i class="fa-solid fa-mug-hot me-1.5" style="color: #ff5e5b;"></i> Support on Ko-fi
+            </button>
         </div>
     </footer>
 
