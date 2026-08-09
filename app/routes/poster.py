@@ -110,27 +110,29 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logo_gap = 4
 
             if badge_style == "modern":
-                # --- MODERN DESIGN: Top Adaptive Box + Smooth Bottom Gradient with Tracker Logos ---
-                # 1. Color extraction from top 25% of image
+                # --- MODERN DESIGN: Top & Bottom Adaptive Boxes with Smart Text Contrast ---
+                # 1. Top color extraction & luminance check
                 try:
                     top_crop = img.crop((0, 0, w, int(h * 0.25)))
                     quantized = top_crop.quantize(colors=3)
                     palette = quantized.getpalette()
                     if palette and len(palette) >= 3:
                         r, g, b = palette[0], palette[1], palette[2]
-                        luminance = 0.299 * r + 0.587 * g + 0.114 * b
-                        if luminance < 45:
-                            r, g, b = max(r, 35), max(g, 55), max(b, 80)
-                        elif luminance > 200:
-                            r, g, b = int(r * 0.65), int(g * 0.65), int(b * 0.65)
                         box_rgb = (r, g, b)
                     else:
                         box_rgb = (30, 55, 80)
                 except Exception:
                     box_rgb = (30, 55, 80)
 
-                box_fill = (box_rgb[0], box_rgb[1], box_rgb[2], 235)
-                box_outline = (255, 255, 255, 90)
+                lum_top = 0.299 * box_rgb[0] + 0.587 * box_rgb[1] + 0.114 * box_rgb[2]
+                if lum_top > 140:
+                    text_color_top = (15, 15, 15, 255)
+                    box_fill_top = (box_rgb[0], box_rgb[1], box_rgb[2], 240)
+                    box_outline_top = (0, 0, 0, 90)
+                else:
+                    text_color_top = (255, 255, 255, 255)
+                    box_fill_top = (max(box_rgb[0], 25), max(box_rgb[1], 40), max(box_rgb[2], 65), 235)
+                    box_outline_top = (255, 255, 255, 90)
 
                 # Setup enlarged font for top badge
                 try:
@@ -138,7 +140,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 except Exception:
                     font_top = font
 
-                # Draw top rounded box badge (box-shaped with soft curved corners)
+                # Draw top rounded box badge
                 text_top = "NEW EPISODE"
                 try:
                     left_t, top_t, right_t, bottom_t = font_top.getbbox(text_top)
@@ -156,13 +158,13 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 box_y2 = box_y1 + box_h
 
                 if hasattr(draw, "rounded_rectangle"):
-                    draw.rounded_rectangle([(box_x1, box_y1), (box_x2, box_y2)], radius=6, fill=box_fill, outline=box_outline)
+                    draw.rounded_rectangle([(box_x1, box_y1), (box_x2, box_y2)], radius=6, fill=box_fill_top, outline=box_outline_top)
                 else:
-                    draw.rectangle([(box_x1, box_y1), (box_x2, box_y2)], fill=box_fill)
+                    draw.rectangle([(box_x1, box_y1), (box_x2, box_y2)], fill=box_fill_top)
 
                 tx = (box_x1 + (box_w - tw) / 2) - left_t
                 ty = (box_y1 + (box_h - th) / 2) - top_t
-                draw.text((tx, ty), text_top, font=font_top, fill=(255, 255, 255, 255))
+                draw.text((tx, ty), text_top, font=font_top, fill=text_color_top)
 
                 # 2. Bottom Tracker Names inside matching adaptive rounded box container
                 try:
@@ -187,19 +189,21 @@ async def serve_modified_poster(user_id: str, media_id: str):
                     palette_b = quantized_b.getpalette()
                     if palette_b and len(palette_b) >= 3:
                         r_b, g_b, b_b = palette_b[0], palette_b[1], palette_b[2]
-                        luminance_b = 0.299 * r_b + 0.587 * g_b + 0.114 * b_b
-                        if luminance_b < 45:
-                            r_b, g_b, b_b = max(r_b, 35), max(g_b, 55), max(b_b, 80)
-                        elif luminance_b > 200:
-                            r_b, g_b, b_b = int(r_b * 0.65), int(g_b * 0.65), int(b_b * 0.65)
                         bot_rgb = (r_b, g_b, b_b)
                     else:
                         bot_rgb = (30, 55, 80)
                 except Exception:
                     bot_rgb = (30, 55, 80)
 
-                bot_fill = (bot_rgb[0], bot_rgb[1], bot_rgb[2], 235)
-                bot_outline = (255, 255, 255, 90)
+                lum_bot = 0.299 * bot_rgb[0] + 0.587 * bot_rgb[1] + 0.114 * bot_rgb[2]
+                if lum_bot > 140:
+                    text_color_bot = (15, 15, 15, 255)
+                    bot_fill = (bot_rgb[0], bot_rgb[1], bot_rgb[2], 240)
+                    bot_outline = (0, 0, 0, 90)
+                else:
+                    text_color_bot = (255, 255, 255, 255)
+                    bot_fill = (max(bot_rgb[0], 25), max(bot_rgb[1], 40), max(bot_rgb[2], 65), 235)
+                    bot_outline = (255, 255, 255, 90)
 
                 try:
                     left_b, top_b, right_b, bottom_b = font_bottom.getbbox(bot_text)
@@ -223,7 +227,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
                 btx = (bot_box_x1 + (bot_box_w - btw) / 2) - left_b
                 bty = (bot_box_y1 + (bot_box_h - bth) / 2) - top_b
-                draw.text((btx, bty), bot_text, font=font_bottom, fill=(255, 255, 255, 255))
+                draw.text((btx, bty), bot_text, font=font_bottom, fill=text_color_bot)
 
             else:
                 # --- CLASSIC DESIGN: Solid Bottom Bar ---
