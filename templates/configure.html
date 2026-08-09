@@ -211,6 +211,9 @@
         border-radius: 10px;
         padding: 0.55rem 0.85rem;
         transition: border-color 0.2s;
+        max-width: 400px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .gemini-input-wrapper:focus-within {
@@ -220,10 +223,12 @@
     .gemini-icon {
         color: #02a9ff;
         margin-right: 0.75rem;
+        flex-shrink: 0;
     }
 
     .gemini-input {
         flex-grow: 1;
+        min-width: 0;
         background: transparent;
         border: none;
         color: #fff;
@@ -238,6 +243,7 @@
         padding: 0.25rem 0.5rem;
         cursor: pointer;
         transition: color 0.2s;
+        flex-shrink: 0;
     }
 
     .gemini-btn:hover {
@@ -1287,7 +1293,7 @@
                         </div>
 
                         <!-- Gemini AI Section Replica -->
-                        <div id="gemini-key-section" style="margin-top: 1.5rem;">
+                        <div id="gemini-key-section" style="margin-top: 1.5rem; max-width: 400px;">
                             <label class="rec-label mb-2">GEMINI AI (OPTIONAL)</label>
                             <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
                                 Used to generate personalized, AI-powered explanations for recommended anime based on
@@ -1295,6 +1301,7 @@
                             </p>
 
                             <div class="gemini-input-wrapper position-relative">
+                                <i class="fa-solid fa-wand-magic-sparkles gemini-icon" style="color: #02a9ff;"></i>
                                 <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
                                     value="{{ user.get('gemini_api_key', '') }}"
                                     placeholder="Paste your Gemini API key here">
