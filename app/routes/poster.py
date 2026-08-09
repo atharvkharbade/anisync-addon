@@ -164,15 +164,10 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 ty = (box_y1 + (box_h - th) / 2) - top_t
                 draw.text((tx, ty), text_top, font=font_top, fill=(255, 255, 255, 255))
 
-                # 2. Smooth bottom gradient overlay + Tracker Logos
-                gradient_start = h - 65
-                for py in range(gradient_start, h):
-                    alpha = int(190 * (py - gradient_start) / (h - gradient_start))
-                    draw.line([(0, py), (w, py)], fill=(0, 0, 0, alpha))
-
+                # 2. Bottom Tracker Logos inside a matching rounded box container
                 logos = []
-                logo_size = 22
-                logo_gap = 8
+                logo_size = 20
+                logo_gap = 6
 
                 if draw_mal:
                     p = os.path.join(assets_dir, "mal_logo.png")
@@ -189,8 +184,23 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
                 if logos:
                     total_logos_w = len(logos) * logo_size + (len(logos) - 1) * logo_gap
-                    start_x = (w - total_logos_w) / 2
-                    logo_y = h - 32
+                    bot_box_w = total_logos_w + 18
+                    bot_box_h = logo_size + 10
+                    bot_box_x1 = (w - bot_box_w) / 2
+                    bot_box_y1 = h - bot_box_h - 10
+                    bot_box_x2 = bot_box_x1 + bot_box_w
+                    bot_box_y2 = bot_box_y1 + bot_box_h
+
+                    bot_fill = (0, 0, 0, 220)
+                    bot_outline = (255, 255, 255, 80)
+
+                    if hasattr(draw, "rounded_rectangle"):
+                        draw.rounded_rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], radius=6, fill=bot_fill, outline=bot_outline)
+                    else:
+                        draw.rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], fill=bot_fill)
+
+                    start_x = bot_box_x1 + (bot_box_w - total_logos_w) / 2
+                    logo_y = bot_box_y1 + (bot_box_h - logo_size) / 2
 
                     curr_x = start_x
                     for logo in logos:
