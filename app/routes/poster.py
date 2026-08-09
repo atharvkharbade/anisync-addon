@@ -275,3 +275,61 @@ async def serve_modified_poster(user_id: str, media_id: str):
     except Exception as e:
         logging.error("Pillow poster overlay failed for media_id %s: %s", media_id, e)
         return redirect(original_url)
+
+
+@poster_bp.route("/<user_id>/background/<string:media_id>.jpg")
+@rate_limit(limit=120, period_seconds=60)
+async def serve_framed_background(user_id: str, media_id: str):
+    """
+    Process wide header banners (e.g. from AniList) into a native 16:9 1920x1080 canvas.
+    Center-frames the banner and fills top/bottom with a blurred background palette
+    so no characters or details get cut off by client-side cropping.
+    """
+    if not is_valid_user_id(user_id):
+        return "Invalid user ID", 400
+
+    original_url = request.args.get("url")
+    if not original_url or not is_trusted_url(original_url):
+        return abort(400)
+
+    try:
+        from PIL import ImageFilter
+
+        client = get_client()
+        resp = await client.get(original_url, timeout=10)
+        if resp.status_code != 200:
+            return redirect(original_url)
+
+        banner_img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+        bw, bh = banner_img.size
+
+        target_w, target_h = 1920, 1080
+
+        # Create blurred background fill matching poster colors
+        bg_fill = banner_img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+        bg_fill = bg_fill.filter(ImageFilter.GaussianBlur(radius=30))
+
+        # Scale original banner to fit width 1920 proportionally
+        scale = target_w / float(bw)
+        new_w = target_w
+        new_h = int(bh * scale)
+
+        scaled_banner = banner_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+        # Center banner vertically onto background
+        paste_y = (target_h - new_h) // 2
+        bg_fill.paste(scaled_banner, (0, max(0, paste_y)))
+
+        # Export JPEG
+        output = io.BytesIO()
+        bg_fill.save(output, format="JPEG", quality=88)
+        output.seek(0)
+
+        response = Response(output.read(), mimetype="image/jpeg")
+        response.headers["Cache-Control"] = "public, max-age=604800"
+        return response
+
+    except Exception as e:
+        logging.error("Framed background processing failed for %s: %s", media_id, e)
+        return redirect(original_url)
+
