@@ -110,9 +110,9 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logo_gap = 4
 
             if badge_style == "modern":
-                # --- MODERN DESIGN: Liquid Glass Blur (Glassmorphism) & Symmetric Margins ---
-                glass_fill = (15, 23, 42, 160)
-                glass_outline = (255, 255, 255, 65)
+                # --- MODERN DESIGN: Liquid Glass Blur (Glassmorphism Phase 2) & Symmetric Margins ---
+                glass_fill = (15, 23, 42, 85)
+                glass_outline = (255, 255, 255, 110)
                 text_color = (255, 255, 255, 255)
 
                 # Setup font for top badge
