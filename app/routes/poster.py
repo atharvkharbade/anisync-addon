@@ -110,7 +110,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logo_gap = 4
 
             if badge_style == "modern":
-                # --- MODERN DESIGN: Top Adaptive Box + Bottom Tracker Text ---
+                # --- MODERN DESIGN: Top Adaptive Box + Smooth Bottom Gradient with Tracker Logos ---
                 # 1. Color extraction from top 25% of image
                 try:
                     top_crop = img.crop((0, 0, w, int(h * 0.25)))
@@ -129,16 +129,14 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 except Exception:
                     box_rgb = (30, 55, 80)
 
-                box_fill = (box_rgb[0], box_rgb[1], box_rgb[2], 230)
-                box_outline = (255, 255, 255, 80)
+                box_fill = (box_rgb[0], box_rgb[1], box_rgb[2], 235)
+                box_outline = (255, 255, 255, 90)
 
-                # Setup enlarged fonts for clarity
+                # Setup enlarged font for top badge
                 try:
-                    font_top = ImageFont.truetype(font_path, 13)
-                    font_bottom = ImageFont.truetype(font_path, 12)
+                    font_top = ImageFont.truetype(font_path, 16)
                 except Exception:
                     font_top = font
-                    font_bottom = font
 
                 # Draw top rounded box badge (box-shaped with soft curved corners)
                 text_top = "NEW EPISODE"
@@ -147,18 +145,18 @@ async def serve_modified_poster(user_id: str, media_id: str):
                     tw = right_t - left_t
                     th = bottom_t - top_t
                 except Exception:
-                    tw, th = 95, 12
+                    tw, th = 115, 14
                     left_t, top_t = 0, 0
 
-                box_w = tw + 24
-                box_h = th + 10
+                box_w = tw + 28
+                box_h = th + 14
                 box_x1 = (w - box_w) / 2
-                box_y1 = 8
+                box_y1 = 10
                 box_x2 = box_x1 + box_w
                 box_y2 = box_y1 + box_h
 
                 if hasattr(draw, "rounded_rectangle"):
-                    draw.rounded_rectangle([(box_x1, box_y1), (box_x2, box_y2)], radius=5, fill=box_fill, outline=box_outline)
+                    draw.rounded_rectangle([(box_x1, box_y1), (box_x2, box_y2)], radius=6, fill=box_fill, outline=box_outline)
                 else:
                     draw.rectangle([(box_x1, box_y1), (box_x2, box_y2)], fill=box_fill)
 
@@ -166,31 +164,38 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 ty = (box_y1 + (box_h - th) / 2) - top_t
                 draw.text((tx, ty), text_top, font=font_top, fill=(255, 255, 255, 255))
 
-                # 2. Bottom tracker indicators bar (clean text-only tracker names)
-                bar_h = 36
-                bar_y = h - bar_h
-                draw.rectangle([(0, bar_y), (w, h)], fill=(0, 0, 0, 220))
+                # 2. Smooth bottom gradient overlay + Tracker Logos
+                gradient_start = h - 65
+                for py in range(gradient_start, h):
+                    alpha = int(190 * (py - gradient_start) / (h - gradient_start))
+                    draw.line([(0, py), (w, py)], fill=(0, 0, 0, alpha))
 
-                tracker_names = []
+                logos = []
+                logo_size = 22
+                logo_gap = 8
+
                 if draw_mal:
-                    tracker_names.append("MAL")
+                    p = os.path.join(assets_dir, "mal_logo.png")
+                    if os.path.exists(p):
+                        logos.append(Image.open(p).convert("RGBA").resize((logo_size, logo_size), resample_filter))
                 if draw_al:
-                    tracker_names.append("AniList")
+                    p = os.path.join(assets_dir, "anilist_logo.png")
+                    if os.path.exists(p):
+                        logos.append(Image.open(p).convert("RGBA").resize((logo_size, logo_size), resample_filter))
                 if draw_simkl:
-                    tracker_names.append("Simkl")
+                    p = os.path.join(assets_dir, "simkl_logo.png")
+                    if os.path.exists(p):
+                        logos.append(Image.open(p).convert("RGBA").resize((logo_size, logo_size), resample_filter))
 
-                bot_text = " • ".join(tracker_names) if tracker_names else "NEW EPISODE"
-                try:
-                    left_b, top_b, right_b, bottom_b = font_bottom.getbbox(bot_text)
-                    btw = right_b - left_b
-                    bth = bottom_b - top_b
-                except Exception:
-                    btw, bth = 60, 12
-                    left_b, top_b = 0, 0
+                if logos:
+                    total_logos_w = len(logos) * logo_size + (len(logos) - 1) * logo_gap
+                    start_x = (w - total_logos_w) / 2
+                    logo_y = h - 32
 
-                btx = ((w - btw) / 2) - left_b
-                bty = (bar_y + (bar_h - bth) / 2) - top_b
-                draw.text((btx, bty), bot_text, font=font_bottom, fill=(245, 245, 245, 255))
+                    curr_x = start_x
+                    for logo in logos:
+                        overlay.paste(logo, (int(curr_x), int(logo_y)), logo)
+                        curr_x += logo_size + logo_gap
 
             else:
                 # --- CLASSIC DESIGN: Solid Bottom Bar ---
