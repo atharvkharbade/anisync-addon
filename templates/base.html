@@ -175,6 +175,20 @@
         .btn-kofi:hover i {
             color: #ffffff !important;
         }
+        .kofi-footer-link {
+            color: #ff5e5b;
+            text-decoration: none;
+            font-size: 0.88rem;
+            background: transparent;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            transition: color 0.2s ease, filter 0.2s ease;
+        }
+        .kofi-footer-link:hover {
+            color: #ff7875;
+            filter: drop-shadow(0 0 8px rgba(255, 94, 91, 0.4));
+        }
     </style>
 </head>
 <body>
@@ -260,7 +274,7 @@
     <footer class="text-center py-4 mt-2" style="border-top: 1px solid rgba(255, 255, 255, 0.08); color: #94a3b8;">
         <div class="container d-flex flex-column align-items-center justify-content-center text-center">
             <p class="mb-2 text-secondary fw-medium w-100 text-center" style="font-size: 0.88rem; letter-spacing: 0.01em;">Elevating your tracking experience.</p>
-            <div class="d-flex justify-content-center align-items-center gap-3 mb-3 w-100 text-center">
+            <div class="d-flex justify-content-center align-items-center gap-3 mb-2.5 w-100 text-center">
                 <a href="https://github.com/atharvkharbade/anisync-addon" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
                     <i class="fa-brands fa-github fs-6"></i> GitHub
                 </a>
@@ -270,8 +284,8 @@
                 </a>
             </div>
             <div class="d-flex justify-content-center align-items-center w-100 text-center">
-                <button type="button" class="btn btn-kofi d-inline-flex align-items-center justify-content-center mx-auto" data-bs-toggle="modal" data-bs-target="#supportModal" style="font-size: 0.82rem; padding: 0.35rem 0.95rem;">
-                    <i class="fa-solid fa-mug-hot me-2" style="color: #ff5e5b;"></i><span>Support on Ko-fi</span>
+                <button type="button" class="kofi-footer-link d-inline-flex align-items-center gap-2 mx-auto" data-bs-toggle="modal" data-bs-target="#supportModal">
+                    <i class="fa-solid fa-mug-hot fs-6" style="color: #ff5e5b;"></i><span>Support on Ko-fi</span>
                 </button>
             </div>
         </div>
