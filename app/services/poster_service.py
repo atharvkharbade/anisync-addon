@@ -27,13 +27,13 @@ async def validate_top_poster_api_key(api_key: str) -> bool:
     """
     if not api_key:
         return False
-    url = f"https://topposters.com/api/{api_key}/isValid"
+    url = f"https://top-posters.com/{api_key}/isValid"
     try:
         client = get_client()
         resp = await client.get(url, timeout=8)
         if resp.status_code in [200, 302, 307]:
             return True
-        url_alt = f"https://topposters.com/api/{api_key}/imdb/poster-default/tt0111161.jpg"
+        url_alt = f"https://top-posters.com/{api_key}/imdb/poster-default/tt0111161.jpg"
         resp_alt = await client.get(url_alt, timeout=8)
         return resp_alt.status_code in [200, 302, 307]
     except Exception as e:
@@ -444,7 +444,7 @@ def get_rpdb_poster_url(
         return fallback_poster
 
     if provider == "top_poster":
-        return f"https://topposters.com/api/{top_key}/{id_type}/poster-default/{media_id}.jpg"
+        return f"https://top-posters.com/{top_key}/{id_type}/poster-default/{media_id}.jpg"
 
     # Default to RPDB
     url = f"https://api.ratingposterdb.com/{rpdb_key}/{id_type}/poster-default/{media_id}.jpg"

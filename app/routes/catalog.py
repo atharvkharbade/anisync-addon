@@ -1171,7 +1171,11 @@ async def update_discovery_catalogs_cache() -> dict:
                 "name": name,
                 "title_obj": title_pref,
                 "poster": poster,
-                "description": desc
+                "description": desc,
+                "score": float((m.get("averageScore") or 0) / 10),
+                "year": int(m.get("startDate", {}).get("year") or m.get("seasonYear") or 0),
+                "episodes": int(m.get("episodes") or 0),
+                "popularity": int(m.get("popularity") or 0)
             })
 
         # Blend unique Jikan/MAL discovery items for this catalog
@@ -1196,13 +1200,22 @@ async def update_discovery_catalogs_cache() -> dict:
             kitsu_id = kitsu_mappings.get(f"mal:{j_mid}")
             stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"mal:{j_mid}"
 
+            j_yr = 0
+            try:
+                j_yr = int(item.get("year") or (item.get("aired", {}).get("from") or "")[:4] or 0)
+            except Exception:
+                j_yr = 0
             metas.append({
                 "id": stremio_id,
                 "type": j_type,
                 "name": j_name,
                 "title_obj": {"english": j_name, "romaji": j_name},
                 "poster": j_poster,
-                "description": j_desc
+                "description": j_desc,
+                "score": float(item.get("score") or 0),
+                "year": j_yr,
+                "episodes": int(item.get("episodes") or 0),
+                "popularity": int(item.get("members") or 0)
             })
 
         # Enrich with Kitsu discovery items if catalog has fewer than 25 items
@@ -1227,13 +1240,22 @@ async def update_discovery_catalogs_cache() -> dict:
             k_poster = p_obj.get("large") or p_obj.get("medium") or p_obj.get("small") or ""
             k_type = "movie" if attr.get("subtype") == "movie" else "series"
 
+            k_yr = 0
+            try:
+                k_yr = int((attr.get("startDate") or "")[:4] or 0)
+            except Exception:
+                k_yr = 0
             metas.append({
                 "id": stremio_id,
                 "type": k_type,
                 "name": k_name,
                 "title_obj": {"english": k_name, "romaji": k_name},
                 "poster": k_poster,
-                "description": k_desc
+                "description": k_desc,
+                "score": float((float(attr.get("averageRating") or 0) / 10)),
+                "year": k_yr,
+                "episodes": int(attr.get("episodeCount") or 0),
+                "popularity": int(attr.get("userCount") or 0)
             })
 
         result_metas[catalog_id] = metas
@@ -1357,6 +1379,13 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     metas = cached["metas"]
                 else:
                     metas = []
+
+        # Apply Custom Sorting for Discovery Catalogs if enabled
+        if user.get("custom_sort_enabled", False):
+            sort_by = user.get("custom_sort_watching_by", "default")
+            sort_order = user.get("custom_sort_watching_order", "desc")
+            if sort_by != "default":
+                metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
 
         # Shuffle if enabled (excluding schedule catalog to preserve release order)
         if user.get("shuffle_discovery_catalogs", False) and catalog_id != "anisync_schedule":
