@@ -183,6 +183,27 @@ async def serve_modified_poster(user_id: str, media_id: str):
                         logos.append(Image.open(p).convert("RGBA").resize((logo_size, logo_size), resample_filter))
 
                 if logos:
+                    # Color extraction from bottom 25% of image for adaptive bottom box
+                    try:
+                        bot_crop = img.crop((0, int(h * 0.75), w, h))
+                        quantized_b = bot_crop.quantize(colors=3)
+                        palette_b = quantized_b.getpalette()
+                        if palette_b and len(palette_b) >= 3:
+                            r_b, g_b, b_b = palette_b[0], palette_b[1], palette_b[2]
+                            luminance_b = 0.299 * r_b + 0.587 * g_b + 0.114 * b_b
+                            if luminance_b < 45:
+                                r_b, g_b, b_b = max(r_b, 35), max(g_b, 55), max(b_b, 80)
+                            elif luminance_b > 200:
+                                r_b, g_b, b_b = int(r_b * 0.65), int(g_b * 0.65), int(b_b * 0.65)
+                            bot_rgb = (r_b, g_b, b_b)
+                        else:
+                            bot_rgb = (30, 55, 80)
+                    except Exception:
+                        bot_rgb = (30, 55, 80)
+
+                    bot_fill = (bot_rgb[0], bot_rgb[1], bot_rgb[2], 235)
+                    bot_outline = (255, 255, 255, 90)
+
                     total_logos_w = len(logos) * logo_size + (len(logos) - 1) * logo_gap
                     bot_box_w = total_logos_w + 18
                     bot_box_h = logo_size + 10
@@ -190,9 +211,6 @@ async def serve_modified_poster(user_id: str, media_id: str):
                     bot_box_y1 = h - bot_box_h - 10
                     bot_box_x2 = bot_box_x1 + bot_box_w
                     bot_box_y2 = bot_box_y1 + bot_box_h
-
-                    bot_fill = (0, 0, 0, 220)
-                    bot_outline = (255, 255, 255, 80)
 
                     if hasattr(draw, "rounded_rectangle"):
                         draw.rounded_rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], radius=6, fill=bot_fill, outline=bot_outline)
