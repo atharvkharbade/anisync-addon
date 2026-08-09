@@ -164,66 +164,66 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 ty = (box_y1 + (box_h - th) / 2) - top_t
                 draw.text((tx, ty), text_top, font=font_top, fill=(255, 255, 255, 255))
 
-                # 2. Bottom Tracker Logos inside a matching rounded box container
-                logos = []
-                logo_size = 20
-                logo_gap = 6
+                # 2. Bottom Tracker Names inside matching adaptive rounded box container
+                try:
+                    font_bottom = ImageFont.truetype(font_path, 12)
+                except Exception:
+                    font_bottom = font
 
+                tracker_names = []
                 if draw_mal:
-                    p = os.path.join(assets_dir, "mal_logo.png")
-                    if os.path.exists(p):
-                        logos.append(Image.open(p).convert("RGBA").resize((logo_size, logo_size), resample_filter))
+                    tracker_names.append("MAL")
                 if draw_al:
-                    p = os.path.join(assets_dir, "anilist_logo.png")
-                    if os.path.exists(p):
-                        logos.append(Image.open(p).convert("RGBA").resize((logo_size, logo_size), resample_filter))
+                    tracker_names.append("AniList")
                 if draw_simkl:
-                    p = os.path.join(assets_dir, "simkl_logo.png")
-                    if os.path.exists(p):
-                        logos.append(Image.open(p).convert("RGBA").resize((logo_size, logo_size), resample_filter))
+                    tracker_names.append("Simkl")
 
-                if logos:
-                    # Color extraction from bottom 25% of image for adaptive bottom box
-                    try:
-                        bot_crop = img.crop((0, int(h * 0.75), w, h))
-                        quantized_b = bot_crop.quantize(colors=3)
-                        palette_b = quantized_b.getpalette()
-                        if palette_b and len(palette_b) >= 3:
-                            r_b, g_b, b_b = palette_b[0], palette_b[1], palette_b[2]
-                            luminance_b = 0.299 * r_b + 0.587 * g_b + 0.114 * b_b
-                            if luminance_b < 45:
-                                r_b, g_b, b_b = max(r_b, 35), max(g_b, 55), max(b_b, 80)
-                            elif luminance_b > 200:
-                                r_b, g_b, b_b = int(r_b * 0.65), int(g_b * 0.65), int(b_b * 0.65)
-                            bot_rgb = (r_b, g_b, b_b)
-                        else:
-                            bot_rgb = (30, 55, 80)
-                    except Exception:
-                        bot_rgb = (30, 55, 80)
+                bot_text = " • ".join(tracker_names) if tracker_names else "NEW EPISODE"
 
-                    bot_fill = (bot_rgb[0], bot_rgb[1], bot_rgb[2], 235)
-                    bot_outline = (255, 255, 255, 90)
-
-                    total_logos_w = len(logos) * logo_size + (len(logos) - 1) * logo_gap
-                    bot_box_w = total_logos_w + 18
-                    bot_box_h = logo_size + 10
-                    bot_box_x1 = (w - bot_box_w) / 2
-                    bot_box_y1 = h - bot_box_h - 10
-                    bot_box_x2 = bot_box_x1 + bot_box_w
-                    bot_box_y2 = bot_box_y1 + bot_box_h
-
-                    if hasattr(draw, "rounded_rectangle"):
-                        draw.rounded_rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], radius=6, fill=bot_fill, outline=bot_outline)
+                # Color extraction from bottom 25% of image for adaptive bottom box
+                try:
+                    bot_crop = img.crop((0, int(h * 0.75), w, h))
+                    quantized_b = bot_crop.quantize(colors=3)
+                    palette_b = quantized_b.getpalette()
+                    if palette_b and len(palette_b) >= 3:
+                        r_b, g_b, b_b = palette_b[0], palette_b[1], palette_b[2]
+                        luminance_b = 0.299 * r_b + 0.587 * g_b + 0.114 * b_b
+                        if luminance_b < 45:
+                            r_b, g_b, b_b = max(r_b, 35), max(g_b, 55), max(b_b, 80)
+                        elif luminance_b > 200:
+                            r_b, g_b, b_b = int(r_b * 0.65), int(g_b * 0.65), int(b_b * 0.65)
+                        bot_rgb = (r_b, g_b, b_b)
                     else:
-                        draw.rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], fill=bot_fill)
+                        bot_rgb = (30, 55, 80)
+                except Exception:
+                    bot_rgb = (30, 55, 80)
 
-                    start_x = bot_box_x1 + (bot_box_w - total_logos_w) / 2
-                    logo_y = bot_box_y1 + (bot_box_h - logo_size) / 2
+                bot_fill = (bot_rgb[0], bot_rgb[1], bot_rgb[2], 235)
+                bot_outline = (255, 255, 255, 90)
 
-                    curr_x = start_x
-                    for logo in logos:
-                        overlay.paste(logo, (int(curr_x), int(logo_y)), logo)
-                        curr_x += logo_size + logo_gap
+                try:
+                    left_b, top_b, right_b, bottom_b = font_bottom.getbbox(bot_text)
+                    btw = right_b - left_b
+                    bth = bottom_b - top_b
+                except Exception:
+                    btw, bth = 70, 12
+                    left_b, top_b = 0, 0
+
+                bot_box_w = btw + 22
+                bot_box_h = bth + 10
+                bot_box_x1 = (w - bot_box_w) / 2
+                bot_box_y1 = h - bot_box_h - 10
+                bot_box_x2 = bot_box_x1 + bot_box_w
+                bot_box_y2 = bot_box_y1 + bot_box_h
+
+                if hasattr(draw, "rounded_rectangle"):
+                    draw.rounded_rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], radius=6, fill=bot_fill, outline=bot_outline)
+                else:
+                    draw.rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], fill=bot_fill)
+
+                btx = (bot_box_x1 + (bot_box_w - btw) / 2) - left_b
+                bty = (bot_box_y1 + (bot_box_h - bth) / 2) - top_b
+                draw.text((btx, bty), bot_text, font=font_bottom, fill=(255, 255, 255, 255))
 
             else:
                 # --- CLASSIC DESIGN: Solid Bottom Bar ---
