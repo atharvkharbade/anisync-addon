@@ -302,27 +302,26 @@ async def serve_framed_background(user_id: str, media_id: str):
 
         banner_img = Image.open(io.BytesIO(resp.content)).convert("RGB")
         bw, bh = banner_img.size
+        aspect_ratio = bw / float(bh)
+
+        # If already a standard landscape image (aspect ratio <= 2.0), serve directly
+        if aspect_ratio <= 2.0:
+            return redirect(original_url)
 
         target_w, target_h = 1920, 1080
 
-        # Create blurred background fill matching poster colors
-        bg_fill = banner_img.resize((target_w, target_h), Image.Resampling.LANCZOS)
-        bg_fill = bg_fill.filter(ImageFilter.GaussianBlur(radius=30))
-
-        # Scale original banner to fit width 1920 proportionally
-        scale = target_w / float(bw)
-        new_w = target_w
-        new_h = int(bh * scale)
+        # Scale height to 1080 and crop middle 1920 width to form a full-bleed 16:9 background
+        scale = target_h / float(bh)
+        new_w = int(bw * scale)
+        new_h = target_h
 
         scaled_banner = banner_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-
-        # Center banner vertically onto background
-        paste_y = (target_h - new_h) // 2
-        bg_fill.paste(scaled_banner, (0, max(0, paste_y)))
+        crop_x = (new_w - target_w) // 2
+        final_img = scaled_banner.crop((crop_x, 0, crop_x + target_w, target_h))
 
         # Export JPEG
         output = io.BytesIO()
-        bg_fill.save(output, format="JPEG", quality=88)
+        final_img.save(output, format="JPEG", quality=90)
         output.seek(0)
 
         response = Response(output.read(), mimetype="image/jpeg")
