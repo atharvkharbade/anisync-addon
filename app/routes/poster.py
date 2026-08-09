@@ -3,7 +3,7 @@ import logging
 import os
 import urllib.parse
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from quart import Blueprint, Response, abort, redirect, request
 
 from app.routes.utils import is_valid_user_id, rate_limit
@@ -110,65 +110,62 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logo_gap = 4
 
             if badge_style == "modern":
-                # --- MODERN DESIGN: Unified Poster Theme for Top & Bottom Adaptive Boxes ---
-                # Primary color extraction from top 25% of image for poster theme
-                try:
-                    top_crop = img.crop((0, 0, w, int(h * 0.25)))
-                    quantized = top_crop.quantize(colors=3)
-                    palette = quantized.getpalette()
-                    if palette and len(palette) >= 3:
-                        r, g, b = palette[0], palette[1], palette[2]
-                        box_rgb = (r, g, b)
-                    else:
-                        box_rgb = (30, 55, 80)
-                except Exception:
-                    box_rgb = (30, 55, 80)
+                # --- MODERN DESIGN: Liquid Glass Blur (Glassmorphism) & Symmetric Margins ---
+                glass_fill = (15, 23, 42, 160)
+                glass_outline = (255, 255, 255, 65)
+                text_color = (255, 255, 255, 255)
 
-                lum = 0.299 * box_rgb[0] + 0.587 * box_rgb[1] + 0.114 * box_rgb[2]
-                if lum > 140:
-                    text_color = (15, 15, 15, 255)
-                    box_fill = (box_rgb[0], box_rgb[1], box_rgb[2], 240)
-                    box_outline = (0, 0, 0, 90)
-                else:
-                    text_color = (255, 255, 255, 255)
-                    box_fill = (max(box_rgb[0], 25), max(box_rgb[1], 40), max(box_rgb[2], 65), 235)
-                    box_outline = (255, 255, 255, 90)
-
-                # Setup enlarged font for top badge
+                # Setup font for top badge
                 try:
-                    font_top = ImageFont.truetype(font_path, 16)
+                    font_top = ImageFont.truetype(font_path, 15)
                 except Exception:
                     font_top = font
 
-                # Draw top rounded box badge
+                # 1. Draw top rounded liquid glass badge ("NEW EPISODE")
                 text_top = "NEW EPISODE"
                 try:
                     left_t, top_t, right_t, bottom_t = font_top.getbbox(text_top)
                     tw = right_t - left_t
                     th = bottom_t - top_t
                 except Exception:
-                    tw, th = 115, 14
+                    tw, th = 110, 14
                     left_t, top_t = 0, 0
 
                 box_w = tw + 28
                 box_h = th + 14
-                box_x1 = (w - box_w) / 2
-                box_y1 = 10
-                box_x2 = box_x1 + box_w
-                box_y2 = box_y1 + box_h
+                box_x1 = int((w - box_w) / 2)
+                box_y1 = 12
+                box_x2 = int(box_x1 + box_w)
+                box_y2 = int(box_y1 + box_h)
+                radius = 8
 
+                # Apply Gaussian Blur to poster background slice under top badge
+                try:
+                    crop_top = img.crop((box_x1, box_y1, box_x2, box_y2))
+                    blur_top = crop_top.filter(ImageFilter.GaussianBlur(radius=10))
+                    mask_top = Image.new("L", (box_w, box_h), 0)
+                    mask_draw_t = ImageDraw.Draw(mask_top)
+                    if hasattr(mask_draw_t, "rounded_rectangle"):
+                        mask_draw_t.rounded_rectangle([(0, 0), (box_w, box_h)], radius=radius, fill=255)
+                    else:
+                        mask_draw_t.rectangle([(0, 0), (box_w, box_h)], fill=255)
+                    img.paste(blur_top, (box_x1, box_y1), mask_top)
+                except Exception:
+                    pass
+
+                # Draw liquid glass overlay and text
                 if hasattr(draw, "rounded_rectangle"):
-                    draw.rounded_rectangle([(box_x1, box_y1), (box_x2, box_y2)], radius=6, fill=box_fill, outline=box_outline)
+                    draw.rounded_rectangle([(box_x1, box_y1), (box_x2, box_y2)], radius=radius, fill=glass_fill, outline=glass_outline)
                 else:
-                    draw.rectangle([(box_x1, box_y1), (box_x2, box_y2)], fill=box_fill)
+                    draw.rectangle([(box_x1, box_y1), (box_x2, box_y2)], fill=glass_fill)
 
                 tx = (box_x1 + (box_w - tw) / 2) - left_t
                 ty = (box_y1 + (box_h - th) / 2) - top_t
                 draw.text((tx, ty), text_top, font=font_top, fill=text_color)
 
-                # 2. Bottom Tracker Names inside matching adaptive rounded box container
+                # 2. Bottom Tracker Badge inside matching liquid glass container
                 try:
-                    font_bottom = ImageFont.truetype(font_path, 15)
+                    font_bottom = ImageFont.truetype(font_path, 14)
                 except Exception:
                     font_bottom = font
 
@@ -187,20 +184,35 @@ async def serve_modified_poster(user_id: str, media_id: str):
                     btw = right_b - left_b
                     bth = bottom_b - top_b
                 except Exception:
-                    btw, bth = 70, 14
+                    btw, bth = 65, 14
                     left_b, top_b = 0, 0
 
                 bot_box_w = btw + 26
                 bot_box_h = bth + 14
-                bot_box_x1 = (w - bot_box_w) / 2
-                bot_box_y1 = h - bot_box_h - 18
-                bot_box_x2 = bot_box_x1 + bot_box_w
-                bot_box_y2 = bot_box_y1 + bot_box_h
+                bot_box_x1 = int((w - bot_box_w) / 2)
+                bot_box_y1 = int(h - bot_box_h - 12)
+                bot_box_x2 = int(bot_box_x1 + bot_box_w)
+                bot_box_y2 = int(bot_box_y1 + bot_box_h)
 
+                # Apply Gaussian Blur to poster background slice under bottom badge
+                try:
+                    crop_bot = img.crop((bot_box_x1, bot_box_y1, bot_box_x2, bot_box_y2))
+                    blur_bot = crop_bot.filter(ImageFilter.GaussianBlur(radius=10))
+                    mask_bot = Image.new("L", (bot_box_w, bot_box_h), 0)
+                    mask_draw_b = ImageDraw.Draw(mask_bot)
+                    if hasattr(mask_draw_b, "rounded_rectangle"):
+                        mask_draw_b.rounded_rectangle([(0, 0), (bot_box_w, bot_box_h)], radius=radius, fill=255)
+                    else:
+                        mask_draw_b.rectangle([(0, 0), (bot_box_w, bot_box_h)], fill=255)
+                    img.paste(blur_bot, (bot_box_x1, bot_box_y1), mask_bot)
+                except Exception:
+                    pass
+
+                # Draw liquid glass overlay and text
                 if hasattr(draw, "rounded_rectangle"):
-                    draw.rounded_rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], radius=6, fill=box_fill, outline=box_outline)
+                    draw.rounded_rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], radius=radius, fill=glass_fill, outline=glass_outline)
                 else:
-                    draw.rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], fill=box_fill)
+                    draw.rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], fill=glass_fill)
 
                 btx = (bot_box_x1 + (bot_box_w - btw) / 2) - left_b
                 bty = (bot_box_y1 + (bot_box_h - bth) / 2) - top_b
@@ -269,7 +281,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
         response = Response(output.read(), mimetype="image/jpeg")
         # Aggressive caching to minimize server workload (1 week cache)
-        response.headers["Cache-Control"] = "public, max-age=604800"
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
         return response
 
     except Exception as e:
