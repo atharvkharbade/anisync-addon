@@ -484,9 +484,12 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
                     break
             if found_desc:
                 meta["description"] = found_desc
+                rec_reason = found_desc.split("\n\n")[0].strip()
+            else:
+                rec_reason = None
 
         # Apply user preferred Metadata Provider override (MAL / AniList with Kitsu fallback)
-        mal_data_override = await apply_metadata_provider_override(meta, user, mal_id, anilist_id)
+        mal_data_override = await apply_metadata_provider_override(meta, user, mal_id, anilist_id, rec_prefix=rec_reason if "rec_reason" in locals() else None)
 
         # Apply custom poster provider if configured
         if (user.get("poster_provider") and user.get("poster_provider") != "none") or user.get("rpdb_api_key"):
@@ -522,7 +525,15 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             except Exception as e:
                 logging.debug("Could not fetch AniList media status for airing countdown: %s", e)
 
-        next_airing_hdr = build_next_airing_header(al_data, mal_data=mal_data_override if 'mal_data_override' in locals() else None)
+        mal_data_airing = mal_data_override if "mal_data_override" in locals() else None
+        if not mal_data_airing and mal_id and not al_data:
+            try:
+                from app.api.jikan import get_anime_by_id
+                mal_data_airing = await get_anime_by_id(mal_id)
+            except Exception:
+                pass
+
+        next_airing_hdr = build_next_airing_header(al_data, mal_data=mal_data_airing)
         if next_airing_hdr:
             dynamic_headers.append(next_airing_hdr)
 
@@ -539,6 +550,40 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)
         return await respond_with({"meta": {}})
+
+
+def extract_rec_prefix(desc: str | None) -> tuple[str | None, str | None]:
+    """
+    If description contains a recommendation reason prefix (e.g. 'Inspired by your history...',
+    'AniList Community Recommendation', 'MAL Community Recommendation', or Gemini reasoning),
+    extract the prefix and the underlying synopsis.
+    """
+    if not desc:
+        return None, None
+
+    known_markers = [
+        "inspired by your history:",
+        "anilist community recommendation",
+        "mal community recommendation",
+        "community recommendation",
+        "recommended based on your history",
+        "popular anime in",
+        "franchise sequel, prequel, or spin-off",
+    ]
+
+    parts = desc.split("\n\n", 1)
+    first_part = parts[0].strip()
+
+    for marker in known_markers:
+        if marker in first_part.lower():
+            synopsis = parts[1].strip() if len(parts) > 1 else ""
+            return first_part, synopsis
+
+    # Handle custom Gemini 1-sentence personalized descriptions
+    if len(parts) > 1 and (first_part.startswith('"') or "because you" in first_part.lower() or "recommended" in first_part.lower()):
+        return first_part, parts[1].strip()
+
+    return None, desc
 
 
 def build_user_status_header(user_id: str, mal_id: str | None, anilist_id: str | None, simkl_id: str | None) -> str | None:
@@ -580,28 +625,34 @@ def build_user_status_header(user_id: str, mal_id: str | None, anilist_id: str |
 
 def build_next_airing_header(anilist_data: dict | None = None, mal_data: dict | None = None) -> str | None:
     if anilist_data:
-        next_ep = anilist_data.get("nextAiringEpisode")
-        if next_ep:
-            ep_num = next_ep.get("episode")
-            time_until = next_ep.get("timeUntilAiring")
-            if time_until is not None and ep_num is not None and time_until > 0:
-                if time_until < 3600:
-                    mins = max(1, time_until // 60)
-                    time_str = f"in {mins}m"
-                elif time_until < 86400:
-                    hours = max(1, time_until // 3600)
-                    time_str = f"in {hours}h"
-                else:
-                    days = max(1, time_until // 86400)
-                    time_str = f"in {days}d"
-                return f"[Next Airing: Episode {ep_num} releases {time_str}]"
+        al_status = anilist_data.get("status")
+        # Only check nextAiringEpisode if show is actively releasing or unreleased
+        if al_status in ["RELEASING", "NOT_YET_RELEASED"] or not al_status:
+            next_ep = anilist_data.get("nextAiringEpisode")
+            if next_ep:
+                ep_num = next_ep.get("episode")
+                time_until = next_ep.get("timeUntilAiring")
+                if time_until is not None and ep_num is not None and time_until > 0:
+                    if time_until < 3600:
+                        mins = max(1, time_until // 60)
+                        time_str = f"in {mins}m"
+                    elif time_until < 86400:
+                        hours = max(1, time_until // 3600)
+                        time_str = f"in {hours}h"
+                    else:
+                        days = max(1, time_until // 86400)
+                        time_str = f"in {days}d"
+                    return f"[Next Airing: Episode {ep_num} releases {time_str}]"
 
     if mal_data:
-        broadcast = mal_data.get("broadcast") or {}
-        day = broadcast.get("day")
-        time_str = broadcast.get("time")
-        if day and time_str:
-            return f"[Next Airing: Broadcasts {day} at {time_str} JST]"
+        mal_status = (mal_data.get("status") or "").lower().replace(" ", "_")
+        # Strictly ignore historical broadcast slots for finished anime
+        if mal_status in ["currently_airing", "not_yet_aired"]:
+            broadcast = mal_data.get("broadcast") or {}
+            day = broadcast.get("day") or broadcast.get("day_of_the_week")
+            time_str = broadcast.get("time") or broadcast.get("start_time")
+            if day and time_str:
+                return f"[Next Airing: Broadcasts {day} at {time_str} JST]"
 
     return None
 
@@ -654,7 +705,7 @@ def build_filler_arc_header(anizp_data: dict | None, watched_progress: int = 0) 
     for r_start, r_end in ranges:
         if r_start <= watched_progress <= r_end:
             r_label = f"Ep {r_start}" if r_start == r_end else f"Episodes {r_start}–{r_end}"
-            return f"[Filler Arc Warning: You are currently in filler arc {r_label}]"
+            return f"[Current Filler Arc: {r_label}]"
 
     for r_start, r_end in ranges:
         if watched_progress < r_start and (r_start - watched_progress) <= 10:
@@ -704,9 +755,12 @@ def build_expired_trackers_notice(user: dict | None) -> str | None:
     return f"Your {trackers_str} {session_word} expired. You can re-login via the website."
 
 
-async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str | None, anilist_id: str | None) -> dict | None:
+async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str | None, anilist_id: str | None, rec_prefix: str | None = None) -> dict | None:
     provider = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
     mal_data_ret = None
+    if not rec_prefix:
+        rec_prefix, _ = extract_rec_prefix(meta.get("description"))
+
     if provider == "mal" and mal_id:
         try:
             from app.api.jikan import get_anime_by_id
@@ -720,7 +774,7 @@ async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str |
                     meta["poster"] = poster_url
                 synopsis = mal_data.get("synopsis")
                 if synopsis:
-                    meta["description"] = synopsis
+                    meta["description"] = f"{rec_prefix}\n\n{synopsis}" if rec_prefix else synopsis
                 score = mal_data.get("score")
                 if score:
                     meta["imdbRating"] = str(score)
@@ -749,7 +803,7 @@ async def apply_metadata_provider_override(meta: dict, user: dict, mal_id: str |
                 if desc:
                     import re
                     clean_desc = re.sub(r'<[^>]+>', '', desc)
-                    meta["description"] = clean_desc
+                    meta["description"] = f"{rec_prefix}\n\n{clean_desc}" if rec_prefix else clean_desc
                 avg_score = al_data.get("averageScore")
                 if avg_score:
                     meta["imdbRating"] = f"{avg_score / 10:.1f}"
