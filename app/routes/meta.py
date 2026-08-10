@@ -581,8 +581,8 @@ def extract_rec_prefix(desc: str | None) -> tuple[str | None, str | None]:
             synopsis = parts[1].strip() if len(parts) > 1 else ""
             return first_part, synopsis
 
-    # Handle custom Gemini 1-sentence personalized descriptions
-    if len(parts) > 1 and (first_part.startswith('"') or "because you" in first_part.lower() or "recommended" in first_part.lower()):
+    # Handle custom Gemini 1-sentence personalized descriptions (short first paragraph followed by synopsis)
+    if len(parts) > 1 and len(first_part) <= 300:
         return first_part, parts[1].strip()
 
     return None, desc
