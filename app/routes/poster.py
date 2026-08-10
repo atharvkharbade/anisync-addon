@@ -281,7 +281,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
         response = Response(output.read(), mimetype="image/jpeg")
         # Aggressive caching to minimize server workload (1 week cache)
-        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+        response.headers["Cache-Control"] = "public, max-age=604800"
         return response
 
     except Exception as e:
