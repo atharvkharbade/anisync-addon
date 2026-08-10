@@ -32,19 +32,51 @@ def clean_imdb_id(val) -> str | None:
 
 
 async def fetch_anizp_metadata(anilist_id: str = None, mal_id: str = None) -> dict:
+    if not anilist_id and not mal_id:
+        return {}
+
+    from app.services.db import db
+    import datetime
+
+    cache_key = f"al_{anilist_id}" if anilist_id else f"mal_{mal_id}"
+    col = db.get_collection("anizp_meta_cache")
+    now = datetime.datetime.utcnow()
+    try:
+        cached = col.find_one({"key": cache_key})
+        if cached and cached.get("expires_at") > now:
+            return cached.get("data", {})
+    except Exception as e:
+        logging.error("Failed to read anizp_meta_cache for %s: %s", cache_key, e)
+
     url = "https://api.ani.zip/mappings"
     params = {}
     if anilist_id:
         params["anilist_id"] = anilist_id
     elif mal_id:
         params["mal_id"] = mal_id
-    else:
-        return {}
+
     try:
         client = get_client()
         resp = await client.get(url, params=params, timeout=8)
         if resp.status_code == 200:
-            return resp.json()
+            data = resp.json()
+            ttl = datetime.timedelta(hours=2)
+            try:
+                col.update_one(
+                    {"key": cache_key},
+                    {
+                        "$set": {
+                            "key": cache_key,
+                            "data": data,
+                            "expires_at": now + ttl,
+                            "updated_at": now,
+                        }
+                    },
+                    upsert=True,
+                )
+            except Exception as ex:
+                logging.error("Failed to write anizp_meta_cache for %s: %s", cache_key, ex)
+            return data
     except Exception as e:
         logging.warning("Failed to fetch rich metadata from ani.zip: %s", e)
     return {}
@@ -67,6 +99,18 @@ TIMEOUT = 10
 
 
 async def fetch_kitsu_meta(kitsu_id: str) -> dict:
+    from app.services.db import db
+    import datetime
+
+    col = db.get_collection("kitsu_meta_cache")
+    now = datetime.datetime.utcnow()
+    try:
+        cached = col.find_one({"kitsu_id": str(kitsu_id)})
+        if cached and cached.get("expires_at") > now:
+            return cached.get("data", {})
+    except Exception as e:
+        logging.error("Failed to read kitsu_meta_cache for %s: %s", kitsu_id, e)
+
     url = f"{KITSU_API_BASE}/anime/{kitsu_id}"
     params = {"include": "episodes"}
     headers = {
@@ -74,11 +118,39 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
         "Content-Type": "application/vnd.api+json",
     }
     client = get_client()
-    resp = await client.get(url, params=params, headers=headers, timeout=TIMEOUT)
-    if resp.status_code != 200:
-        logging.error("Kitsu API returned status %s for id %s", resp.status_code, kitsu_id)
+    try:
+        resp = await client.get(url, params=params, headers=headers, timeout=TIMEOUT)
+        if resp.status_code != 200:
+            logging.error("Kitsu API returned status %s for id %s", resp.status_code, kitsu_id)
+            return {}
+        data = resp.json()
+
+        status = (data.get("data", {}).get("attributes", {}).get("status") or "").lower()
+        if status in ["current", "releasing", "unreleased", "not_yet_released"]:
+            ttl = datetime.timedelta(hours=2)
+        else:
+            ttl = datetime.timedelta(days=7)
+
+        try:
+            col.update_one(
+                {"kitsu_id": str(kitsu_id)},
+                {
+                    "$set": {
+                        "kitsu_id": str(kitsu_id),
+                        "data": data,
+                        "status": status,
+                        "expires_at": now + ttl,
+                        "updated_at": now,
+                    }
+                },
+                upsert=True,
+            )
+        except Exception as ex:
+            logging.error("Failed to write kitsu_meta_cache for %s: %s", kitsu_id, ex)
+        return data
+    except Exception as e:
+        logging.error("Failed to fetch Kitsu meta for %s: %s", kitsu_id, e)
         return {}
-    return resp.json()
 
 
 def map_kitsu_to_stremio(
