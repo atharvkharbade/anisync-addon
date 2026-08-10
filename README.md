@@ -2,7 +2,7 @@
   <img src="docs/images/logo.png" width="120" alt="AniSync Logo" />
 </p>
 
-# AniSync - MyAnimeList, AniList & Simkl Tracker for Stremio
+# AniSync - MyAnimeList, AniList & Simkl Tracker for Stremio & Nuvio
 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white)](https://python.org)
@@ -11,7 +11,7 @@
 [![Stremio Addon](https://img.shields.io/badge/stremio-addon-8a2be2.svg)](https://stremio.com)
 [![Nuvio Addon](https://img.shields.io/badge/nuvio-addon-ff4500.svg)](https://nuvio.tv)
 
-**AniSync** is an anime addon built for Stremio and Nuvio that connects your anime tracking accounts (**MyAnimeList**, **AniList**, and **Simkl**) in one place. It syncs your watchlists, adds tracker badges and new episode indicators on posters, shows filler warnings and watched tags, and gives you personalized recommendations and discovery catalogs.
+**AniSync** is an anime addon built for Stremio and Nuvio that connects your tracking accounts (**MyAnimeList**, **AniList**, and **Simkl**) in one place. It syncs your watchlists, adds tracker badges and new episode indicators on posters, shows filler warnings and watched tags, and gives you personalized recommendations and discovery catalogs.
 
 ---
 
@@ -37,7 +37,7 @@ You can choose between two clean styles in your settings:
 ---
 
 ### 🗂️ Synchronized Watchlist Catalogs
-Connect MyAnimeList, AniList, and Simkl at the same time. AniSync organizes your anime into unified rows in Stremio:
+Connect MyAnimeList, AniList, and Simkl at the same time. AniSync organizes your anime into unified rows on your home screen:
 * **Combined Watchlists**: Merges your *Watching*, *Plan to Watch*, *Completed*, *On Hold*, and *Dropped* lists across all connected accounts.
 * **Multi-Account Auto-Merge**: Automatically merges progress across trackers so everything stays up to date.
 
