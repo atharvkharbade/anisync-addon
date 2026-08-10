@@ -199,7 +199,6 @@
     </style>
 </head>
 <body>
-    {% if session.get('user') %}
     <nav class="navbar navbar-dark py-2.5 px-3 px-sm-4" style="background:#111;border-bottom:1px solid #222;">
         <div class="container-fluid d-flex align-items-center justify-content-between p-0">
             <a class="navbar-brand d-flex align-items-center" href="/">
@@ -213,9 +212,11 @@
                 <button type="button" class="btn btn-whats-new d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#whatsNewModal" onclick="fetchGitHubReleases();">
                     <i class="fa-regular fa-bell text-warning"></i><span class="d-none d-sm-inline font-semibold ms-2">What's New</span>
                 </button>
+                {% if session.get('user') %}
                 <a href="{{ url_for('auth.logout') }}" class="btn btn-logout d-inline-flex align-items-center justify-content-center">
                     <i class="fa-solid fa-right-from-bracket"></i><span class="d-none d-sm-inline ms-2">Logout</span>
                 </a>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -246,7 +247,6 @@
             </div>
         </div>
     </div>
-    {% endif %}
 
     <!-- Support AniSync Modal (Global) -->
     <div class="modal fade" id="supportModal" tabindex="-1" aria-labelledby="supportModalLabel" aria-hidden="true">
