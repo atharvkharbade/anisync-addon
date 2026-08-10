@@ -101,18 +101,14 @@ Stay on top of weekly episode releases:
 ---
 
 ### 🧭 Rich Discovery Catalogs
-Explore trending and top-rated anime curated directly from the anime community:
-* **AniList Trending Now**: The hottest anime currently gaining popularity.
-* **AniList All-Time Popular**: The most popular anime across the entire AniList database.
-* **MyAnimeList Top Airing**: Highest-rated anime currently airing this season.
-* **MyAnimeList Most Popular**: Most added and watched anime on MyAnimeList.
-
----
-
-### 🚀 Status-Aware Caching Architecture
-AniSync features an intelligent dual-tier MongoDB caching engine:
-* **Airing / Releasing Anime (2-Hour TTL)**: Ensures new episode drops, filler tags, and airing countdowns update immediately.
-* **Completed Anime (7-Day TTL)**: Accelerates massive 1,000+ episode series (like *One Piece* and *Detective Conan*) by **~90%** (17s ➡️ <1.9s) for instantaneous loading.
+Explore curated discovery catalogs powered by real-time community databases:
+* **Spotlight**: Curated featured highlights and top picks.
+* **Airing Schedule**: Live broadcast schedule of anime airing today.
+* **This Season**: The hottest series broadcasting in the current anime season.
+* **Trending Now**: Anime surging in popularity across the community.
+* **Top Airing**: Highest-rated anime currently airing this season.
+* **All-Time Highest Rated**: The highest community-rated anime of all time.
+* **All-Time Most Popular**: The most added and watched anime across all trackers.
 
 ---
 
