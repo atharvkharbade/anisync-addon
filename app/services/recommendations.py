@@ -312,6 +312,7 @@ async def get_recommendations_for_seeds(
     rec_excluded_series_genres = user.get("rec_excluded_series_genres", [])
     filter_watched = user.get("recommendations_filter_watched", True)
 
+    title_lang = (user.get("title_language", "english") or "english").lower() if user else "english"
     rec_candidates = {}
 
     # 1. Fetch from AniList in bulk
@@ -372,12 +373,14 @@ async def get_recommendations_for_seeds(
             if pop_score >= 25000 or avg_score < 73:
                 continue
 
-        # Choose title based on language
+        # Choose title based on user language preference
         title_pref = media.get("title", {})
-        if rec_language == "ja":
-            title = title_pref.get("romaji") or title_pref.get("userPreferred") or title_pref.get("english")
+        if title_lang == "japanese":
+            title = title_pref.get("native") or title_pref.get("userPreferred") or title_pref.get("english") or "Unknown Title"
+        elif title_lang == "romaji":
+            title = title_pref.get("romaji") or title_pref.get("userPreferred") or title_pref.get("english") or "Unknown Title"
         else:
-            title = title_pref.get("english") or title_pref.get("userPreferred") or title_pref.get("romaji")
+            title = title_pref.get("english") or title_pref.get("userPreferred") or title_pref.get("romaji") or "Unknown Title"
 
         if filter_watched and title.lower() in watched_titles:
             continue
@@ -418,7 +421,13 @@ async def get_recommendations_for_seeds(
             for rec in rec_list:
                 node = rec.get("node", {})
                 mid = str(node.get("id"))
-                title = node.get("title")
+                alt_titles = node.get("alternative_titles") or {}
+                if title_lang == "english":
+                    title = alt_titles.get("en") or node.get("title") or "Unknown Title"
+                elif title_lang == "japanese":
+                    title = alt_titles.get("ja") or node.get("title") or "Unknown Title"
+                else:
+                    title = node.get("title") or alt_titles.get("en") or "Unknown Title"
 
                 if node.get("status") == "not_yet_aired":
                     continue
@@ -850,10 +859,18 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
 
     # 2. Extract unique shows and filter watched lists
     merged_shows = {}
+    title_lang = (user.get("title_language", "english") or "english").lower() if user else "english"
 
     for item in mal_items:
         node = item.get("node", {})
-        title = node.get("title")
+        alt_titles = node.get("alternative_titles") or {}
+        if title_lang == "english":
+            title = alt_titles.get("en") or node.get("title") or "Unknown Title"
+        elif title_lang == "japanese":
+            title = alt_titles.get("ja") or node.get("title") or "Unknown Title"
+        else:
+            title = node.get("title") or alt_titles.get("en") or "Unknown Title"
+
         mal_id = str(node.get("id"))
         list_status = node.get("my_list_status", {})
         status = normalize_user_status(list_status.get("status"))
@@ -872,7 +889,14 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
 
     for entry in anilist_items:
         media = entry.get("media", {})
-        title = media.get("title", {}).get("english") or media.get("title", {}).get("userPreferred")
+        t_obj = media.get("title") or {}
+        if title_lang == "english":
+            title = t_obj.get("english") or t_obj.get("userPreferred") or t_obj.get("romaji") or "Unknown Title"
+        elif title_lang == "japanese":
+            title = t_obj.get("native") or t_obj.get("userPreferred") or t_obj.get("romaji") or "Unknown Title"
+        else:
+            title = t_obj.get("romaji") or t_obj.get("userPreferred") or t_obj.get("english") or "Unknown Title"
+
         anilist_id = str(media.get("id"))
         mal_id = str(media.get("idMal")) if media.get("idMal") else None
         status = normalize_user_status(entry.get("status"))
@@ -1153,7 +1177,13 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
             for rec in rec_list:
                 node = rec.get("node", {})
                 mid = str(node.get("id"))
-                title = node.get("title")
+                alt_titles = node.get("alternative_titles") or {}
+                if title_lang == "english":
+                    title = alt_titles.get("en") or node.get("title") or "Unknown Title"
+                elif title_lang == "japanese":
+                    title = alt_titles.get("ja") or node.get("title") or "Unknown Title"
+                else:
+                    title = node.get("title") or alt_titles.get("en") or "Unknown Title"
 
                 if node.get("status") == "not_yet_aired":
                     continue
