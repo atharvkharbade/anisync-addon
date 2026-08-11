@@ -994,7 +994,7 @@
                     style="{% if not user.get('enable_search', True) %}display: none;{% endif %}">
                     <div class="form-check form-switch mb-0">
                         {% set p_prov = user.get('poster_provider', 'none') %}
-                        {% set is_p_valid = (p_prov == 'none' or (p_prov == 'rpdb' and user.get('rpdb_api_key')) or
+                        {% set is_p_valid = ((p_prov == 'rpdb' and user.get('rpdb_api_key')) or
                         ((p_prov == 'top_poster' or p_prov == 'topposters') and user.get('top_poster_key')) or (p_prov
                         == 'custom' and user.get('custom_poster_pattern'))) %}
                         <input class="form-check-input" type="checkbox" role="switch" id="rpdb_in_search" {% if
@@ -1007,8 +1007,7 @@
                             </span>
                             <span id="rpdb-search-warning-text"
                                 class="text-warning small d-block mt-1 fw-medium {% if is_p_valid %}d-none{% endif %}">
-                                <i class="fa-solid fa-circle-info me-1"></i>Provide a valid API key or pattern for your
-                                selected poster provider to enable poster art.
+                                <i class="fa-solid fa-circle-info me-1"></i>Select a poster art provider (RPDB, TOP Posters, or Custom) with a valid API key or pattern to enable poster art in search.
                             </span>
                         </label>
                     </div>
@@ -2375,7 +2374,7 @@
             const providerInput = document.getElementById("poster_provider");
             const provider = providerInput ? providerInput.value : "none";
 
-            let isValid = true;
+            let isValid = false;
             if (provider === "rpdb") {
                 const hasRpdbKey = rpdbKeyEl && rpdbKeyEl.value.trim() !== "";
                 isValid = hasRpdbKey && isRpdbKeyValid;
