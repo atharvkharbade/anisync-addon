@@ -13,3 +13,4 @@ trigger_test_*.py
 *.archive
 *.dump
 *.bak
+tests/
