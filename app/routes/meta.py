@@ -859,6 +859,43 @@ def build_expired_trackers_notice(user: dict | None) -> str | None:
     return f"Your {trackers_str} {session_word} expired. You can re-login via the website."
 
 
+
+async def get_banner_aspect_ratio(banner_url: str) -> float:
+    """Check banner aspect ratio with MongoDB caching. Returns 2.5 on error to trigger safe fallback."""
+    if not banner_url:
+        return 2.5
+    try:
+        from app.services.db import db
+
+        col = db.get_collection("banner_ratios")
+        doc = col.find_one({"url": banner_url})
+        if doc and "ratio" in doc:
+            return float(doc["ratio"])
+
+        import httpx
+        from PIL import Image
+        import io
+
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            resp = await client.get(banner_url, headers={"User-Agent": "Mozilla/5.0"})
+            if resp.status_code == 200:
+                img = Image.open(io.BytesIO(resp.content))
+                bw, bh = img.size
+                ratio = round(bw / float(bh), 2) if bh > 0 else 2.5
+                try:
+                    col.update_one(
+                        {"url": banner_url},
+                        {"$set": {"url": banner_url, "ratio": ratio}},
+                        upsert=True,
+                    )
+                except Exception as ex:
+                    logging.warning("Failed to cache banner ratio for %s: %s", banner_url, ex)
+                return ratio
+    except Exception as e:
+        logging.warning("Failed to resolve banner aspect ratio for %s: %s", banner_url, e)
+    return 2.5
+
+
 def get_effective_meta_providers(user: dict | None) -> dict:
     pref = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
     if pref == "custom":
@@ -971,12 +1008,9 @@ async def apply_metadata_provider_override(
     if backdrop_prov == "anilist" and al_data:
         banner_url = al_data.get("bannerImage")
         if banner_url:
-            encoded_banner = urllib.parse.quote_plus(banner_url)
-            host_url = request.host_url.rstrip("/")
-            uid = user.get("uid", "") if user else ""
-            meta["background"] = (
-                f"{host_url}/{uid}/background/"
-                f"anilist_{anilist_id}_bg23.jpg?url={encoded_banner}"
-            )
+            ratio = await get_banner_aspect_ratio(banner_url)
+            if ratio <= 2.0:
+                meta["background"] = banner_url
+            # Else (ratio > 2.0 ultra-wide banner): skip and retain Fanart/Kitsu/Cinemeta fallback
 
     return mal_data_ret
