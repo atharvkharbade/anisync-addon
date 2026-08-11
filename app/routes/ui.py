@@ -600,7 +600,7 @@ async def delete_account():
         db.get_collection("user_watchlist_cache").delete_many({"uid": uid})
 
         session.clear()
-        await flash("Your AniSync user records have been successfully deleted.", "success")
+        await flash("User records deleted successfully.", "success")
     except Exception as e:
         logging.error("Failed to delete account for uid=%s: %s", uid, e)
         await flash("Failed to delete user records. Please try again.", "danger")
