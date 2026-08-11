@@ -18,11 +18,11 @@ def log_error(label: str, message: str, hint: str = "", code: int = 0):
 
 
 def get_remote_ip() -> str:
-    """Extract client IP address, handling proxy headers robustly."""
-    if x_forwarded_for := request.headers.get("X-Forwarded-For"):
-        return x_forwarded_for.split(",")[0].strip()
+    """Extract client IP address, prioritizing Cloudflare verified CF-Connecting-IP over X-Forwarded-For."""
     if cf_connecting_ip := request.headers.get("CF-Connecting-IP"):
         return cf_connecting_ip.strip()
+    if x_forwarded_for := request.headers.get("X-Forwarded-For"):
+        return x_forwarded_for.split(",")[0].strip()
     return request.remote_addr or "127.0.0.1"
 
 

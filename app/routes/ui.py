@@ -599,6 +599,7 @@ async def delete_account():
         users_collection.delete_one({"uid": uid})
         users_collection.delete_one({"_id": uid})
         db.get_collection("user_watchlist_cache").delete_many({"uid": uid})
+        db.get_collection("sessions").delete_many({"data.user.uid": uid})
 
         session.clear()
         await flash("User records deleted successfully.", "success")
