@@ -1887,16 +1887,59 @@
         </div>
 
         <!-- Danger Zone Card -->
-        <div class="card-dark p-3 p-sm-4 mb-3" style="border: 1px solid rgba(220, 53, 69, 0.35); background: rgba(220, 53, 69, 0.03);">
-            <h6 class="fw-semibold mb-1 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone</h6>
-            <p class="text-secondary small mb-3">Permanently delete user configuration and erase all saved data from MongoDB. This action cannot be undone.</p>
-            <form action="{{ url_for('ui.delete_account') }}" method="POST" onsubmit="return confirm('Are you sure you want to delete user? This action cannot be undone and will permanently remove all user data and configuration.');">
-                <button type="submit" class="btn btn-outline-danger btn-sm">
-                    <i class="fa-solid fa-trash-can me-2"></i>Delete User
-                </button>
-            </form>
+        <div class="card-dark p-3 p-sm-4 mb-3" style="border: 1px solid rgba(239, 68, 68, 0.25); background: rgba(239, 68, 68, 0.02);">
+            <h6 class="fw-semibold mb-1" style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone</h6>
+            <p class="text-secondary small mb-3" style="color: #999 !important;">Permanently delete user configuration, revoke connected tracker authorizations, and erase all saved data from MongoDB. This action cannot be undone.</p>
+            <button type="button" class="btn btn-disconnect btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                <i class="fa-solid fa-trash-can me-2"></i>Delete User Account
+            </button>
         </div>
 
+    </div>
+</div>
+
+<!-- Delete Account Glassmorphism Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #141416; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 14px; box-shadow: 0 16px 40px rgba(0,0,0,0.85), 0 0 24px rgba(239, 68, 68, 0.12); color: #f1f5f9;">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 1.1rem;"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="deleteAccountModalLabel" style="font-size: 1.1rem;">Delete User Account</h5>
+                        <div class="text-secondary" style="font-size: 0.78rem; color: #888 !important;">Permanent Data Erasure</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <p class="text-secondary small mb-2" style="color: #ccc !important; font-size: 0.88rem; line-height: 1.5;">
+                    Are you sure you want to delete your AniSync account? This will perform the following actions:
+                </p>
+                <div class="p-3 rounded mb-3" style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15);">
+                    <ul class="text-secondary small mb-0 ps-3" style="color: #bbb !important; font-size: 0.82rem; line-height: 1.6;">
+                        <li>Revoke access tokens for AniList, MAL, and Simkl.</li>
+                        <li>Delete all saved watchlist settings & preferences from MongoDB.</li>
+                        <li>Purge cached watchlist items and custom catalog configurations.</li>
+                    </ul>
+                </div>
+                <p class="text-danger small fw-semibold mb-0" style="font-size: 0.82rem;">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Warning: This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-2 pb-4 px-4 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; font-weight: 500; color: #ddd;">
+                    Cancel
+                </button>
+                <form action="{{ url_for('ui.delete_account') }}" method="POST" class="d-inline mb-0">
+                    <button type="submit" class="btn btn-danger btn-sm px-3" style="background: #ef4444; border: 1px solid #dc2626; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);">
+                        <i class="fa-solid fa-trash-can me-1.5"></i> Yes, Delete Account
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
