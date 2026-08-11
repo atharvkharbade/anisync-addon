@@ -413,6 +413,8 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                 if not title and item.get("simkl_item"):
                     show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
                     title = show_obj.get("title", "")
+            if not title and isinstance(item, dict):
+                title = str(item.get("name") or "")
             return title.lower()
 
         elif sort_by == "score":
@@ -485,6 +487,11 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     global_scores = [mal_global, al_global, simkl_global]
                     rated_global_scores = [s for s in global_scores if s > 0]
                     score = sum(rated_global_scores) / len(rated_global_scores) if rated_global_scores else 0.0
+            if not score and isinstance(item, dict):
+                try:
+                    score = float(item.get("score") or item.get("imdbRating") or 0)
+                except Exception:
+                    score = 0.0
             return float(score)
 
         elif sort_by == "last_updated":
@@ -539,6 +546,116 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
             if airing_at is None:
                 return 0 if reverse else 2**31 - 1
             return airing_at
+
+        elif sort_by in ["year", "release_date"]:
+            yr = 0
+            if tracker_type == "mal":
+                yr = int(item.get("node", {}).get("start_season", {}).get("year", 0) or 0)
+                if not yr:
+                    d_str = str(item.get("node", {}).get("start_date") or "")
+                    if len(d_str) >= 4 and d_str[:4].isdigit():
+                        yr = int(d_str[:4])
+            elif tracker_type == "anilist":
+                yr = int(item.get("media", {}).get("startDate", {}).get("year", 0) or item.get("media", {}).get("seasonYear", 0) or 0)
+            elif tracker_type == "simkl":
+                show_obj = item.get("show") or item.get("anime") or item
+                yr = int(show_obj.get("year", 0) or 0)
+            elif tracker_type == "combined":
+                if item.get("anilist_item"):
+                    yr = int(item["anilist_item"].get("media", {}).get("startDate", {}).get("year", 0) or item["anilist_item"].get("media", {}).get("seasonYear", 0) or 0)
+                if not yr and item.get("mal_item"):
+                    yr = int(item["mal_item"].get("node", {}).get("start_season", {}).get("year", 0) or 0)
+            if not yr and isinstance(item, dict):
+                try:
+                    yr = int(item.get("year") or item.get("releaseInfo") or 0)
+                except Exception:
+                    yr = 0
+            return yr
+
+        elif sort_by in ["episodes", "total_episodes"]:
+            eps = 0
+            if tracker_type == "mal":
+                eps = int(item.get("node", {}).get("num_episodes", 0) or 0)
+            elif tracker_type == "anilist":
+                eps = int(item.get("media", {}).get("episodes", 0) or 0)
+            elif tracker_type == "simkl":
+                show_obj = item.get("show") or item.get("anime") or item
+                eps = int(show_obj.get("total_episodes", 0) or 0)
+            elif tracker_type == "combined":
+                if item.get("anilist_item"):
+                    eps = int(item["anilist_item"].get("media", {}).get("episodes", 0) or 0)
+                if not eps and item.get("mal_item"):
+                    eps = int(item["mal_item"].get("node", {}).get("num_episodes", 0) or 0)
+            if not eps and isinstance(item, dict):
+                try:
+                    eps = int(item.get("episodes") or item.get("totalEpisodes") or 0)
+                except Exception:
+                    eps = 0
+            return eps
+
+        elif sort_by == "progress":
+            prog = 0
+            if tracker_type == "mal":
+                prog = int(item.get("node", {}).get("my_list_status", {}).get("num_episodes_watched", 0) or 0)
+            elif tracker_type == "anilist":
+                prog = int(item.get("progress", 0) or 0)
+            elif tracker_type == "simkl":
+                prog = int(item.get("user_episodes_watched", 0) or item.get("watched_episodes_count", 0) or 0)
+            elif tracker_type == "combined":
+                al_p = int(item.get("anilist_item", {}).get("progress", 0) or 0)
+                mal_p = int(item.get("mal_item", {}).get("node", {}).get("my_list_status", {}).get("num_episodes_watched", 0) or 0)
+                prog = max(al_p, mal_p)
+            if not prog and isinstance(item, dict):
+                try:
+                    prog = float(item.get("progress") or 0)
+                except Exception:
+                    prog = 0.0
+            return prog
+
+        elif sort_by == "popularity":
+            pop = 0
+            if tracker_type == "mal":
+                pop = int(item.get("node", {}).get("num_list_users", 0) or item.get("node", {}).get("popularity", 0) or 0)
+            elif tracker_type == "anilist":
+                pop = int(item.get("media", {}).get("popularity", 0) or 0)
+            elif tracker_type == "simkl":
+                show_obj = item.get("show") or item.get("anime") or item
+                pop = int(show_obj.get("users_count", 0) or 0)
+            elif tracker_type == "combined":
+                al_p = int(item.get("anilist_item", {}).get("media", {}).get("popularity", 0) or 0)
+                mal_p = int(item.get("mal_item", {}).get("node", {}).get("num_list_users", 0) or 0)
+                pop = max(al_p, mal_p)
+            if not pop and isinstance(item, dict):
+                try:
+                    pop = float(item.get("popularity") or 0)
+                except Exception:
+                    pop = 0.0
+            return pop
+
+        elif sort_by in ["added_date", "created_date"]:
+            ts = 0
+            if tracker_type == "mal":
+                status = item.get("node", {}).get("my_list_status") or {}
+                ts = parse_iso_timestamp(status.get("updated_at", ""))
+            elif tracker_type == "anilist":
+                ts = item.get("createdAt") or item.get("updatedAt") or 0
+            elif tracker_type == "simkl":
+                ts = parse_iso_timestamp(item.get("last_watched_at"))
+            elif tracker_type == "combined":
+                mal_ts = parse_iso_timestamp((item.get("mal_item", {}).get("node", {}).get("my_list_status") or {}).get("updated_at", ""))
+                al_ts = item.get("anilist_item", {}).get("createdAt") or item.get("anilist_item", {}).get("updatedAt") or 0
+                ts = max(mal_ts, al_ts)
+            return ts
+
+        # Fallback key extraction if item is formatted Stremio meta dict
+        if isinstance(item, dict):
+            if sort_by == "title":
+                return str(item.get("name") or "").lower()
+            elif sort_by == "score":
+                try:
+                    return float(item.get("score") or item.get("imdbRating") or 0)
+                except Exception:
+                    return 0.0
 
         return 0
 

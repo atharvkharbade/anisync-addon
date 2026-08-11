@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from pymongo import MongoClient
 from pymongo.synchronous.collection import Collection
@@ -125,6 +125,43 @@ def get_user(user_id: str) -> dict | None:
             user = users_collection.find_one({"uid": f"{prefix}{user_id}"})
             if user:
                 return user
+
+    # 4. Support guest user auto-provisioning
+    if user_id.startswith("guest_"):
+        guest_user = {
+            "_id": user_id,
+            "uid": user_id,
+            "username": "Guest User",
+            "is_guest": True,
+            "enable_discovery_catalogs": True,
+            "enable_catalogs": False,
+            "enable_recommendations": False,
+            "enable_search": True,
+            "hide_nsfw": True,
+            "title_language": "english",
+            "metadata_provider": "kitsu",
+            "meta_synopsis_provider": "kitsu",
+            "meta_episodes_provider": "anizp",
+            "meta_poster_provider": "anilist",
+            "meta_backdrop_provider": "fanart",
+            "meta_airing_provider": "anilist",
+            "catalogs": [
+                "anisync_trending",
+                "anisync_airing",
+                "anisync_popular",
+                "anisync_top",
+                "anisync_movies",
+                "anisync_upcoming",
+                "anisync_schedule",
+            ],
+            "created_at": datetime.now(UTC).replace(tzinfo=None),
+        }
+        try:
+            users_collection.update_one({"uid": user_id}, {"$setOnInsert": guest_user}, upsert=True)
+            return users_collection.find_one({"uid": user_id}) or guest_user
+        except Exception as e:
+            logging.error("Failed to auto-provision guest user %s: %s", user_id, e)
+            return guest_user
 
     return None
 
