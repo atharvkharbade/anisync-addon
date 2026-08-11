@@ -82,13 +82,44 @@ async def fetch_anizp_metadata(anilist_id: str = None, mal_id: str = None) -> di
     return {}
 
 
-async def fetch_cinemeta_metadata(imdb_id: str, media_type: str) -> dict:
+async def fetch_cinemeta_metadata(imdb_id: str, media_type: str, is_releasing: bool = False) -> dict:
+    from app.services.db import db
+    import datetime
+
+    col = db.get_collection("cinemeta_meta_cache")
+    now = datetime.datetime.utcnow()
+    try:
+        cached = col.find_one({"imdb_id": str(imdb_id), "media_type": str(media_type)})
+        if cached and cached.get("expires_at") > now:
+            return cached.get("data", {})
+    except Exception as e:
+        logging.error("Failed to read cinemeta_meta_cache for %s: %s", imdb_id, e)
+
     url = f"https://v3-cinemeta.strem.io/meta/{media_type}/{imdb_id}.json"
     try:
         client = get_client()
         resp = await client.get(url, timeout=8)
         if resp.status_code == 200:
-            return resp.json().get("meta", {})
+            data = resp.json().get("meta", {})
+            ttl = datetime.timedelta(hours=4) if is_releasing else datetime.timedelta(days=7)
+            try:
+                col.update_one(
+                    {"imdb_id": str(imdb_id), "media_type": str(media_type)},
+                    {
+                        "$set": {
+                            "imdb_id": str(imdb_id),
+                            "media_type": str(media_type),
+                            "data": data,
+                            "is_releasing": is_releasing,
+                            "expires_at": now + ttl,
+                            "updated_at": now,
+                        }
+                    },
+                    upsert=True,
+                )
+            except Exception as ex:
+                logging.error("Failed to write cinemeta_meta_cache for %s: %s", imdb_id, ex)
+            return data
     except Exception as e:
         logging.warning("Failed to fetch metadata from Cinemeta: %s", e)
     return {}
@@ -508,9 +539,11 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
         cinemeta_data = {}
         if imdb_id:
+            k_status = (kitsu_data.get("data", {}).get("attributes", {}).get("status") or "").lower()
+            is_releasing = k_status in ["current", "releasing", "unreleased", "not_yet_released"]
             subtype = (kitsu_data.get("data", {}).get("attributes", {}).get("subtype") or "tv").lower()
             media_type = "movie" if subtype == "movie" else "series"
-            cinemeta_data = await fetch_cinemeta_metadata(imdb_id, media_type)
+            cinemeta_data = await fetch_cinemeta_metadata(imdb_id, media_type, is_releasing=is_releasing)
 
         # Resolve simkl_id if not present but we have kitsu_id
         if not simkl_id and kitsu_id:

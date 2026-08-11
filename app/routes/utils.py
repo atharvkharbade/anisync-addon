@@ -1,10 +1,11 @@
 import logging
 import re
-from datetime import UTC, datetime, timedelta
+import threading
+import time
+from collections import defaultdict
 from functools import wraps
 
 from quart import Response, jsonify, request
-
 
 async def respond_with(data: dict) -> Response:
     resp = jsonify(data)
@@ -37,36 +38,47 @@ def is_valid_user_id(user_id: str) -> bool:
     )
 
 
+_rate_limit_lock = threading.Lock()
+_rate_limit_buckets: dict[tuple[str, str], list[float]] = defaultdict(list)
+_last_rate_limit_cleanup = time.monotonic()
+
+
+def _cleanup_rate_limits(now: float):
+    """Purge stale rate limit buckets to prevent memory accumulation."""
+    global _last_rate_limit_cleanup
+    if now - _last_rate_limit_cleanup > 60.0:
+        _last_rate_limit_cleanup = now
+        stale_keys = [k for k, timestamps in _rate_limit_buckets.items() if not timestamps or timestamps[-1] < now - 3600]
+        for k in stale_keys:
+            del _rate_limit_buckets[k]
+
+
 def rate_limit(limit: int, period_seconds: int = 60):
-    """IP-based sliding window rate limiter decorated using MongoDB collection logs."""
+    """Fast in-memory sliding window IP rate limiter with automatic pruning."""
 
     def decorator(f):
         @wraps(f)
         async def wrapped(*args, **kwargs):
-            from app.services.db import db
-
             ip = get_remote_ip()
             route = request.path
+            key = (ip, route)
+            now = time.monotonic()
+            cutoff = now - period_seconds
 
-            now = datetime.now(UTC).replace(tzinfo=None)
-            cutoff = now - timedelta(seconds=period_seconds)
+            with _rate_limit_lock:
+                _cleanup_rate_limits(now)
+                timestamps = _rate_limit_buckets[key]
+                valid_timestamps = [t for t in timestamps if t > cutoff]
 
-            try:
-                # Count requests in window
-                count = db.rate_limits.count_documents({"ip": ip, "route": route, "timestamp": {"$gt": cutoff}})
-
-                if count >= limit:
-                    logging.warning("Rate limit exceeded for IP %s on %s: %d/%d", ip, route, count, limit)
+                if len(valid_timestamps) >= limit:
+                    _rate_limit_buckets[key] = valid_timestamps
+                    logging.warning("Rate limit exceeded for IP %s on %s: %d/%d", ip, route, len(valid_timestamps), limit)
                     return jsonify(
                         {"error": "Too Many Requests", "message": "Rate limit exceeded. Please try again later."}
                     ), 429
 
-                # Record current request
-                db.rate_limits.insert_one({"ip": ip, "route": route, "timestamp": now})
-            except Exception as e:
-                # Fail close on critical database error as per security guidelines
-                logging.error("Rate limiter database error: %s", e)
-                return jsonify({"error": "Internal Server Error", "message": "Rate limiter error."}), 500
+                valid_timestamps.append(now)
+                _rate_limit_buckets[key] = valid_timestamps
 
             return await f(*args, **kwargs)
 
