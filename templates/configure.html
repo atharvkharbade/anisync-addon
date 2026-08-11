@@ -1886,6 +1886,17 @@
             </a>
         </div>
 
+        <!-- Danger Zone Card -->
+        <div class="card-dark p-3 p-sm-4 mb-3" style="border: 1px solid rgba(220, 53, 69, 0.4); background: rgba(220, 53, 69, 0.03);">
+            <h6 class="fw-semibold mb-1 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone</h6>
+            <p class="text-secondary small mb-3">Permanently delete your AniSync account, revoke connected tracker authorizations, and erase all saved settings from MongoDB.</p>
+            <form action="{{ url_for('ui.delete_account') }}" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete your AniSync account and all saved settings? This cannot be undone.');">
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-trash-can me-2"></i>Delete Account & Erase Data
+                </button>
+            </form>
+        </div>
+
     </div>
 </div>
 {% endblock %}

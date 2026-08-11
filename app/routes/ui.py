@@ -167,12 +167,18 @@ async def guest_login():
 
 
 @ui_bp.route("/configure", methods=["GET", "POST"])
-@ui_bp.route("/<user_id>/configure")
+@ui_bp.route("/<user_id>/configure", methods=["GET", "POST"])
 @rate_limit(limit=30, period_seconds=60)
 async def configure(user_id: str = ""):
     user_session = session.get("user")
     if not user_session:
-        return redirect(url_for("ui.index"))
+        if user_id and user_id.startswith("guest_"):
+            existing_guest = get_user(user_id)
+            if existing_guest:
+                session["user"] = {"uid": user_id, "username": "Guest User", "is_guest": True}
+                user_session = session["user"]
+        if not user_session:
+            return redirect(url_for("ui.index"))
 
     user = get_user(user_session["uid"])
     if not user:
@@ -574,3 +580,29 @@ async def health():
         return {"status": "healthy", "database": "connected"}, 200
     except Exception as e:
         return {"status": "unhealthy", "database": str(e)}, 500
+
+
+
+@ui_bp.route("/delete-account", methods=["POST"])
+@rate_limit(limit=10, period_seconds=60)
+async def delete_account():
+    user_session = session.get("user")
+    if not user_session or not user_session.get("uid"):
+        return redirect(url_for("ui.index"))
+
+    uid = user_session["uid"]
+
+    try:
+        from app.services.db import db, users_collection
+
+        users_collection.delete_one({"uid": uid})
+        users_collection.delete_one({"_id": uid})
+        db.get_collection("user_watchlist_cache").delete_many({"uid": uid})
+
+        session.clear()
+        await flash("Your account and all saved data have been permanently deleted.", "success")
+    except Exception as e:
+        logging.error("Failed to delete account for uid=%s: %s", uid, e)
+        await flash("Failed to delete account. Please try again.", "danger")
+
+    return redirect(url_for("ui.index"))
