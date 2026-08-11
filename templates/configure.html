@@ -1886,66 +1886,43 @@
             </a>
         </div>
 
-        <!-- Danger Zone / Reset Configuration Card (AIOMetadata Style) -->
-        <div class="card-dark p-3 p-sm-4 mb-3" style="background: rgba(220, 38, 38, 0.03); border: 1px solid rgba(239, 68, 68, 0.22); border-radius: 12px;">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                <h6 class="fw-bold mb-0 d-flex align-items-center" style="color: #ef4444; font-size: 1rem;">
-                    <i class="fa-solid fa-triangle-exclamation me-2"></i>Reset & Delete Account
-                </h6>
-                <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.7rem; padding: 0.25rem 0.6rem; letter-spacing: 0.03em;">DANGER ZONE</span>
-            </div>
-            <p class="text-secondary small mb-3" style="color: #a1a1aa !important; line-height: 1.5; font-size: 0.85rem;">
-                Permanently delete your AniSync profile, revoke connected tracker authorizations (AniList, MAL, Simkl), and purge all custom catalog settings from MongoDB.
-            </p>
-            <button type="button" class="btn btn-sm text-white px-3.5 py-2 fw-semibold" data-bs-toggle="modal" data-bs-target="#deleteAccountModal" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; font-size: 0.85rem; color: #f87171 !important; transition: all 0.2s ease;">
-                <i class="fa-solid fa-trash-can me-2"></i>Delete Account & Reset
+        <!-- Danger Zone Card -->
+        <div class="card-dark p-3 p-sm-4 mb-3">
+            <h6 class="fw-semibold mb-1 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone</h6>
+            <p class="text-secondary small mb-3">Permanently remove your saved preferences and disconnect all connected tracker accounts.</p>
+            <button type="button" class="btn btn-disconnect" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                <i class="fa-solid fa-trash-can me-2"></i>Delete User Configuration
             </button>
         </div>
 
     </div>
 </div>
 
-<!-- AIOMetadata-Styled Delete Account Glassmorphism Modal -->
+<!-- Delete User Configuration Modal -->
 <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: #111113; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(239, 68, 68, 0.15); color: #f1f5f9; backdrop-filter: blur(20px);">
+        <div class="modal-content card-dark shadow-lg" style="background: #161616; border: 1px solid #2a2a2a; border-radius: 12px; color: #e0e0e0;">
             <div class="modal-header border-0 pb-0 pt-4 px-4">
-                <div class="d-flex align-items-center gap-3">
-                    <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 1.2rem;"></i>
-                    </div>
-                    <div>
-                        <h5 class="modal-title fw-bold text-white mb-0" id="deleteAccountModalLabel" style="font-size: 1.15rem; letter-spacing: 0.01em;">Delete User Account?</h5>
-                        <div class="text-secondary" style="font-size: 0.78rem; color: #94a3b8 !important;">Permanent Configuration & Data Erasure</div>
-                    </div>
-                </div>
-                <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold text-white fs-6" id="deleteAccountModalLabel">
+                    <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Delete User Configuration?
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body px-4 py-3">
-                <p class="text-secondary small mb-3" style="color: #cbd5e1 !important; font-size: 0.9rem; line-height: 1.5;">
-                    This operation will permanently purge your user profile from AniSync. The following actions will take place immediately:
+                <p class="text-secondary small mb-2" style="font-size: 0.9rem; line-height: 1.5;">
+                    Are you sure you want to delete your configuration? This will clear all your saved preferences and disconnect your connected tracker accounts.
                 </p>
-                <div class="p-3 rounded-3 mb-3" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2);">
-                    <ul class="text-secondary small mb-0 ps-3" style="color: #cbd5e1 !important; font-size: 0.84rem; line-height: 1.7;">
-                        <li>Revoke stored access tokens for <strong>AniList</strong>, <strong>MyAnimeList</strong>, and <strong>Simkl</strong>.</li>
-                        <li>Erase your custom catalog ordering and filter preferences.</li>
-                        <li>Purge cached watchlist items and recommendation states from MongoDB.</li>
-                    </ul>
-                </div>
-                <div class="d-flex align-items-center gap-2 p-2.5 rounded-2" style="background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444;">
-                    <i class="fa-solid fa-circle-exclamation text-danger ms-1" style="font-size: 0.95rem;"></i>
-                    <span class="text-danger small fw-medium" style="font-size: 0.82rem;">
-                        This action cannot be undone or restored later.
-                    </span>
-                </div>
+                <p class="text-danger small mb-0 fw-medium">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i> This action cannot be undone.
+                </p>
             </div>
             <div class="modal-footer border-0 pt-2 pb-4 px-4 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-secondary btn-sm px-3.5 py-2" data-bs-dismiss="modal" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; font-weight: 500; color: #cbd5e1; font-size: 0.85rem;">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal" style="border-radius: 8px;">
                     Cancel
                 </button>
                 <form action="{{ url_for('ui.delete_account') }}" method="POST" class="d-inline mb-0">
-                    <button type="submit" class="btn btn-danger btn-sm px-4 py-2" style="background: #dc2626; border: 1px solid #ef4444; border-radius: 8px; font-weight: 600; font-size: 0.85rem; box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45);">
-                        <i class="fa-solid fa-trash-can me-1.5"></i> Yes, Delete Account
+                    <button type="submit" class="btn btn-disconnect btn-sm px-3">
+                        <i class="fa-solid fa-trash-can me-1.5"></i>Delete Configuration
                     </button>
                 </form>
             </div>
