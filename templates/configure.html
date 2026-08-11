@@ -1887,10 +1887,17 @@
         </div>
 
         <!-- Danger Zone Card -->
-        <div class="card-dark p-3 p-sm-4 mb-3" style="border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.03);">
-            <h6 class="fw-semibold mb-1 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone</h6>
-            <p class="text-secondary small mb-3">Permanently remove your saved preferences and disconnect all connected tracker accounts.</p>
-            <button type="button" class="btn btn-disconnect btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+        <div class="card-dark p-3 p-sm-4 mb-3" style="background: rgba(220, 38, 38, 0.03); border: 1px solid rgba(239, 68, 68, 0.22); border-radius: 12px;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <h6 class="fw-bold mb-0 d-flex align-items-center" style="color: #ef4444; font-size: 1rem;">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone
+                </h6>
+                <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.7rem; padding: 0.25rem 0.6rem;">DANGER ZONE</span>
+            </div>
+            <p class="text-secondary small mb-3" style="color: #a1a1aa !important; line-height: 1.5; font-size: 0.85rem;">
+                Permanently delete your user records, disconnect connected tracker accounts (AniList, MAL, Simkl), and clear all saved catalog preferences.
+            </p>
+            <button type="button" class="btn btn-sm text-white px-3.5 py-2 fw-semibold" data-bs-toggle="modal" data-bs-target="#deleteAccountModal" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; font-size: 0.85rem; color: #f87171 !important;">
                 <i class="fa-solid fa-trash-can me-2"></i>Delete User Records
             </button>
         </div>
@@ -1901,34 +1908,42 @@
 <!-- Delete User Records Modal -->
 <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: #161618; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 14px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 20px rgba(239, 68, 68, 0.12); color: #f1f5f9;">
+        <div class="modal-content" style="background: #111113; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(239, 68, 68, 0.15); color: #f1f5f9; backdrop-filter: blur(20px);">
             <div class="modal-header border-0 pb-0 pt-4 px-4">
-                <div class="d-flex align-items-center gap-2.5">
-                    <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 1.1rem;"></i>
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 1.2rem;"></i>
                     </div>
-                    <h5 class="modal-title fw-bold text-white mb-0" id="deleteAccountModalLabel" style="font-size: 1.1rem;">Delete User Records?</h5>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="deleteAccountModalLabel" style="font-size: 1.15rem;">Delete User Records?</h5>
+                        <div class="text-secondary" style="font-size: 0.78rem; color: #94a3b8 !important;">Permanent Data Erasure</div>
+                    </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body px-4 py-3">
-                <p class="text-secondary small mb-3" style="font-size: 0.9rem; line-height: 1.5; color: #ccc !important;">
-                    Are you sure you want to delete your user records? This will clear all your saved preferences and disconnect your connected tracker accounts.
+                <p class="text-secondary small mb-3" style="color: #cbd5e1 !important; font-size: 0.9rem; line-height: 1.5;">
+                    Are you sure you want to delete your user records? The following actions will take place immediately:
                 </p>
-                <div class="p-3 rounded-3" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25);">
-                    <div class="d-flex align-items-center text-danger small fw-semibold">
-                        <i class="fa-solid fa-circle-exclamation me-2" style="font-size: 0.95rem;"></i>
-                        This action cannot be undone.
-                    </div>
+                <div class="p-3 rounded-3 mb-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08);">
+                    <ul class="text-secondary small mb-0 ps-3" style="color: #cbd5e1 !important; font-size: 0.85rem; line-height: 1.7;">
+                        <li>Disconnect access for <strong>AniList</strong>, <strong>MyAnimeList</strong>, and <strong>Simkl</strong>.</li>
+                        <li>Erase all saved catalog ordering and genre filter preferences.</li>
+                        <li>Clear custom watchlist state and progress sync data.</li>
+                    </ul>
+                </div>
+                <div class="d-flex align-items-center text-danger small fw-semibold ps-1">
+                    <i class="fa-solid fa-circle-exclamation me-2" style="font-size: 0.95rem;"></i>
+                    <span>This action cannot be undone.</span>
                 </div>
             </div>
             <div class="modal-footer border-0 pt-2 pb-4 px-4 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; font-weight: 500; color: #ddd;">
+                <button type="button" class="btn btn-secondary btn-sm px-3.5 py-2" data-bs-dismiss="modal" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; font-weight: 500; color: #cbd5e1; font-size: 0.85rem;">
                     Cancel
                 </button>
                 <form action="{{ url_for('ui.delete_account') }}" method="POST" class="d-inline mb-0">
-                    <button type="submit" class="btn btn-danger btn-sm px-3.5 py-1.5" style="background: #ef4444; border: none; border-radius: 8px; font-weight: 600; color: #ffffff; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);">
-                        <i class="fa-solid fa-trash-can me-1.5"></i>Delete Records
+                    <button type="submit" class="btn btn-danger btn-sm px-4 py-2" style="background: #dc2626; border: 1px solid #ef4444; border-radius: 8px; font-weight: 600; font-size: 0.85rem; box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45);">
+                        <i class="fa-solid fa-trash-can me-2"></i>Delete Records
                     </button>
                 </form>
             </div>
