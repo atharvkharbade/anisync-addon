@@ -144,6 +144,10 @@ async def guest_login():
         "hide_nsfw": True,
         "title_language": "english",
         "metadata_provider": "kitsu",
+        "meta_synopsis_provider": "kitsu",
+        "meta_episodes_provider": "anizp",
+        "meta_artwork_provider": "anilist",
+        "meta_airing_provider": "anilist",
         "catalogs": [
             "anisync_spotlight",
             "anisync_schedule",
@@ -247,6 +251,18 @@ async def configure(user_id: str = ""):
 
         if "metadata_provider" in form:
             user["metadata_provider"] = form.get("metadata_provider", "kitsu").lower()
+
+        if "meta_synopsis_provider" in form:
+            user["meta_synopsis_provider"] = form.get("meta_synopsis_provider", "kitsu").lower()
+
+        if "meta_episodes_provider" in form:
+            user["meta_episodes_provider"] = form.get("meta_episodes_provider", "anizp").lower()
+
+        if "meta_artwork_provider" in form:
+            user["meta_artwork_provider"] = form.get("meta_artwork_provider", "anilist").lower()
+
+        if "meta_airing_provider" in form:
+            user["meta_airing_provider"] = form.get("meta_airing_provider", "anilist").lower()
 
         # Save visible catalogs selection list in custom sorted order
         if "sorted_catalogs" in form:
