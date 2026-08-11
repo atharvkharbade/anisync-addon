@@ -76,8 +76,8 @@ Shows a `[Watched]` tag next to episodes you have already finished based on your
 Choose where you want your anime summaries, ratings, and artwork to come from:
 * **Kitsu (Default)**: Fast metadata with reliable stream matching.
 * **MyAnimeList (MAL)**: Official MAL descriptions and community scores.
-* **AniList**: AniList summaries, average ratings, and banner backgrounds.
-* **Custom**: Total freedom to independently choose your preferred source for **Series Synopsis**, **Episode Summaries** (AniZip / Kitsu / MAL), **Visual Artwork**, and **Airing Countdowns**.
+* **AniList**: AniList summaries, average ratings, and clean textless posters.
+* **Custom**: Total freedom to independently choose your preferred source for **Series Synopsis**, **Episode Summaries** (AniZip / Kitsu / MAL), **Cover Posters**, **Backdrop Wallpaper** (Fanart.tv / Kitsu / AniList), and **Airing Countdowns**.
 
 ---
 

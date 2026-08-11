@@ -763,18 +763,19 @@
                                 </p>
                             </div>
 
-                            <!-- 3. Visual Artwork -->
+                            <!-- 3. Cover Posters -->
                             <div class="col-12 col-md-6">
                                 <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
-                                    <i class="fa-solid fa-image text-info me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Visual Artwork
+                                    <i class="fa-solid fa-image text-info me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Cover Posters
                                 </label>
-                                <input type="hidden" id="meta_artwork_provider" name="meta_artwork_provider" value="{{ user.get('meta_artwork_provider', 'anilist') }}">
-                                <div class="custom-select-wrapper mb-1" data-input-id="meta_artwork_provider">
+                                <input type="hidden" id="meta_poster_provider" name="meta_poster_provider" value="{{ user.get('meta_poster_provider', user.get('meta_artwork_provider', 'anilist')) }}">
+                                <div class="custom-select-wrapper mb-1" data-input-id="meta_poster_provider">
                                     <div class="custom-select">
                                         <span class="custom-select-text d-flex align-items-center">
-                                            {% if user.get('meta_artwork_provider', 'anilist') == 'kitsu' %}
+                                            {% set cur_poster = user.get('meta_poster_provider', user.get('meta_artwork_provider', 'anilist')) %}
+                                            {% if cur_poster == 'kitsu' %}
                                                 <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                            {% elif user.get('meta_artwork_provider', 'anilist') == 'mal' %}
+                                            {% elif cur_poster == 'mal' %}
                                                 <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
                                             {% else %}
                                                 <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
@@ -795,11 +796,48 @@
                                     </div>
                                 </div>
                                 <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
-                                    Source for posters, backdrop banners, and transparent title logos.
+                                    Source for catalog cards, search results, and cover posters.
                                 </p>
                             </div>
 
-                            <!-- 4. Airing Countdowns -->
+                            <!-- 4. Backdrop Wallpaper -->
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
+                                    <i class="fa-solid fa-panorama text-success me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Backdrop Wallpaper
+                                </label>
+                                <input type="hidden" id="meta_backdrop_provider" name="meta_backdrop_provider" value="{{ user.get('meta_backdrop_provider', 'fanart') }}">
+                                <div class="custom-select-wrapper mb-1" data-input-id="meta_backdrop_provider">
+                                    <div class="custom-select">
+                                        <span class="custom-select-text d-flex align-items-center">
+                                            {% set cur_backdrop = user.get('meta_backdrop_provider', 'fanart') %}
+                                            {% if cur_backdrop == 'kitsu' %}
+                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                            {% elif cur_backdrop == 'anilist' %}
+                                                <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                            {% else %}
+                                                <i class="fa-solid fa-wand-magic-sparkles text-info" style="font-size: 14px; width: 18px; text-align: center; margin-right: 10px;"></i>Fanart.tv
+                                            {% endif %}
+                                        </span>
+                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                    </div>
+                                    <div class="custom-options-menu">
+                                        <div class="custom-option-item d-flex align-items-center" data-value="fanart">
+                                            <i class="fa-solid fa-wand-magic-sparkles text-info" style="font-size: 14px; width: 18px; text-align: center; margin-right: 10px;"></i>Fanart.tv
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
+                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="anilist">
+                                            <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
+                                    Source for full-screen loading wallpapers and series backdrops.
+                                </p>
+                            </div>
+
+                            <!-- 5. Airing Countdowns -->
                             <div class="col-12 col-md-6">
                                 <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
                                     <i class="fa-solid fa-clock text-danger me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Airing Countdowns

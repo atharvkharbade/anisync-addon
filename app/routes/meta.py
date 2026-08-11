@@ -165,6 +165,7 @@ def map_kitsu_to_stremio(
     watched_progress: int = 0,
     title_language: str = "english",
     episodes_provider: str = "anizp",
+    backdrop_provider: str = "fanart",
 ) -> dict:
     data = kitsu_data.get("data", {})
     if not data:
@@ -199,9 +200,17 @@ def map_kitsu_to_stremio(
     poster_data = attributes.get("posterImage") or {}
     poster = anizp_poster or poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or ""
     cover_data = attributes.get("coverImage") or {}
-    background = (
-        anizp_fanart or cover_data.get("original") or cover_data.get("large") or cover_data.get("medium") or poster
-    )
+    kitsu_cover = cover_data.get("original") or cover_data.get("large") or cover_data.get("medium")
+
+    if backdrop_provider == "kitsu":
+        background = kitsu_cover or anizp_fanart or (cinemeta_data.get("background") if cinemeta_data else "") or poster
+    else:  # fanart (default)
+        background = (
+            (cinemeta_data.get("background") if cinemeta_data else None)
+            or anizp_fanart
+            or kitsu_cover
+            or poster
+        )
 
     imdb_id = clean_imdb_id(anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None)
 
@@ -210,9 +219,6 @@ def map_kitsu_to_stremio(
         logo = cinemeta_data.get("logo")
     if not logo and imdb_id:
         logo = f"https://images.metahub.space/logo/medium/{imdb_id}/img"
-
-    if cinemeta_data and cinemeta_data.get("background"):
-        background = cinemeta_data.get("background")
 
     average_rating = attributes.get("averageRating")
     rating = str(round(float(average_rating) / 10.0, 1)) if average_rating else None
@@ -533,6 +539,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             watched_progress=watched_progress,
             title_language=title_lang,
             episodes_provider=effective_provs.get("episodes", "anizp"),
+            backdrop_provider=effective_provs.get("backdrop", "fanart"),
         )
 
         # Look up description in recommendations cache to retain the trace prefix
@@ -848,31 +855,36 @@ def build_expired_trackers_notice(user: dict | None) -> str | None:
 def get_effective_meta_providers(user: dict | None) -> dict:
     pref = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
     if pref == "custom":
+        legacy_artwork = (user.get("meta_artwork_provider") or "anilist").lower()
         return {
             "synopsis": (user.get("meta_synopsis_provider") or "kitsu").lower(),
             "episodes": (user.get("meta_episodes_provider") or "anizp").lower(),
-            "artwork": (user.get("meta_artwork_provider") or "anilist").lower(),
+            "poster": (user.get("meta_poster_provider") or legacy_artwork).lower(),
+            "backdrop": (user.get("meta_backdrop_provider") or "fanart").lower(),
             "airing": (user.get("meta_airing_provider") or "anilist").lower(),
         }
     elif pref == "mal":
         return {
             "synopsis": "mal",
             "episodes": "anizp",
-            "artwork": "mal",
+            "poster": "mal",
+            "backdrop": "fanart",
             "airing": "mal",
         }
     elif pref == "anilist":
         return {
             "synopsis": "anilist",
             "episodes": "anizp",
-            "artwork": "anilist",
+            "poster": "anilist",
+            "backdrop": "fanart",
             "airing": "anilist",
         }
     else:  # kitsu
         return {
             "synopsis": "kitsu",
             "episodes": "anizp",
-            "artwork": "kitsu",
+            "poster": "kitsu",
+            "backdrop": "fanart",
             "airing": "anilist",
         }
 
@@ -886,15 +898,16 @@ async def apply_metadata_provider_override(
 ) -> dict | None:
     effective = get_effective_meta_providers(user)
     synopsis_prov = effective["synopsis"]
-    artwork_prov = effective["artwork"]
+    poster_prov = effective["poster"]
+    backdrop_prov = effective["backdrop"]
 
     mal_data_ret = None
     if not rec_prefix:
         rec_prefix, _ = extract_rec_prefix(meta.get("description"))
 
-    # 1. Fetch MAL data if needed for synopsis or artwork
+    # 1. Fetch MAL data if needed for synopsis or poster
     mal_data = None
-    if (synopsis_prov == "mal" or artwork_prov == "mal") and mal_id:
+    if (synopsis_prov == "mal" or poster_prov == "mal") and mal_id:
         try:
             from app.api.jikan import get_anime_by_id
 
@@ -904,9 +917,9 @@ async def apply_metadata_provider_override(
         except Exception as e:
             logging.warning("Failed to fetch MAL metadata for mal_id=%s: %s", mal_id, e)
 
-    # 2. Fetch AniList data if needed for synopsis or artwork
+    # 2. Fetch AniList data if needed for synopsis, poster, or backdrop
     al_data = None
-    if (synopsis_prov == "anilist" or artwork_prov == "anilist") and anilist_id:
+    if (synopsis_prov == "anilist" or poster_prov == "anilist" or backdrop_prov == "anilist") and anilist_id:
         try:
             from app.api.anilist import get_media_status
 
@@ -934,18 +947,21 @@ async def apply_metadata_provider_override(
         if avg_score:
             meta["imdbRating"] = f"{avg_score / 10:.1f}"
 
-    # 4. Apply Artwork (Poster & Background Banner)
-    if artwork_prov == "mal" and mal_data:
+    # 4. Apply Poster Override
+    if poster_prov == "mal" and mal_data:
         images = mal_data.get("images", {})
         jpg_img = images.get("jpg", {}) or images.get("webp", {})
         poster_url = jpg_img.get("large_image_url") or jpg_img.get("image_url")
         if poster_url:
             meta["poster"] = poster_url
-    elif artwork_prov == "anilist" and al_data:
+    elif poster_prov == "anilist" and al_data:
         cover = al_data.get("coverImage", {})
         poster_url = cover.get("extraLarge") or cover.get("large")
         if poster_url:
             meta["poster"] = poster_url
+
+    # 5. Apply Backdrop Override
+    if backdrop_prov == "anilist" and al_data:
         banner_url = al_data.get("bannerImage")
         if banner_url:
             encoded_banner = urllib.parse.quote_plus(banner_url)
