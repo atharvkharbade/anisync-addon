@@ -388,42 +388,68 @@
         width: 100%;
     }
 
+    /* Custom Select Component (Modern Dark Glass / Radix Popover Design) */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+    }
+
     .custom-select {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background-color: #0d0d0d;
-        border: 1px solid #2a2a2a;
-        border-radius: 8px;
-        height: 38px;
-        padding: 0 0.85rem;
-        color: #fff;
+        background: #141416;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        min-height: 40px;
+        padding: 0.62rem 0.9rem;
+        color: #f1f5f9;
         font-size: 0.85rem;
         cursor: pointer;
-        transition: border-color 0.2s, background-color 0.2s;
+        transition: border-color 0.18s ease, background-color 0.18s ease;
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-tap-highlight-color: transparent !important;
     }
 
     .custom-select:hover {
-        background-color: #121212;
+        background-color: rgba(255, 255, 255, 0.035);
+        border-color: rgba(255, 255, 255, 0.18);
     }
 
     .custom-select.active {
-        border-color: #02a9ff;
+        border-color: rgba(255, 255, 255, 0.22);
+        background-color: rgba(255, 255, 255, 0.035);
+    }
+
+    .custom-select .fa-chevron-down {
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        font-size: 0.8rem;
+        color: #94a3b8;
+    }
+
+    .custom-select.active .fa-chevron-down {
+        transform: rotate(180deg);
     }
 
     .custom-options-menu {
         position: absolute;
-        top: calc(100% + 4px);
+        top: calc(100% + 6px);
         left: 0;
         right: 0;
-        background-color: #0d0d0d;
-        border: 1px solid #2a2a2a;
-        border-radius: 8px;
-        z-index: 999;
+        background: #141416;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        z-index: 1050;
         display: none;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        max-height: 200px;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85);
+        padding: 0.35rem;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        max-height: 280px;
         overflow-y: auto;
+        scrollbar-width: thin;
+        animation: fadeInTab 0.15s ease;
     }
 
     .custom-options-menu.show {
@@ -431,21 +457,41 @@
     }
 
     .custom-option-item {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.85rem;
-        color: #bbb;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.6rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.84rem;
+        color: #cbd5e1;
         cursor: pointer;
-        transition: background-color 0.2s, color 0.2s;
+        transition: background-color 0.15s ease, color 0.15s ease;
     }
 
     .custom-option-item:hover {
-        background-color: #1a1a1a;
-        color: #fff;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
     }
 
     .custom-option-item.selected {
-        background-color: #02a9ff;
-        color: #fff;
+        background-color: rgba(56, 189, 248, 0.12);
+        color: #38bdf8 !important;
+        font-weight: 600;
+    }
+
+    .custom-option-item::after {
+        content: "\f00c";
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        font-size: 0.8rem;
+        color: #38bdf8;
+        display: none;
+        margin-left: auto;
+        padding-left: 8px;
+    }
+
+    .custom-option-item.selected::after {
+        display: inline-block;
     }
 
     /* Sidebar & Responsive Navigation */
