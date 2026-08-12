@@ -108,15 +108,21 @@ ANIME_GENRES = [
 async def _render(template: str, **kwargs):
     """Render a template, always injecting current_user for the navbar."""
     user_session = session.get("user")
-    current_user = get_user(user_session["uid"]) if user_session else None
+    current_user = get_user(user_session["uid"]) if user_session and "uid" in user_session else None
+    if user_session and not current_user:
+        session.pop("user", None)
     return await render_template(template, current_user=current_user, **kwargs)
 
 
 @ui_bp.route("/")
 @rate_limit(limit=30, period_seconds=60)
 async def index():
-    if session.get("user"):
-        return redirect(url_for("ui.configure"))
+    user_session = session.get("user")
+    if user_session and "uid" in user_session:
+        user = get_user(user_session["uid"])
+        if user:
+            return redirect(url_for("ui.configure"))
+        session.pop("user", None)
     resp = await make_response(await _render("index.html"))
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return resp
@@ -129,7 +135,10 @@ async def guest_login():
 
     user_session = session.get("user")
     if user_session and user_session.get("uid"):
-        return redirect(url_for("ui.configure"))
+        user = get_user(user_session["uid"])
+        if user:
+            return redirect(url_for("ui.configure"))
+        session.pop("user", None)
 
     guest_uid = f"guest_{secrets.token_hex(8)}"
     guest_user = {
@@ -180,8 +189,9 @@ async def configure(user_id: str = ""):
         if not user_session:
             return redirect(url_for("ui.index"))
 
-    user = get_user(user_session["uid"])
+    user = get_user(user_session.get("uid", ""))
     if not user:
+        session.pop("user", None)
         await flash("User not found. Please log in again.", "danger")
         return redirect(url_for("ui.index"))
 
