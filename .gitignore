@@ -15,3 +15,5 @@ trigger_test_*.py
 *.bak
 tests/
 .impeccable/
+DESIGN.md
+PRODUCT.md
