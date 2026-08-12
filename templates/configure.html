@@ -631,12 +631,21 @@
         border-radius: 10px;
         padding: 0.65rem 0.9rem;
         cursor: pointer;
-        transition: all 0.18s ease;
+        transition: border-color 0.18s ease;
         text-align: left;
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-tap-highlight-color: transparent !important;
+        user-select: none;
     }
-    .mobile-select-trigger:active, .mobile-select-trigger.active {
-        border-color: rgba(2, 169, 255, 0.4);
-        background: rgba(2, 169, 255, 0.05);
+    .mobile-select-trigger:focus,
+    .mobile-select-trigger:focus-visible,
+    .mobile-select-trigger:active,
+    .mobile-select-trigger.active {
+        outline: none !important;
+        box-shadow: none !important;
+        border-color: rgba(255, 255, 255, 0.15) !important;
+        background: #141416 !important;
     }
     .mobile-select-popover-menu {
         position: absolute;
