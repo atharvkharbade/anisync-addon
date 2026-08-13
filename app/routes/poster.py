@@ -109,8 +109,8 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logo_w, logo_h = 16, 16
             logo_gap = 4
 
-            if badge_style == "modern":
-                # --- MODERN DESIGN: Liquid Glass Blur (Glassmorphism Phase 2) & Symmetric Margins ---
+            if badge_style in ("modern", "glass"):
+                # --- OPTION A DESIGN: Frosted Liquid Glass Capsules & Symmetric Margins ---
                 glass_fill = (15, 23, 42, 85)
                 glass_outline = (255, 255, 255, 110)
                 text_color = (255, 255, 255, 255)
@@ -121,7 +121,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 except Exception:
                     font_top = font
 
-                # 1. Draw top rounded liquid glass badge ("NEW EPISODE")
+                # 1. Top rounded liquid glass badge ("NEW EPISODE")
                 text_top = "NEW EPISODE"
                 try:
                     left_t, top_t, right_t, bottom_t = font_top.getbbox(text_top)
