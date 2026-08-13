@@ -109,10 +109,10 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logo_w, logo_h = 16, 16
             logo_gap = 4
 
-            if badge_style in ("modern", "glass"):
-                # --- OPTION A PHASE 3 DESIGN: Pure Gaussian Blur Lens (0% Dark Fill, 100% Poster Blur + Glowing Highlight) ---
-                glass_fill = (0, 0, 0, 0)
-                glass_outline = (255, 255, 255, 140)
+            if badge_style == "modern":
+                # --- MODERN DESIGN: Liquid Glass Blur (Glassmorphism) & Symmetric Margins ---
+                glass_fill = (15, 23, 42, 160)
+                glass_outline = (255, 255, 255, 65)
                 text_color = (255, 255, 255, 255)
 
                 # Setup font for top badge
@@ -121,7 +121,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 except Exception:
                     font_top = font
 
-                # 1. Top rounded liquid glass badge ("NEW EPISODE")
+                # 1. Draw top rounded liquid glass badge ("NEW EPISODE")
                 text_top = "NEW EPISODE"
                 try:
                     left_t, top_t, right_t, bottom_t = font_top.getbbox(text_top)
@@ -153,7 +153,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 except Exception:
                     pass
 
-                # Draw liquid glass overlay and text with subtle shadow
+                # Draw liquid glass overlay and text
                 if hasattr(draw, "rounded_rectangle"):
                     draw.rounded_rectangle([(box_x1, box_y1), (box_x2, box_y2)], radius=radius, fill=glass_fill, outline=glass_outline)
                 else:
@@ -161,7 +161,6 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
                 tx = (box_x1 + (box_w - tw) / 2) - left_t
                 ty = (box_y1 + (box_h - th) / 2) - top_t
-                draw.text((tx + 1, ty + 1), text_top, font=font_top, fill=(0, 0, 0, 180))
                 draw.text((tx, ty), text_top, font=font_top, fill=text_color)
 
                 # 2. Bottom Tracker Badge inside matching liquid glass container
@@ -209,7 +208,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 except Exception:
                     pass
 
-                # Draw liquid glass overlay and text with subtle shadow
+                # Draw liquid glass overlay and text
                 if hasattr(draw, "rounded_rectangle"):
                     draw.rounded_rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], radius=radius, fill=glass_fill, outline=glass_outline)
                 else:
@@ -217,7 +216,6 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
                 btx = (bot_box_x1 + (bot_box_w - btw) / 2) - left_b
                 bty = (bot_box_y1 + (bot_box_h - bth) / 2) - top_b
-                draw.text((btx + 1, bty + 1), bot_text, font=font_bottom, fill=(0, 0, 0, 180))
                 draw.text((btx, bty), bot_text, font=font_bottom, fill=text_color)
 
             else:
