@@ -2440,16 +2440,21 @@
                         </div>
                     </div>
 
-                    <!-- Actions Row (Save Preferences + Direct Install) -->
+                    <!-- Master Save Button -->
+                    <button type="submit" class="btn btn-save-preferences w-100 py-2.5 fw-bold d-inline-flex align-items-center justify-content-center mb-3" onclick="updateFormValues();">
+                        <i class="fa-solid fa-floppy-disk me-2"></i><span>Save Preferences</span>
+                    </button>
+
+                    <!-- Secondary Install Actions Below Save -->
                     <div class="row g-2">
                         <div class="col-6">
-                            <button type="submit" class="btn btn-save-preferences w-100 py-2.5 fw-bold d-inline-flex align-items-center justify-content-center" onclick="updateFormValues();" style="min-height: 44px; border-radius: 9px; font-size: 0.875rem;">
-                                <i class="fa-solid fa-floppy-disk me-2"></i><span>Save Preferences</span>
+                            <button type="button" class="btn w-100 py-2 fw-medium d-inline-flex align-items-center justify-content-center" onclick="copyToClipboard('manifest_url')" style="gap: 8px; font-size: 0.82rem; border-radius: 8px; background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.09); color: #cbd5e1; transition: all 0.2s ease;">
+                                <i class="fa-regular fa-copy flex-shrink-0"></i><span class="text-truncate">Copy URL</span>
                             </button>
                         </div>
                         <div class="col-6">
-                            <a href="{{ manifest_magnet }}" class="btn btn-success w-100 py-2.5 fw-semibold d-inline-flex align-items-center justify-content-center" style="min-height: 44px; border-radius: 9px; font-size: 0.875rem; background: #10b981; border: none; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25); transition: all 0.2s ease;">
-                                <i class="fa-solid fa-arrow-up-right-from-square me-2 flex-shrink-0"></i><span>Direct Install</span>
+                            <a href="{{ manifest_magnet }}" class="btn btn-success w-100 py-2 fw-semibold d-inline-flex align-items-center justify-content-center" style="gap: 8px; font-size: 0.82rem; border-radius: 8px;">
+                                <i class="fa-solid fa-arrow-up-right-from-square flex-shrink-0"></i><span class="text-truncate">Direct Install</span>
                             </a>
                         </div>
                     </div>
