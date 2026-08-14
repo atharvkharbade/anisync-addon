@@ -70,28 +70,29 @@ async def serve_modified_poster(user_id: str, media_id: str):
         # Load image into Pillow
         img = Image.open(io.BytesIO(resp.content))
 
-        # Resize to standard Stremio catalog poster dimensions for perfect uniformity
-        resample_filter = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
-        img = img.resize((225, 350), resample_filter)
-
         if img.mode != "RGBA":
             img = img.convert("RGBA")
 
-        w, h = img.size  # w=225, h=350
+        w, h = img.size
+
+        # Compute dynamic scale factor relative to 225x350 baseline for perfect HD rendering
+        scale = w / 225.0
 
         tracker = request.args.get("tracker", "").lower()
         badge_style = request.args.get("style", "modern").lower()
 
         # Create overlay image for transparent drawing
-        overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
 
         try:
-            # Setup fonts
+            # Setup fonts dynamically scaled to native poster resolution
             font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+            font_size_classic = max(10, int(12 * scale))
+            font_size_small = max(8, int(10 * scale))
             try:
-                font = ImageFont.truetype(font_path, 12)
-                font_small = ImageFont.truetype(font_path, 10)
+                font = ImageFont.truetype(font_path, font_size_classic)
+                font_small = ImageFont.truetype(font_path, font_size_small)
             except Exception:
                 font = ImageFont.load_default()
                 font_small = font
@@ -106,8 +107,8 @@ async def serve_modified_poster(user_id: str, media_id: str):
             assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
             resample_filter = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
 
-            logo_w, logo_h = 16, 16
-            logo_gap = 4
+            logo_w, logo_h = max(12, int(16 * scale)), max(12, int(16 * scale))
+            logo_gap = max(2, int(4 * scale))
 
             if badge_style == "modern":
                 # --- MODERN DESIGN: Liquid Glass Blur (Glassmorphism) & Symmetric Margins ---
@@ -115,11 +116,15 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 glass_outline = (255, 255, 255, 65)
                 text_color = (255, 255, 255, 255)
 
-                # Setup font for top badge
+                # Setup scaled fonts for top & bottom badges
+                font_top_size = max(12, int(15 * scale))
+                font_bottom_size = max(11, int(14 * scale))
                 try:
-                    font_top = ImageFont.truetype(font_path, 15)
+                    font_top = ImageFont.truetype(font_path, font_top_size)
+                    font_bottom = ImageFont.truetype(font_path, font_bottom_size)
                 except Exception:
                     font_top = font
+                    font_bottom = font
 
                 # 1. Draw top rounded liquid glass badge ("NEW EPISODE")
                 text_top = "NEW EPISODE"
@@ -128,21 +133,22 @@ async def serve_modified_poster(user_id: str, media_id: str):
                     tw = right_t - left_t
                     th = bottom_t - top_t
                 except Exception:
-                    tw, th = 110, 14
+                    tw, th = int(110 * scale), int(14 * scale)
                     left_t, top_t = 0, 0
 
-                box_w = tw + 28
-                box_h = th + 14
+                box_w = tw + int(28 * scale)
+                box_h = th + int(14 * scale)
                 box_x1 = int((w - box_w) / 2)
-                box_y1 = 12
+                box_y1 = int(12 * scale)
                 box_x2 = int(box_x1 + box_w)
                 box_y2 = int(box_y1 + box_h)
-                radius = 8
+                radius = max(4, int(8 * scale))
+                blur_radius = max(5, int(10 * scale))
 
                 # Apply Gaussian Blur to poster background slice under top badge
                 try:
                     crop_top = img.crop((box_x1, box_y1, box_x2, box_y2))
-                    blur_top = crop_top.filter(ImageFilter.GaussianBlur(radius=10))
+                    blur_top = crop_top.filter(ImageFilter.GaussianBlur(radius=blur_radius))
                     mask_top = Image.new("L", (box_w, box_h), 0)
                     mask_draw_t = ImageDraw.Draw(mask_top)
                     if hasattr(mask_draw_t, "rounded_rectangle"):
@@ -164,11 +170,6 @@ async def serve_modified_poster(user_id: str, media_id: str):
                 draw.text((tx, ty), text_top, font=font_top, fill=text_color)
 
                 # 2. Bottom Tracker Badge inside matching liquid glass container
-                try:
-                    font_bottom = ImageFont.truetype(font_path, 14)
-                except Exception:
-                    font_bottom = font
-
                 tracker_names = []
                 if draw_mal:
                     tracker_names.append("MAL")
@@ -184,20 +185,20 @@ async def serve_modified_poster(user_id: str, media_id: str):
                     btw = right_b - left_b
                     bth = bottom_b - top_b
                 except Exception:
-                    btw, bth = 65, 14
+                    btw, bth = int(65 * scale), int(14 * scale)
                     left_b, top_b = 0, 0
 
-                bot_box_w = btw + 26
-                bot_box_h = bth + 14
+                bot_box_w = btw + int(26 * scale)
+                bot_box_h = bth + int(14 * scale)
                 bot_box_x1 = int((w - bot_box_w) / 2)
-                bot_box_y1 = int(h - bot_box_h - 12)
+                bot_box_y1 = int(h - bot_box_h - int(12 * scale))
                 bot_box_x2 = int(bot_box_x1 + bot_box_w)
                 bot_box_y2 = int(bot_box_y1 + bot_box_h)
 
                 # Apply Gaussian Blur to poster background slice under bottom badge
                 try:
                     crop_bot = img.crop((bot_box_x1, bot_box_y1, bot_box_x2, bot_box_y2))
-                    blur_bot = crop_bot.filter(ImageFilter.GaussianBlur(radius=10))
+                    blur_bot = crop_bot.filter(ImageFilter.GaussianBlur(radius=blur_radius))
                     mask_bot = Image.new("L", (bot_box_w, bot_box_h), 0)
                     mask_draw_b = ImageDraw.Draw(mask_bot)
                     if hasattr(mask_draw_b, "rounded_rectangle"):
@@ -220,7 +221,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
             else:
                 # --- CLASSIC DESIGN: Solid Bottom Bar ---
-                bar_h = 35
+                bar_h = int(35 * scale)
                 bar_y = h - bar_h
                 draw.rectangle([(0, bar_y), (w, h)], fill=(0, 0, 0, 255))
 
@@ -230,10 +231,10 @@ async def serve_modified_poster(user_id: str, media_id: str):
                     text_w = right - left
                     text_h = bottom - top
                 except Exception:
-                    text_w, text_h = 90, 10
+                    text_w, text_h = int(90 * scale), int(10 * scale)
                     left, top = 0, 0
 
-                text_gap = 6
+                text_gap = int(6 * scale)
                 logos = []
 
                 if draw_mal:
@@ -270,13 +271,13 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
         except Exception as ex:
             logging.error("Failed to dynamically draw overlay: %s. Falling back to solid white bar.", ex)
-            draw.rectangle([(0, 315), (225, 350)], fill=(255, 255, 255, 255))
+            draw.rectangle([(0, int(h - 35 * scale)), (w, h)], fill=(255, 255, 255, 255))
             combined = Image.alpha_composite(img, overlay)
             final_img = combined.convert("RGB")
 
-        # Output the modified image as JPEG
+        # Output the modified image as JPEG with 4:4:4 full chroma at quality 92
         output = io.BytesIO()
-        final_img.save(output, format="JPEG", quality=85)
+        final_img.save(output, format="JPEG", quality=92, subsampling=0)
         output.seek(0)
 
         response = Response(output.read(), mimetype="image/jpeg")
