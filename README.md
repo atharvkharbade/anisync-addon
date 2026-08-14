@@ -46,6 +46,16 @@ Connect MyAnimeList, AniList, and Simkl at the same time. AniSync organizes your
 
 ---
 
+### 🔍 Universal Anime Search (with Kitsu Engine)
+Search for any anime directly inside Stremio or Nuvio:
+* **Rich Metadata & Localized Titles**: Instant results with your selected language (English, Romaji, or Japanese).
+* **Full Stream Compatibility**: Outputs native Kitsu IDs to ensure seamless stream matching across scraper addons.
+* **Works for Guest Users**: Enjoy full search and rich anime metadata even without connecting a tracking account.
+
+![Stremio Anime Search](docs/images/AniSync_Search.png)
+
+---
+
 ### 🤖 Personalized Recommendations (100% Explained)
 Discover new anime right on your home screen based on what you enjoy:
 * **Clear Reasons**: Every suggested anime explains why it's there (e.g. *"Inspired by your favorites: Hunter x Hunter"* or *"Popular Dark Fantasy based on your taste"*).
