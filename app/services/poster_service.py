@@ -34,8 +34,8 @@ async def validate_top_poster_api_key(api_key: str) -> bool:
         if resp.status_code in [200, 302, 307]:
             return True
         url_alt = f"https://top-posters.com/{api_key}/imdb/poster-default/tt0111161.jpg"
-        resp_alt = await client.get(url_alt, timeout=8)
-        return resp_alt.status_code in [200, 302, 307]
+        resp_alt = await client.get(url_alt, timeout=8, follow_redirects=True)
+        return resp_alt.status_code in [200, 301, 302, 307, 308]
     except Exception as e:
         logging.error("Failed to validate TOP Posters API key: %s", e)
         return False
