@@ -438,13 +438,14 @@ async def configure(user_id: str = ""):
 
             trigger_recommendation_update_background(uid, force=True)
 
+        current_poster_provider = user.get("poster_provider", "none")
         top_key = user.get("top_poster_key", "")
         validation_failed_msg = []
-        if rpdb_key and not user.get("rpdb_key_valid", False):
+        if current_poster_provider == "rpdb" and rpdb_key and not user.get("rpdb_key_valid", False):
             validation_failed_msg.append("Invalid RPDB API key")
-        if top_key and not user.get("top_key_valid", False):
+        if current_poster_provider in ("top_poster", "topposters") and top_key and not user.get("top_key_valid", False):
             validation_failed_msg.append("Invalid TOP Posters API key")
-        if gemini_key and not user.get("gemini_key_valid", False):
+        if user.get("enable_recommendations") and gemini_key and not user.get("gemini_key_valid", False):
             validation_failed_msg.append("Invalid Gemini API key")
 
         if validation_failed_msg:
