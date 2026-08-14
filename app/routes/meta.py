@@ -878,7 +878,7 @@ async def get_banner_aspect_ratio(banner_url: str) -> float:
 
         async with httpx.AsyncClient(timeout=4.0) as client:
             resp = await client.get(banner_url, headers={"User-Agent": "Mozilla/5.0"})
-            if resp.status_code == 200:
+            if resp.status_code == 200 and len(resp.content) <= 10 * 1024 * 1024:
                 img = Image.open(io.BytesIO(resp.content))
                 bw, bh = img.size
                 ratio = round(bw / float(bh), 2) if bh > 0 else 2.5

@@ -67,6 +67,10 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logging.warning("Failed to fetch original poster from CDN: %s (status %s)", original_url, resp.status_code)
             return redirect(original_url)
 
+        if len(resp.content) > 10 * 1024 * 1024:
+            logging.warning("Poster image from CDN exceeds 10MB limit: %s (%d bytes)", original_url, len(resp.content))
+            return redirect(original_url)
+
         # Load image into Pillow
         img = Image.open(io.BytesIO(resp.content))
 
@@ -311,6 +315,10 @@ async def serve_framed_background(user_id: str, media_id: str):
         client = get_client()
         resp = await client.get(original_url, timeout=10)
         if resp.status_code != 200:
+            return redirect(original_url)
+
+        if len(resp.content) > 10 * 1024 * 1024:
+            logging.warning("Background image from CDN exceeds 10MB limit: %s (%d bytes)", original_url, len(resp.content))
             return redirect(original_url)
 
         banner_img = Image.open(io.BytesIO(resp.content)).convert("RGB")
