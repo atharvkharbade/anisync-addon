@@ -9,8 +9,8 @@ from config import Config
 
 client: MongoClient = MongoClient(
     Config.MONGO_URI,
-    maxPoolSize=100,
-    minPoolSize=10,
+    maxPoolSize=25,
+    minPoolSize=5,
     serverSelectionTimeoutMS=5000,
     connectTimeoutMS=5000,
     socketTimeoutMS=5000,
@@ -33,6 +33,7 @@ try:
     db.get_collection("fribb_mappings").create_index("mal_id")
     db.get_collection("fribb_mappings").create_index("anilist_id")
     db.get_collection("jikan_cache").create_index([("mal_id", 1), ("episode", 1)])
+    db.get_collection("jikan_cache").create_index("cached_at", expireAfterSeconds=168 * 3600)
 
     # id_cache indexes
     db.get_collection("id_cache").create_index("kitsu_id")
@@ -49,6 +50,17 @@ try:
 
     db.get_collection("kitsu_search_cache").create_index([("query", 1), ("offset", 1)])
     db.get_collection("kitsu_search_cache").create_index("expires_at", expireAfterSeconds=0)
+
+    db.get_collection("kitsu_meta_cache").create_index("kitsu_id", unique=True)
+    db.get_collection("kitsu_meta_cache").create_index("expires_at", expireAfterSeconds=0)
+
+    db.get_collection("anizp_meta_cache").create_index("key", unique=True)
+    db.get_collection("anizp_meta_cache").create_index("expires_at", expireAfterSeconds=0)
+
+    db.get_collection("cinemeta_meta_cache").create_index([("imdb_id", 1), ("media_type", 1)], unique=True)
+    db.get_collection("cinemeta_meta_cache").create_index("expires_at", expireAfterSeconds=0)
+
+    db.get_collection("discovery_catalogs_cache").create_index("catalog_id", unique=True)
 
     db.get_collection("banner_ratios").create_index("url", unique=True)
 except Exception as e:
