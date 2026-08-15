@@ -696,6 +696,8 @@ async def background_fetch_and_cache_filler(mal_id: str, episode: int):
                 return
 
             from app.api.jikan import get_anime_episodes
+
+            success = False
             episodes_data = await get_anime_episodes(mal_id, page=page)
             if episodes_data is not None:
                 for item in episodes_data:
@@ -708,10 +710,12 @@ async def background_fetch_and_cache_filler(mal_id: str, episode: int):
                 )
                 success = True
 
-            # If we failed to fetch the page successfully, or if the episode is still not cached,
-            # cache it as False to prevent infinite retries.
-            if not success or get_jikan_filler_cache(mal_id, episode) is None:
+            # If we fetched successfully but this specific episode wasn't in the returned list,
+            # mark as False to avoid infinite loops.
+            if success and get_jikan_filler_cache(mal_id, episode) is None:
                 set_jikan_filler_cache(mal_id, episode, False)
+    except Exception as e:
+        logging.warning("Background Jikan filler fetch encountered error for mal_id=%s ep=%s: %s", mal_id, episode, e)
     finally:
         currently_fetching_pages.discard(page_pair)
         currently_fetching_pairs.discard((str(mal_id), episode))
