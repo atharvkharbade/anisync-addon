@@ -2431,12 +2431,12 @@
 
                     <!-- Manifest URL Input Box -->
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary mb-1" style="font-size: 0.73rem; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8 !important;">Manifest URL</label>
-                        <div class="input-group align-items-center" style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 10px; overflow: hidden; padding: 3px;">
-                            <input type="text" id="manifest_url" class="form-control text-light font-monospace bg-transparent border-0 px-2.5 py-1.5" value="{{ manifest_url }}" readonly style="font-size: 0.8125rem; outline: none; box-shadow: none;">
-                            <button type="button" class="btn btn-sm px-3 py-1.5 fw-medium d-inline-flex align-items-center flex-shrink-0" onclick="copyToClipboard('manifest_url')" title="Copy Manifest URL" style="border-radius: 7px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.09); color: #cbd5e1; font-size: 0.8rem; transition: all 0.2s ease;">
-                                <i class="fa-regular fa-copy me-2"></i><span>Copy</span>
-                            </button>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-semibold text-secondary mb-0" style="font-size: 0.73rem; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8 !important;">Manifest URL</label>
+                            <span class="text-secondary small" style="font-size: 0.72rem; color: #64748b !important;"><i class="fa-regular fa-hand-pointer me-1"></i>Tap to copy</span>
+                        </div>
+                        <div class="position-relative" style="cursor: pointer;" onclick="document.getElementById('manifest_url').select(); copyToClipboard('manifest_url');" title="Click to copy Manifest URL">
+                            <input type="text" id="manifest_url" class="form-control text-light font-monospace" value="{{ manifest_url }}" readonly style="font-size: 0.8125rem; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 10px; padding: 0.62rem 0.9rem; cursor: pointer; outline: none; box-shadow: none; transition: border-color 0.2s ease, background-color 0.2s ease;">
                         </div>
                     </div>
 
