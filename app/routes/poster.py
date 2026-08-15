@@ -298,6 +298,11 @@ async def serve_modified_poster(user_id: str, media_id: str):
             logging.warning("Failed to fetch original poster from CDN: %s (status %s)", original_url, resp.status_code)
             return redirect(original_url)
 
+        # Validate final URL destination after redirects to prevent SSRF
+        if not is_trusted_url(str(resp.url)):
+            logging.warning("Poster redirected to untrusted destination: %s", resp.url)
+            return redirect(original_url)
+
         if len(resp.content) > 10 * 1024 * 1024:
             logging.warning("Poster image from CDN exceeds 10MB limit: %s (%d bytes)", original_url, len(resp.content))
             return redirect(original_url)
@@ -335,8 +340,13 @@ async def serve_framed_background(user_id: str, media_id: str):
 
     try:
         client = get_client()
-        resp = await client.get(original_url, timeout=10)
+        resp = await client.get(original_url, timeout=10, follow_redirects=True)
         if resp.status_code != 200:
+            return redirect(original_url)
+
+        # Validate final URL destination after redirects to prevent SSRF
+        if not is_trusted_url(str(resp.url)):
+            logging.warning("Background redirected to untrusted destination: %s", resp.url)
             return redirect(original_url)
 
         if len(resp.content) > 10 * 1024 * 1024:

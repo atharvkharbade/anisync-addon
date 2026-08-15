@@ -142,7 +142,6 @@ async def guest_login():
 
     guest_uid = f"guest_{secrets.token_hex(8)}"
     guest_user = {
-        "_id": guest_uid,
         "uid": guest_uid,
         "username": "Guest User",
         "is_guest": True,

@@ -25,6 +25,11 @@ try:
     db.get_collection("users").create_index("mal_id")
     db.get_collection("users").create_index("anilist_id")
     db.get_collection("users").create_index("simkl_id")
+    db.get_collection("users").create_index(
+        "created_at",
+        expireAfterSeconds=30 * 86400,
+        partialFilterExpression={"is_guest": True},
+    )
 
     db.get_collection("rate_limits").create_index([("ip", 1), ("route", 1), ("timestamp", -1)])
     db.get_collection("rate_limits").create_index("timestamp", expireAfterSeconds=60)
@@ -141,7 +146,6 @@ def get_user(user_id: str) -> dict | None:
     # 4. Support guest user auto-provisioning
     if user_id.startswith("guest_"):
         guest_user = {
-            "_id": user_id,
             "uid": user_id,
             "username": "Guest User",
             "is_guest": True,
@@ -201,6 +205,8 @@ def store_user(user_details: dict) -> bool:
     user_details["uid"] = str(uid)
     existing = users_collection.find_one({"uid": str(uid)})
     if existing:
+        if "_id" in existing and "_id" not in user_details:
+            user_details["_id"] = existing["_id"]
         return users_collection.replace_one({"uid": str(uid)}, user_details).acknowledged
     return users_collection.insert_one(user_details).acknowledged
 
