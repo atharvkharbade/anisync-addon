@@ -26,8 +26,8 @@
         cursor: pointer;
     }
     .manifest-box:hover {
-        border-color: rgba(2, 169, 255, 0.35);
-        background: rgba(2, 169, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.04);
     }
     .manifest-input {
         width: 100%;
@@ -877,12 +877,12 @@
     }
     .btn-save-preferences {
         min-height: 44px;
-        background: #02a9ff;
-        color: #fff;
+        background: #ffffff;
+        color: #09090b !important;
         border: none;
         padding: 0.72rem 1.2rem;
         border-radius: 9px;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 0.875rem;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         display: inline-flex;
@@ -890,18 +890,24 @@
         justify-content: center;
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
     }
+    .btn-save-preferences * {
+        color: #09090b !important;
+    }
     .btn-save-preferences:hover {
-        background: #0090df;
-        color: #fff;
+        background: #f1f5f9;
+        color: #000000 !important;
         transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(2, 169, 255, 0.25);
+        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
+    }
+    .btn-save-preferences:hover * {
+        color: #000000 !important;
     }
     .btn-save-preferences:active {
         transform: translateY(0);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
     .btn-save-preferences:focus-visible {
-        outline: 2px solid #02a9ff;
+        outline: 2px solid #ffffff;
         outline-offset: 2px;
     }
     @media (min-width: 768px) {
@@ -2538,10 +2544,10 @@
             <div class="anisync-tab-pane" id="tab-install" role="tabpanel" aria-labelledby="tab-btn-install">
                 
                 <!-- Master Install Card -->
-                <div class="card-dark p-3 p-sm-4 mb-4" style="background: linear-gradient(180deg, rgba(2, 169, 255, 0.04) 0%, rgba(20, 20, 22, 0.95) 100%); border: 1px solid rgba(2, 169, 255, 0.25); border-radius: 14px;">
+                <div class="card-dark p-3 p-sm-4 mb-4" style="background: #141416; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px;">
                     <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom border-white border-opacity-10">
-                        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(2, 169, 255, 0.1); border: 1px solid rgba(2, 169, 255, 0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            <i class="fa-solid fa-puzzle-piece text-info fs-5"></i>
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i class="fa-solid fa-puzzle-piece text-light fs-5"></i>
                         </div>
                         <div>
                             <h6 class="fw-bold text-white mb-0.5" style="font-size: 1rem;">Install AniSync Addon</h6>
