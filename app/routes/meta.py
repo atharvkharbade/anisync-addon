@@ -635,7 +635,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             if next_airing_hdr:
                 dynamic_headers.append(next_airing_hdr)
 
-        filler_arc_hdr = build_filler_arc_header(anizp_data, watched_progress=watched_progress)
+        filler_arc_hdr = build_filler_arc_header(anizp_data, watched_progress=watched_progress, mal_id=mal_id)
         if filler_arc_hdr:
             dynamic_headers.append(filler_arc_hdr)
 
@@ -757,27 +757,39 @@ def build_next_airing_header(anilist_data: dict | None = None, mal_data: dict | 
     return None
 
 
-def build_filler_arc_header(anizp_data: dict | None, watched_progress: int = 0) -> str | None:
-    if not anizp_data:
+def build_filler_arc_header(
+    anizp_data: dict | None,
+    watched_progress: int = 0,
+    mal_id: str | None = None,
+) -> str | None:
+    filler_eps_set = set()
+
+    # 1. Check Jikan MongoDB cache first (primary authority for episode filler tags)
+    if mal_id:
+        try:
+            from app.services.db import jikan_cache_collection
+            docs = jikan_cache_collection.find({"mal_id": str(mal_id), "filler": True}, {"episode": 1})
+            for doc in docs:
+                ep = doc.get("episode")
+                if isinstance(ep, int):
+                    filler_eps_set.add(ep)
+        except Exception as e:
+            logging.debug("Could not query jikan_cache for filler arc header: %s", e)
+
+    # 2. Check AniZip episodes if any provided
+    if anizp_data:
+        episodes = anizp_data.get("episodes") or {}
+        for ep_key, ep_info in episodes.items():
+            if isinstance(ep_info, dict) and (ep_info.get("isFiller") is True or ep_info.get("filler") is True):
+                try:
+                    filler_eps_set.add(int(ep_key))
+                except ValueError:
+                    pass
+
+    if not filler_eps_set:
         return None
 
-    episodes = anizp_data.get("episodes") or {}
-    if not episodes:
-        return None
-
-    filler_eps = []
-    for ep_key, ep_info in episodes.items():
-        if isinstance(ep_info, dict) and ep_info.get("isFiller"):
-            try:
-                ep_num = int(ep_key)
-                filler_eps.append(ep_num)
-            except ValueError:
-                pass
-
-    if not filler_eps:
-        return None
-
-    filler_eps.sort()
+    filler_eps = sorted(filler_eps_set)
 
     ranges = []
     start = filler_eps[0]
