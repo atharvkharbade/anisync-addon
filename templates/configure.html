@@ -459,13 +459,15 @@
     .custom-option-item {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-start;
+        gap: 8px;
         padding: 0.6rem 0.85rem;
         border-radius: 8px;
         font-size: 0.84rem;
         color: #cbd5e1;
         cursor: pointer;
         transition: background-color 0.15s ease, color 0.15s ease;
+        text-align: left;
     }
 
     .custom-option-item:hover {
@@ -488,6 +490,7 @@
         display: none;
         margin-left: auto;
         padding-left: 8px;
+        flex-shrink: 0;
     }
 
     .custom-option-item.selected::after {
