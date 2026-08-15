@@ -783,90 +783,84 @@
     .step-nav-bar {
         border-top: 1px solid rgba(255, 255, 255, 0.08);
         padding-top: 1.15rem;
+        width: 100%;
+    }
+    .step-nav-bar.step-nav-2col {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+    .step-nav-bar.step-nav-1col-end {
+        display: flex !important;
+        justify-content: flex-end !important;
+        width: 100% !important;
+    }
+    .step-nav-bar.step-nav-1col-start {
+        display: flex !important;
+        justify-content: flex-start !important;
+        width: 100% !important;
     }
     .btn-step-action {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.62rem 1.15rem;
-        border-radius: 10px;
-        font-size: 0.84rem;
-        font-weight: 500;
-        background: rgba(255, 255, 255, 0.035);
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        color: #cbd5e1;
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        text-decoration: none;
-        cursor: pointer;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0.62rem 0.8rem !important;
+        border-radius: 10px !important;
+        font-size: 0.84rem !important;
+        font-weight: 500 !important;
+        background: rgba(255, 255, 255, 0.035) !important;
+        border: 1px solid rgba(255, 255, 255, 0.09) !important;
+        color: #cbd5e1 !important;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        text-decoration: none !important;
+        cursor: pointer !important;
+        white-space: nowrap !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
     .btn-step-action:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.2);
-        color: #ffffff;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+        color: #ffffff !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
     }
     .btn-step-action:active {
-        transform: translateY(0);
+        transform: translateY(0) !important;
     }
     .btn-step-action strong {
-        font-weight: 600;
-        color: #ffffff;
+        font-weight: 600 !important;
+        color: #ffffff !important;
     }
-    .btn-step-prev,
-    .btn-step-next {
-        background: rgba(255, 255, 255, 0.035);
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        color: #cbd5e1;
-    }
-    .btn-step-prev:hover,
-    .btn-step-next:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.2);
-        color: #ffffff;
+    .btn-step-action span {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
     }
     .btn-step-action i {
-        font-size: 0.8rem;
-        color: #94a3b8;
-        transition: transform 0.2s ease, color 0.2s ease;
+        font-size: 0.8rem !important;
+        color: #94a3b8 !important;
+        transition: transform 0.2s ease, color 0.2s ease !important;
+        flex-shrink: 0 !important;
     }
     .btn-step-action:hover i {
-        color: #ffffff;
+        color: #ffffff !important;
     }
     .btn-step-prev:hover i {
-        transform: translateX(-3px);
+        transform: translateX(-3px) !important;
     }
     .btn-step-next:hover i {
-        transform: translateX(3px);
+        transform: translateX(3px) !important;
     }
 
-    @media (max-width: 991.98px) {
-        .step-nav-bar {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            justify-content: space-between !important;
-            gap: 8px !important;
-            width: 100% !important;
+    @media (max-width: 575.98px) {
+        .step-nav-bar.step-nav-2col {
+            gap: 6px !important;
         }
-        .step-nav-bar .btn-step-action {
-            flex: 1 1 0% !important;
-            width: 100% !important;
-            max-width: 50% !important;
-            min-width: 0 !important;
-            justify-content: center !important;
-            text-align: center !important;
-            padding: 0.62rem 0.4rem !important;
-            font-size: 0.8rem !important;
-            white-space: nowrap !important;
-        }
-        .step-nav-bar .btn-step-action span {
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            white-space: nowrap !important;
-        }
-        .step-nav-bar.justify-content-end .btn-step-action,
-        .step-nav-bar.justify-content-start .btn-step-action {
-            max-width: 100% !important;
+        .btn-step-action {
+            padding: 0.6rem 0.35rem !important;
+            font-size: 0.76rem !important;
         }
     }
 
@@ -1255,8 +1249,8 @@
             </div>
 
             <!-- Step Navigation (Next: Catalogs) -->
-            <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-end">
-                <button type="button" class="btn btn-step-action btn-step-next" onclick="switchTab('catalogs')">
+            <div class="step-nav-bar mt-4 pt-3 step-nav-1col-end">
+                <button type="button" class="btn btn-step-action btn-step-next" onclick="switchTab('catalogs')" style="max-width: fit-content;">
                     <span>Next: <strong>Catalogs</strong></span><i class="fa-solid fa-arrow-right ms-2"></i>
                 </button>
             </div>
@@ -1839,7 +1833,7 @@
                 {% endif %}
 
                 <!-- Step Navigation (Previous: Trackers, Next: Appearance) -->
-                <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-between align-items-center gap-2">
+                <div class="step-nav-bar mt-4 pt-3 step-nav-2col">
                     <button type="button" class="btn btn-step-action btn-step-prev" onclick="switchTab('trackers')">
                         <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>Trackers</strong></span>
                     </button>
@@ -2128,12 +2122,12 @@
 
 
                 <!-- Step Navigation (Previous: Catalogs, Next: Metadata) -->
-                <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-between align-items-center gap-2">
+                <div class="step-nav-bar mt-4 pt-3 step-nav-2col">
                     <button type="button" class="btn btn-step-action btn-step-prev" onclick="switchTab('catalogs')">
                         <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>Catalogs</strong></span>
                     </button>
                     <button type="button" class="btn btn-step-action btn-step-next" onclick="switchTab('metadata')">
-                        <span>Next: <strong>{% if not user.get('is_guest') %}<span class="d-none d-md-inline">Metadata & Recommendations</span><span class="d-inline d-md-none">Metadata</span>{% else %}Metadata{% endif %}</strong></span><i class="fa-solid fa-arrow-right ms-2"></i>
+                        <span>Next: <strong>{% if not user.get('is_guest') %}Metadata & Recs{% else %}Metadata{% endif %}</strong></span><i class="fa-solid fa-arrow-right ms-2"></i>
                     </button>
                 </div>
 
@@ -2476,7 +2470,7 @@
 
 
                 <!-- Step Navigation (Previous: Appearance, Next: Install) -->
-                <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-between align-items-center gap-2">
+                <div class="step-nav-bar mt-4 pt-3 step-nav-2col">
                     <button type="button" class="btn btn-step-action btn-step-prev" onclick="switchTab('appearance')">
                         <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>Appearance</strong></span>
                     </button>
@@ -2546,9 +2540,9 @@
                 </div>
 
                 <!-- Step Navigation (Previous: Metadata) -->
-                <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-start">
-                    <button type="button" class="btn btn-step-action btn-step-prev" onclick="switchTab('metadata')">
-                        <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>{% if not user.get('is_guest') %}<span class="d-none d-md-inline">Metadata & Recommendations</span><span class="d-inline d-md-none">Metadata</span>{% else %}Metadata{% endif %}</strong></span>
+                <div class="step-nav-bar mt-4 pt-3 step-nav-1col-start">
+                    <button type="button" class="btn btn-step-action btn-step-prev" onclick="switchTab('metadata')" style="max-width: fit-content;">
+                        <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>{% if not user.get('is_guest') %}Metadata & Recs{% else %}Metadata{% endif %}</strong></span>
                     </button>
                 </div>
 
