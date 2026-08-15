@@ -909,31 +909,146 @@
             min-width: 320px;
         }
     }
+
+    /* Sleek Hero Welcome Bar */
+    .welcome-hero-bar {
+        background: #101012;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        position: relative;
+        overflow: hidden;
+    }
+    .welcome-hero-bar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(2, 169, 255, 0.35), transparent);
+    }
+    .welcome-avatar-wrap {
+        position: relative;
+    }
+    .welcome-avatar {
+        border: 2px solid rgba(2, 169, 255, 0.45);
+        box-shadow: 0 0 14px rgba(2, 169, 255, 0.25);
+    }
+    .guest-avatar-box {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(2, 169, 255, 0.1);
+        border: 1.5px solid rgba(2, 169, 255, 0.3);
+        box-shadow: 0 0 12px rgba(2, 169, 255, 0.15);
+    }
+    .welcome-username {
+        color: #ffffff;
+        font-weight: 700;
+    }
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.42rem 0.85rem;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+    .status-pill.status-connected {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        color: #34d399;
+    }
+    .status-pill.status-guest {
+        background: rgba(2, 169, 255, 0.1);
+        border: 1px solid rgba(2, 169, 255, 0.25);
+        color: #38bdf8;
+    }
+    .status-pill.status-unlinked {
+        background: rgba(234, 179, 8, 0.1);
+        border: 1px solid rgba(234, 179, 8, 0.25);
+        color: #facc15;
+    }
+    .status-pulse-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 8px #10b981;
+    }
+    .status-warn-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #eab308;
+    }
 </style>
 <div class="container-fluid px-2 px-md-3 px-xl-4 mt-1 mt-sm-2 pb-5">
 
-    <!-- Greeting Header -->
-    <div class="mb-3 px-1 px-sm-2">
-        <h3 class="fw-bold fs-5 fs-sm-3 text-white mb-1">
-            {% if user.get('picture') %}
-            <img src="{{ user['picture'] }}" width="32" height="32" class="rounded-circle me-2"
-                style="object-fit:cover;" onerror="this.style.display='none'">
-            {% endif %}
-            {% if user.get('name') or user.get('anilist_username') or user.get('simkl_username') %}
-            Hey, {{ user.get('name') or user.get('anilist_username') or user.get('simkl_username') }}
-            {% elif user.get('is_guest') %}
-            Hey, Guest User
-            {% else %}
-            Configure AniSync
-            {% endif %}
-        </h3>
-        <p class="text-secondary small mb-0" style="font-size: 0.8125rem;">
-            {% if user.get('is_guest') %}
-            Preferences are limited since you are on guest mode.
-            {% else %}
-            Manage your tracking connections, catalogs, and addon preferences.
-            {% endif %}
-        </p>
+    <!-- Sleek Hero Welcome Bar -->
+    <div class="welcome-hero-bar p-3 p-sm-3.5 mb-3 mb-md-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center min-w-0" style="gap: 14px;">
+                {% if user.get('picture') %}
+                <div class="welcome-avatar-wrap flex-shrink-0">
+                    <img src="{{ user['picture'] }}" width="40" height="40" class="rounded-circle welcome-avatar"
+                        style="object-fit:cover;" onerror="this.parentElement.style.display='none'">
+                </div>
+                {% elif user.get('is_guest') %}
+                <div class="guest-avatar-box flex-shrink-0 d-flex align-items-center justify-content-center">
+                    <i class="fa-solid fa-user-secret text-info" style="font-size: 1.1rem;"></i>
+                </div>
+                {% else %}
+                <div class="guest-avatar-box flex-shrink-0 d-flex align-items-center justify-content-center">
+                    <i class="fa-solid fa-user text-info" style="font-size: 1.05rem;"></i>
+                </div>
+                {% endif %}
+
+                <div class="d-flex flex-column min-w-0">
+                    <h3 class="fw-bold text-white mb-0 text-truncate" style="font-size: 1.125rem; letter-spacing: -0.01em;">
+                        {% if user.get('name') or user.get('anilist_username') or user.get('simkl_username') %}
+                        Hey, <span class="welcome-username">{{ user.get('name') or user.get('anilist_username') or user.get('simkl_username') }}</span>
+                        {% elif user.get('is_guest') %}
+                        Hey, <span class="welcome-username">Guest User</span>
+                        {% else %}
+                        Configure <span class="welcome-username">AniSync</span>
+                        {% endif %}
+                    </h3>
+                    <p class="text-secondary small mb-0 mt-0.5" style="font-size: 0.8125rem; color: #94a3b8 !important; line-height: 1.45;">
+                        {% if user.get('is_guest') %}
+                        Preferences are limited in Guest Mode. Connect a tracker to unlock watch progress & recommendations.
+                        {% else %}
+                        Manage your tracking connections, catalogs, and addon preferences.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: Status / Info Pill -->
+            <div class="d-none d-sm-flex align-items-center gap-2 flex-shrink-0 ms-auto">
+                {% if user.get('is_guest') %}
+                <div class="status-pill status-guest">
+                    <i class="fa-solid fa-user-secret me-1.5 text-info"></i>
+                    <span>Guest Mode</span>
+                </div>
+                {% else %}
+                {% set connected_count = (1 if user.get('mal_access_token') else 0) + (1 if user.get('anilist_token') else 0) + (1 if user.get('simkl_access_token') else 0) %}
+                {% if connected_count > 0 %}
+                <div class="status-pill status-connected">
+                    <span class="status-pulse-dot me-2"></span>
+                    <span>{{ connected_count }} Tracker{{ 's' if connected_count != 1 else '' }} Connected</span>
+                </div>
+                {% else %}
+                <div class="status-pill status-unlinked">
+                    <span class="status-warn-dot me-2"></span>
+                    <span>No Trackers Linked</span>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
     </div>
 
     {% if user.get('is_guest') %}
