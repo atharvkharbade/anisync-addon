@@ -839,6 +839,30 @@
         transform: translateX(3px);
     }
 
+    @media (max-width: 767.98px) {
+        .step-nav-bar {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            gap: 8px !important;
+            width: 100%;
+        }
+        .step-nav-bar .btn-step-action {
+            flex: 1 1 0;
+            width: 100%;
+            min-width: 0;
+            justify-content: center;
+            text-align: center;
+            padding: 0.6rem 0.5rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .step-nav-bar .btn-step-action span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
     .anisync-tab-pane {
         display: none;
         animation: fadeInTab 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -2102,7 +2126,7 @@
                         <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>Catalogs</strong></span>
                     </button>
                     <button type="button" class="btn btn-step-action btn-step-next" onclick="switchTab('metadata')">
-                        <span>Next: <strong>{% if not user.get('is_guest') %}Metadata & Recommendations{% else %}Metadata{% endif %}</strong></span><i class="fa-solid fa-arrow-right ms-2"></i>
+                        <span>Next: <strong>{% if not user.get('is_guest') %}<span class="d-none d-sm-inline">Metadata & Recommendations</span><span class="d-inline d-sm-none">Metadata</span>{% else %}Metadata{% endif %}</strong></span><i class="fa-solid fa-arrow-right ms-2"></i>
                     </button>
                 </div>
 
@@ -2517,7 +2541,7 @@
                 <!-- Step Navigation (Previous: Metadata) -->
                 <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-start">
                     <button type="button" class="btn btn-step-action btn-step-prev" onclick="switchTab('metadata')">
-                        <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>{% if not user.get('is_guest') %}Metadata & Recommendations{% else %}Metadata{% endif %}</strong></span>
+                        <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>{% if not user.get('is_guest') %}<span class="d-none d-sm-inline">Metadata & Recommendations</span><span class="d-inline d-sm-none">Metadata</span>{% else %}Metadata{% endif %}</strong></span>
                     </button>
                 </div>
 
