@@ -582,45 +582,8 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             poster_provider=effective_provs.get("poster", "anilist"),
         )
 
-        # Look up description in recommendations cache to retain the trace prefix
-        from app.services.recommendations import get_cached_recommendations
-
-        cache = get_cached_recommendations(user_id)
-        if cache:
-            found_desc = None
-            for key in ["rec_items", "loved_items", "liked_items", "item_items", "genre_1_items", "genre_2_items"]:
-                items = cache.get(key) or []
-                for item in items:
-                    cache_id = item.get("id")
-                    if not cache_id:
-                        continue
-                    # 1. Direct match
-                    if cache_id == meta_id:
-                        found_desc = item.get("description")
-                        break
-                    # 2. Mapped IDs match
-                    c_parts = cache_id.split(":")
-                    if len(c_parts) >= 2:
-                        c_prefix, c_val = c_parts[0], c_parts[1]
-                        if c_prefix == "mal" and mal_id and c_val == str(mal_id):
-                            found_desc = item.get("description")
-                            break
-                        elif c_prefix == "anilist" and anilist_id and c_val == str(anilist_id):
-                            found_desc = item.get("description")
-                            break
-                        elif c_prefix == "kitsu" and kitsu_id and c_val == str(kitsu_id):
-                            found_desc = item.get("description")
-                            break
-                if found_desc:
-                    break
-            if found_desc:
-                meta["description"] = found_desc
-                rec_reason = found_desc.split("\n\n")[0].strip()
-            else:
-                rec_reason = None
-
         # Apply user preferred Metadata Provider override (MAL / AniList with Kitsu fallback)
-        mal_data_override = await apply_metadata_provider_override(meta, user, mal_id, anilist_id, rec_prefix=rec_reason if "rec_reason" in locals() else None)
+        mal_data_override = await apply_metadata_provider_override(meta, user, mal_id, anilist_id)
 
         # Apply custom poster provider if configured
         if (user.get("poster_provider") and user.get("poster_provider") != "none") or user.get("rpdb_api_key"):
@@ -971,7 +934,6 @@ async def apply_metadata_provider_override(
     user: dict,
     mal_id: str | None,
     anilist_id: str | None,
-    rec_prefix: str | None = None,
 ) -> dict | None:
     effective = get_effective_meta_providers(user)
     synopsis_prov = effective["synopsis"]
@@ -979,8 +941,6 @@ async def apply_metadata_provider_override(
     backdrop_prov = effective["backdrop"]
 
     mal_data_ret = None
-    if not rec_prefix:
-        rec_prefix, _ = extract_rec_prefix(meta.get("description"))
 
     # 1. Fetch MAL data if needed for synopsis or poster
     mal_data = None
@@ -1009,7 +969,7 @@ async def apply_metadata_provider_override(
     if synopsis_prov == "mal" and mal_data:
         synopsis = mal_data.get("synopsis")
         if synopsis:
-            meta["description"] = f"{rec_prefix}\n\n{synopsis}" if rec_prefix else synopsis
+            meta["description"] = synopsis
         score = mal_data.get("score")
         if score:
             meta["imdbRating"] = str(score)
@@ -1019,7 +979,7 @@ async def apply_metadata_provider_override(
             import re
 
             clean_desc = re.sub(r"<[^>]+>", "", desc)
-            meta["description"] = f"{rec_prefix}\n\n{clean_desc}" if rec_prefix else clean_desc
+            meta["description"] = clean_desc
         avg_score = al_data.get("averageScore")
         if avg_score:
             meta["imdbRating"] = f"{avg_score / 10:.1f}"
