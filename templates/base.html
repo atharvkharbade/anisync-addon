@@ -24,15 +24,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background-color: #0d0d0d; color: #e0e0e0; min-height: 100vh; font-size: 15px; }
-        .navbar-brand { font-weight: 700; letter-spacing: 0.03em; font-size: 1.1rem; }
-        .github-link { color: #a1a1aa; transition: all 0.2s ease; text-decoration: none; font-weight: 500; font-size: 0.9rem; }
+        body { background-color: #0d0d0d; color: #e0e0e0; min-height: 100vh; font-size: 1rem; line-height: 1.5; }
+        .navbar-brand { font-weight: 700; letter-spacing: 0.03em; font-size: 1.25rem; }
+        .github-link { color: #a1a1aa; transition: all 0.2s ease; text-decoration: none; font-weight: 500; font-size: 0.875rem; }
         .github-link:hover { color: #f59e0b; }
         .btn-logout {
             background: rgba(239, 68, 68, 0.08);
             border: 1px solid rgba(239, 68, 68, 0.25);
             color: #f87171 !important;
-            font-size: 0.82rem;
+            font-size: 0.875rem;
             font-weight: 500;
             padding: 0.35rem 0.85rem;
             border-radius: 8px;
@@ -44,7 +44,7 @@
             background: rgba(239, 68, 68, 0.18);
             border-color: rgba(239, 68, 68, 0.45);
             color: #ef4444 !important;
-            box-shadow: 0 2px 10px rgba(239, 68, 68, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
         .card-dark { background: #161616; border: 1px solid #2a2a2a; border-radius: 12px; }
         .btn-mal { background: #2e51a2; color: #fff; border: none; }
@@ -53,15 +53,15 @@
         .btn-anilist:hover, .btn-anilist:active { background: #0090df; color: #fff; }
         .btn-simkl { background: #e27d00; color: #fff; border: none; }
         .btn-simkl:hover, .btn-simkl:active { background: #ff941a; color: #fff; }
-        .manifest-box, .manifest-box:focus, .manifest-box:active { background: #1a1a1a !important; border: 1px solid #333 !important; color: #f0c040 !important; font-family: monospace; font-size: 0.8rem; box-shadow: none !important; z-index: 1 !important; }
+        .manifest-box, .manifest-box:focus, .manifest-box:active { background: #1a1a1a !important; border: 1px solid #333 !important; color: #f0c040 !important; font-family: monospace; font-size: 0.75rem; box-shadow: none !important; z-index: 1 !important; }
         .input-group > .btn { position: relative; z-index: 2 !important; }
-        footer { border-top: 1px solid #1e1e1e; color: #555; font-size: 0.82rem; }
+        footer { border-top: 1px solid #1e1e1e; color: #555; font-size: 0.875rem; }
         .flash-wrap { margin-top: 15px; }
         @media (max-width: 576px) {
             .flash-wrap { margin-top: 10px; }
             .card-dark { border-radius: 10px; }
             .navbar { padding-left: 1rem !important; padding-right: 1rem !important; }
-            .btn { font-size: 0.9rem; }
+            .btn { font-size: 0.875rem; }
         }
 
         /* Toast Container & Notification Styles */
@@ -85,7 +85,7 @@
             border-radius: 10px;
             padding: 10px 18px;
             color: #f1f5f9;
-            font-size: 0.88rem;
+            font-size: 0.875rem;
             font-weight: 500;
             display: flex;
             align-items: center;
@@ -148,7 +148,7 @@
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.14);
             color: #e2e8f0;
-            font-size: 0.82rem;
+            font-size: 0.875rem;
             font-weight: 500;
             padding: 0.35rem 0.85rem;
             border-radius: 8px;
@@ -165,7 +165,7 @@
             background: rgba(255, 94, 91, 0.12);
             border: 1px solid rgba(255, 94, 91, 0.3);
             color: #ff5e5b;
-            font-size: 0.82rem;
+            font-size: 0.875rem;
             font-weight: 500;
             padding: 0.35rem 0.85rem;
             border-radius: 8px;
@@ -178,7 +178,7 @@
             background: #ff5e5b;
             border-color: #ff5e5b;
             color: #ffffff;
-            box-shadow: 0 4px 12px rgba(255, 94, 91, 0.35);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
         .btn-kofi:hover i {
             color: #ffffff !important;
@@ -186,7 +186,7 @@
         .kofi-footer-link {
             color: #ff5e5b;
             text-decoration: none;
-            font-size: 0.88rem;
+            font-size: 0.875rem;
             background: transparent;
             border: none;
             padding: 0;
@@ -260,11 +260,11 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body px-4 py-4">
-                    <p class="text-secondary mb-4" style="font-size: 0.92rem; line-height: 1.65; text-align: left;">
+                    <p class="text-secondary mb-4" style="font-size: 0.875rem; line-height: 1.65; text-align: left;">
                         AniSync was built as a passion project to give back to the community. Since I dedicate a lot of time to maintaining and improving it, I've added this option for anyone who wants to support the project. If you love using AniSync, consider helping cover server hosting and maintenance costs!
                     </p>
                     <div class="text-center pt-1">
-                        <a href="https://ko-fi.com/atharvkharbade" target="_blank" rel="noopener noreferrer" class="btn fw-semibold px-4 py-2.5 text-white" style="background: linear-gradient(135deg, #ff5e5b, #e04845); border: none; border-radius: 8px; font-size: 0.92rem; box-shadow: 0 4px 16px rgba(255, 94, 91, 0.35); transition: all 0.2s ease;">
+                        <a href="https://ko-fi.com/atharvkharbade" target="_blank" rel="noopener noreferrer" class="btn fw-semibold px-4 py-2.5 text-white" style="background: linear-gradient(135deg, #ff5e5b, #e04845); border: none; border-radius: 8px; font-size: 0.875rem; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); transition: all 0.2s ease;">
                             <i class="fa-solid fa-mug-hot me-2"></i>Buy Me a Coffee on Ko-fi
                         </a>
                     </div>
@@ -282,16 +282,16 @@
 
     <footer class="text-center py-4 mt-2" style="border-top: 1px solid rgba(255, 255, 255, 0.08); color: #94a3b8;">
         <div class="container d-flex flex-column align-items-center justify-content-center text-center">
-            <p class="mb-2.5 text-secondary fw-medium w-100 text-center" style="font-size: 0.88rem; letter-spacing: 0.01em;">Elevating your tracking experience.</p>
+            <p class="mb-2.5 text-secondary fw-medium w-100 text-center" style="font-size: 0.875rem; letter-spacing: 0.01em;">Elevating your tracking experience.</p>
             <div class="d-flex justify-content-center align-items-center flex-wrap gap-3 w-100 text-center">
                 <a href="https://github.com/atharvkharbade/anisync-addon" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
                     <i class="fa-brands fa-github fs-6"></i> GitHub
                 </a>
-                <span style="color: #334155; font-size: 0.8rem;">•</span>
+                <span style="color: #334155; font-size: 0.75rem;">•</span>
                 <button type="button" class="kofi-footer-link d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#supportModal">
                     <i class="fa-solid fa-mug-hot fs-6" style="color: #ff5e5b;"></i><span>Ko-fi</span>
                 </button>
-                <span style="color: #334155; font-size: 0.8rem;">•</span>
+                <span style="color: #334155; font-size: 0.75rem;">•</span>
                 <a href="https://github.com/atharvkharbade/anisync-addon/issues" target="_blank" class="github-link d-inline-flex align-items-center gap-2">
                     <i class="fa-solid fa-circle-exclamation fs-6"></i> Issues
                 </a>
@@ -313,13 +313,13 @@
             const toast = document.createElement('div');
             toast.className = `custom-toast ${type}`;
 
-            let icon = '<i class="fa-solid fa-circle-info me-1.5 text-info" style="font-size:0.95rem;"></i>';
+            let icon = '<i class="fa-solid fa-circle-info me-1.5 text-info" style="font-size:1rem;"></i>';
             if (type === 'success') {
-                icon = '<i class="fa-solid fa-circle-check me-1.5 text-success" style="font-size:0.95rem;"></i>';
+                icon = '<i class="fa-solid fa-circle-check me-1.5 text-success" style="font-size:1rem;"></i>';
             } else if (type === 'error') {
-                icon = '<i class="fa-solid fa-circle-exclamation me-1.5 text-danger" style="font-size:0.95rem;"></i>';
+                icon = '<i class="fa-solid fa-circle-exclamation me-1.5 text-danger" style="font-size:1rem;"></i>';
             } else if (type === 'warning') {
-                icon = '<i class="fa-solid fa-triangle-exclamation me-1.5 text-warning" style="font-size:0.95rem;"></i>';
+                icon = '<i class="fa-solid fa-triangle-exclamation me-1.5 text-warning" style="font-size:1rem;"></i>';
             }
 
             toast.innerHTML = `${icon}<span>${message}</span>`;
@@ -364,7 +364,7 @@
                 if (trimmed.startsWith('#')) {
                     if (inList) { out += '</ul>'; inList = false; }
                     const headerText = trimmed.replace(/^#+\s*/, '');
-                    out += `<h6 class="fw-bold text-white mt-3 mb-2" style="font-size: 0.95rem; letter-spacing: 0.02em;">${headerText}</h6>`;
+                    out += `<h6 class="fw-bold text-white mt-3 mb-2" style="font-size: 1rem; letter-spacing: 0.02em;">${headerText}</h6>`;
                     return;
                 }
 
@@ -378,7 +378,7 @@
                     
                     // Format inline code / bolding
                     itemText = itemText.replace(/\*\*(.*?)\*\*/g, '<strong class="text-light">$1</strong>');
-                    itemText = itemText.replace(/`(.*?)`/g, '<code class="bg-dark px-1.5 py-0.5 rounded text-info" style="font-size: 0.85em; border: 1px solid rgba(255,255,255,0.1);">$1</code>');
+                    itemText = itemText.replace(/`(.*?)`/g, '<code class="bg-dark px-1.5 py-0.5 rounded text-info" style="font-size: 0.875rem; border: 1px solid rgba(255,255,255,0.1);">$1</code>');
                     
                     out += `<li class="text-secondary small">${itemText}</li>`;
                     return;
@@ -388,7 +388,7 @@
                 if (inList) { out += '</ul>'; inList = false; }
                 let text = trimmed
                     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-light">$1</strong>')
-                    .replace(/`(.*?)`/g, '<code class="bg-dark px-1.5 py-0.5 rounded text-info" style="font-size: 0.85em;">$1</code>');
+                    .replace(/`(.*?)`/g, '<code class="bg-dark px-1.5 py-0.5 rounded text-info" style="font-size: 0.875rem;">$1</code>');
                 out += `<p class="text-secondary small mb-2">${text}</p>`;
             });
 
@@ -421,13 +421,13 @@
                         <div class="${isLast ? '' : 'mb-4 pb-3 border-bottom border-white border-opacity-10'}">
                             <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-2">
-                                    <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
+                                    <h6 class="fw-bold text-white mb-0" style="font-size: 1.125rem;">
                                         ${r.tag_name} ${r.name && r.name !== r.tag_name ? '<span class="text-secondary font-monospace fs-7 fw-normal ms-1">— ' + r.name + '</span>' : ''}
                                     </h6>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
                                     <small class="text-secondary opacity-75 me-1">${pubDate}</small>
-                                    <a href="${releaseUrl}" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View ${r.tag_name} on GitHub">
+                                    <a href="${releaseUrl}" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.75rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View ${r.tag_name} on GitHub">
                                         <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Release
                                     </a>
                                 </div>
@@ -452,13 +452,13 @@
                 <div class="mb-4 pb-3 border-bottom border-white border-opacity-10">
                     <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2">
-                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.125rem;">
                                 v1.4.0-beta <span class="text-secondary font-monospace fs-7 fw-normal ms-1">(Latest Beta)</span>
                             </h6>
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <small class="text-secondary opacity-75 me-1">Aug 5, 2026</small>
-                            <a href="https://github.com/atharvkharbade/anisync-addon/releases/tag/v1.4.0-beta" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View v1.4.0-beta on GitHub">
+                            <a href="https://github.com/atharvkharbade/anisync-addon/releases/tag/v1.4.0-beta" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.75rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View v1.4.0-beta on GitHub">
                                 <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Release
                             </a>
                         </div>
@@ -473,11 +473,11 @@
                 <div class="mb-4 pb-3 border-bottom border-white border-opacity-10">
                     <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2">
-                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">v1.3.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Simkl & Watched Tags</span></h6>
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.125rem;">v1.3.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Simkl & Watched Tags</span></h6>
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <small class="text-secondary opacity-75 me-1">Jun 17, 2026</small>
-                            <a href="https://github.com/atharvkharbade/anisync-addon/releases/tag/v1.3.0" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View v1.3.0 on GitHub">
+                            <a href="https://github.com/atharvkharbade/anisync-addon/releases/tag/v1.3.0" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.75rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View v1.3.0 on GitHub">
                                 <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Release
                             </a>
                         </div>
@@ -490,11 +490,11 @@
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2">
-                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.05rem;">v1.0.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Initial Launch</span></h6>
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 1.125rem;">v1.0.0 <span class="text-secondary font-monospace fs-7 fw-normal ms-1">— Initial Launch</span></h6>
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <small class="text-secondary opacity-75 me-1">Jun 5, 2026</small>
-                            <a href="https://github.com/atharvkharbade/anisync-addon/releases/tag/v1.0.0" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View v1.0.0 on GitHub">
+                            <a href="https://github.com/atharvkharbade/anisync-addon/releases/tag/v1.0.0" target="_blank" class="btn btn-sm btn-outline-secondary py-0.5 px-2 font-monospace text-nowrap" style="font-size: 0.75rem; border-color: rgba(255,255,255,0.18); color: #cbd5e1;" title="View v1.0.0 on GitHub">
                                 <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Release
                             </a>
                         </div>
@@ -524,5 +524,8 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     {% block scripts %}{% endblock %}
+<!-- impeccable-live-start -->
+<script src="http://localhost:8400/live.js?token=04801be2-45b5-4bbc-a55f-7a2575699384"></script>
+<!-- impeccable-live-end -->
 </body>
 </html>

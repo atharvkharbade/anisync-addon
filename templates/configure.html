@@ -82,7 +82,7 @@
 
     .year-slider-input-group {
         position: relative;
-        height: 20px;
+        height: 24px;
         margin-top: -2.35rem;
         margin-bottom: 1.2rem;
     }
@@ -95,7 +95,7 @@
         -webkit-appearance: none;
         appearance: none;
         z-index: 2;
-        height: 20px;
+        height: 24px;
         margin: 0;
         left: 0;
     }
@@ -103,29 +103,41 @@
     .year-slider-input::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
-        width: 18px;
-        height: 18px;
+        width: 22px;
+        height: 22px;
         border-radius: 50%;
-        background: #fff;
-        border: 2px solid #000;
+        background: #ffffff;
+        border: 2px solid #02a9ff;
         cursor: pointer;
         pointer-events: auto;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
         position: relative;
         z-index: 10;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .year-slider-input::-webkit-slider-thumb:hover {
+        transform: scale(1.15);
+        box-shadow: 0 0 0 4px rgba(2, 169, 255, 0.25);
     }
 
     .year-slider-input::-moz-range-thumb {
-        width: 18px;
-        height: 18px;
+        width: 22px;
+        height: 22px;
         border-radius: 50%;
-        background: #fff;
-        border: 2px solid #000;
+        background: #ffffff;
+        border: 2px solid #02a9ff;
         cursor: pointer;
         pointer-events: auto;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
         position: relative;
         z-index: 10;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .year-slider-input::-moz-range-thumb:hover {
+        transform: scale(1.15);
+        box-shadow: 0 0 0 4px rgba(2, 169, 255, 0.25);
     }
 
     /* Genre lists container styling */
@@ -435,52 +447,523 @@
         background-color: #02a9ff;
         color: #fff;
     }
+
+    /* Sidebar & Responsive Navigation */
+    .anisync-sidebar {
+        background: #141416;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 1.15rem 1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .anisync-sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 0.72rem 0.9rem;
+        border-radius: 9px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: #94a3b8;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        text-align: left;
+        text-decoration: none;
+    }
+    .anisync-sidebar-link i {
+        font-size: 0.95rem;
+        width: 18px;
+        text-align: center;
+        transition: transform 0.2s ease;
+    }
+    .anisync-sidebar-link:hover i {
+        transform: scale(1.15);
+    }
+
+    /* Unique Distinctive Colors per Tab */
+    /* 1. Trackers (Cyan) */
+    .anisync-sidebar-link[data-tab="trackers"]:hover {
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.06);
+    }
+    .anisync-sidebar-link[data-tab="trackers"].active {
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.12);
+        border-color: rgba(56, 189, 248, 0.32);
+        font-weight: 600;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.12);
+    }
+
+    /* 2. Catalogs (Indigo / Violet) */
+    .anisync-sidebar-link[data-tab="catalogs"]:hover {
+        color: #818cf8;
+        background: rgba(129, 140, 248, 0.06);
+    }
+    .anisync-sidebar-link[data-tab="catalogs"].active {
+        color: #a5b4fc;
+        background: rgba(129, 140, 248, 0.12);
+        border-color: rgba(129, 140, 248, 0.32);
+        font-weight: 600;
+        box-shadow: 0 0 16px rgba(129, 140, 248, 0.12);
+    }
+
+    /* 3. Appearance (Amber / Gold) */
+    .anisync-sidebar-link[data-tab="appearance"]:hover {
+        color: #fbbf24;
+        background: rgba(251, 191, 36, 0.06);
+    }
+    .anisync-sidebar-link[data-tab="appearance"].active {
+        color: #fde047;
+        background: rgba(251, 191, 36, 0.12);
+        border-color: rgba(251, 191, 36, 0.32);
+        font-weight: 600;
+        box-shadow: 0 0 16px rgba(251, 191, 36, 0.12);
+    }
+
+    /* 4. Metadata (Emerald / Mint) */
+    .anisync-sidebar-link[data-tab="metadata"]:hover {
+        color: #34d399;
+        background: rgba(52, 211, 153, 0.06);
+    }
+    .anisync-sidebar-link[data-tab="metadata"].active {
+        color: #6ee7b7;
+        background: rgba(52, 211, 153, 0.12);
+        border-color: rgba(52, 211, 153, 0.32);
+        font-weight: 600;
+        box-shadow: 0 0 16px rgba(52, 211, 153, 0.12);
+    }
+
+    /* 5. Install (Rose / Coral) */
+    .anisync-sidebar-link[data-tab="install"]:hover {
+        color: #f87171;
+        background: rgba(248, 113, 113, 0.06);
+    }
+    .anisync-sidebar-link[data-tab="install"].active {
+        color: #fca5a5;
+        background: rgba(248, 113, 113, 0.12);
+        border-color: rgba(248, 113, 113, 0.32);
+        font-weight: 600;
+        box-shadow: 0 0 16px rgba(248, 113, 113, 0.12);
+    }
+
+    /* Search Bar & Dropdown */
+    .anisync-search-wrap {
+        position: relative;
+    }
+    .anisync-search-input {
+        background: rgba(255, 255, 255, 0.035) !important;
+        border: 1px solid rgba(255, 255, 255, 0.09) !important;
+        color: #f1f5f9 !important;
+        border-radius: 9px !important;
+        padding: 0.58rem 1rem 0.58rem 2.2rem !important;
+        font-size: 0.8125rem !important;
+        transition: all 0.2s ease;
+    }
+    .anisync-search-input:focus {
+        border-color: rgba(2, 169, 255, 0.4) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        box-shadow: 0 0 0 2px rgba(2, 169, 255, 0.15) !important;
+    }
+    .anisync-search-wrap .search-icon {
+        position: absolute;
+        left: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        font-size: 0.8125rem;
+        pointer-events: none;
+    }
+    .search-results-dropdown {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        z-index: 1050;
+        background: #18181b;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 10px;
+        max-height: 320px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85);
+        scrollbar-width: thin;
+    }
+    .search-result-item {
+        padding: 0.65rem 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        transition: background 0.15s ease;
+        box-sizing: border-box;
+    }
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+    .search-result-item:hover, .search-result-item.selected {
+        background: rgba(255, 255, 255, 0.06);
+    }
+    .search-badge {
+        font-size: 0.625rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 2px 6px;
+        border-radius: 4px;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+    .search-badge-trackers { background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); }
+    .search-badge-catalogs { background: rgba(129, 140, 248, 0.12); color: #a5b4fc; border: 1px solid rgba(129, 140, 248, 0.25); }
+    .search-badge-appearance { background: rgba(251, 191, 36, 0.12); color: #fde047; border: 1px solid rgba(251, 191, 36, 0.25); }
+    .search-badge-metadata { background: rgba(52, 211, 153, 0.12); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.25); }
+    .search-badge-install { background: rgba(248, 113, 113, 0.12); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.25); }
+
+    /* Mobile Popover Select (AIOMetadata Custom Select Pattern) */
+    .mobile-select-trigger {
+        background: #141416;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 0.65rem 0.9rem;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        text-align: left;
+    }
+    .mobile-select-trigger:active, .mobile-select-trigger.active {
+        border-color: rgba(2, 169, 255, 0.4);
+        background: rgba(2, 169, 255, 0.05);
+    }
+    .mobile-select-popover-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        z-index: 1060;
+        background: #141416;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        padding: 0.35rem;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        animation: fadeInTab 0.15s ease;
+    }
+    .mobile-select-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.65rem 0.85rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+    .mobile-select-item:hover, .mobile-select-item:active {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .mobile-select-item[data-tab="trackers"].active { background: rgba(56, 189, 248, 0.12); }
+    .mobile-select-item[data-tab="trackers"].active .item-label { color: #38bdf8 !important; font-weight: 600; }
+    .mobile-select-item[data-tab="catalogs"].active { background: rgba(129, 140, 248, 0.12); }
+    .mobile-select-item[data-tab="catalogs"].active .item-label { color: #a5b4fc !important; font-weight: 600; }
+    .mobile-select-item[data-tab="appearance"].active { background: rgba(251, 191, 36, 0.12); }
+    .mobile-select-item[data-tab="appearance"].active .item-label { color: #fde047 !important; font-weight: 600; }
+    .mobile-select-item[data-tab="metadata"].active { background: rgba(52, 211, 153, 0.12); }
+    .mobile-select-item[data-tab="metadata"].active .item-label { color: #6ee7b7 !important; font-weight: 600; }
+    .mobile-select-item[data-tab="install"].active { background: rgba(248, 113, 113, 0.12); }
+    .mobile-select-item[data-tab="install"].active .item-label { color: #fca5a5 !important; font-weight: 600; }
+
+    /* Step Navigation Action Buttons */
+    .step-nav-bar {
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 1.15rem;
+    }
+    .btn-step-action {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.62rem 1.15rem;
+        border-radius: 10px;
+        font-size: 0.84rem;
+        font-weight: 500;
+        background: rgba(255, 255, 255, 0.035);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        color: #cbd5e1;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .btn-step-action:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+    .btn-step-action:active {
+        transform: translateY(0);
+    }
+    .btn-step-action strong {
+        font-weight: 600;
+        color: #ffffff;
+    }
+    .btn-step-prev,
+    .btn-step-next {
+        background: rgba(255, 255, 255, 0.035);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        color: #cbd5e1;
+    }
+    .btn-step-prev:hover,
+    .btn-step-next:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+    }
+    .btn-step-action i {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        transition: transform 0.2s ease, color 0.2s ease;
+    }
+    .btn-step-action:hover i {
+        color: #ffffff;
+    }
+    .btn-step-prev:hover i {
+        transform: translateX(-3px);
+    }
+    .btn-step-next:hover i {
+        transform: translateX(3px);
+    }
+
+    .anisync-tab-pane {
+        display: none;
+        animation: fadeInTab 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .anisync-tab-pane.active {
+        display: block;
+    }
+    @keyframes fadeInTab {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .btn-save-preferences {
+        min-height: 44px;
+        background: #02a9ff;
+        color: #fff;
+        border: none;
+        padding: 0.72rem 1.2rem;
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+    .btn-save-preferences:hover {
+        background: #0090df;
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(2, 169, 255, 0.25);
+    }
+    .btn-save-preferences:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .btn-save-preferences:focus-visible {
+        outline: 2px solid #02a9ff;
+        outline-offset: 2px;
+    }
+    @media (min-width: 768px) {
+        .search-results-dropdown {
+            min-width: 320px;
+        }
+    }
 </style>
-<div class="row justify-content-center mt-1 mt-sm-2">
-    <div class="col-12 col-md-8">
+<div class="container-fluid px-2 px-md-3 px-xl-4 mt-1 mt-sm-2 pb-5">
 
-        <!-- Header -->
-        <div class="mb-3 mb-sm-4 px-2 px-sm-3">
-            <h3 class="fw-bold fs-5 fs-sm-3">
-                {% if user.get('picture') %}
-                <img src="{{ user['picture'] }}" width="32" height="32" class="rounded-circle me-2"
-                    style="object-fit:cover;" onerror="this.style.display='none'">
-                {% endif %}
-                {% if user.get('name') or user.get('anilist_username') or user.get('simkl_username') %}
-                Hey, {{ user.get('name') or user.get('anilist_username') or user.get('simkl_username') }}
-                {% elif user.get('is_guest') %}
-                Hey, Guest User
-                {% else %}
-                Configure AniSync
-                {% endif %}
-            </h3>
-            <p class="text-secondary small mb-0">
-                {% if user.get('is_guest') %}
-                Preferences are limited since you are on guest mode.
-                {% else %}
-                Manage your tracking connections and preferences below.
-                {% endif %}
-            </p>
+    <!-- Greeting Header -->
+    <div class="mb-3 px-1 px-sm-2">
+        <h3 class="fw-bold fs-5 fs-sm-3 text-white mb-1">
+            {% if user.get('picture') %}
+            <img src="{{ user['picture'] }}" width="32" height="32" class="rounded-circle me-2"
+                style="object-fit:cover;" onerror="this.style.display='none'">
+            {% endif %}
+            {% if user.get('name') or user.get('anilist_username') or user.get('simkl_username') %}
+            Hey, {{ user.get('name') or user.get('anilist_username') or user.get('simkl_username') }}
+            {% elif user.get('is_guest') %}
+            Hey, Guest User
+            {% else %}
+            Configure AniSync
+            {% endif %}
+        </h3>
+        <p class="text-secondary small mb-0" style="font-size: 0.8125rem;">
+            {% if user.get('is_guest') %}
+            Preferences are limited since you are on guest mode.
+            {% else %}
+            Manage your tracking connections, catalogs, and addon preferences.
+            {% endif %}
+        </p>
+    </div>
+
+    {% if user.get('is_guest') %}
+    <div class="card-dark p-3 p-sm-4 mb-3">
+        <div class="d-flex align-items-center mb-2">
+            <i class="fa-solid fa-user-secret me-2 text-info fs-5"></i>
+            <h6 class="fw-semibold mb-0 text-white">Guest Mode Active</h6>
         </div>
+        <p class="text-secondary small mb-0" style="line-height: 1.5; font-size: 0.8125rem;">
+            You can customize Discovery catalogs and basic preferences in Guest Mode. To enable watch progress tracking or personal recommendations, sign in with any of the trackers below.
+        </p>
+    </div>
+    {% endif %}
 
-        {% if user.get('is_guest') %}
-        <div class="card-dark p-3 p-sm-4 mb-3">
-            <div class="d-flex align-items-center mb-2">
-                <i class="fa-solid fa-user-secret me-2 text-info fs-5"></i>
-                <h6 class="fw-semibold mb-0 text-white">Guest Mode Active</h6>
+    <!-- Mobile Navigation Bar (< 768px: Zero horizontal scrolling & Custom Dark Glass Popover!) -->
+    <div class="d-md-none mb-3 px-1">
+        <!-- Mobile Section Popover Selector (Custom Radix/AIOMetadata Style) -->
+        <div class="mobile-select-popover-wrap position-relative">
+            <button type="button" id="mobile-section-trigger" class="mobile-select-trigger w-100 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center min-w-0" style="gap: 12px;">
+                    <i id="mobile-section-icon" class="fa-solid fa-link text-info flex-shrink-0" style="font-size: 0.95rem; width: 20px; text-align: center;"></i>
+                    <span id="mobile-section-label" class="fw-semibold text-white small text-truncate">Trackers</span>
+                </div>
+                <i class="fa-solid fa-chevron-down text-secondary ms-2 transition-transform" id="mobile-section-chevron" style="font-size: 0.8rem;"></i>
+            </button>
+
+            <!-- Custom Popover Menu -->
+            <div id="mobile-section-menu" class="mobile-select-popover-menu d-none">
+                <div class="mobile-select-item active" data-tab="trackers">
+                    <div class="d-flex align-items-center min-w-0" style="gap: 12px;">
+                        <i class="fa-solid fa-link text-info flex-shrink-0" style="font-size: 0.95rem; width: 20px; text-align: center;"></i>
+                        <span class="item-label text-white fw-medium small">Trackers</span>
+                    </div>
+                    <i class="fa-solid fa-check text-info active-check" style="font-size: 0.85rem;"></i>
+                </div>
+                <div class="mobile-select-item" data-tab="catalogs">
+                    <div class="d-flex align-items-center min-w-0" style="gap: 12px;">
+                        <i class="fa-solid fa-layer-group text-primary flex-shrink-0" style="font-size: 0.95rem; width: 20px; text-align: center;"></i>
+                        <span class="item-label text-white fw-medium small">Catalogs</span>
+                    </div>
+                    <i class="fa-solid fa-check text-primary active-check d-none" style="font-size: 0.85rem;"></i>
+                </div>
+                <div class="mobile-select-item" data-tab="appearance">
+                    <div class="d-flex align-items-center min-w-0" style="gap: 12px;">
+                        <i class="fa-solid fa-palette text-warning flex-shrink-0" style="font-size: 0.95rem; width: 20px; text-align: center;"></i>
+                        <span class="item-label text-white fw-medium small">Appearance</span>
+                    </div>
+                    <i class="fa-solid fa-check text-warning active-check d-none" style="font-size: 0.85rem;"></i>
+                </div>
+                <div class="mobile-select-item" data-tab="metadata">
+                    <div class="d-flex align-items-center min-w-0" style="gap: 12px;">
+                        <i class="fa-solid fa-sliders text-success flex-shrink-0" style="font-size: 0.95rem; width: 20px; text-align: center;"></i>
+                        <span class="item-label text-white fw-medium small">{% if not user.get('is_guest') %}Metadata and Recommendations{% else %}Metadata{% endif %}</span>
+                    </div>
+                    <i class="fa-solid fa-check text-success active-check d-none" style="font-size: 0.85rem;"></i>
+                </div>
+                <div class="mobile-select-item" data-tab="install">
+                    <div class="d-flex align-items-center min-w-0" style="gap: 12px;">
+                        <i class="fa-solid fa-rocket text-danger flex-shrink-0" style="font-size: 0.95rem; width: 20px; text-align: center;"></i>
+                        <span class="item-label text-white fw-medium small">Install</span>
+                    </div>
+                    <i class="fa-solid fa-check text-danger active-check d-none" style="font-size: 0.85rem;"></i>
+                </div>
             </div>
-            <p class="text-secondary small mb-0" style="line-height: 1.5;">
-                You can customize Discovery catalogs and basic preferences in Guest Mode. To enable watch progress tracking or personal recommendations, sign in with any of the trackers below.
-            </p>
         </div>
-        {% endif %}
+    </div>
 
-        <!-- Tracking Services Master Card -->
-        <div class="card-dark p-3 p-sm-4 mb-3">
-            <h6 class="fw-semibold mb-3"><i class="fa-solid fa-user-check me-2" style="color: #38bdf8;"></i>Tracking Services</h6>
-            <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                Connect your accounts and toggle real-time watch progress sync.
-            </p>
+    <!-- Main Grid: Sidebar (PC) + Content -->
+    <div class="row g-3 g-xl-4">
+        
+        <!-- Desktop Sidebar (>= 768px) -->
+        <aside class="col-md-4 col-lg-3 d-none d-md-block">
+            <div class="anisync-sidebar sticky-top" style="top: 20px;">
+                <!-- Vertical Section Links -->
+                <nav class="d-flex flex-column gap-1" role="tablist" aria-label="Configuration Sections">
+                    <button type="button" class="anisync-sidebar-link active" data-tab="trackers" role="tab" id="tab-btn-trackers" aria-selected="true" aria-controls="tab-trackers">
+                        <i class="fa-solid fa-link text-info"></i><span>Trackers</span>
+                    </button>
+                    <button type="button" class="anisync-sidebar-link" data-tab="catalogs" role="tab" id="tab-btn-catalogs" aria-selected="false" aria-controls="tab-catalogs">
+                        <i class="fa-solid fa-layer-group text-primary"></i><span>Catalogs</span>
+                    </button>
+                    <button type="button" class="anisync-sidebar-link" data-tab="appearance" role="tab" id="tab-btn-appearance" aria-selected="false" aria-controls="tab-appearance">
+                        <i class="fa-solid fa-palette text-warning"></i><span>Appearance</span>
+                    </button>
+                    <button type="button" class="anisync-sidebar-link" data-tab="metadata" role="tab" id="tab-btn-metadata" aria-selected="false" aria-controls="tab-metadata">
+                        <i class="fa-solid fa-sliders text-success"></i><span>{% if not user.get('is_guest') %}Metadata and Recommendations{% else %}Metadata{% endif %}</span>
+                    </button>
+                    <button type="button" class="anisync-sidebar-link" data-tab="install" role="tab" id="tab-btn-install" aria-selected="false" aria-controls="tab-install">
+                        <i class="fa-solid fa-rocket text-danger"></i><span>Install</span>
+                    </button>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="col-12 col-md-8 col-lg-9">
+            <form method="POST" action="{{ url_for('ui.configure') }}" id="prefs-form">
+
+                <!-- Global Hidden Configuration Inputs -->
+                <input type="hidden" id="mal_enabled_val" name="mal_enabled"
+                    value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
+                <input type="hidden" id="anilist_enabled_val" name="anilist_enabled"
+                    value="{{ 'true' if user.get('anilist_enabled', True) else 'false' }}">
+                <input type="hidden" id="simkl_enabled_val" name="simkl_enabled"
+                    value="{{ 'true' if user.get('simkl_enabled', True) else 'false' }}">
+                <input type="hidden" id="sync_unlisted_val" name="sync_unlisted"
+                    value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
+                <input type="hidden" id="sort_by_new_episodes_val" name="sort_by_new_episodes"
+                    value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
+                <input type="hidden" id="enable_catalogs_val" name="enable_catalogs"
+                    value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
+                <input type="hidden" id="enable_search_val" name="enable_search"
+                    value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
+                <input type="hidden" id="rpdb_in_search_val" name="rpdb_in_search"
+                    value="{{ 'true' if user.get('rpdb_in_search', True) else 'false' }}">
+                <input type="hidden" id="show_filler_tags_val" name="show_filler_tags"
+                    value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                <input type="hidden" id="hide_nsfw_val" name="hide_nsfw"
+                    value="{{ 'true' if user.get('hide_nsfw', True) else 'false' }}">
+                <input type="hidden" id="show_watched_tags_val" name="show_watched_tags"
+                    value="{{ 'true' if user.get('show_watched_tags', False) else 'false' }}">
+                <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
+                    value="{{ 'true' if user.get('combine_watchlists', False) else 'false' }}">
+                <input type="hidden" id="custom_sort_enabled_val" name="custom_sort_enabled"
+                    value="{{ 'true' if user.get('custom_sort_enabled', False) else 'false' }}">
+                <input type="hidden" id="custom_sort_watching_by_val" name="custom_sort_watching_by"
+                    value="{{ user.get('custom_sort_watching_by', 'default') }}">
+                <input type="hidden" id="custom_sort_watching_order_val" name="custom_sort_watching_order"
+                    value="{{ user.get('custom_sort_watching_order', 'desc') }}">
+                <input type="hidden" id="custom_sort_planning_by_val" name="custom_sort_planning_by"
+                    value="{{ user.get('custom_sort_planning_by', 'default') }}">
+                <input type="hidden" id="custom_sort_planning_order_val" name="custom_sort_planning_order"
+                    value="{{ user.get('custom_sort_planning_order', 'desc') }}">
+                <input type="hidden" id="custom_sort_completed_by_val" name="custom_sort_completed_by"
+                    value="{{ user.get('custom_sort_completed_by', 'default') }}">
+                <input type="hidden" id="custom_sort_completed_order_val" name="custom_sort_completed_order"
+                    value="{{ user.get('custom_sort_completed_order', 'desc') }}">
+                <input type="hidden" id="custom_sort_on_hold_by_val" name="custom_sort_on_hold_by"
+                    value="{{ user.get('custom_sort_on_hold_by', 'default') }}">
+                <input type="hidden" id="custom_sort_on_hold_order_val" name="custom_sort_on_hold_order"
+                    value="{{ user.get('custom_sort_on_hold_order', 'desc') }}">
+                <input type="hidden" id="custom_sort_dropped_by_val" name="custom_sort_dropped_by"
+                    value="{{ user.get('custom_sort_dropped_by', 'default') }}">
+                <input type="hidden" id="custom_sort_dropped_order_val" name="custom_sort_dropped_order"
+                    value="{{ user.get('custom_sort_dropped_order', 'desc') }}">
+                <input type="hidden" id="enable_discovery_catalogs_val" name="enable_discovery_catalogs"
+                    value="{{ 'true' if user.get('enable_discovery_catalogs', True) else 'false' }}">
+                <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
+                    value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
+
+                <!-- TAB 1: Trackers & Account -->
+                <div class="anisync-tab-pane active" id="tab-trackers" role="tabpanel" aria-labelledby="tab-btn-trackers">
+                            <!-- Tracking Services Master Card -->
+            <div class="card-dark p-3 p-sm-4 mb-3">
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-user-check me-2" style="color: #38bdf8;"></i>Tracking Services</h6>
+                <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                    Connect your accounts and toggle real-time watch progress sync.
+                </p>
 
             <div class="d-flex flex-column gap-2">
 
@@ -635,338 +1118,25 @@
                 </div>
 
             </div>
-        </div>
-
-        <form method="POST" action="{{ url_for('ui.configure') }}" id="prefs-form">
-            <!-- Metadata Preferences Card -->
-            <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-database me-2" style="color: #38bdf8;"></i>Metadata Preferences</h6>
-                <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                    Select your preferred metadata provider (Kitsu, MAL, AniList) and catalog title language (English, Romaji, Native).
-                </p>
-
-                <!-- Metadata Provider Option -->
-                <div class="mb-4">
-                    <label class="form-label small fw-semibold text-light mb-1">Primary Metadata Provider</label>
-                    <input type="hidden" id="metadata_provider" name="metadata_provider" value="{{ user.get('metadata_provider', 'kitsu') }}">
-                    <div style="max-width: 400px;">
-                        <div class="custom-select-wrapper mb-2" data-input-id="metadata_provider">
-                            <div class="custom-select">
-                                <span class="custom-select-text d-flex align-items-center">
-                                    {% if user.get('metadata_provider', 'kitsu') == 'mal' %}
-                                        <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">MyAnimeList
-                                    {% elif user.get('metadata_provider', 'kitsu') == 'anilist' %}
-                                        <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">AniList
-                                    {% elif user.get('metadata_provider', 'kitsu') == 'custom' %}
-                                        <i class="fa-solid fa-sliders text-info" style="font-size: 14px; width: 18px; text-align: center; margin-right: 10px;"></i>Custom
-                                    {% else %}
-                                        <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">Kitsu (Default)
-                                    {% endif %}
-                                </span>
-                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                            </div>
-                            <div class="custom-options-menu">
-                                <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
-                                    <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">Kitsu (Default)
-                                </div>
-                                <div class="custom-option-item d-flex align-items-center" data-value="mal">
-                                    <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">MyAnimeList
-                                </div>
-                                <div class="custom-option-item d-flex align-items-center" data-value="anilist">
-                                    <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">AniList
-                                </div>
-                                <div class="custom-option-item d-flex align-items-center" data-value="custom">
-                                    <i class="fa-solid fa-sliders text-info" style="font-size: 14px; width: 18px; text-align: center; margin-right: 10px;"></i>Custom
-                                </div>
-                            </div>
-                        </div>
-                        <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; color: #e0a92e !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Kitsu if metadata is missing from selected provider.</p>
-                    </div>
-
-                    <!-- Custom Metadata Options Container -->
-                    <div id="custom_metadata_options_container" class="mt-3 pt-3 border-top border-secondary border-opacity-25 {% if user.get('metadata_provider', 'kitsu') != 'custom' %}d-none{% endif %}">
-                        <div class="d-flex align-items-center mb-3">
-                            <i class="fa-solid fa-sliders text-info small me-2"></i>
-                            <span class="small fw-semibold text-info text-uppercase" style="letter-spacing: 0.05em; font-size: 0.78rem;">Custom Metadata Sources</span>
-                        </div>
-
-                        <div class="row g-3">
-                            <!-- 1. Series Synopsis -->
-                            <div class="col-12 col-md-6">
-                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
-                                    <i class="fa-solid fa-file-lines text-primary me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Series Synopsis
-                                </label>
-                                <input type="hidden" id="meta_synopsis_provider" name="meta_synopsis_provider" value="{{ user.get('meta_synopsis_provider', 'kitsu') }}">
-                                <div class="custom-select-wrapper mb-1" data-input-id="meta_synopsis_provider">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text d-flex align-items-center">
-                                            {% if user.get('meta_synopsis_provider', 'kitsu') == 'mal' %}
-                                                <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
-                                            {% elif user.get('meta_synopsis_provider', 'kitsu') == 'anilist' %}
-                                                <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
-                                            {% else %}
-                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                            {% endif %}
-                                        </span>
-                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item d-flex align-items-center" data-value="mal">
-                                            <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="anilist">
-                                            <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
-                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
-                                    Primary source for series descriptions and community rating scores.
-                                </p>
-                            </div>
-
-                            <!-- 2. Episode Summaries -->
-                            <div class="col-12 col-md-6">
-                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
-                                    <i class="fa-solid fa-list-ol text-warning me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Episode Summaries
-                                </label>
-                                <input type="hidden" id="meta_episodes_provider" name="meta_episodes_provider" value="{{ user.get('meta_episodes_provider', 'anizp') }}">
-                                <div class="custom-select-wrapper mb-1" data-input-id="meta_episodes_provider">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text d-flex align-items-center">
-                                            {% if user.get('meta_episodes_provider', 'anizp') == 'kitsu' %}
-                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                            {% elif user.get('meta_episodes_provider', 'anizp') == 'mal' %}
-                                                <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
-                                            {% else %}
-                                                <img src="/assets/anizip_logo.png?v=2" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniZip
-                                            {% endif %}
-                                        </span>
-                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item d-flex align-items-center" data-value="anizp">
-                                            <img src="/assets/anizip_logo.png?v=2" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniZip
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
-                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="mal">
-                                            <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
-                                    Source for episode titles, descriptions, and thumbnail screenshots.
-                                </p>
-                            </div>
-
-                            <!-- 3. Cover Posters -->
-                            <div class="col-12 col-md-6">
-                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
-                                    <i class="fa-solid fa-image text-info me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Cover Posters
-                                </label>
-                                <input type="hidden" id="meta_poster_provider" name="meta_poster_provider" value="{{ user.get('meta_poster_provider', user.get('meta_artwork_provider', 'anilist')) }}">
-                                <div class="custom-select-wrapper mb-1" data-input-id="meta_poster_provider">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text d-flex align-items-center">
-                                            {% set cur_poster = user.get('meta_poster_provider', user.get('meta_artwork_provider', 'anilist')) %}
-                                            {% if cur_poster == 'kitsu' %}
-                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                            {% elif cur_poster == 'mal' %}
-                                                <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
-                                            {% else %}
-                                                <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
-                                            {% endif %}
-                                        </span>
-                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item d-flex align-items-center" data-value="anilist">
-                                            <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
-                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="mal">
-                                            <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
-                                    Source for catalog cards, search results, and cover posters.
-                                </p>
-                            </div>
-
-                            <!-- 4. Backdrop Wallpaper -->
-                            <div class="col-12 col-md-6">
-                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
-                                    <i class="fa-solid fa-panorama text-success me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Backdrop Wallpaper
-                                </label>
-                                <input type="hidden" id="meta_backdrop_provider" name="meta_backdrop_provider" value="{{ user.get('meta_backdrop_provider', 'fanart') }}">
-                                <div class="custom-select-wrapper mb-1" data-input-id="meta_backdrop_provider">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text d-flex align-items-center">
-                                            {% set cur_backdrop = user.get('meta_backdrop_provider', 'fanart') %}
-                                            {% if cur_backdrop == 'kitsu' %}
-                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                            {% elif cur_backdrop == 'anilist' %}
-                                                <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
-                                            {% else %}
-                                                <img src="/assets/fanart_logo.png?v=2" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Fanart.tv
-                                            {% endif %}
-                                        </span>
-                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item d-flex align-items-center" data-value="fanart">
-                                            <img src="/assets/fanart_logo.png?v=2" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Fanart.tv
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
-                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="anilist">
-                                            <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
-                                    Source for full-screen loading wallpapers and series backdrops.
-                                </p>
-                            </div>
-
-                            <!-- 5. Airing Countdowns -->
-                            <div class="col-12 col-md-6">
-                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
-                                    <i class="fa-solid fa-clock text-danger me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Airing Countdowns
-                                </label>
-                                <input type="hidden" id="meta_airing_provider" name="meta_airing_provider" value="{{ user.get('meta_airing_provider', 'anilist') }}">
-                                <div class="custom-select-wrapper mb-1" data-input-id="meta_airing_provider">
-                                    <div class="custom-select">
-                                        <span class="custom-select-text d-flex align-items-center">
-                                            {% if user.get('meta_airing_provider', 'anilist') == 'mal' %}
-                                                <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
-                                            {% elif user.get('meta_airing_provider', 'anilist') == 'kitsu' %}
-                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                            {% else %}
-                                                <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
-                                            {% endif %}
-                                        </span>
-                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                                    </div>
-                                    <div class="custom-options-menu">
-                                        <div class="custom-option-item d-flex align-items-center" data-value="anilist">
-                                            <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="mal">
-                                            <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
-                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
-                                    Source for weekly episode release schedules and live countdown headers.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Catalog Title Language Option -->
-                <div>
-                    <label class="form-label small fw-semibold text-light mb-1">Catalog Title Language</label>
-                    <input type="hidden" id="title_language" name="title_language" value="{{ user.get('title_language', 'english') }}">
-                    <div style="max-width: 400px;">
-                        <div class="custom-select-wrapper mb-2" data-input-id="title_language">
-                            <div class="custom-select">
-                                <span class="custom-select-text d-flex align-items-center">
-                                    {% if user.get('title_language', 'english') == 'romaji' %}
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
-                                    {% elif user.get('title_language', 'english') == 'japanese' %}
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
-                                    {% else %}
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
-                                    {% endif %}
-                                </span>
-                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                            </div>
-                            <div class="custom-options-menu">
-                                <div class="custom-option-item d-flex align-items-center" data-value="english">
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
-                                </div>
-                                <div class="custom-option-item d-flex align-items-center" data-value="romaji">
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
-                                </div>
-                                <div class="custom-option-item d-flex align-items-center" data-value="japanese">
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
-                                </div>
-                            </div>
-                        </div>
-                        <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; color: #e0a92e !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</p>
-                    </div>
-                </div>
             </div>
 
-            <!-- General Preferences Card -->
-            <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-sliders me-2 text-warning"></i>General Preferences</h6>
-                <input type="hidden" id="mal_enabled_val" name="mal_enabled"
-                    value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
-                <input type="hidden" id="anilist_enabled_val" name="anilist_enabled"
-                    value="{{ 'true' if user.get('anilist_enabled', True) else 'false' }}">
-                <input type="hidden" id="simkl_enabled_val" name="simkl_enabled"
-                    value="{{ 'true' if user.get('simkl_enabled', True) else 'false' }}">
-                <input type="hidden" id="sync_unlisted_val" name="sync_unlisted"
-                    value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
-                <input type="hidden" id="sort_by_new_episodes_val" name="sort_by_new_episodes"
-                    value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
-                <input type="hidden" id="enable_catalogs_val" name="enable_catalogs"
-                    value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
-                <input type="hidden" id="enable_search_val" name="enable_search"
-                    value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
-                <input type="hidden" id="rpdb_in_search_val" name="rpdb_in_search"
-                    value="{{ 'true' if user.get('rpdb_in_search', True) else 'false' }}">
-                <input type="hidden" id="show_filler_tags_val" name="show_filler_tags"
-                    value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
-                <input type="hidden" id="hide_nsfw_val" name="hide_nsfw"
-                    value="{{ 'true' if user.get('hide_nsfw', True) else 'false' }}">
-                <input type="hidden" id="show_watched_tags_val" name="show_watched_tags"
-                    value="{{ 'true' if user.get('show_watched_tags', False) else 'false' }}">
-                <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
-                    value="{{ 'true' if user.get('combine_watchlists', False) else 'false' }}">
-                <input type="hidden" id="custom_sort_enabled_val" name="custom_sort_enabled"
-                    value="{{ 'true' if user.get('custom_sort_enabled', False) else 'false' }}">
-                <input type="hidden" id="custom_sort_watching_by_val" name="custom_sort_watching_by"
-                    value="{{ user.get('custom_sort_watching_by', 'default') }}">
-                <input type="hidden" id="custom_sort_watching_order_val" name="custom_sort_watching_order"
-                    value="{{ user.get('custom_sort_watching_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_planning_by_val" name="custom_sort_planning_by"
-                    value="{{ user.get('custom_sort_planning_by', 'default') }}">
-                <input type="hidden" id="custom_sort_planning_order_val" name="custom_sort_planning_order"
-                    value="{{ user.get('custom_sort_planning_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_completed_by_val" name="custom_sort_completed_by"
-                    value="{{ user.get('custom_sort_completed_by', 'default') }}">
-                <input type="hidden" id="custom_sort_completed_order_val" name="custom_sort_completed_order"
-                    value="{{ user.get('custom_sort_completed_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_on_hold_by_val" name="custom_sort_on_hold_by"
-                    value="{{ user.get('custom_sort_on_hold_by', 'default') }}">
-                <input type="hidden" id="custom_sort_on_hold_order_val" name="custom_sort_on_hold_order"
-                    value="{{ user.get('custom_sort_on_hold_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_dropped_by_val" name="custom_sort_dropped_by"
-                    value="{{ user.get('custom_sort_dropped_by', 'default') }}">
-                <input type="hidden" id="custom_sort_dropped_order_val" name="custom_sort_dropped_order"
-                    value="{{ user.get('custom_sort_dropped_order', 'desc') }}">
-                <input type="hidden" id="enable_discovery_catalogs_val" name="enable_discovery_catalogs"
-                    value="{{ 'true' if user.get('enable_discovery_catalogs', True) else 'false' }}">
-                <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
-                    value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
+            <!-- Step Navigation (Next: Catalogs) -->
+            <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-end">
+                <button type="button" class="btn btn-step-action btn-step-next" onclick="switchTab('catalogs')">
+                    <span>Next: <strong>Catalogs</strong></span><i class="fa-solid fa-arrow-right ms-2"></i>
+                </button>
+            </div>
 
-                {% if not user.get('is_guest') %}
-                <div class="form-check form-switch mb-3">
+            </div>
+
+    <!-- TAB 2: Catalogs & Watchlists -->
+    <div class="anisync-tab-pane" id="tab-catalogs" role="tabpanel" aria-labelledby="tab-btn-catalogs">
+        <!-- General Preferences Card -->
+        <div class="card-dark p-3 p-sm-4 mb-3">
+            <h6 class="fw-semibold mb-3"><i class="fa-solid fa-sliders me-2 text-warning"></i>General Preferences</h6>
+
+            {% if not user.get('is_guest') %}
+            <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" role="switch" id="sync_unlisted" {% if
                         user.get('sync_unlisted', False) %}checked{% endif %}>
                     <label class="form-check-label ms-1" for="sync_unlisted">
@@ -1035,6 +1205,7 @@
                     </label>
                 </div>
             </div>
+
 
             <!-- Watchlist Catalogs Card -->
             {% if not user.get('is_guest') %}
@@ -1383,6 +1554,7 @@
             </div>
             {% endif %}
 
+
                 <!-- Discovery Catalogs Card -->
                 <div class="card-dark p-3 p-sm-4 mb-3">
                     <h6 class="fw-semibold mb-3"><i class="fa-solid fa-compass me-2" style="color: #38bdf8;"></i>Anime Discovery Catalogs</h6>
@@ -1413,126 +1585,429 @@
                     </div>
                 </div>
 
-                <!-- Recommendations Card (Hidden for Guest Users) -->
-                {% if not user.get('is_guest') %}
-                <div class="card-dark p-3 p-sm-4 mb-3">
-                    <h6 class="fw-semibold mb-3"><i
-                            class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>Recommendations</h6>
 
-                    <input type="hidden" id="enable_recommendations_val" name="enable_recommendations"
-                        value="{{ 'true' if user.get('enable_recommendations', True) else 'false' }}">
-                    <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
-                        value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
+                <!-- Catalogs Management Card -->
+                {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or
+                user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True) %}
+                <div class="card-dark p-3 p-sm-4 mb-3" id="catalog-management-card" {% if not
+                    user.get('mal_access_token') and not user.get('anilist_token') and not
+                    user.get('simkl_access_token') and not user.get('enable_recommendations', True) and not
+                    user.get('enable_discovery_catalogs', True) %}style="display: none;" {% endif %}>
+                    <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
+                        Management</h6>
+                    <p class="text-secondary small mb-3">Toggle visibility and drag-and-drop to reorder the catalogs
+                        exactly as they should appear in your app.</p>
 
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" role="switch" id="enable_recommendations" {% if
-                            user.get('enable_recommendations', True) %}checked{% endif %}>
-                        <label class="form-check-label ms-1" for="enable_recommendations">
-                            <span class="fw-medium d-block">Enable Recommendations Catalogs</span>
-                            <span class="text-secondary small d-block">
-                                Enable personalized anime recommendations based on your tracking history.
+                    <!-- Hidden input to store ordered comma-separated IDs -->
+                    <input type="hidden" id="sorted_catalogs" name="sorted_catalogs" value="">
+
+                    <div id="drag-drop-catalog-list" class="mb-4">
+                        {%
+                        set default_order = [
+                        ('mal_watching', 'MAL: Watching', 'mal'),
+                        ('mal_plan_to_watch', 'MAL: Plan to Watch', 'mal'),
+                        ('mal_completed', 'MAL: Completed', 'mal'),
+                        ('mal_on_hold', 'MAL: On Hold', 'mal'),
+                        ('mal_dropped', 'MAL: Dropped', 'mal'),
+                        ('anilist_watching', 'AniList: Watching', 'anilist'),
+                        ('anilist_planning', 'AniList: Planning', 'anilist'),
+                        ('anilist_completed', 'AniList: Completed', 'anilist'),
+                        ('anilist_paused', 'AniList: Paused', 'anilist'),
+                        ('anilist_dropped', 'AniList: Dropped', 'anilist'),
+                        ('anilist_repeating', 'AniList: Repeating', 'anilist'),
+                        ('simkl_watching', 'Simkl: Watching', 'simkl'),
+                        ('simkl_plantowatch', 'Simkl: Plan to Watch', 'simkl'),
+                        ('simkl_completed', 'Simkl: Completed', 'simkl'),
+                        ('simkl_hold', 'Simkl: On Hold', 'simkl'),
+                        ('simkl_dropped', 'Simkl: Dropped', 'simkl'),
+                        ('comb_watching', 'Watching', 'combined'),
+                        ('comb_plan_to_watch', 'Plan to Watch', 'combined'),
+                        ('comb_completed', 'Completed', 'combined'),
+                        ('comb_paused_on_hold', 'On Hold', 'combined'),
+                        ('comb_dropped', 'Dropped', 'combined'),
+                        ('anisync_rec', 'Top Picks', 'rec'),
+                        ('anisync_loved', 'Inspired by your Favorites', 'rec'),
+                        ('anisync_liked', 'More from your Watchlist', 'rec'),
+                        ('anisync_spotlight', 'Spotlight', 'discovery'),
+                        ('anisync_schedule', 'Weekly Release Calendar', 'discovery'),
+                        ('anisync_seasonal', 'Seasonal Showcase', 'discovery'),
+                        ('anisync_trending', 'Trending', 'discovery'),
+                        ('anisync_top_airing', 'Top Airing', 'discovery'),
+                        ('anisync_highest_rated', 'Highest Rated', 'discovery'),
+                        ('anisync_most_popular', 'Most Popular', 'discovery')
+                        ]
+                        %}
+
+                        {% set active_user_order = [] %}
+
+                        <!-- 1. Construct user-sorted list first -->
+                        {% if user.get('catalogs') is not none %}
+                        {% for sorted_id in user.get('catalogs', []) %}
+                        {% for item_id, item_name, item_source in default_order %}
+                        {% if item_id == sorted_id %}
+                        {% if (item_source == 'mal' and user.get('mal_access_token')) or
+                        (item_source == 'anilist' and user.get('anilist_token')) or
+                        (item_source == 'simkl' and user.get('simkl_access_token')) or
+                        (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or
+                        user.get('simkl_access_token'))) or
+                        item_source == 'rec' or
+                        item_source == 'discovery' %}
+                        {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
+                        {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                        {% endfor %}
+                        {% endif %}
+
+                        <!-- 2. Append any unselected/new catalogs from the source default order -->
+                        {% for item_id, item_name, item_source in default_order %}
+                        {% if (item_source == 'mal' and user.get('mal_access_token')) or
+                        (item_source == 'anilist' and user.get('anilist_token')) or
+                        (item_source == 'simkl' and user.get('simkl_access_token')) or
+                        (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or
+                        user.get('simkl_access_token'))) or
+                        item_source == 'rec' or
+                        item_source == 'discovery' %}
+                        {% if item_id not in user.get('catalogs', []) %}
+                        {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
+                        {% endif %}
+                        {% endif %}
+                        {% endfor %}
+
+                        <!-- 3. Render the orderable items -->
+                        {% for item_id, item_name, item_source in active_user_order %}
+                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
+                            draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}"
+                            style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-grip-vertical text-secondary me-3" style="cursor: move;"></i>
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input catalog-checkbox" type="checkbox"
+                                        id="cat_{{ item_id }}" name="cat_{{ item_id }}" {% if user.get('catalogs') is
+                                        none or item_id in user.get('catalogs', []) or (item_source=='discovery'
+                                        and 'enable_discovery_catalogs' not in user) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
+                                    <label class="form-check-label small fw-medium text-light" for="cat_{{ item_id }}"
+                                        style="user-select: none;">
+                                        {{ item_name }}
+                                    </label>
+                                </div>
+                            </div>
+                            <span
+                                class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}"
+                                style="font-size:0.68rem; letter-spacing:0.02em;">
+                                {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery'
+                                else item_source | upper) }}
                             </span>
-                        </label>
-                    </div>
-
-                    <!-- Recommendations Sub-Options (only visible when enabled) -->
-                    <div id="recommendations-options" class="nested-subcard"
-                        style="{% if not user.get('enable_recommendations', True) %}display: none;{% endif %}">
-
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" role="switch"
-                                id="recommendations_filter_watched" {% if user.get('recommendations_filter_watched',
-                                True) %}checked{% endif %}>
-                            <label class="form-check-label ms-1" for="recommendations_filter_watched">
-                                <span class="fw-medium d-block">Filter Watched Shows</span>
-                                <span class="text-secondary small d-block">
-                                    Exclude shows already in your completed, watching, paused, or dropped lists from
-                                    recommendations.
-                                </span>
-                            </label>
                         </div>
-
-                        <!-- Genre Exclusions -->
-                        <div class="row mb-3">
-                            <div class="col-md-6 mb-3 mb-md-0">
-                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Movie
-                                    Genres</label>
-                                <div class="genre-scroll-container">
-                                    {% for genre in anime_genres %}
-                                    <label class="genre-checkbox-label">
-                                        <input type="checkbox" name="rec_excluded_movie_genres" value="{{ genre }}"
-                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_movie_genres',
-                                            []) %}checked{% endif %}>
-                                        {{ genre }}
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Series
-                                    Genres</label>
-                                <div class="genre-scroll-container">
-                                    {% for genre in anime_genres %}
-                                    <label class="genre-checkbox-label">
-                                        <input type="checkbox" name="rec_excluded_series_genres" value="{{ genre }}"
-                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_series_genres',
-                                            []) %}checked{% endif %}>
-                                        {{ genre }}
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Gemini AI Section Replica -->
-                        <div id="gemini-key-section" style="margin-top: 1.5rem;">
-                            <label class="rec-label mb-2">GEMINI AI (OPTIONAL)</label>
-                            <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                                Used to generate personalized, AI-powered explanations for recommended anime based on
-                                your unique watch history.
-                            </p>
-
-                            <div class="gemini-input-wrapper position-relative">
-                                <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
-                                    value="{{ user.get('gemini_api_key', '') }}"
-                                    placeholder="Gemini API key here">
-                                <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
-                                    style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
-                                    <i class="fa-regular fa-eye" id="gemini-eye-icon"></i>
-                                </button>
-                                <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
-                                    title="Validate Key">
-                                    <i id="gemini-check-icon"
-                                        class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
-                                        style="font-size: 1.1rem; transition: color 0.2s;"></i>
-                                </button>
-                            </div>
-
-                            <div class="d-flex justify-content-between align-items-center mt-2.5">
-                                <span id="gemini-validation-status"
-                                    class="small ms-3 {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
-                                    {% if user.get('gemini_api_key') %}
-                                    {% if user.get('gemini_key_valid') == False %}
-                                    Invalid Gemini API key
-                                    {% else %}
-                                    API key verified
-                                    {% endif %}
-                                    {% else %}
-                                    Not verified
-                                    {% endif %}
-                                </span>
-                                <a href="https://aistudio.google.com/" target="_blank"
-                                    class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
-                                    Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
-                                        style="font-size: 0.65rem;"></i>
-                                </a>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- Poster Art Customization Card -->
+                <!-- Step Navigation (Previous: Trackers, Next: Appearance) -->
+                <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <button type="button" class="btn btn-step-action btn-step-prev" onclick="switchTab('trackers')">
+                        <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>Trackers</strong></span>
+                    </button>
+                    <button type="button" class="btn btn-step-action btn-step-next" onclick="switchTab('appearance')">
+                        <span>Next: <strong>Appearance</strong></span><i class="fa-solid fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- TAB 3: Appearance & Posters -->
+            <div class="anisync-tab-pane" id="tab-appearance" role="tabpanel" aria-labelledby="tab-btn-appearance">
+                            <!-- Metadata Preferences Card -->
+            <div class="card-dark p-3 p-sm-4 mb-3">
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-database me-2" style="color: #38bdf8;"></i>Metadata Preferences</h6>
+                <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                    Select your preferred metadata provider (Kitsu, MAL, AniList) and catalog title language (English, Romaji, Native).
+                </p>
+
+                <!-- Metadata Provider Option -->
+                <div class="mb-4">
+                    <label class="form-label small fw-semibold text-light mb-1">Primary Metadata Provider</label>
+                    <input type="hidden" id="metadata_provider" name="metadata_provider" value="{{ user.get('metadata_provider', 'kitsu') }}">
+                    <div style="max-width: 400px;">
+                        <div class="custom-select-wrapper mb-2" data-input-id="metadata_provider">
+                            <div class="custom-select">
+                                <span class="custom-select-text d-flex align-items-center">
+                                    {% if user.get('metadata_provider', 'kitsu') == 'mal' %}
+                                        <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">MyAnimeList
+                                    {% elif user.get('metadata_provider', 'kitsu') == 'anilist' %}
+                                        <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">AniList
+                                    {% elif user.get('metadata_provider', 'kitsu') == 'custom' %}
+                                        <i class="fa-solid fa-sliders text-info" style="font-size: 14px; width: 18px; text-align: center; margin-right: 10px;"></i>Custom
+                                    {% else %}
+                                        <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">Kitsu (Default)
+                                    {% endif %}
+                                </span>
+                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                            </div>
+                            <div class="custom-options-menu">
+                                <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
+                                    <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">Kitsu (Default)
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="mal">
+                                    <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">MyAnimeList
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="anilist">
+                                    <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">AniList
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="custom">
+                                    <i class="fa-solid fa-sliders text-info" style="font-size: 14px; width: 18px; text-align: center; margin-right: 10px;"></i>Custom
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; color: #e0a92e !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Kitsu if metadata is missing from selected provider.</p>
+                    </div>
+
+                    <!-- Custom Metadata Options Container -->
+                    <div id="custom_metadata_options_container" class="mt-3 pt-3 border-top border-secondary border-opacity-25 {% if user.get('metadata_provider', 'kitsu') != 'custom' %}d-none{% endif %}">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fa-solid fa-sliders text-info small me-2"></i>
+                            <span class="small fw-semibold text-info text-uppercase" style="letter-spacing: 0.05em; font-size: 0.78rem;">Custom Metadata Sources</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- 1. Series Synopsis -->
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
+                                    <i class="fa-solid fa-file-lines text-primary me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Series Synopsis
+                                </label>
+                                <input type="hidden" id="meta_synopsis_provider" name="meta_synopsis_provider" value="{{ user.get('meta_synopsis_provider', 'kitsu') }}">
+                                <div class="custom-select-wrapper mb-1" data-input-id="meta_synopsis_provider">
+                                    <div class="custom-select">
+                                        <span class="custom-select-text d-flex align-items-center">
+                                            {% if user.get('meta_synopsis_provider', 'kitsu') == 'mal' %}
+                                                <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                            {% elif user.get('meta_synopsis_provider', 'kitsu') == 'anilist' %}
+                                                <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                            {% else %}
+                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                            {% endif %}
+                                        </span>
+                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                    </div>
+                                    <div class="custom-options-menu">
+                                        <div class="custom-option-item d-flex align-items-center" data-value="mal">
+                                            <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="anilist">
+                                            <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
+                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
+                                    Primary source for series descriptions and community rating scores.
+                                </p>
+                            </div>
+
+                            <!-- 2. Episode Summaries -->
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
+                                    <i class="fa-solid fa-list-ol text-warning me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Episode Summaries
+                                </label>
+                                <input type="hidden" id="meta_episodes_provider" name="meta_episodes_provider" value="{{ user.get('meta_episodes_provider', 'anizp') }}">
+                                <div class="custom-select-wrapper mb-1" data-input-id="meta_episodes_provider">
+                                    <div class="custom-select">
+                                        <span class="custom-select-text d-flex align-items-center">
+                                            {% if user.get('meta_episodes_provider', 'anizp') == 'kitsu' %}
+                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                            {% elif user.get('meta_episodes_provider', 'anizp') == 'mal' %}
+                                                <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                            {% else %}
+                                                <img src="/assets/anizip_logo.png?v=2" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniZip
+                                            {% endif %}
+                                        </span>
+                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                    </div>
+                                    <div class="custom-options-menu">
+                                        <div class="custom-option-item d-flex align-items-center" data-value="anizp">
+                                            <img src="/assets/anizip_logo.png?v=2" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniZip
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
+                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="mal">
+                                            <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
+                                    Source for episode titles, descriptions, and thumbnail screenshots.
+                                </p>
+                            </div>
+
+                            <!-- 3. Cover Posters -->
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
+                                    <i class="fa-solid fa-image text-info me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Cover Posters
+                                </label>
+                                <input type="hidden" id="meta_poster_provider" name="meta_poster_provider" value="{{ user.get('meta_poster_provider', user.get('meta_artwork_provider', 'anilist')) }}">
+                                <div class="custom-select-wrapper mb-1" data-input-id="meta_poster_provider">
+                                    <div class="custom-select">
+                                        <span class="custom-select-text d-flex align-items-center">
+                                            {% set cur_poster = user.get('meta_poster_provider', user.get('meta_artwork_provider', 'anilist')) %}
+                                            {% if cur_poster == 'kitsu' %}
+                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                            {% elif cur_poster == 'mal' %}
+                                                <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                            {% else %}
+                                                <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                            {% endif %}
+                                        </span>
+                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                    </div>
+                                    <div class="custom-options-menu">
+                                        <div class="custom-option-item d-flex align-items-center" data-value="anilist">
+                                            <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
+                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="mal">
+                                            <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
+                                    Source for catalog cards, search results, and cover posters.
+                                </p>
+                            </div>
+
+                            <!-- 4. Backdrop Wallpaper -->
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
+                                    <i class="fa-solid fa-panorama text-success me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Backdrop Wallpaper
+                                </label>
+                                <input type="hidden" id="meta_backdrop_provider" name="meta_backdrop_provider" value="{{ user.get('meta_backdrop_provider', 'fanart') }}">
+                                <div class="custom-select-wrapper mb-1" data-input-id="meta_backdrop_provider">
+                                    <div class="custom-select">
+                                        <span class="custom-select-text d-flex align-items-center">
+                                            {% set cur_backdrop = user.get('meta_backdrop_provider', 'fanart') %}
+                                            {% if cur_backdrop == 'kitsu' %}
+                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                            {% elif cur_backdrop == 'anilist' %}
+                                                <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                            {% else %}
+                                                <img src="/assets/fanart_logo.png?v=2" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Fanart.tv
+                                            {% endif %}
+                                        </span>
+                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                    </div>
+                                    <div class="custom-options-menu">
+                                        <div class="custom-option-item d-flex align-items-center" data-value="fanart">
+                                            <img src="/assets/fanart_logo.png?v=2" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Fanart.tv
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
+                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="anilist">
+                                            <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
+                                    Source for full-screen loading wallpapers and series backdrops.
+                                </p>
+                            </div>
+
+                            <!-- 5. Airing Countdowns -->
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
+                                    <i class="fa-solid fa-clock text-danger me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Airing Countdowns
+                                </label>
+                                <input type="hidden" id="meta_airing_provider" name="meta_airing_provider" value="{{ user.get('meta_airing_provider', 'anilist') }}">
+                                <div class="custom-select-wrapper mb-1" data-input-id="meta_airing_provider">
+                                    <div class="custom-select">
+                                        <span class="custom-select-text d-flex align-items-center">
+                                            {% if user.get('meta_airing_provider', 'anilist') == 'mal' %}
+                                                <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                            {% elif user.get('meta_airing_provider', 'anilist') == 'kitsu' %}
+                                                <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                            {% else %}
+                                                <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                            {% endif %}
+                                        </span>
+                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                    </div>
+                                    <div class="custom-options-menu">
+                                        <div class="custom-option-item d-flex align-items-center" data-value="anilist">
+                                            <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="mal">
+                                            <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
+                                            <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
+                                    Source for weekly episode release schedules and live countdown headers.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Catalog Title Language Option -->
+                <div>
+                    <label class="form-label small fw-semibold text-light mb-1">Catalog Title Language</label>
+                    <input type="hidden" id="title_language" name="title_language" value="{{ user.get('title_language', 'english') }}">
+                    <div style="max-width: 400px;">
+                        <div class="custom-select-wrapper mb-2" data-input-id="title_language">
+                            <div class="custom-select">
+                                <span class="custom-select-text d-flex align-items-center">
+                                    {% if user.get('title_language', 'english') == 'romaji' %}
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
+                                    {% elif user.get('title_language', 'english') == 'japanese' %}
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
+                                    {% else %}
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
+                                    {% endif %}
+                                </span>
+                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                            </div>
+                            <div class="custom-options-menu">
+                                <div class="custom-option-item d-flex align-items-center" data-value="english">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="romaji">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="japanese">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; color: #e0a92e !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</p>
+                    </div>
+                </div>
+            </div>
+
+
+
+                <!-- Step Navigation (Previous: Catalogs, Next: Metadata) -->
+                <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <button type="button" class="btn btn-step-action btn-step-prev" onclick="switchTab('catalogs')">
+                        <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>Catalogs</strong></span>
+                    </button>
+                    <button type="button" class="btn btn-step-action btn-step-next" onclick="switchTab('metadata')">
+                        <span>Next: <strong>{% if not user.get('is_guest') %}Metadata and Recommendations{% else %}Metadata{% endif %}</strong></span><i class="fa-solid fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- TAB 4: Metadata and Recommendations -->
+            <div class="anisync-tab-pane" id="tab-metadata" role="tabpanel" aria-labelledby="tab-btn-metadata">
+                                <!-- Poster Art Customization Card -->
                 <div class="card-dark p-3 p-sm-4 mb-3">
                     <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art Customization</h6>
 
@@ -1744,162 +2219,215 @@
 
                 </div>
 
-                <!-- Catalogs Management Card -->
-                {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or
-                user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True) %}
-                <div class="card-dark p-3 p-sm-4 mb-3" id="catalog-management-card" {% if not
-                    user.get('mal_access_token') and not user.get('anilist_token') and not
-                    user.get('simkl_access_token') and not user.get('enable_recommendations', True) and not
-                    user.get('enable_discovery_catalogs', True) %}style="display: none;" {% endif %}>
-                    <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
-                        Management</h6>
-                    <p class="text-secondary small mb-3">Toggle visibility and drag-and-drop to reorder the catalogs
-                        exactly as they should appear in your app.</p>
 
-                    <!-- Hidden input to store ordered comma-separated IDs -->
-                    <input type="hidden" id="sorted_catalogs" name="sorted_catalogs" value="">
+                <!-- Recommendations Card (Hidden for Guest Users) -->
+                {% if not user.get('is_guest') %}
+                <div class="card-dark p-3 p-sm-4 mb-3">
+                    <h6 class="fw-semibold mb-3"><i
+                            class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>Recommendations</h6>
 
-                    <div id="drag-drop-catalog-list" class="mb-4">
-                        {%
-                        set default_order = [
-                        ('mal_watching', 'MAL: Watching', 'mal'),
-                        ('mal_plan_to_watch', 'MAL: Plan to Watch', 'mal'),
-                        ('mal_completed', 'MAL: Completed', 'mal'),
-                        ('mal_on_hold', 'MAL: On Hold', 'mal'),
-                        ('mal_dropped', 'MAL: Dropped', 'mal'),
-                        ('anilist_watching', 'AniList: Watching', 'anilist'),
-                        ('anilist_planning', 'AniList: Planning', 'anilist'),
-                        ('anilist_completed', 'AniList: Completed', 'anilist'),
-                        ('anilist_paused', 'AniList: Paused', 'anilist'),
-                        ('anilist_dropped', 'AniList: Dropped', 'anilist'),
-                        ('anilist_repeating', 'AniList: Repeating', 'anilist'),
-                        ('simkl_watching', 'Simkl: Watching', 'simkl'),
-                        ('simkl_plantowatch', 'Simkl: Plan to Watch', 'simkl'),
-                        ('simkl_completed', 'Simkl: Completed', 'simkl'),
-                        ('simkl_hold', 'Simkl: On Hold', 'simkl'),
-                        ('simkl_dropped', 'Simkl: Dropped', 'simkl'),
-                        ('comb_watching', 'Watching', 'combined'),
-                        ('comb_plan_to_watch', 'Plan to Watch', 'combined'),
-                        ('comb_completed', 'Completed', 'combined'),
-                        ('comb_paused_on_hold', 'On Hold', 'combined'),
-                        ('comb_dropped', 'Dropped', 'combined'),
-                        ('anisync_rec', 'Top Picks', 'rec'),
-                        ('anisync_loved', 'Inspired by your Favorites', 'rec'),
-                        ('anisync_liked', 'More from your Watchlist', 'rec'),
-                        ('anisync_spotlight', 'Spotlight', 'discovery'),
-                        ('anisync_schedule', 'Weekly Release Calendar', 'discovery'),
-                        ('anisync_seasonal', 'Seasonal Showcase', 'discovery'),
-                        ('anisync_trending', 'Trending', 'discovery'),
-                        ('anisync_top_airing', 'Top Airing', 'discovery'),
-                        ('anisync_highest_rated', 'Highest Rated', 'discovery'),
-                        ('anisync_most_popular', 'Most Popular', 'discovery')
-                        ]
-                        %}
+                    <input type="hidden" id="enable_recommendations_val" name="enable_recommendations"
+                        value="{{ 'true' if user.get('enable_recommendations', True) else 'false' }}">
+                    <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
+                        value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
 
-                        {% set active_user_order = [] %}
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="enable_recommendations" {% if
+                            user.get('enable_recommendations', True) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="enable_recommendations">
+                            <span class="fw-medium d-block">Enable Recommendations Catalogs</span>
+                            <span class="text-secondary small d-block">
+                                Enable personalized anime recommendations based on your tracking history.
+                            </span>
+                        </label>
+                    </div>
 
-                        <!-- 1. Construct user-sorted list first -->
-                        {% if user.get('catalogs') is not none %}
-                        {% for sorted_id in user.get('catalogs', []) %}
-                        {% for item_id, item_name, item_source in default_order %}
-                        {% if item_id == sorted_id %}
-                        {% if (item_source == 'mal' and user.get('mal_access_token')) or
-                        (item_source == 'anilist' and user.get('anilist_token')) or
-                        (item_source == 'simkl' and user.get('simkl_access_token')) or
-                        (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or
-                        user.get('simkl_access_token'))) or
-                        item_source == 'rec' or
-                        item_source == 'discovery' %}
-                        {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
-                        {% endif %}
-                        {% endif %}
-                        {% endfor %}
-                        {% endfor %}
-                        {% endif %}
+                    <!-- Recommendations Sub-Options (only visible when enabled) -->
+                    <div id="recommendations-options" class="nested-subcard"
+                        style="{% if not user.get('enable_recommendations', True) %}display: none;{% endif %}">
 
-                        <!-- 2. Append any unselected/new catalogs from the source default order -->
-                        {% for item_id, item_name, item_source in default_order %}
-                        {% if (item_source == 'mal' and user.get('mal_access_token')) or
-                        (item_source == 'anilist' and user.get('anilist_token')) or
-                        (item_source == 'simkl' and user.get('simkl_access_token')) or
-                        (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or
-                        user.get('simkl_access_token'))) or
-                        item_source == 'rec' or
-                        item_source == 'discovery' %}
-                        {% if item_id not in user.get('catalogs', []) %}
-                        {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
-                        {% endif %}
-                        {% endif %}
-                        {% endfor %}
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                id="recommendations_filter_watched" {% if user.get('recommendations_filter_watched',
+                                True) %}checked{% endif %}>
+                            <label class="form-check-label ms-1" for="recommendations_filter_watched">
+                                <span class="fw-medium d-block">Filter Watched Shows</span>
+                                <span class="text-secondary small d-block">
+                                    Exclude shows already in your completed, watching, paused, or dropped lists from
+                                    recommendations.
+                                </span>
+                            </label>
+                        </div>
 
-                        <!-- 3. Render the orderable items -->
-                        {% for item_id, item_name, item_source in active_user_order %}
-                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
-                            draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}"
-                            style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
-                            <div class="d-flex align-items-center">
-                                <i class="fa-solid fa-grip-vertical text-secondary me-3" style="cursor: move;"></i>
-                                <div class="form-check mb-0">
-                                    <input class="form-check-input catalog-checkbox" type="checkbox"
-                                        id="cat_{{ item_id }}" name="cat_{{ item_id }}" {% if user.get('catalogs') is
-                                        none or item_id in user.get('catalogs', []) or (item_source=='discovery'
-                                        and 'enable_discovery_catalogs' not in user) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
-                                    <label class="form-check-label small fw-medium text-light" for="cat_{{ item_id }}"
-                                        style="user-select: none;">
-                                        {{ item_name }}
+                        <!-- Genre Exclusions -->
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Movie
+                                    Genres</label>
+                                <div class="genre-scroll-container">
+                                    {% for genre in anime_genres %}
+                                    <label class="genre-checkbox-label">
+                                        <input type="checkbox" name="rec_excluded_movie_genres" value="{{ genre }}"
+                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_movie_genres',
+                                            []) %}checked{% endif %}>
+                                        {{ genre }}
                                     </label>
+                                    {% endfor %}
                                 </div>
                             </div>
-                            <span
-                                class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}"
-                                style="font-size:0.68rem; letter-spacing:0.02em;">
-                                {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery'
-                                else item_source | upper) }}
-                            </span>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Series
+                                    Genres</label>
+                                <div class="genre-scroll-container">
+                                    {% for genre in anime_genres %}
+                                    <label class="genre-checkbox-label">
+                                        <input type="checkbox" name="rec_excluded_series_genres" value="{{ genre }}"
+                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_series_genres',
+                                            []) %}checked{% endif %}>
+                                        {{ genre }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
-                        {% endfor %}
+
+                        <!-- Gemini AI Section Replica -->
+                        <div id="gemini-key-section" style="margin-top: 1.5rem;">
+                            <label class="rec-label mb-2">GEMINI AI (OPTIONAL)</label>
+                            <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                                Used to generate personalized, AI-powered explanations for recommended anime based on
+                                your unique watch history.
+                            </p>
+
+                            <div class="gemini-input-wrapper position-relative">
+                                <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
+                                    value="{{ user.get('gemini_api_key', '') }}"
+                                    placeholder="Gemini API key here">
+                                <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
+                                    style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                    <i class="fa-regular fa-eye" id="gemini-eye-icon"></i>
+                                </button>
+                                <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
+                                    title="Validate Key">
+                                    <i id="gemini-check-icon"
+                                        class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                        style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                                </button>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-2.5">
+                                <span id="gemini-validation-status"
+                                    class="small ms-3 {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                    {% if user.get('gemini_api_key') %}
+                                    {% if user.get('gemini_key_valid') == False %}
+                                    Invalid Gemini API key
+                                    {% else %}
+                                    API key verified
+                                    {% endif %}
+                                    {% else %}
+                                    Not verified
+                                    {% endif %}
+                                </span>
+                                <a href="https://aistudio.google.com/" target="_blank"
+                                    class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
+                                    Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
+                                        style="font-size: 0.65rem;"></i>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- Unified Save Button -->
-                <button type="submit" class="btn btn-save-preferences mt-2 mb-4" onclick="updateFormValues();">
-                    <i class="fa-solid fa-check me-2"></i>Save Preferences
-                </button>
-        </form>
 
-        <!-- Install Card -->
-        <div class="card-dark p-3 p-sm-4 mb-3">
-            <h6 class="fw-semibold mb-1"><i class="fa-solid fa-puzzle-piece me-2 text-info"></i>Install Addon</h6>
-            <p class="text-secondary small mb-3">Copy the manifest URL and paste it into your app, or click "Direct
-                Install".</p>
-            <div class="input-group mb-3">
-                <input id="manifest_url" type="text" class="form-control manifest-box" value="{{ manifest_url }}"
-                    readonly>
-                <button class="btn btn-outline-secondary" onclick="copyToClipboard('manifest_url')">
-                    <i class="fa-regular fa-copy"></i>
-                </button>
+
+                <!-- Step Navigation (Previous: Appearance, Next: Install) -->
+                <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <button type="button" class="btn btn-step-action btn-step-prev" onclick="switchTab('appearance')">
+                        <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>Appearance</strong></span>
+                    </button>
+                    <button type="button" class="btn btn-step-action btn-step-next" onclick="switchTab('install')">
+                        <span>Next: <strong>Install</strong></span><i class="fa-solid fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+
             </div>
-            <a href="{{ manifest_magnet }}" class="btn btn-success w-100 w-sm-auto">
-                <i class="fa-solid fa-arrow-up-right-from-square me-2"></i>Direct Install
-            </a>
-        </div>
 
-        <!-- Danger Zone Card -->
-        <div class="card-dark p-3 p-sm-4 mb-3" style="background: rgba(220, 38, 38, 0.03); border: 1px solid rgba(239, 68, 68, 0.22); border-radius: 12px;">
-            <h6 class="fw-bold mb-2 d-flex align-items-center" style="color: #ef4444; font-size: 1rem;">
-                <i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone
-            </h6>
-            <p class="text-secondary small mb-3" style="color: #a1a1aa !important; line-height: 1.5; font-size: 0.85rem;">
-                Permanently delete your user records, disconnect connected tracker accounts (AniList, MAL, Simkl), and clear all saved catalog preferences.
-            </p>
-            <button type="button" class="btn btn-sm text-white px-3.5 py-2 fw-semibold" data-bs-toggle="modal" data-bs-target="#deleteAccountModal" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; font-size: 0.85rem; color: #f87171 !important;">
-                <i class="fa-solid fa-trash-can me-2"></i>Delete User
-            </button>
-        </div>
+            <!-- TAB 5: Install & Danger Zone -->
+            <div class="anisync-tab-pane" id="tab-install" role="tabpanel" aria-labelledby="tab-btn-install">
+                
+                <!-- Master Install Card -->
+                <div class="card-dark p-3 p-sm-4 mb-4" style="background: linear-gradient(180deg, rgba(2, 169, 255, 0.04) 0%, rgba(20, 20, 22, 0.95) 100%); border: 1px solid rgba(2, 169, 255, 0.25); border-radius: 14px;">
+                    <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom border-white border-opacity-10">
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(2, 169, 255, 0.1); border: 1px solid rgba(2, 169, 255, 0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i class="fa-solid fa-puzzle-piece text-info fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-white mb-0.5" style="font-size: 1rem;">Install AniSync Addon</h6>
+                            <p class="text-secondary small mb-0" style="font-size: 0.8125rem;">
+                                Install directly into app or copy your manifest URL.
+                            </p>
+                        </div>
+                    </div>
 
-    </div>
+                    <!-- Manifest URL Input Box -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary mb-1" style="font-size: 0.73rem; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8 !important;">Manifest URL</label>
+                        <div class="input-group align-items-center" style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 10px; overflow: hidden; padding: 3px;">
+                            <input type="text" id="manifest_url" class="form-control text-light font-monospace bg-transparent border-0 px-2.5 py-1.5" value="{{ manifest_url }}" readonly style="font-size: 0.8125rem; outline: none; box-shadow: none;">
+                            <button type="button" class="btn btn-sm px-3 py-1.5 fw-medium d-inline-flex align-items-center flex-shrink-0" onclick="copyToClipboard('manifest_url')" title="Copy Manifest URL" style="border-radius: 7px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.09); color: #cbd5e1; font-size: 0.8rem; transition: all 0.2s ease;">
+                                <i class="fa-regular fa-copy me-2"></i><span>Copy</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Master Save Button -->
+                    <button type="submit" class="btn btn-save-preferences w-100 py-2.5 fw-bold d-inline-flex align-items-center justify-content-center mb-3" onclick="updateFormValues();">
+                        <i class="fa-solid fa-floppy-disk me-2"></i><span>Save Preferences</span>
+                    </button>
+
+                    <!-- Secondary Install Actions Below Save -->
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button type="button" class="btn w-100 py-2 fw-medium d-inline-flex align-items-center justify-content-center" onclick="copyToClipboard('manifest_url')" style="gap: 8px; font-size: 0.82rem; border-radius: 8px; background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.09); color: #cbd5e1; transition: all 0.2s ease;">
+                                <i class="fa-regular fa-copy flex-shrink-0"></i><span class="text-truncate">Copy URL</span>
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ manifest_magnet }}" class="btn btn-success w-100 py-2 fw-semibold d-inline-flex align-items-center justify-content-center" style="gap: 8px; font-size: 0.82rem; border-radius: 8px;">
+                                <i class="fa-solid fa-arrow-up-right-from-square flex-shrink-0"></i><span class="text-truncate">Direct Install</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danger Zone Card -->
+                <div class="card-dark p-3 p-sm-4 mb-3" style="background: rgba(220, 38, 38, 0.03); border: 1px solid rgba(239, 68, 68, 0.22); border-radius: 12px;">
+                    <h6 class="fw-bold mb-2 d-flex align-items-center" style="color: #ef4444; font-size: 1rem;">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i><span>Danger Zone</span>
+                    </h6>
+                    <p class="text-secondary small mb-3" style="color: #a1a1aa !important; line-height: 1.5; font-size: 0.85rem;">
+                        Permanently delete your user records, disconnect connected tracker accounts (AniList, MAL, Simkl), and clear all saved catalog preferences.
+                    </p>
+                    <button type="button" class="btn btn-sm text-white px-3.5 py-2 fw-semibold d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#deleteAccountModal" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; font-size: 0.85rem; color: #f87171 !important;">
+                        <i class="fa-solid fa-trash-can me-2"></i><span>Delete User Records</span>
+                    </button>
+                </div>
+
+                <!-- Step Navigation (Previous: Metadata) -->
+                <div class="step-nav-bar mt-4 pt-3 d-flex justify-content-start">
+                    <button type="button" class="btn btn-step-action btn-step-prev" onclick="switchTab('metadata')">
+                        <i class="fa-solid fa-arrow-left me-2"></i><span>Back: <strong>{% if not user.get('is_guest') %}Metadata and Recommendations{% else %}Metadata{% endif %}</strong></span>
+                    </button>
+                </div>
+
+            </div>
+
+        </form>
+    </main>
 </div>
+</div>
+
 
 <!-- Delete User Records Modal -->
 <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
@@ -1951,7 +2479,132 @@
 {% block scripts %}
 <script>
     // Drag and Drop ordering handler
+    
+    const SECTION_ICONS = {
+        trackers: "fa-link text-info",
+        catalogs: "fa-layer-group text-primary",
+        appearance: "fa-palette text-warning",
+        metadata: "fa-sliders text-success",
+        install: "fa-rocket text-danger"
+    };
+    const SECTION_TITLES = {
+        trackers: "Trackers",
+        catalogs: "Catalogs",
+        appearance: "Appearance",
+        metadata: "{% if not user.get('is_guest') %}Metadata and Recommendations{% else %}Metadata{% endif %}",
+        install: "Install"
+    };
+
+    // Tab switching logic (Sidebar + Mobile Popover + Panes)
+    function switchTab(tabId) {
+        // 1. Sync Desktop Sidebar
+        document.querySelectorAll('.anisync-sidebar-link').forEach(btn => {
+            const isActive = btn.getAttribute('data-tab') === tabId;
+            btn.classList.toggle('active', isActive);
+            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        // 2. Sync Mobile Popover Trigger & Menu Items
+        const triggerLabel = document.getElementById('mobile-section-label');
+        const triggerIcon = document.getElementById('mobile-section-icon');
+        if (triggerLabel && SECTION_TITLES[tabId]) {
+            triggerLabel.textContent = SECTION_TITLES[tabId];
+        }
+        if (triggerIcon && SECTION_ICONS[tabId]) {
+            triggerIcon.className = `fa-solid ${SECTION_ICONS[tabId]} flex-shrink-0`;
+        }
+
+        document.querySelectorAll('.mobile-select-item').forEach(item => {
+            const isMatch = item.getAttribute('data-tab') === tabId;
+            item.classList.toggle('active', isMatch);
+            const check = item.querySelector('.active-check');
+            if (check) check.classList.toggle('d-none', !isMatch);
+        });
+
+        // Close mobile menu if open
+        const mobileMenu = document.getElementById('mobile-section-menu');
+        const chevron = document.getElementById('mobile-section-chevron');
+        if (mobileMenu) mobileMenu.classList.add('d-none');
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+
+        // 3. Sync Tab Panes
+        document.querySelectorAll('.anisync-tab-pane').forEach(pane => {
+            pane.classList.toggle('active', pane.id === `tab-${tabId}`);
+        });
+
+        try {
+            localStorage.setItem('anisync_active_tab', tabId);
+        } catch (e) {}
+
+        // 4. Scroll smoothly to top of active pane on mobile if called from step nav
+        if (window.innerWidth < 768) {
+            const mainEl = document.querySelector('main');
+            if (mainEl) {
+                mainEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
+        const savedTab = localStorage.getItem('anisync_active_tab');
+        const validTabs = ['trackers', 'catalogs', 'appearance', 'metadata', 'install'];
+        const initialTab = (savedTab && validTabs.includes(savedTab)) ? savedTab : 'trackers';
+        switchTab(initialTab);
+
+        // Sidebar link clicks & keyboard arrows
+        const sidebarLinks = Array.from(document.querySelectorAll('.anisync-sidebar-link'));
+        sidebarLinks.forEach((btn, index) => {
+            btn.addEventListener('click', function () {
+                const tabId = this.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+            btn.addEventListener('keydown', function (e) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const nextIndex = (index + 1) % sidebarLinks.length;
+                    sidebarLinks[nextIndex].focus();
+                    switchTab(sidebarLinks[nextIndex].getAttribute('data-tab'));
+                } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const prevIndex = (index - 1 + sidebarLinks.length) % sidebarLinks.length;
+                    sidebarLinks[prevIndex].focus();
+                    switchTab(sidebarLinks[prevIndex].getAttribute('data-tab'));
+                }
+            });
+        });
+
+        // Mobile Custom Popover Select handlers
+        const mobileTrigger = document.getElementById('mobile-section-trigger');
+        const mobileMenu = document.getElementById('mobile-section-menu');
+        const mobileChevron = document.getElementById('mobile-section-chevron');
+
+        if (mobileTrigger && mobileMenu) {
+            mobileTrigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isClosed = mobileMenu.classList.contains('d-none');
+                mobileMenu.classList.toggle('d-none', !isClosed);
+                if (mobileChevron) {
+                    mobileChevron.style.transform = isClosed ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
+            });
+
+            document.querySelectorAll('.mobile-select-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+
+            // Close mobile popover when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!mobileTrigger.contains(e.target) && !mobileMenu.contains(e.target)) {
+                    mobileMenu.classList.add('d-none');
+                    if (mobileChevron) mobileChevron.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
+
         // Custom Dropdown select initialization and event handlers
         const customWrappers = document.querySelectorAll(".custom-select-wrapper");
 
