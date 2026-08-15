@@ -2441,21 +2441,30 @@
                     </div>
 
                     <!-- Master Save Button -->
-                    <button type="submit" class="btn btn-save-preferences w-100 py-2.5 fw-bold d-inline-flex align-items-center justify-content-center mb-3" onclick="updateFormValues();">
+                    <button type="submit" class="btn btn-save-preferences w-100 py-2.5 fw-bold d-inline-flex align-items-center justify-content-center mb-2.5" onclick="updateFormValues();">
                         <i class="fa-solid fa-floppy-disk me-2"></i><span>Save Preferences</span>
                     </button>
 
-                    <!-- Secondary Install Actions Below Save -->
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <button type="button" class="btn w-100 py-2 fw-medium d-inline-flex align-items-center justify-content-center" onclick="copyToClipboard('manifest_url')" style="gap: 8px; font-size: 0.82rem; border-radius: 8px; background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.09); color: #cbd5e1; transition: all 0.2s ease;">
-                                <i class="fa-regular fa-copy flex-shrink-0"></i><span class="text-truncate">Copy URL</span>
-                            </button>
-                        </div>
-                        <div class="col-6">
-                            <a href="{{ manifest_magnet }}" class="btn btn-success w-100 py-2 fw-semibold d-inline-flex align-items-center justify-content-center" style="gap: 8px; font-size: 0.82rem; border-radius: 8px;">
-                                <i class="fa-solid fa-arrow-up-right-from-square flex-shrink-0"></i><span class="text-truncate">Direct Install</span>
+                    <!-- Install Addon Dropdown -->
+                    <div class="dropdown w-100" id="install-dropdown-wrapper">
+                        <button type="button" class="btn btn-install-dropdown w-100 py-2.5 fw-bold d-inline-flex align-items-center justify-content-center dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="min-height: 44px; border-radius: 9px; font-size: 0.875rem; background: #10b981; border: none; color: #fff; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25); transition: all 0.2s ease;">
+                            <i class="fa-solid fa-rocket me-2"></i><span>Install Addon</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-dark w-100 p-1.5 mt-1" style="background: #141416; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85); backdrop-filter: blur(20px);">
+                            <a href="{{ manifest_magnet }}" class="dropdown-item d-flex align-items-center gap-2.5 py-2.5 px-3 rounded-2 text-light" style="font-size: 0.85rem; transition: background 0.15s ease;">
+                                <i class="fa-solid fa-arrow-up-right-from-square text-success flex-shrink-0" style="font-size: 0.95rem; width: 20px; text-align: center;"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="fw-semibold text-white">Direct Install</span>
+                                    <span class="text-secondary small" style="font-size: 0.75rem;">Open directly in Stremio / Nuvio</span>
+                                </div>
                             </a>
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2.5 py-2.5 px-3 rounded-2 text-light" onclick="copyToClipboard('manifest_url')" style="font-size: 0.85rem; transition: background 0.15s ease;">
+                                <i class="fa-regular fa-copy text-info flex-shrink-0" style="font-size: 0.95rem; width: 20px; text-align: center;"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="fw-semibold text-white">Copy Manifest URL</span>
+                                    <span class="text-secondary small" style="font-size: 0.75rem;">Copy URL for manual installation</span>
+                                </div>
+                            </button>
                         </div>
                     </div>
                 </div>
