@@ -346,6 +346,17 @@
                 });
         }
 
+        function formatMarkdownInline(str) {
+            if (!str) return '';
+            return str
+                // Markdown Links: [text](url) -> formatted anchor tag
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="release-link" style="color: #38bdf8; text-decoration: none; font-size: 0.78rem; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); padding: 1px 6px; border-radius: 4px; transition: all 0.15s ease;">$1</a>')
+                // Bold: **text**
+                .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white fw-semibold">$1</strong>')
+                // Inline code: `text` -> neutral subtle dark-glass chip
+                .replace(/`([^`]+)`/g, '<code class="release-code" style="background: rgba(255, 255, 255, 0.07); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.12); padding: 2px 6px; border-radius: 5px; font-family: monospace; font-size: 0.78rem; font-weight: 500;">$1</code>');
+        }
+
         let releasesLoaded = false;
         function parseReleaseMarkdown(md) {
             if (!md) return '';
@@ -363,8 +374,8 @@
                 // Headers (## or ###)
                 if (trimmed.startsWith('#')) {
                     if (inList) { out += '</ul>'; inList = false; }
-                    const headerText = trimmed.replace(/^#+\s*/, '');
-                    out += `<h6 class="fw-bold text-white mt-3 mb-2" style="font-size: 1rem; letter-spacing: 0.02em;">${headerText}</h6>`;
+                    const headerText = formatMarkdownInline(trimmed.replace(/^#+\s*/, ''));
+                    out += `<h6 class="fw-bold text-white mt-3 mb-2" style="font-size: 0.95rem; letter-spacing: 0.02em;">${headerText}</h6>`;
                     return;
                 }
 
@@ -374,22 +385,15 @@
                         out += '<ul class="ps-3 mb-2 d-flex flex-column gap-1.5" style="line-height: 1.6;">';
                         inList = true;
                     }
-                    let itemText = trimmed.replace(/^[\*\-]\s*/, '');
-                    
-                    // Format inline code / bolding
-                    itemText = itemText.replace(/\*\*(.*?)\*\*/g, '<strong class="text-light">$1</strong>');
-                    itemText = itemText.replace(/`(.*?)`/g, '<code class="bg-dark px-1.5 py-0.5 rounded text-info" style="font-size: 0.875rem; border: 1px solid rgba(255,255,255,0.1);">$1</code>');
-                    
-                    out += `<li class="text-secondary small">${itemText}</li>`;
+                    let itemText = formatMarkdownInline(trimmed.replace(/^[\*\-]\s*/, ''));
+                    out += `<li class="text-secondary small" style="color: #94a3b8 !important;">${itemText}</li>`;
                     return;
                 }
 
                 // Normal paragraph line
                 if (inList) { out += '</ul>'; inList = false; }
-                let text = trimmed
-                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-light">$1</strong>')
-                    .replace(/`(.*?)`/g, '<code class="bg-dark px-1.5 py-0.5 rounded text-info" style="font-size: 0.875rem;">$1</code>');
-                out += `<p class="text-secondary small mb-2">${text}</p>`;
+                let text = formatMarkdownInline(trimmed);
+                out += `<p class="text-secondary small mb-2" style="color: #94a3b8 !important;">${text}</p>`;
             });
 
             if (inList) out += '</ul>';
