@@ -39,7 +39,7 @@ def clean_html(text: str) -> str:
     return clean.strip()
 
 
-def is_proper_anime(title: str) -> bool:
+def is_proper_anime(title: str, synopsis: str | None = None) -> bool:
     if not title:
         return True
     t_lower = title.lower()
@@ -73,6 +73,23 @@ def is_proper_anime(title: str) -> bool:
         "ple ple pleiades",
         "chara-gekijou",
         "chara gekijou",
+        "oitsukeru",
+        "de oitsukeru",
+        "soushuuhen",
+        "sou-shuuhen",
+        "soushuhen",
+        "digest",
+        "daijesuto",
+        "compilation",
+        "catch-up",
+        "catch up",
+        "re-cap",
+        "re-edit",
+        "omnibus",
+        "theatrical short",
+        "drama cd",
+        "audio drama",
+        "special edition",
     ]
 
     for kw in excl_keywords:
@@ -87,6 +104,23 @@ def is_proper_anime(title: str) -> bool:
             if re.search(r"\bova\b", t_lower):
                 return False
         elif kw in t_lower:
+            return False
+
+    if synopsis:
+        s_lower = synopsis.lower().strip()
+        recap_prefixes = (
+            "recap of",
+            "a recap of",
+            "summary of",
+            "a summary of",
+            "digest of",
+            "a digest of",
+            "compilation of",
+            "a compilation of",
+            "special episode summarizing",
+            "recap episode",
+        )
+        if any(s_lower.startswith(prefix) for prefix in recap_prefixes):
             return False
 
     return True
@@ -385,7 +419,8 @@ async def get_recommendations_for_seeds(
         if filter_watched and title.lower() in watched_titles:
             continue
 
-        if not is_proper_anime(title):
+        desc = media.get("description") or ""
+        if not is_proper_anime(title, desc):
             continue
 
         poster = (media.get("coverImage") or {}).get("large") or (media.get("coverImage") or {}).get("medium") or ""
@@ -432,10 +467,11 @@ async def get_recommendations_for_seeds(
                 if node.get("status") == "not_yet_aired":
                     continue
 
+                syn = clean_html(node.get("synopsis") or "")
                 # Exclude OVA, SPECIAL, MUSIC and short duration (<= 5 minutes / 300 seconds)
                 m_type = node.get("media_type")
                 duration = node.get("average_episode_duration")
-                if m_type in ["ova", "special", "music"] or not is_proper_anime(title):
+                if m_type in ["ova", "special", "music"] or not is_proper_anime(title, syn):
                     continue
                 if duration is not None and duration <= 300:
                     continue
@@ -1193,9 +1229,10 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                     continue
 
                 # Exclude OVA, SPECIAL, MUSIC and short duration (<= 5 minutes / 300 seconds)
+                syn = clean_html(node.get("synopsis") or "")
                 m_type = node.get("media_type")
                 duration = node.get("average_episode_duration")
-                if m_type in ["ova", "special", "music"] or not is_proper_anime(title):
+                if m_type in ["ova", "special", "music"] or not is_proper_anime(title, syn):
                     continue
                 if duration is not None and duration <= 300:
                     continue
