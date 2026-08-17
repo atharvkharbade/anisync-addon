@@ -753,10 +753,17 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
     from app.services.poster_service import get_rpdb_poster_url
 
     title_lang = user.get("title_language", "english") if user else "english"
+    is_watchlist_catalog = bool(
+        catalog_id
+        and any(
+            catalog_id.startswith(p)
+            for p in ["mal_", "anilist_", "simkl_", "comb_"]
+        )
+    )
     hide_nsfw = user.get("hide_nsfw", True) if user else True
     formatted_metas = []
     for m in metas_list:
-        if hide_nsfw and is_nsfw_meta(m):
+        if hide_nsfw and not is_watchlist_catalog and is_nsfw_meta(m):
             continue
         m_copy = m.copy()
         if "title_obj" in m_copy:

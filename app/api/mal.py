@@ -121,7 +121,7 @@ async def get_anime_details(token: str, anime_id: str) -> dict:
     resp = await client.get(
         f"{BASE_URL}/anime/{anime_id}",
         headers={"Authorization": f"Bearer {token}"},
-        params={"fields": fields},
+        params={"fields": fields, "nsfw": "true"},
         timeout=TIMEOUT,
     )
     _raise_for_status(resp)
@@ -130,7 +130,7 @@ async def get_anime_details(token: str, anime_id: str) -> dict:
 
 async def get_user_anime_list(token: str, status: str = "", limit: int = 100, offset: int = 0) -> dict:
     fields = "id,title,alternative_titles,main_picture,num_episodes,status,mean,my_list_status{status,score,num_episodes_watched,updated_at},genres,media_type,end_date"
-    params = {"fields": fields, "limit": limit, "offset": offset}
+    params = {"fields": fields, "limit": limit, "offset": offset, "nsfw": "true"}
     if status:
         params["status"] = status
     client = get_client()
@@ -149,7 +149,7 @@ async def search_anime(token: str, query: str, limit: int = 100, offset: int = 0
         "id,title,alternative_titles,main_picture,num_episodes,status,mean,my_list_status{status,num_episodes_watched,updated_at},media_type"
     )
 
-    params = {"q": query, "fields": fields, "limit": limit, "offset": offset}
+    params = {"q": query, "fields": fields, "limit": limit, "offset": offset, "nsfw": "true"}
     client = get_client()
     resp = await client.get(
         f"{BASE_URL}/anime",
