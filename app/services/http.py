@@ -30,7 +30,8 @@ def init_client():
     global _client
     if _client is None:
         mounts = {}
-        limits = httpx.Limits(max_connections=200, max_keepalive_connections=50)
+        direct_limits = httpx.Limits(max_connections=200, max_keepalive_connections=50)
+        proxy_limits = httpx.Limits(max_connections=200, max_keepalive_connections=0)
         
         # Determine global proxy
         global_proxy = Config.PROXY_URL if Config.PROXY_URL else None
@@ -54,21 +55,22 @@ def init_client():
         for domain, proxy_val in services.items():
             if proxy_val:
                 if proxy_val.lower() in ["direct", "none"]:
-                    # Map to None/direct transport to force direct connection
-                    mounts[f"all://{domain}"] = httpx.AsyncHTTPTransport(limits=limits)
+                    # Map to direct transport to force direct connection with keepalive
+                    mounts[f"all://{domain}"] = httpx.AsyncHTTPTransport(limits=direct_limits)
                 else:
-                    mounts[f"all://{domain}"] = httpx.AsyncHTTPTransport(proxy=proxy_val, limits=limits)
+                    # Proxy transport: disable keepalive so rotating proxies change IP on every request
+                    mounts[f"all://{domain}"] = httpx.AsyncHTTPTransport(proxy=proxy_val, limits=proxy_limits)
             elif global_proxy:
-                # Fallback to global proxy explicitly
-                mounts[f"all://{domain}"] = httpx.AsyncHTTPTransport(proxy=global_proxy, limits=limits)
+                # Fallback to global proxy explicitly with rotating limits
+                mounts[f"all://{domain}"] = httpx.AsyncHTTPTransport(proxy=global_proxy, limits=proxy_limits)
                 
         # General default fallback for all other domains
         if global_proxy:
-            mounts["all://"] = httpx.AsyncHTTPTransport(proxy=global_proxy, limits=limits)
+            mounts["all://"] = httpx.AsyncHTTPTransport(proxy=global_proxy, limits=proxy_limits)
             
         _client = PersistentAsyncClient(
             timeout=8,
-            limits=limits,
+            limits=direct_limits,
             mounts=mounts
         )
         
