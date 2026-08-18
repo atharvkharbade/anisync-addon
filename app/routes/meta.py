@@ -2,7 +2,7 @@ import asyncio
 import logging
 import urllib.parse
 
-from quart import Blueprint, request
+from quart import Blueprint
 
 from app.lib.id_resolver import resolve, resolve_anilist_to_kitsu, resolve_mal_to_kitsu, resolve_simkl_to_kitsu
 from app.routes.utils import is_valid_user_id, rate_limit, respond_with
@@ -648,42 +648,6 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)
         return await respond_with({"meta": {}})
-
-
-def extract_rec_prefix(desc: str | None) -> tuple[str | None, str | None]:
-    """
-    If description contains a recommendation reason prefix (e.g. 'Inspired by...',
-    'Community Recommendation', 'Popular ... collection', or Gemini reasoning),
-    extract the prefix and the underlying synopsis.
-    """
-    if not desc:
-        return None, None
-
-    known_markers = [
-        "inspired by",
-        "community recommendation",
-        "recommended",
-        "popular",
-        "trending",
-        "franchise",
-        "because you",
-        "collection",
-        "based on your",
-    ]
-
-    parts = desc.split("\n\n", 1)
-    first_part = parts[0].strip()
-
-    for marker in known_markers:
-        if marker in first_part.lower():
-            synopsis = parts[1].strip() if len(parts) > 1 else ""
-            return first_part, synopsis
-
-    # Handle custom Gemini 1-sentence personalized descriptions (short first paragraph followed by synopsis)
-    if len(parts) > 1 and len(first_part) <= 300:
-        return first_part, parts[1].strip()
-
-    return None, desc
 
 
 def build_user_status_header(user_id: str, mal_id: str | None, anilist_id: str | None, simkl_id: str | None) -> str | None:

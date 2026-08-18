@@ -144,23 +144,6 @@ async def get_user_anime_list(token: str, status: str = "", limit: int = 100, of
     return resp.json()
 
 
-async def search_anime(token: str, query: str, limit: int = 100, offset: int = 0) -> dict:
-    fields = (
-        "id,title,alternative_titles,main_picture,num_episodes,status,mean,my_list_status{status,num_episodes_watched,updated_at},media_type"
-    )
-
-    params = {"q": query, "fields": fields, "limit": limit, "offset": offset, "nsfw": "true"}
-    client = get_client()
-    resp = await client.get(
-        f"{BASE_URL}/anime",
-        headers={"Authorization": f"Bearer {token}"},
-        params=params,
-        timeout=TIMEOUT,
-    )
-    _raise_for_status(resp)
-    return resp.json()
-
-
 async def update_watch_status(
     token: str,
     anime_id: str,

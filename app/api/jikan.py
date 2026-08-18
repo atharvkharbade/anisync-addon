@@ -119,21 +119,9 @@ async def get_anime_recommendations(mal_id: int | str) -> Optional[List[Dict[str
     return res.get("data") if res else None
 
 
-async def get_seasonal_anime(year: int, season: str, page: int = 1) -> Optional[List[Dict[str, Any]]]:
-    """Fetch seasonal anime list (e.g. year=2026, season='winter')."""
-    res = await _jikan_request(f"/seasons/{year}/{season.lower()}", params={"page": page})
-    return res.get("data") if res else None
-
-
 async def get_season_now(page: int = 1) -> Optional[List[Dict[str, Any]]]:
     """Fetch current season airing anime list (/seasons/now)."""
     res = await _jikan_request("/seasons/now", params={"page": page})
-    return res.get("data") if res else None
-
-
-async def get_upcoming_anime(page: int = 1) -> Optional[List[Dict[str, Any]]]:
-    """Fetch upcoming upcoming seasonal anime."""
-    res = await _jikan_request("/seasons/upcoming", params={"page": page})
     return res.get("data") if res else None
 
 

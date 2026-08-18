@@ -257,12 +257,6 @@ async def configure(user_id: str = ""):
         if "custom_sort_dropped_order" in form:
             user["custom_sort_dropped_order"] = form.get("custom_sort_dropped_order", "desc")
 
-        if "new_episode_interval" in form:
-            try:
-                user["new_episode_interval"] = int(form.get("new_episode_interval", 24))
-            except (ValueError, TypeError):
-                user["new_episode_interval"] = 24
-
         if "title_language" in form:
             user["title_language"] = form.get("title_language", "english")
 
@@ -415,23 +409,6 @@ async def configure(user_id: str = ""):
                 gemini_valid = results[idx][0]
                 user["gemini_key_valid"] = gemini_valid
 
-        if "rec_language" in form:
-            user["rec_language"] = form.get("rec_language", "en")
-        if "rec_popularity" in form:
-            user["rec_popularity"] = form.get("rec_popularity", "balanced")
-        if "rec_sorting_order" in form:
-            user["rec_sorting_order"] = form.get("rec_sorting_order", "default")
-        if "rec_year_min" in form:
-            try:
-                user["rec_year_min"] = int(form.get("rec_year_min", 1980))
-            except (ValueError, TypeError):
-                user["rec_year_min"] = 1980
-        if "rec_year_max" in form:
-            try:
-                user["rec_year_max"] = int(form.get("rec_year_max", 2026))
-            except (ValueError, TypeError):
-                user["rec_year_max"] = 2026
-
         if "rec_excluded_movie_genres" in form:
             user["rec_excluded_movie_genres"] = form.getlist("rec_excluded_movie_genres")
         if "rec_excluded_series_genres" in form:
@@ -485,7 +462,6 @@ async def configure(user_id: str = ""):
                 }
             await flash("Preferences saved.", "success")
 
-    current_year = datetime.datetime.now().year
     resp = await make_response(
         await _render(
             "configure.html",
@@ -493,7 +469,6 @@ async def configure(user_id: str = ""):
             manifest_url=manifest_url,
             manifest_magnet=manifest_magnet,
             anime_genres=ANIME_GENRES,
-            current_year=current_year,
         )
     )
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
