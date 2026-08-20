@@ -61,13 +61,7 @@
         margin-bottom: 1.5rem;
     }
 
-    .bg-discovery {
-        background-color: #6f42c1 !important;
-        color: #fff !important;
-    }
-
-    .rec-label {
-        font-size: 0.75rem;
+    .rec-label {        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.05em;
         color: #8c9ba5;
@@ -106,82 +100,6 @@
         font-size: 0.75rem;
         color: #888;
         margin-top: 0.4rem;
-    }
-
-    /* Dual Range Slider styling */
-    .year-slider-container {
-        position: relative;
-        height: 6px;
-        background: #2a2a2a;
-        border-radius: 3px;
-        margin: 1.5rem 0 1.8rem 0;
-    }
-
-    .year-slider-track {
-        position: absolute;
-        height: 100%;
-        background: #02a9ff;
-        border-radius: 3px;
-    }
-
-    .year-slider-input-group {
-        position: relative;
-        height: 24px;
-        margin-top: -2.35rem;
-        margin-bottom: 1.2rem;
-    }
-
-    .year-slider-input {
-        position: absolute;
-        width: 100%;
-        background: none;
-        pointer-events: none;
-        -webkit-appearance: none;
-        appearance: none;
-        z-index: 2;
-        height: 24px;
-        margin: 0;
-        left: 0;
-    }
-
-    .year-slider-input::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: #ffffff;
-        border: 2px solid #02a9ff;
-        cursor: pointer;
-        pointer-events: auto;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-        position: relative;
-        z-index: 10;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .year-slider-input::-webkit-slider-thumb:hover {
-        transform: scale(1.15);
-        box-shadow: 0 0 0 4px rgba(2, 169, 255, 0.25);
-    }
-
-    .year-slider-input::-moz-range-thumb {
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: #ffffff;
-        border: 2px solid #02a9ff;
-        cursor: pointer;
-        pointer-events: auto;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-        position: relative;
-        z-index: 10;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .year-slider-input::-moz-range-thumb:hover {
-        transform: scale(1.15);
-        box-shadow: 0 0 0 4px rgba(2, 169, 255, 0.25);
     }
 
     /* Genre lists container styling */
@@ -302,15 +220,6 @@
         color: #fff;
     }
 
-    .gemini-status-icon {
-        font-size: 1.1rem;
-        margin-left: 0.5rem;
-    }
-
-    .gemini-status-icon.success {
-        color: #28a745;
-    }
-
     .catalog-sort-subcard {
         background: transparent;
         border: none;
@@ -384,11 +293,6 @@
         background: rgba(220, 53, 69, 0.2);
         border-color: #e74c3c;
         color: #fff;
-    }
-
-    .bg-simkl {
-        background-color: #e27d00 !important;
-        color: #fff !important;
     }
 
     .nested-subcard {
@@ -3517,46 +3421,6 @@
                 rpdbStatusSpan.textContent = "Not verified";
                 rpdbStatusSpan.className = "small text-secondary";
             });
-        }
-
-        // Year Slider Controls
-        const yearMin = document.getElementById('yearMin');
-        const yearMax = document.getElementById('yearMax');
-        const yearMinLabel = document.getElementById('yearMinLabel');
-        const yearMaxLabel = document.getElementById('yearMaxLabel');
-        const track = document.getElementById('yearSliderTrack');
-
-        if (yearMin && yearMax && yearMinLabel && yearMaxLabel && track) {
-            function updateSlider() {
-                const minVal = parseInt(yearMin.value);
-                const maxVal = parseInt(yearMax.value);
-
-                yearMinLabel.textContent = minVal;
-                yearMaxLabel.textContent = maxVal;
-
-                const range = yearMin.max - yearMin.min;
-                const left = ((minVal - yearMin.min) / range) * 100;
-                const right = ((yearMin.max - maxVal) / range) * 100;
-
-                track.style.left = left + '%';
-                track.style.right = right + '%';
-            }
-
-            yearMin.addEventListener('input', () => {
-                if (parseInt(yearMin.value) > parseInt(yearMax.value)) {
-                    yearMin.value = yearMax.value;
-                }
-                updateSlider();
-            });
-
-            yearMax.addEventListener('input', () => {
-                if (parseInt(yearMax.value) < parseInt(yearMin.value)) {
-                    yearMax.value = yearMin.value;
-                }
-                updateSlider();
-            });
-
-            updateSlider();
         }
 
         syncCatalogManagement(true);

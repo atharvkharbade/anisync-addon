@@ -67,6 +67,8 @@ try:
 
     db.get_collection("discovery_catalogs_cache").create_index("catalog_id", unique=True)
 
+    db.get_collection("recommendations_cache").create_index("uid", unique=True)
+
     db.get_collection("banner_ratios").create_index("url", unique=True)
 except Exception as e:
     logging.error("Failed to initialize database indexes: %s", e)
@@ -209,20 +211,6 @@ def store_user(user_details: dict) -> bool:
             user_details["_id"] = existing["_id"]
         return users_collection.replace_one({"uid": str(uid)}, user_details).acknowledged
     return users_collection.insert_one(user_details).acknowledged
-
-
-def get_valid_mal_user(user_id: str) -> tuple[dict, str | None]:
-    user = get_user(user_id)
-    if not user:
-        return {}, "User not found."
-    if not user.get("mal_enabled"):
-        return user, None  # not an error — MAL just disabled
-    if not user.get("mal_access_token") or not user.get("mal_refresh_token"):
-        return {}, "MAL not connected. Please log in."
-    expiry = user.get("mal_expires_at")
-    if expiry and datetime.utcnow() > expiry:
-        return {}, "MAL session expired. Please refresh."
-    return user, None
 
 
 # ── ARM ID cache ──────────────────────────────────────────────────────────────

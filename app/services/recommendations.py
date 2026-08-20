@@ -243,61 +243,6 @@ async def get_anilist_recommendations_bulk(token: str, anilist_ids: list[int]) -
     return []
 
 
-async def resolve_title_via_kitsu(
-    title: str, rec_year_min: int = 1970, rec_year_max: int = 2026, rec_excluded_genres: list = None
-) -> dict | None:
-    url = "https://kitsu.io/api/edge/anime"
-    params = {"filter[text]": title, "page[limit]": 1}
-    headers = {
-        "Accept": "application/vnd.api+json",
-        "Content-Type": "application/vnd.api+json",
-    }
-    client = get_client()
-    try:
-        resp = await client.get(url, params=params, headers=headers, timeout=10)
-        if resp.status_code == 200:
-            data = resp.json().get("data", [])
-            if data:
-                item = data[0]
-                kitsu_id = str(item["id"])
-                attrs = item.get("attributes", {})
-
-                # Check year bounds
-                start_date = attrs.get("startDate")
-                if start_date:
-                    try:
-                        k_year = int(start_date[:4])
-                        if k_year < rec_year_min or k_year > rec_year_max:
-                            return None
-                    except ValueError:
-                        pass
-
-                subtype = (attrs.get("subtype") or "tv").lower()
-                item_type = "movie" if subtype == "movie" else "series"
-                titles = attrs.get("titles", {})
-                canonical_title = attrs.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or title
-                poster = (
-                    attrs.get("posterImage", {}).get("large")
-                    or attrs.get("posterImage", {}).get("medium")
-                    or attrs.get("posterImage", {}).get("original")
-                    or ""
-                )
-                if poster:
-                    poster = poster.split("?")[0]
-                synopsis = attrs.get("synopsis") or ""
-
-                return {
-                    "id": f"kitsu:{kitsu_id}",
-                    "type": item_type,
-                    "name": canonical_title,
-                    "poster": poster,
-                    "description": synopsis[:200] + "..." if len(synopsis) > 200 else synopsis,
-                }
-    except Exception as e:
-        logger.warning("Failed to resolve Gemini title '%s' via Kitsu: %s", title, e)
-    return None
-
-
 async def update_recommendations_cache(user_id: str, force: bool = False):
     if user_id in currently_updating_users:
         return
@@ -341,7 +286,7 @@ async def get_recommendations_for_seeds(
     rec_language = user.get("rec_language", "en")
     rec_popularity = user.get("rec_popularity", "balanced")
     rec_year_min = user.get("rec_year_min", 1980)
-    rec_year_max = user.get("rec_year_max", 2026)
+    rec_year_max = user.get("rec_year_max", datetime.datetime.utcnow().year + 1)
     rec_excluded_movie_genres = user.get("rec_excluded_movie_genres", [])
     rec_excluded_series_genres = user.get("rec_excluded_series_genres", [])
     filter_watched = user.get("recommendations_filter_watched", True)
@@ -708,7 +653,7 @@ async def generate_genre_recommendations(
     rec_language = user.get("rec_language", "en")
     rec_popularity = user.get("rec_popularity", "balanced")
     rec_year_min = user.get("rec_year_min", 1980)
-    rec_year_max = user.get("rec_year_max", 2026)
+    rec_year_max = user.get("rec_year_max", datetime.datetime.utcnow().year + 1)
     rec_excluded_movie_genres = user.get("rec_excluded_movie_genres", [])
     rec_excluded_series_genres = user.get("rec_excluded_series_genres", [])
     filter_watched = user.get("recommendations_filter_watched", True)
