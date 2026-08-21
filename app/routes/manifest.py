@@ -528,6 +528,8 @@ async def user_manifest(user_id: str):
             elif cat_id in discovery_catalog_ids:
                 if not enable_discovery_catalogs:
                     continue
+                if cat_id not in user_catalogs:
+                    continue
             else:
                 if not enable_catalogs:
                     continue
