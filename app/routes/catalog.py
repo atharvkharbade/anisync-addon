@@ -1309,6 +1309,13 @@ def trigger_discovery_catalogs_prefetch():
     asyncio.create_task(discovery_catalogs_loop())
 
 
+@catalog_bp.route("/catalog/<string:catalog_type>/<string:catalog_id>.json")
+@catalog_bp.route("/catalog/<string:catalog_type>/<string:catalog_id>/<path:extras>.json")
+@rate_limit(limit=60, period_seconds=60)
+async def handle_root_catalog(catalog_type: str, catalog_id: str, extras: str = ""):
+    return await respond_with({"metas": []})
+
+
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>.json")
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>/<path:extras>.json")
 @rate_limit(limit=60, period_seconds=60)

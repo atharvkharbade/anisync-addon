@@ -459,6 +459,12 @@ def map_kitsu_to_stremio(
     return meta_obj
 
 
+@meta_bp.route("/meta/<string:meta_type>/<string:meta_id>.json")
+@rate_limit(limit=60, period_seconds=60)
+async def handle_root_meta(meta_type: str, meta_id: str):
+    return await respond_with({"meta": {}})
+
+
 @meta_bp.route("/<user_id>/meta/<string:meta_type>/<string:meta_id>.json")
 @rate_limit(limit=60, period_seconds=60)
 async def handle_meta(user_id: str, meta_type: str, meta_id: str):

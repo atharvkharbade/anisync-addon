@@ -400,6 +400,8 @@ async def logo_svg():
 @rate_limit(limit=60, period_seconds=60)
 async def base_manifest():
     unconfigured_manifest = MANIFEST.copy()
+    unconfigured_manifest["catalogs"] = []
+    unconfigured_manifest["resources"] = ["subtitles"]
     unconfigured_manifest["behaviorHints"] = {
         "configurable": True,
         "configurationRequired": True,
@@ -412,6 +414,8 @@ async def base_manifest():
 async def user_manifest(user_id: str):
     if not is_valid_user_id(user_id):
         fallback = MANIFEST.copy()
+        fallback["catalogs"] = []
+        fallback["resources"] = ["subtitles"]
         fallback["behaviorHints"] = {
             "configurable": True,
             "configurationRequired": True,
@@ -422,6 +426,8 @@ async def user_manifest(user_id: str):
     if not user:
         # Return fallback configuration needed manifest
         fallback = MANIFEST.copy()
+        fallback["catalogs"] = []
+        fallback["resources"] = ["subtitles"]
         fallback["behaviorHints"] = {
             "configurable": True,
             "configurationRequired": True,
