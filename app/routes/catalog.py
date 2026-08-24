@@ -87,7 +87,7 @@ async def get_cached_mal_user_anime_list(user_id: str, token: str, status: str) 
     cache_col = db.get_collection("user_watchlist_cache")
     try:
         cached = cache_col.find_one({"uid": user_id, "tracker": "mal", "status": status})
-        if cached and cached.get("fetched_at") and (now - cached.get("fetched_at")) < datetime.timedelta(minutes=5):
+        if cached and cached.get("fetched_at") and (now - cached.get("fetched_at")) < datetime.timedelta(minutes=15):
             return cached["data"]
     except Exception as e:
         logging.error("Failed to query user_watchlist_cache (MAL): %s", e)
@@ -135,7 +135,7 @@ async def get_cached_anilist_user_anime_list(user_id: str, token: str, anilist_u
     cache_col = db.get_collection("user_watchlist_cache")
     try:
         cached = cache_col.find_one({"uid": user_id, "tracker": "anilist", "status": status})
-        if cached and cached.get("fetched_at") and (now - cached.get("fetched_at")) < datetime.timedelta(minutes=5):
+        if cached and cached.get("fetched_at") and (now - cached.get("fetched_at")) < datetime.timedelta(minutes=15):
             return cached["data"]
     except Exception as e:
         logging.error("Failed to query user_watchlist_cache (AniList): %s", e)
@@ -179,7 +179,7 @@ async def get_cached_simkl_user_anime_list(user_id: str, token: str, status: str
     cache_col = db.get_collection("user_watchlist_cache")
     try:
         cached = cache_col.find_one({"uid": user_id, "tracker": "simkl", "status": status})
-        if cached and cached.get("fetched_at") and (now - cached.get("fetched_at")) < datetime.timedelta(minutes=5):
+        if cached and cached.get("fetched_at") and (now - cached.get("fetched_at")) < datetime.timedelta(minutes=15):
             return cached["data"]
     except Exception as e:
         logging.error("Failed to query user_watchlist_cache (Simkl): %s", e)
@@ -231,29 +231,18 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
         logging.error("Failed to fetch id_cache in bulk: %s", e)
         mal_to_anilist = {}
 
-    # Resolve any uncached MAL IDs on-the-fly concurrently
+    # Resolve any uncached MAL IDs via local MongoDB fribb_mappings database (zero external network latency)
     uncached_mal_ids = [mid for mid in mal_ids if mid not in mal_to_anilist]
     if uncached_mal_ids:
-        logging.info("Resolving %s uncached MAL IDs in bulk: %s", len(uncached_mal_ids), uncached_mal_ids)
-        from app.lib.id_resolver import resolve_mal_to_kitsu
-
-        sem = asyncio.Semaphore(15)
-
-        async def resolve_with_sem(mid):
-            async with sem:
-                try:
-                    await resolve_mal_to_kitsu(mid)
-                except Exception as ex:
-                    logging.warning("Failed to resolve uncached MAL ID %s: %s", mid, ex)
-
-        await asyncio.gather(*[resolve_with_sem(mid) for mid in uncached_mal_ids])
-
-        # Re-fetch cache docs after on-demand resolution
         try:
-            cache_docs = list(id_cache_collection.find({"mal_id": {"$in": mal_ids}}))
-            mal_to_anilist = {doc["mal_id"]: str(doc["anilist_id"]) for doc in cache_docs if doc.get("anilist_id")}
+            fribb_docs = list(db.fribb_mappings.find({"mal_id": {"$in": uncached_mal_ids}}))
+            for fdoc in fribb_docs:
+                m_id = str(fdoc.get("mal_id") or "")
+                al_id = str(fdoc.get("anilist_id") or "")
+                if m_id and al_id:
+                    mal_to_anilist[m_id] = al_id
         except Exception as e:
-            logging.error("Failed to re-fetch id_cache in bulk: %s", e)
+            logging.error("Failed to query fribb_mappings for bulk AniList details: %s", e)
 
     anilist_ids = list(mal_to_anilist.values())
     if not anilist_ids:
@@ -1823,15 +1812,36 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 sort_by = user.get(f"custom_sort_{category_key}_by", "default")
                 sort_order = user.get(f"custom_sort_{category_key}_order", "desc")
 
-            # Bulk fetch AniList next airing details for combined items that are airing
+            # Bulk fetch AniList next airing details ONLY for combined items that are airing (drastically reduces query volume)
             bulk_details = {}
             needs_bulk = (user.get("sort_by_new_episodes") and comb_status in ["watching", "plan_to_watch"]) or (
                 custom_sort_enabled and sort_by in ["airing_date", "score"] and comb_status in ["watching", "plan_to_watch"]
             )
             if needs_bulk:
-                mal_ids_to_query = [item["mal_id"] for item in combined_items if item["mal_id"]]
-                if mal_ids_to_query:
-                    bulk_details = await fetch_anilist_details_in_bulk(mal_ids_to_query)
+                airing_mal_ids = []
+                for item in combined_items:
+                    mal_id = item.get("mal_id")
+                    if not mal_id:
+                        continue
+                    is_candidate = False
+                    if item.get("anilist_item"):
+                        al_status_str = item["anilist_item"].get("media", {}).get("status", "")
+                        is_candidate = al_status_str in ["RELEASING", "NOT_YET_RELEASED"] or not al_status_str
+                    elif item.get("mal_item"):
+                        mal_status_str = item["mal_item"].get("node", {}).get("status", "")
+                        is_candidate = mal_status_str in ["currently_airing", "not_yet_aired"] or not mal_status_str
+                    elif item.get("simkl_item"):
+                        show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
+                        simkl_status_str = (show_obj.get("status") or "").lower()
+                        is_candidate = simkl_status_str in ["airing", "currently airing"] or not simkl_status_str
+                    else:
+                        is_candidate = True
+
+                    if is_candidate:
+                        airing_mal_ids.append(mal_id)
+
+                if airing_mal_ids:
+                    bulk_details = await fetch_anilist_details_in_bulk(airing_mal_ids)
 
             # Helper to compute flags for combined items
             def compute_comb_flags(item):
@@ -2102,7 +2112,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             mal_ids = [str(x["mal_id"]) for x in paged_items if x["mal_id"]]
             anilist_ids = [str(x["anilist_id"]) for x in paged_items if x["anilist_id"]]
             simkl_ids = [str(x["simkl_id"]) for x in paged_items if x["simkl_id"]]
-            kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, anilist_ids=anilist_ids, simkl_ids=simkl_ids)
+            kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, anilist_ids=anilist_ids, simkl_ids=simkl_ids, skip_external=True)
 
             # Build meta items
             for item in paged_items:
@@ -2276,21 +2286,23 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 sort_by = user.get(f"custom_sort_{category_key}_by", "default")
                 sort_order = user.get(f"custom_sort_{category_key}_order", "desc")
 
-            # Fetch AniList next-airing-episode data in bulk for watching/planning lists
+            # Fetch AniList next-airing-episode data in bulk ONLY for airing shows
             bulk_details = {}
             needs_bulk = (simkl_status in ["watching", "plantowatch"] and data_items) and (
                 user.get("sort_by_new_episodes") or (custom_sort_enabled and sort_by in ["airing_date", "score"])
             )
             if needs_bulk:
-                mal_ids = []
+                airing_mal_ids = []
                 for item in data_items:
                     show_obj = item.get("show") or item.get("anime") or item
-                    ids = show_obj.get("ids") or {}
-                    mal_id = str(ids.get("mal") or "")
-                    if mal_id:
-                        mal_ids.append(mal_id)
-                if mal_ids:
-                    bulk_details = await fetch_anilist_details_in_bulk(mal_ids)
+                    simkl_status_str = (show_obj.get("status") or "").lower()
+                    if simkl_status_str in ["airing", "currently airing"] or item.get("not_aired_episodes_count", 0) > 0 or not simkl_status_str:
+                        ids = show_obj.get("ids") or {}
+                        mal_id = str(ids.get("mal") or "")
+                        if mal_id:
+                            airing_mal_ids.append(mal_id)
+                if airing_mal_ids:
+                    bulk_details = await fetch_anilist_details_in_bulk(airing_mal_ids)
 
             def compute_simkl_flags(item, mal_id):
                 show_obj = item.get("show") or item.get("anime") or item
@@ -2474,7 +2486,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 simkl_id = str(show_ids.get("simkl") or "")
                 if simkl_id:
                     simkl_ids.append(simkl_id)
-            kitsu_mappings = await bulk_resolve_to_kitsu(simkl_ids=simkl_ids)
+            kitsu_mappings = await bulk_resolve_to_kitsu(simkl_ids=simkl_ids, skip_external=True)
 
             # Build meta items
             for item in paged_data_items:
@@ -2561,13 +2573,18 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 sort_by = user.get(f"custom_sort_{category_key}_by", "default")
                 sort_order = user.get(f"custom_sort_{category_key}_order", "desc")
 
-            # Fetch AniList next-airing-episode data in bulk for watching/planning lists
+            # Fetch AniList next-airing-episode data in bulk ONLY for airing shows (drastically cuts latency for 500+ lists)
             bulk_details = {}
             needs_bulk = (mal_status in ["watching", "plan_to_watch"] and data_items) and (
                 user.get("sort_by_new_episodes") or (custom_sort_enabled and sort_by in ["airing_date", "score"])
             )
             if needs_bulk:
-                bulk_details = await fetch_anilist_details_in_bulk([str(item["node"]["id"]) for item in data_items])
+                airing_mal_ids = [
+                    str(item["node"]["id"]) for item in data_items
+                    if item.get("node", {}).get("status") in ["currently_airing", "not_yet_aired"] or not item.get("node", {}).get("status")
+                ]
+                if airing_mal_ids:
+                    bulk_details = await fetch_anilist_details_in_bulk(airing_mal_ids)
 
             # ── Compute per-item: is_new_ep (with time-gating) ────────────────
             def compute_mal_flags(item, mal_id):
@@ -2731,7 +2748,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             from app.lib.id_resolver import bulk_resolve_to_kitsu
 
             mal_ids = [str(item["node"]["id"]) for item in paged_data_items]
-            kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids)
+            kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, skip_external=True)
 
             # ── Build meta items ──────────────────────────────────────────────
             for item in paged_data_items:
@@ -2958,7 +2975,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             from app.lib.id_resolver import bulk_resolve_to_kitsu
 
             anilist_ids = [str(entry["media"]["id"]) for entry in paged_entries]
-            kitsu_mappings = await bulk_resolve_to_kitsu(anilist_ids=anilist_ids)
+            kitsu_mappings = await bulk_resolve_to_kitsu(anilist_ids=anilist_ids, skip_external=True)
 
             # ── Build meta items ──────────────────────────────────────────────
             for entry in paged_entries:
