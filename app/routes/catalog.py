@@ -244,6 +244,30 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
         except Exception as e:
             logging.error("Failed to query fribb_mappings for bulk AniList details: %s", e)
 
+        # 3. HTTP Fallback for any remaining unmapped IDs (e.g. brand new / niche anime not yet in Fribb)
+        remaining_mal_ids = [mid for mid in uncached_mal_ids if mid not in mal_to_anilist]
+        if remaining_mal_ids:
+            from app.lib.id_resolver import resolve_mal_to_kitsu
+            sem = asyncio.Semaphore(10)
+
+            async def resolve_with_sem(mid):
+                async with sem:
+                    try:
+                        await resolve_mal_to_kitsu(mid)
+                    except Exception as ex:
+                        logging.warning("Tier 3 fallback failed for MAL ID %s: %s", mid, ex)
+
+            await asyncio.gather(*[resolve_with_sem(mid) for mid in remaining_mal_ids])
+
+            # Check id_cache for newly resolved items
+            try:
+                fresh_docs = list(id_cache_collection.find({"mal_id": {"$in": remaining_mal_ids}}))
+                for doc in fresh_docs:
+                    if doc.get("mal_id") and doc.get("anilist_id"):
+                        mal_to_anilist[str(doc["mal_id"])] = str(doc["anilist_id"])
+            except Exception as e:
+                logging.error("Failed to re-query id_cache after Tier 3 resolution: %s", e)
+
     anilist_ids = list(mal_to_anilist.values())
     if not anilist_ids:
         return {}
