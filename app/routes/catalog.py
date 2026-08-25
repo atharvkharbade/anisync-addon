@@ -1526,15 +1526,33 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 }
                 """
                 client = get_client()
-                al_resp = await client.post(
-                    "https://graphql.anilist.co",
-                    json={"query": anilist_query, "variables": {"search": search_query.strip(), "page": page_num, "perPage": 20}},
-                    headers={"Content-Type": "application/json", "Accept": "application/json"},
-                    timeout=5,
-                )
-                if al_resp.status_code == 200:
-                    al_data = al_resp.json().get("data", {}).get("Page", {}).get("media", [])
-                    if al_data:
+
+                # Generate search candidates: exact query + stripped base query if suffix keywords present
+                search_candidates = [search_query.strip()]
+                SUFFIX_WORDS = {
+                    "ova", "ovas", "oad", "oads", "special", "specials", "movie", "movies", "film", "films",
+                    "moment", "moments", "episode", "episodes", "side", "story", "season", "part"
+                }
+                words = search_query.strip().split()
+                if len(words) > 1:
+                    cleaned = [w for w in words if w.lower() not in SUFFIX_WORDS]
+                    if cleaned and len(cleaned) < len(words):
+                        search_candidates.append(" ".join(cleaned))
+
+                al_data = []
+                for candidate_query in search_candidates:
+                    al_resp = await client.post(
+                        "https://graphql.anilist.co",
+                        json={"query": anilist_query, "variables": {"search": candidate_query, "page": page_num, "perPage": 20}},
+                        headers={"Content-Type": "application/json", "Accept": "application/json"},
+                        timeout=5,
+                    )
+                    if al_resp.status_code == 200:
+                        al_data = al_resp.json().get("data", {}).get("Page", {}).get("media", [])
+                        if al_data:
+                            break
+
+                if al_data:
                         # Batch resolve all MAL and AniList IDs to Kitsu IDs in one MongoDB query
                         mal_ids_list = [str(m["idMal"]) for m in al_data if m.get("idMal")]
                         al_ids_list = [str(m["id"]) for m in al_data if m.get("id")]
