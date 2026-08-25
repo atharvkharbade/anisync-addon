@@ -1448,7 +1448,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             logging.error("Failed to query kitsu_search_cache: %s", e)
             cached = None
 
-        # Query Kitsu API directly for fast search results with high rate limits
+        # 1. Primary Pass: Query Kitsu API directly for fast search results
         try:
             url = "https://kitsu.io/api/edge/anime"
             params = {"filter[text]": search_query, "page[limit]": 20, "page[offset]": offset}
@@ -1493,30 +1493,172 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             "nsfw": attrs.get("nsfw"),
                         }
                     )
-
-                # Write to search cache
-                try:
-                    cache_col.update_one(
-                        {"query": search_query, "offset": offset},
-                        {
-                            "$set": {
-                                "query": search_query,
-                                "offset": offset,
-                                "metas": metas,
-                                "expires_at": now + datetime.timedelta(hours=24),
-                            }
-                        },
-                        upsert=True,
-                    )
-                except Exception as e:
-                    logging.error("Failed to write kitsu_search_cache: %s", e)
         except Exception as e:
             logging.error("Kitsu search query failed: %s", e)
-            if cached:
-                logging.warning("Kitsu search failed, returning expired cache for query '%s': %s", search_query, e)
-                return await respond_with(
-                    {"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)}
+
+        # 2. Smart Fallback / Enrichment: If Kitsu returned few results (< 5) and search query is specific (>= 3 chars)
+        if len(metas) < 5 and len(search_query.strip()) >= 3:
+            try:
+                page_num = (offset // 20) + 1
+                anilist_query = """
+                query ($search: String, $page: Int, $perPage: Int) {
+                  Page(page: $page, perPage: $perPage) {
+                    media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
+                      id
+                      idMal
+                      format
+                      status
+                      description
+                      isAdult
+                      title {
+                        romaji
+                        english
+                        native
+                        userPreferred
+                      }
+                      coverImage {
+                        extraLarge
+                        large
+                        medium
+                      }
+                    }
+                  }
+                }
+                """
+                client = get_client()
+                al_resp = await client.post(
+                    "https://graphql.anilist.co",
+                    json={"query": anilist_query, "variables": {"search": search_query.strip(), "page": page_num, "perPage": 20}},
+                    headers={"Content-Type": "application/json", "Accept": "application/json"},
+                    timeout=5,
                 )
+                if al_resp.status_code == 200:
+                    al_data = al_resp.json().get("data", {}).get("Page", {}).get("media", [])
+                    if al_data:
+                        # Batch resolve all MAL and AniList IDs to Kitsu IDs in one MongoDB query
+                        mal_ids_list = [str(m["idMal"]) for m in al_data if m.get("idMal")]
+                        al_ids_list = [str(m["id"]) for m in al_data if m.get("id")]
+                        
+                        fribb_col = db.get_collection("fribb_mappings")
+                        id_cache_col = db.get_collection("id_cache")
+
+                        mal_query_vals = mal_ids_list + [int(mid) for mid in mal_ids_list if mid.isdigit()]
+                        al_query_vals = al_ids_list + [int(aid) for aid in al_ids_list if aid.isdigit()]
+
+                        or_clauses = []
+                        if mal_query_vals:
+                            or_clauses.append({"mal_id": {"$in": mal_query_vals}})
+                        if al_query_vals:
+                            or_clauses.append({"anilist_id": {"$in": al_query_vals}})
+
+                        kitsu_map = {}
+                        if or_clauses:
+                            try:
+                                fribb_docs = list(fribb_col.find({"$or": or_clauses}))
+                                for doc in fribb_docs:
+                                    k_id = doc.get("kitsu_id")
+                                    if k_id:
+                                        if doc.get("mal_id"):
+                                            kitsu_map[f"mal:{doc['mal_id']}"] = str(k_id)
+                                        if doc.get("anilist_id"):
+                                            kitsu_map[f"al:{doc['anilist_id']}"] = str(k_id)
+                            except Exception as ex:
+                                logging.error("Failed batch fribb lookup for search fallback: %s", ex)
+
+                            # Fallback to id_cache for any unresolved
+                            try:
+                                id_cache_docs = list(id_cache_col.find({"$or": or_clauses}))
+                                for doc in id_cache_docs:
+                                    k_id = doc.get("kitsu_id")
+                                    if k_id:
+                                        if doc.get("mal_id"):
+                                            kitsu_map.setdefault(f"mal:{doc['mal_id']}", str(k_id))
+                                        if doc.get("anilist_id"):
+                                            kitsu_map.setdefault(f"al:{doc['anilist_id']}", str(k_id))
+                            except Exception as ex:
+                                logging.error("Failed batch id_cache lookup for search fallback: %s", ex)
+
+                        import re
+                        existing_ids = {m["id"] for m in metas}
+                        fallback_metas = []
+                        for m in al_data:
+                            al_id = str(m.get("id"))
+                            mal_id = str(m["idMal"]) if m.get("idMal") else None
+                            
+                            # Resolve Kitsu ID
+                            kitsu_id = (
+                                kitsu_map.get(f"mal:{mal_id}")
+                                or (kitsu_map.get(f"mal:{int(mal_id)}") if mal_id and mal_id.isdigit() else None)
+                                or kitsu_map.get(f"al:{al_id}")
+                                or (kitsu_map.get(f"al:{int(al_id)}") if al_id and al_id.isdigit() else None)
+                            )
+                            stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mal_id}" if mal_id else f"anilist:{al_id}")
+                            if stremio_id in existing_ids:
+                                continue
+
+                            al_title = m.get("title", {}) or {}
+                            title_lang = user.get("title_language", "english")
+                            title_name = get_anilist_title(m, title_lang)
+                            title_obj = {
+                                "canonicalTitle": al_title.get("userPreferred") or al_title.get("romaji") or al_title.get("english"),
+                                "titles": {
+                                    "en": al_title.get("english"),
+                                    "en_jp": al_title.get("romaji"),
+                                    "ja_jp": al_title.get("native"),
+                                }
+                            }
+
+                            fmt = (m.get("format") or "TV").upper()
+                            item_type = "movie" if fmt in ["MOVIE"] else "series"
+
+                            cover = m.get("coverImage", {}) or {}
+                            poster = cover.get("large") or cover.get("extraLarge") or cover.get("medium") or ""
+
+                            raw_desc = m.get("description") or ""
+                            clean_desc = re.sub(r"<[^>]+>", "", raw_desc)
+                            clean_desc = clean_desc[:200] + "..." if len(clean_desc) > 200 else clean_desc
+
+                            fallback_metas.append(
+                                {
+                                    "id": stremio_id,
+                                    "type": item_type,
+                                    "name": title_name,
+                                    "title_obj": title_obj,
+                                    "poster": poster,
+                                    "description": clean_desc,
+                                    "ageRating": "R18" if m.get("isAdult") else None,
+                                    "nsfw": bool(m.get("isAdult")),
+                                }
+                            )
+                            existing_ids.add(stremio_id)
+
+                        # Prepend exact search matches from AniList if Kitsu missed them
+                        metas = fallback_metas + metas
+            except Exception as e:
+                logging.error("AniList search fallback failed: %s", e)
+
+        # 3. Write non-empty results to search cache
+        if metas:
+            try:
+                cache_col.update_one(
+                    {"query": search_query, "offset": offset},
+                    {
+                        "$set": {
+                            "query": search_query,
+                            "offset": offset,
+                            "metas": metas,
+                            "expires_at": now + datetime.timedelta(hours=24),
+                        }
+                    },
+                    upsert=True,
+                )
+            except Exception as e:
+                logging.error("Failed to write kitsu_search_cache: %s", e)
+        elif cached:
+            logging.warning("Search returned 0 results, returning expired cache for query '%s'", search_query)
+            return await respond_with(
+                {"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)}
+            )
 
         return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)})
 
