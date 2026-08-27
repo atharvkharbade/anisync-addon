@@ -1553,105 +1553,126 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             break
 
                 if al_data:
-                        # Batch resolve all MAL and AniList IDs to Kitsu IDs in one MongoDB query
-                        mal_ids_list = [str(m["idMal"]) for m in al_data if m.get("idMal")]
-                        al_ids_list = [str(m["id"]) for m in al_data if m.get("id")]
+                    # If the query contained a format-specific keyword (e.g. OVA, Movie, Special), boost matching formats to the top
+                    FORMAT_BOOST_MAP = {
+                        "ova": ["OVA"],
+                        "ovas": ["OVA"],
+                        "oad": ["OVA"],
+                        "oads": ["OVA"],
+                        "special": ["SPECIAL", "TV_SHORT"],
+                        "specials": ["SPECIAL", "TV_SHORT"],
+                        "movie": ["MOVIE"],
+                        "movies": ["MOVIE"],
+                        "film": ["MOVIE"],
+                        "films": ["MOVIE"],
+                    }
+                    detected_formats = []
+                    for w in words:
+                        if w.lower() in FORMAT_BOOST_MAP:
+                            detected_formats.extend(FORMAT_BOOST_MAP[w.lower()])
+
+                    if detected_formats and len(al_data) > 1:
+                        al_data.sort(key=lambda m: (m.get("format") not in detected_formats))
+
+                    # Batch resolve all MAL and AniList IDs to Kitsu IDs in one MongoDB query
+                    mal_ids_list = [str(m["idMal"]) for m in al_data if m.get("idMal")]
+                    al_ids_list = [str(m["id"]) for m in al_data if m.get("id")]
+                    
+                    fribb_col = db.get_collection("fribb_mappings")
+                    id_cache_col = db.get_collection("id_cache")
+
+                    mal_query_vals = mal_ids_list + [int(mid) for mid in mal_ids_list if mid.isdigit()]
+                    al_query_vals = al_ids_list + [int(aid) for aid in al_ids_list if aid.isdigit()]
+
+                    or_clauses = []
+                    if mal_query_vals:
+                        or_clauses.append({"mal_id": {"$in": mal_query_vals}})
+                    if al_query_vals:
+                        or_clauses.append({"anilist_id": {"$in": al_query_vals}})
+
+                    kitsu_map = {}
+                    if or_clauses:
+                        try:
+                            fribb_docs = list(fribb_col.find({"$or": or_clauses}))
+                            for doc in fribb_docs:
+                                k_id = doc.get("kitsu_id")
+                                if k_id:
+                                    if doc.get("mal_id"):
+                                        kitsu_map[f"mal:{doc['mal_id']}"] = str(k_id)
+                                    if doc.get("anilist_id"):
+                                        kitsu_map[f"al:{doc['anilist_id']}"] = str(k_id)
+                        except Exception as ex:
+                            logging.error("Failed batch fribb lookup for search fallback: %s", ex)
+
+                        # Fallback to id_cache for any unresolved
+                        try:
+                            id_cache_docs = list(id_cache_col.find({"$or": or_clauses}))
+                            for doc in id_cache_docs:
+                                k_id = doc.get("kitsu_id")
+                                if k_id:
+                                    if doc.get("mal_id"):
+                                        kitsu_map.setdefault(f"mal:{doc['mal_id']}", str(k_id))
+                                    if doc.get("anilist_id"):
+                                        kitsu_map.setdefault(f"al:{doc['anilist_id']}", str(k_id))
+                        except Exception as ex:
+                            logging.error("Failed batch id_cache lookup for search fallback: %s", ex)
+
+                    import re
+                    existing_ids = {m["id"] for m in metas}
+                    fallback_metas = []
+                    for m in al_data:
+                        al_id = str(m.get("id"))
+                        mal_id = str(m["idMal"]) if m.get("idMal") else None
                         
-                        fribb_col = db.get_collection("fribb_mappings")
-                        id_cache_col = db.get_collection("id_cache")
+                        # Resolve Kitsu ID
+                        kitsu_id = (
+                            kitsu_map.get(f"mal:{mal_id}")
+                            or (kitsu_map.get(f"mal:{int(mal_id)}") if mal_id and mal_id.isdigit() else None)
+                            or kitsu_map.get(f"al:{al_id}")
+                            or (kitsu_map.get(f"al:{int(al_id)}") if al_id and al_id.isdigit() else None)
+                        )
+                        stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mal_id}" if mal_id else f"anilist:{al_id}")
+                        if stremio_id in existing_ids:
+                            continue
 
-                        mal_query_vals = mal_ids_list + [int(mid) for mid in mal_ids_list if mid.isdigit()]
-                        al_query_vals = al_ids_list + [int(aid) for aid in al_ids_list if aid.isdigit()]
-
-                        or_clauses = []
-                        if mal_query_vals:
-                            or_clauses.append({"mal_id": {"$in": mal_query_vals}})
-                        if al_query_vals:
-                            or_clauses.append({"anilist_id": {"$in": al_query_vals}})
-
-                        kitsu_map = {}
-                        if or_clauses:
-                            try:
-                                fribb_docs = list(fribb_col.find({"$or": or_clauses}))
-                                for doc in fribb_docs:
-                                    k_id = doc.get("kitsu_id")
-                                    if k_id:
-                                        if doc.get("mal_id"):
-                                            kitsu_map[f"mal:{doc['mal_id']}"] = str(k_id)
-                                        if doc.get("anilist_id"):
-                                            kitsu_map[f"al:{doc['anilist_id']}"] = str(k_id)
-                            except Exception as ex:
-                                logging.error("Failed batch fribb lookup for search fallback: %s", ex)
-
-                            # Fallback to id_cache for any unresolved
-                            try:
-                                id_cache_docs = list(id_cache_col.find({"$or": or_clauses}))
-                                for doc in id_cache_docs:
-                                    k_id = doc.get("kitsu_id")
-                                    if k_id:
-                                        if doc.get("mal_id"):
-                                            kitsu_map.setdefault(f"mal:{doc['mal_id']}", str(k_id))
-                                        if doc.get("anilist_id"):
-                                            kitsu_map.setdefault(f"al:{doc['anilist_id']}", str(k_id))
-                            except Exception as ex:
-                                logging.error("Failed batch id_cache lookup for search fallback: %s", ex)
-
-                        import re
-                        existing_ids = {m["id"] for m in metas}
-                        fallback_metas = []
-                        for m in al_data:
-                            al_id = str(m.get("id"))
-                            mal_id = str(m["idMal"]) if m.get("idMal") else None
-                            
-                            # Resolve Kitsu ID
-                            kitsu_id = (
-                                kitsu_map.get(f"mal:{mal_id}")
-                                or (kitsu_map.get(f"mal:{int(mal_id)}") if mal_id and mal_id.isdigit() else None)
-                                or kitsu_map.get(f"al:{al_id}")
-                                or (kitsu_map.get(f"al:{int(al_id)}") if al_id and al_id.isdigit() else None)
-                            )
-                            stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mal_id}" if mal_id else f"anilist:{al_id}")
-                            if stremio_id in existing_ids:
-                                continue
-
-                            al_title = m.get("title", {}) or {}
-                            title_lang = user.get("title_language", "english")
-                            title_name = get_anilist_title(m, title_lang)
-                            title_obj = {
-                                "canonicalTitle": al_title.get("userPreferred") or al_title.get("romaji") or al_title.get("english"),
-                                "titles": {
-                                    "en": al_title.get("english"),
-                                    "en_jp": al_title.get("romaji"),
-                                    "ja_jp": al_title.get("native"),
-                                }
+                        al_title = m.get("title", {}) or {}
+                        title_lang = user.get("title_language", "english")
+                        title_name = get_anilist_title(m, title_lang)
+                        title_obj = {
+                            "canonicalTitle": al_title.get("userPreferred") or al_title.get("romaji") or al_title.get("english"),
+                            "titles": {
+                                "en": al_title.get("english"),
+                                "en_jp": al_title.get("romaji"),
+                                "ja_jp": al_title.get("native"),
                             }
+                        }
 
-                            fmt = (m.get("format") or "TV").upper()
-                            item_type = "movie" if fmt in ["MOVIE"] else "series"
+                        fmt = (m.get("format") or "TV").upper()
+                        item_type = "movie" if fmt in ["MOVIE"] else "series"
 
-                            cover = m.get("coverImage", {}) or {}
-                            poster = cover.get("large") or cover.get("extraLarge") or cover.get("medium") or ""
+                        cover = m.get("coverImage", {}) or {}
+                        poster = cover.get("large") or cover.get("extraLarge") or cover.get("medium") or ""
 
-                            raw_desc = m.get("description") or ""
-                            clean_desc = re.sub(r"<[^>]+>", "", raw_desc)
-                            clean_desc = clean_desc[:200] + "..." if len(clean_desc) > 200 else clean_desc
+                        raw_desc = m.get("description") or ""
+                        clean_desc = re.sub(r"<[^>]+>", "", raw_desc)
+                        clean_desc = clean_desc[:200] + "..." if len(clean_desc) > 200 else clean_desc
 
-                            fallback_metas.append(
-                                {
-                                    "id": stremio_id,
-                                    "type": item_type,
-                                    "name": title_name,
-                                    "title_obj": title_obj,
-                                    "poster": poster,
-                                    "description": clean_desc,
-                                    "ageRating": "R18" if m.get("isAdult") else None,
-                                    "nsfw": bool(m.get("isAdult")),
-                                }
-                            )
-                            existing_ids.add(stremio_id)
+                        fallback_metas.append(
+                            {
+                                "id": stremio_id,
+                                "type": item_type,
+                                "name": title_name,
+                                "title_obj": title_obj,
+                                "poster": poster,
+                                "description": clean_desc,
+                                "ageRating": "R18" if m.get("isAdult") else None,
+                                "nsfw": bool(m.get("isAdult")),
+                            }
+                        )
+                        existing_ids.add(stremio_id)
 
-                        # Prepend exact search matches from AniList if Kitsu missed them
-                        metas = fallback_metas + metas
+                    # Prepend exact search matches from AniList if Kitsu missed them
+                    metas = fallback_metas + metas
             except Exception as e:
                 logging.error("AniList search fallback failed: %s", e)
 
