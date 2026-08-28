@@ -2019,7 +2019,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # Bulk fetch AniList next airing details ONLY for combined items that are airing (drastically reduces query volume)
             bulk_details = {}
-            needs_bulk = (user.get("sort_by_new_episodes") and comb_status in ["watching", "plan_to_watch"]) or (
+            enable_new_ep_badge = user.get("enable_new_episodes_badge", user.get("sort_by_new_episodes", True))
+            sort_by_new_ep = user.get("sort_by_new_episodes", False)
+            needs_bulk = ((enable_new_ep_badge or sort_by_new_ep) and comb_status in ["watching", "plan_to_watch"]) or (
                 custom_sort_enabled and sort_by in ["airing_date", "score"] and comb_status in ["watching", "plan_to_watch"]
             )
             if needs_bulk:
@@ -2170,7 +2172,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 if (
                     (is_airing or recently_finished)
-                    and user.get("sort_by_new_episodes")
+                    and (enable_new_ep_badge or sort_by_new_ep)
                     and latest_aired_num > 0
                     and progress < latest_aired_num
                 ):
@@ -2182,7 +2184,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # Sorting
             if custom_sort_enabled and sort_by != "default":
-                if user.get("sort_by_new_episodes") and comb_status in ["watching", "plan_to_watch"]:
+                if sort_by_new_ep and comb_status in ["watching", "plan_to_watch"]:
                     new_ep_items = []
                     other_items = []
                     for item in combined_items:
@@ -2203,7 +2205,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         combined_items, sort_by, sort_order, "combined", bulk_details=bulk_details
                     )
                 paged_items = sorted_items[offset : offset + 40]
-            elif user.get("sort_by_new_episodes") and comb_status in ["watching", "plan_to_watch"]:
+            elif sort_by_new_ep and comb_status in ["watching", "plan_to_watch"]:
 
                 def get_comb_priority(item):
                     is_new_ep, _, next_airing_at = compute_comb_flags(item)
@@ -2412,7 +2414,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if comb_status in ["watching", "plan_to_watch"]:
                     is_new_ep, _, _ = compute_comb_flags(item)
 
-                if is_new_ep and poster:
+                if is_new_ep and enable_new_ep_badge and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
                     m_id_for_url = mal_id if mal_id else (anilist_id if anilist_id else f"simkl_{simkl_id}")
                     badge_style = user.get("badge_style", "modern")
@@ -2493,8 +2495,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # Fetch AniList next-airing-episode data in bulk ONLY for airing shows
             bulk_details = {}
+            enable_new_ep_badge = user.get("enable_new_episodes_badge", user.get("sort_by_new_episodes", True))
+            sort_by_new_ep = user.get("sort_by_new_episodes", False)
             needs_bulk = (simkl_status in ["watching", "plantowatch"] and data_items) and (
-                user.get("sort_by_new_episodes") or (custom_sort_enabled and sort_by in ["airing_date", "score"])
+                (enable_new_ep_badge or sort_by_new_ep) or (custom_sort_enabled and sort_by in ["airing_date", "score"])
             )
             if needs_bulk:
                 airing_mal_ids = []
@@ -2572,7 +2576,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 is_new_ep = False
                 if (
                     (is_airing or recently_finished)
-                    and user.get("sort_by_new_episodes")
+                    and (enable_new_ep_badge or sort_by_new_ep)
                     and latest_aired_num > 0
                     and progress < latest_aired_num
                 ):
@@ -2583,7 +2587,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 return is_new_ep, has_unwatched, latest_aired_at, latest_aired_num
 
             if custom_sort_enabled and sort_by != "default":
-                if user.get("sort_by_new_episodes") and simkl_status in ["watching", "plantowatch"]:
+                if sort_by_new_ep and simkl_status in ["watching", "plantowatch"]:
                     new_ep_items = []
                     other_items = []
                     for item in data_items:
@@ -2607,7 +2611,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         data_items, sort_by, sort_order, "simkl", bulk_details=bulk_details
                     )
                 paged_data_items = sorted_data_items[offset : offset + 40]
-            elif user.get("sort_by_new_episodes") and simkl_status in ["watching", "plantowatch"]:
+            elif sort_by_new_ep and simkl_status in ["watching", "plantowatch"]:
 
                 def get_simkl_priority(item):
                     show_obj = item.get("show") or item.get("anime") or item
@@ -2719,7 +2723,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if simkl_status in ["watching", "plantowatch"]:
                     is_new_ep, _, _, _ = compute_simkl_flags(item, mal_id)
 
-                if is_new_ep and poster:
+                if is_new_ep and enable_new_ep_badge and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
                     badge_style = user.get("badge_style", "modern")
                     poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/simkl_{simkl_id}_s_22.jpg?url={encoded_url}&badge=new&tracker=simkl&style={badge_style}&v=hd_poster_v1"
@@ -2780,8 +2784,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # Fetch AniList next-airing-episode data in bulk ONLY for airing shows (drastically cuts latency for 500+ lists)
             bulk_details = {}
+            enable_new_ep_badge = user.get("enable_new_episodes_badge", user.get("sort_by_new_episodes", True))
+            sort_by_new_ep = user.get("sort_by_new_episodes", False)
             needs_bulk = (mal_status in ["watching", "plan_to_watch"] and data_items) and (
-                user.get("sort_by_new_episodes") or (custom_sort_enabled and sort_by in ["airing_date", "score"])
+                (enable_new_ep_badge or sort_by_new_ep) or (custom_sort_enabled and sort_by in ["airing_date", "score"])
             )
             if needs_bulk:
                 airing_mal_ids = [
@@ -2864,7 +2870,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 is_new_ep = False
                 if (
                     (is_airing or recently_finished)
-                    and user.get("sort_by_new_episodes")
+                    and (enable_new_ep_badge or sort_by_new_ep)
                     and latest_aired_num > 0
                     and progress < latest_aired_num
                 ):
@@ -2877,7 +2883,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # ── Sorting ───────────────────────────────────────────────────────
             if custom_sort_enabled and sort_by != "default":
-                if user.get("sort_by_new_episodes") and mal_status in ["watching", "plan_to_watch"]:
+                if sort_by_new_ep and mal_status in ["watching", "plan_to_watch"]:
                     new_ep_items = []
                     other_items = []
                     for item in data_items:
@@ -2900,7 +2906,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         data_items, sort_by, sort_order, "mal", bulk_details=bulk_details
                     )
                 paged_data_items = sorted_data_items[offset : offset + 40]
-            elif user.get("sort_by_new_episodes") and mal_status in ["watching", "plan_to_watch"]:
+            elif sort_by_new_ep and mal_status in ["watching", "plan_to_watch"]:
 
                 def get_mal_priority(item):
                     node = item.get("node", {})
@@ -2971,7 +2977,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 poster = node.get("main_picture", {}).get("large") or node.get("main_picture", {}).get("medium") or ""
 
-                if is_new_ep and poster:
+                if is_new_ep and enable_new_ep_badge and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
                     badge_style = user.get("badge_style", "modern")
                     poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{mal_id}_m_22.jpg?url={encoded_url}&badge=new&tracker=mal&style={badge_style}&v=hd_poster_v1"
@@ -3055,6 +3061,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 entries.extend(user_list.get("entries", []))
 
             current_time = int(time.time())
+            enable_new_ep_badge = user.get("enable_new_episodes_badge", user.get("sort_by_new_episodes", True))
+            sort_by_new_ep = user.get("sort_by_new_episodes", False)
 
             # ── Compute per-entry flags (with time-gating) ────────────────────
             def compute_al_flags(entry):
@@ -3106,7 +3114,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 is_new_ep = False
                 if (
                     (is_airing or recently_finished)
-                    and user.get("sort_by_new_episodes")
+                    and (enable_new_ep_badge or sort_by_new_ep)
                     and latest_aired_num > 0
                     and progress < latest_aired_num
                 ):
@@ -3119,7 +3127,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # ── Sorting ───────────────────────────────────────────────────────
             if custom_sort_enabled and sort_by != "default":
-                if user.get("sort_by_new_episodes") and anilist_status in ["CURRENT", "PLANNING"]:
+                if sort_by_new_ep and anilist_status in ["CURRENT", "PLANNING"]:
                     new_ep_items = []
                     other_items = []
                     for entry in entries:
@@ -3133,7 +3141,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     entries = sorted_new + sorted_other
                 else:
                     entries = sort_watchlist_items(entries, sort_by, sort_order, "anilist", bulk_details=None)
-            elif user.get("sort_by_new_episodes") and anilist_status in ["CURRENT", "PLANNING"]:
+            elif sort_by_new_ep and anilist_status in ["CURRENT", "PLANNING"]:
 
                 def get_al_priority(entry):
                     is_new_ep, has_unwatched, latest_aired_at, recently_finished = compute_al_flags(entry)
@@ -3194,9 +3202,14 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 name = get_anilist_title(media.get("title"), title_lang)
 
-                poster = (media["coverImage"] or {}).get("large") or (media["coverImage"] or {}).get("medium") or ""
+                poster = (
+                    (media["coverImage"] or {}).get("extraLarge")
+                    or (media["coverImage"] or {}).get("large")
+                    or (media["coverImage"] or {}).get("medium")
+                    or ""
+                )
 
-                if is_new_ep and poster:
+                if is_new_ep and enable_new_ep_badge and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
                     badge_style = user.get("badge_style", "modern")
                     poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{al_id}_a_22.jpg?url={encoded_url}&badge=new&tracker=anilist&style={badge_style}&v=hd_poster_v1"
