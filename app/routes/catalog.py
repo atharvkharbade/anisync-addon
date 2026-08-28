@@ -1531,7 +1531,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 search_candidates = [search_query.strip()]
                 SUFFIX_WORDS = {
                     "ova", "ovas", "oad", "oads", "special", "specials", "movie", "movies", "film", "films",
-                    "moment", "moments", "episode", "episodes", "side", "story", "season", "part"
+                    "moment", "moments", "episode", "episodes", "side", "story"
                 }
                 words = search_query.strip().split()
                 if len(words) > 1:
