@@ -1015,6 +1015,8 @@
                     value="{{ 'true' if user.get('simkl_enabled', True) else 'false' }}">
                 <input type="hidden" id="sync_unlisted_val" name="sync_unlisted"
                     value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
+                <input type="hidden" id="enable_new_episodes_badge_val" name="enable_new_episodes_badge"
+                    value="{{ 'true' if user.get('enable_new_episodes_badge', user.get('sort_by_new_episodes', True)) else 'false' }}">
                 <input type="hidden" id="sort_by_new_episodes_val" name="sort_by_new_episodes"
                     value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
                 <input type="hidden" id="enable_catalogs_val" name="enable_catalogs"
@@ -1330,17 +1332,26 @@
                     style="{% if not user.get('enable_catalogs', True) %}display: none;{% endif %}">
 
                     <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="enable_new_episodes_badge" {% if
+                            user.get('enable_new_episodes_badge', user.get('sort_by_new_episodes', True)) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="enable_new_episodes_badge">
+                            <span class="fw-medium d-block">Show [New Episode] badge on posters</span>
+                            <span class="text-secondary small d-block">
+                                Renders a [New Episode] badge on anime posters when new unwatched episodes air (within the last 7 days).
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="sort_by_new_episodes" {% if
                             user.get('sort_by_new_episodes', False) %}checked{% endif %}>
                         <label class="form-check-label ms-1" for="sort_by_new_episodes">
-                            <span class="fw-medium d-block">Show newly released episodes in front</span>
+                            <span class="fw-medium d-block">Pin shows with new episodes to the front</span>
                             <span class="text-secondary small d-block">
-                                Shows [New Episode] on the anime poster for unwatched episodes, and
-                                pushes them to the front of your watching catalog.
+                                Pushes shows with newly aired episodes to the top of your watching catalog ahead of other anime.
                             </span>
                             <span class="text-warning small d-block mt-1 fw-medium">
-                                <i class="fa-solid fa-circle-info me-1"></i>Shows with new episodes will always be
-                                pinned to the front, regardless of your custom sorting preferences.
+                                <i class="fa-solid fa-circle-info me-1"></i>When enabled, newly aired shows are pinned to the front regardless of custom sorting.
                             </span>
                         </label>
                     </div>
@@ -3442,6 +3453,10 @@
         const syncUnlisted = document.getElementById('sync_unlisted');
         const syncUnlistedVal = document.getElementById('sync_unlisted_val');
         if (syncUnlisted && syncUnlistedVal) syncUnlistedVal.value = syncUnlisted.checked ? 'true' : 'false';
+
+        const enableNewEpBadge = document.getElementById('enable_new_episodes_badge');
+        const enableNewEpBadgeVal = document.getElementById('enable_new_episodes_badge_val');
+        if (enableNewEpBadge && enableNewEpBadgeVal) enableNewEpBadgeVal.value = enableNewEpBadge.checked ? 'true' : 'false';
 
         const sortByNew = document.getElementById('sort_by_new_episodes');
         const sortByNewVal = document.getElementById('sort_by_new_episodes_val');

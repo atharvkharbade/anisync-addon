@@ -219,6 +219,8 @@ async def configure(user_id: str = ""):
             user["combine_watchlists"] = form.get("combine_watchlists") == "true"
         if "sync_unlisted" in form:
             user["sync_unlisted"] = form.get("sync_unlisted") == "true"
+        if "enable_new_episodes_badge" in form:
+            user["enable_new_episodes_badge"] = form.get("enable_new_episodes_badge") == "true"
         if "sort_by_new_episodes" in form:
             user["sort_by_new_episodes"] = form.get("sort_by_new_episodes") == "true"
         if "enable_catalogs" in form:
