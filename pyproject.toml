@@ -1,5 +1,5 @@
 [project]
-name = "anisync"
+name = "anisync-addon"
 version = "1.4.1"
 requires-python = ">=3.12"
 dependencies = [
