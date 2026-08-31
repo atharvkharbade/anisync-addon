@@ -88,7 +88,7 @@ async def _gql(token: str | None, query: str, variables: dict | None = None) -> 
             # Handle rate limiting (HTTP 429 Too Many Requests)
             if resp.status_code == 429:
                 retry_after = resp.headers.get("Retry-After")
-                wait_time = int(retry_after) if (retry_after and retry_after.isdigit() and int(retry_after) <= 3) else 0.5
+                wait_time = int(retry_after) if (retry_after and retry_after.isdigit()) else 1.0
                 logging.warning(
                     "AniList 429 rate limit hit. Retrying in %s seconds (attempt %s/%s)...",
                     wait_time,
@@ -130,13 +130,14 @@ async def get_viewer(token: str) -> dict:
     return data["data"]["Viewer"]
 
 
-async def get_media_status(token: str, anilist_id: int) -> dict:
-    from app.services.db import get_cached_anilist_media, cache_anilist_media
+async def get_media_status(token: str, anilist_id: int, use_cache: bool = True) -> dict:
+    from app.services.db import cache_anilist_media, get_cached_anilist_media
 
-    # Check local MongoDB cache first
-    cached = get_cached_anilist_media(anilist_id)
-    if cached:
-        return cached
+    # Check local MongoDB cache first if use_cache is True
+    if use_cache:
+        cached = get_cached_anilist_media(anilist_id)
+        if cached:
+            return cached
 
     data = await _gql(token, MEDIA_QUERY, {"mediaId": anilist_id})
     media = data.get("data", {}).get("Media")
