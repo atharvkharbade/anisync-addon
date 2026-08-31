@@ -249,6 +249,12 @@ networks:
 
 If you enjoy using AniSync and would like to support its ongoing development and server hosting costs, consider [buying me a coffee on Ko-fi](https://ko-fi.com/atharvkharbade)! Any support is greatly appreciated.
 
+### 💖 Supporters
+
+A huge thank you to everyone who supports AniSync:
+
+* **DnT**
+
 ---
 
 ## ⚠️ Disclaimer
