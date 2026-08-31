@@ -33,6 +33,10 @@ async def sync_anilist(user: dict, anilist_id: str, episode: int, sync_unlisted:
         logging.error("AniList get_media_status failed: %s", e)
         return UpdateStatus.FAIL
 
+    if not media:
+        logging.warning("AniList returned no media for anilist_id=%s (deleted or invalid)", anilist_id)
+        return UpdateStatus.FAIL
+
     if user.get("anilist_consecutive_auth_errors", 0) > 0:
         reset_anilist_error_counter(user.get("uid"))
 
