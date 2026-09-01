@@ -589,7 +589,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         )
 
         # Apply user preferred Metadata Provider override (MAL / AniList with Kitsu fallback)
-        mal_data_override = await apply_metadata_provider_override(meta, user, mal_id, anilist_id)
+        mal_data_override, al_data_override = await apply_metadata_provider_override(meta, user, mal_id, anilist_id)
 
         # Apply custom poster provider if configured
         if (user.get("poster_provider") and user.get("poster_provider") != "none") or user.get("rpdb_api_key"):
@@ -617,13 +617,13 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             dynamic_headers.append(user_status_hdr)
 
         airing_prov = effective_provs.get("airing", "anilist")
-        al_data = None
-        if airing_prov == "anilist" and anilist_id:
+        al_data = al_data_override if (airing_prov == "anilist" and al_data_override) else None
+        if airing_prov == "anilist" and not al_data and anilist_id:
             try:
                 from app.api.anilist import get_media_status
 
                 token = user.get("anilist_token", "") if user else ""
-                al_data = await get_media_status(token, int(anilist_id))
+                al_data = await asyncio.wait_for(get_media_status(token, int(anilist_id)), timeout=3.0)
             except Exception as e:
                 logging.debug("Could not fetch AniList media status for airing countdown: %s", e)
 
@@ -632,7 +632,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             try:
                 from app.api.jikan import get_anime_by_id
 
-                mal_data_airing = await get_anime_by_id(mal_id)
+                mal_data_airing = await asyncio.wait_for(get_anime_by_id(mal_id), timeout=3.0)
             except Exception:
                 pass
 
@@ -916,13 +916,14 @@ async def apply_metadata_provider_override(
     user: dict,
     mal_id: str | None,
     anilist_id: str | None,
-) -> dict | None:
+) -> tuple[dict | None, dict | None]:
     effective = get_effective_meta_providers(user)
     synopsis_prov = effective["synopsis"]
     poster_prov = effective["poster"]
     backdrop_prov = effective["backdrop"]
 
     mal_data_ret = None
+    al_data_ret = None
 
     # 1. Fetch MAL data if needed for synopsis or poster
     mal_data = None
@@ -930,7 +931,7 @@ async def apply_metadata_provider_override(
         try:
             from app.api.jikan import get_anime_by_id
 
-            mal_data = await get_anime_by_id(mal_id)
+            mal_data = await asyncio.wait_for(get_anime_by_id(mal_id), timeout=3.0)
             if mal_data:
                 mal_data_ret = mal_data
         except Exception as e:
@@ -943,7 +944,9 @@ async def apply_metadata_provider_override(
             from app.api.anilist import get_media_status
 
             token = user.get("anilist_token", "") if user else ""
-            al_data = await get_media_status(token, int(anilist_id))
+            al_data = await asyncio.wait_for(get_media_status(token, int(anilist_id)), timeout=3.0)
+            if al_data:
+                al_data_ret = al_data
         except Exception as e:
             logging.warning("Failed to fetch AniList metadata for anilist_id=%s: %s", anilist_id, e)
 
@@ -988,4 +991,4 @@ async def apply_metadata_provider_override(
                 meta["background"] = banner_url
             # Else (ratio > 2.0 ultra-wide banner): skip and retain Fanart/Kitsu/Cinemeta fallback
 
-    return mal_data_ret
+    return mal_data_ret, al_data_ret
