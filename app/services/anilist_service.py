@@ -23,7 +23,7 @@ async def sync_anilist(user: dict, anilist_id: str, episode: int, sync_unlisted:
 
     token = user.get("anilist_token", "")
     try:
-        media = await al_api.get_media_status(token, int(anilist_id))
+        media = await al_api.get_media_status(token, int(anilist_id), use_cache=False)
     except al_api.AnilistTokenInvalidError as e:
         logging.warning("AniList token invalid during get_media_status for user %s: %s", user.get("uid"), e)
         from app.services.db import handle_invalid_anilist_token
