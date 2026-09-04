@@ -23,6 +23,12 @@ query {
 MEDIA_QUERY = """
 query ($mediaId: Int) {
   Media(id: $mediaId, type: ANIME) {
+    id
+    title {
+      english
+      romaji
+      native
+    }
     episodes
     status
     description

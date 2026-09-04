@@ -729,22 +729,35 @@ def update_user_watchlist_cache_progress(
                             updated = True
                         break
 
-            if updated:
-                cache_col.update_one({"_id": doc["_id"]}, {"$set": {"data": data}})
-                logging.info(
-                    "Updated watchlist cache in-place for user %s, tracker %s, show %s to ep %s",
-                    user_id,
-                    tracker,
-                    mal_str or anilist_str or simkl_str,
-                    episode,
-                )
-            elif not item_found and status == "watching":
-                cache_col.delete_one({"_id": doc["_id"]})
-                logging.info(
-                    "Show not found in cache for user %s, tracker %s. Invalidating cache document.",
-                    user_id,
-                    tracker,
-                )
+            if status == "watching":
+                if updated:
+                    cache_col.update_one({"_id": doc["_id"]}, {"$set": {"data": data}})
+                    logging.info(
+                        "Updated watching watchlist cache in-place for user %s, tracker %s, show %s to ep %s",
+                        user_id,
+                        tracker,
+                        mal_str or anilist_str or simkl_str,
+                        episode,
+                    )
+                elif not item_found:
+                    cache_col.delete_one({"_id": doc["_id"]})
+                    logging.info(
+                        "Show not found in watching cache for user %s, tracker %s. Invalidating cache document.",
+                        user_id,
+                        tracker,
+                    )
+            else:
+                # If an item was found in a non-watching list (e.g. plan_to_watch, on_hold, dropped),
+                # it has transitioned to watching. Invalidate this cache document so it refetches clean.
+                if item_found:
+                    cache_col.delete_one({"_id": doc["_id"]})
+                    logging.info(
+                        "Show %s transitioned to watching; invalidated stale %s cache for user %s, tracker %s.",
+                        mal_str or anilist_str or simkl_str,
+                        status,
+                        user_id,
+                        tracker,
+                    )
 
     except Exception as e:
         logging.error("Failed to update watchlist cache progress for user %s: %s", user_id, e)
