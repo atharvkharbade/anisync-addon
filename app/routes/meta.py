@@ -327,6 +327,38 @@ def map_kitsu_to_stremio(
                 except (ValueError, TypeError):
                     pass
 
+        # Build Cinemeta episode thumbnail map: (season, episode) -> thumbnail
+        cinemeta_ep_thumbs = {}
+        if cinemeta_data and isinstance(cinemeta_data.get("videos"), list):
+            for v in cinemeta_data["videos"]:
+                s = v.get("season")
+                e = v.get("episode")
+                thumb = v.get("thumbnail")
+                if s is not None and e is not None and thumb:
+                    try:
+                        cinemeta_ep_thumbs[(int(s), int(e))] = thumb
+                    except (ValueError, TypeError):
+                        pass
+
+        # Detect if this anime is likely a sequel to avoid assuming Season 1 when seasonNumber is missing
+        canonical_title = (attributes.get("canonicalTitle") or "").lower()
+        is_likely_sequel = any(
+            marker in canonical_title
+            for marker in [
+                "season 2",
+                "season 3",
+                "season 4",
+                "season 5",
+                "2nd season",
+                "3rd season",
+                "4th season",
+                "part 2",
+                "part 3",
+                "part 4",
+                "cour 2",
+            ]
+        )
+
         for i in range(1, total_ep + 1):
             ep_num = i
             kitsu_ep = kitsu_ep_map.get(i)
@@ -364,12 +396,26 @@ def map_kitsu_to_stremio(
                     or f"Episode {ep_num}"
                 )
             released = attrs.get("airdate") or anizp_ep.get("airdate")
+
+            # Match Cinemeta episode thumbnail safely
+            cinemeta_thumb = None
+            if cinemeta_ep_thumbs:
+                s_num = anizp_ep.get("seasonNumber")
+                if s_num is not None:
+                    try:
+                        cinemeta_thumb = cinemeta_ep_thumbs.get((int(s_num), ep_num))
+                    except (ValueError, TypeError):
+                        pass
+                elif not is_likely_sequel:
+                    cinemeta_thumb = cinemeta_ep_thumbs.get((1, ep_num))
+
             if episodes_provider == "kitsu":
                 overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
                 thumbnail = (
                     (attrs.get("thumbnail") or {}).get("original")
                     or (attrs.get("thumbnail") or {}).get("large")
                     or anizp_ep.get("image")
+                    or cinemeta_thumb
                     or background
                 )
             else:  # anizp, mal, or default
@@ -378,6 +424,7 @@ def map_kitsu_to_stremio(
                     anizp_ep.get("image")
                     or (attrs.get("thumbnail") or {}).get("original")
                     or (attrs.get("thumbnail") or {}).get("large")
+                    or cinemeta_thumb
                     or background
                 )
 
