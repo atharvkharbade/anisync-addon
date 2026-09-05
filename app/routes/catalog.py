@@ -80,6 +80,79 @@ def get_mal_title(node: dict, title_lang: str) -> str:
         return node.get("title") or ""
 
 
+def get_simkl_display_title(show_obj: dict, title_lang: str, bulk_details: dict | None = None) -> str:
+    if not show_obj or not isinstance(show_obj, dict):
+        return ""
+
+    raw_title = show_obj.get("title") or (show_obj.get("show") or {}).get("title") or ""
+    if title_lang == "romaji":
+        return raw_title
+
+    ids = show_obj.get("ids") or {}
+    if not ids and ("show" in show_obj or "anime" in show_obj):
+        inner = show_obj.get("show") or show_obj.get("anime") or {}
+        ids = inner.get("ids") or {}
+
+    al_id = str(ids.get("anilist") or "")
+    mal_id = str(ids.get("mal") or "")
+    kitsu_id = str(ids.get("kitsu") or "")
+
+    # 1. Check in-memory bulk_details (AniList media objects)
+    if bulk_details:
+        al_media = None
+        if al_id and al_id in bulk_details:
+            al_media = bulk_details[al_id]
+        elif mal_id and mal_id in bulk_details:
+            al_media = bulk_details[mal_id]
+        if al_media and al_media.get("title"):
+            t = get_anilist_title(al_media["title"], title_lang)
+            if t and t != "Unknown":
+                return t
+
+    # 2. Check explicit title in Simkl payload
+    if title_lang == "english" and show_obj.get("en_title"):
+        return show_obj["en_title"]
+
+    # 3. Check local database caches (zero external network latency)
+    try:
+        from app.services.db import db
+
+        if not al_id and mal_id:
+            try:
+                id_doc = db.get_collection("id_cache").find_one({"mal_id": str(mal_id)})
+                if id_doc and id_doc.get("anilist_id"):
+                    al_id = str(id_doc["anilist_id"])
+            except Exception:
+                pass
+
+        if al_id and al_id.isdigit():
+            # Check anilist_airing_cache
+            airing_doc = db.get_collection("anilist_airing_cache").find_one({"anilist_id": int(al_id)})
+            if airing_doc and airing_doc.get("title"):
+                t = get_anilist_title(airing_doc["title"], title_lang)
+                if t and t != "Unknown":
+                    return t
+
+            # Check anilist_meta_cache
+            meta_doc = db.get_collection("anilist_meta_cache").find_one({"anilist_id": int(al_id)})
+            if meta_doc and meta_doc.get("data", {}).get("title"):
+                t = get_anilist_title(meta_doc["data"]["title"], title_lang)
+                if t and t != "Unknown":
+                    return t
+
+        if kitsu_id and (kitsu_id.isdigit() or isinstance(kitsu_id, str)):
+            k_id = int(kitsu_id) if kitsu_id.isdigit() else kitsu_id
+            kdoc = db.get_collection("kitsu_meta_cache").find_one({"kitsu_id": k_id})
+            if kdoc and kdoc.get("data", {}).get("attributes"):
+                t = get_kitsu_title(kdoc["data"]["attributes"], title_lang)
+                if t and t != "Unknown":
+                    return t
+    except Exception as e:
+        logging.error("Failed to query local cache for Simkl title: %s", e)
+
+    return raw_title
+
+
 async def get_cached_mal_user_anime_list(user_id: str, token: str, status: str) -> list:
     from app.services.db import db
 
@@ -219,57 +292,63 @@ async def get_cached_simkl_user_anime_list(user_id: str, token: str, status: str
         raise e
 
 
-async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
-    if not mal_ids:
+async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilist_ids: list[str] | None = None) -> dict:
+    mal_ids = [str(m) for m in (mal_ids or []) if m]
+    direct_al_ids = [str(a) for a in (anilist_ids or []) if a]
+    if not mal_ids and not direct_al_ids:
         return {}
     from app.services.db import db, id_cache_collection
 
-    try:
-        cache_docs = list(id_cache_collection.find({"mal_id": {"$in": mal_ids}}))
-        mal_to_anilist = {doc["mal_id"]: str(doc["anilist_id"]) for doc in cache_docs if doc.get("anilist_id")}
-    except Exception as e:
-        logging.error("Failed to fetch id_cache in bulk: %s", e)
-        mal_to_anilist = {}
-
-    # Resolve any uncached MAL IDs via local MongoDB fribb_mappings database (zero external network latency)
-    uncached_mal_ids = [mid for mid in mal_ids if mid not in mal_to_anilist]
-    if uncached_mal_ids:
+    mal_to_anilist = {}
+    if mal_ids:
         try:
-            fribb_docs = list(db.fribb_mappings.find({"mal_id": {"$in": uncached_mal_ids}}))
-            for fdoc in fribb_docs:
-                m_id = str(fdoc.get("mal_id") or "")
-                al_id = str(fdoc.get("anilist_id") or "")
-                if m_id and al_id:
-                    mal_to_anilist[m_id] = al_id
+            cache_docs = list(id_cache_collection.find({"mal_id": {"$in": mal_ids}}))
+            mal_to_anilist = {str(doc["mal_id"]): str(doc["anilist_id"]) for doc in cache_docs if doc.get("anilist_id")}
         except Exception as e:
-            logging.error("Failed to query fribb_mappings for bulk AniList details: %s", e)
+            logging.error("Failed to fetch id_cache in bulk: %s", e)
+            mal_to_anilist = {}
 
-        # 3. HTTP Fallback for any remaining unmapped IDs (e.g. brand new / niche anime not yet in Fribb)
-        remaining_mal_ids = [mid for mid in uncached_mal_ids if mid not in mal_to_anilist]
-        if remaining_mal_ids:
-            from app.lib.id_resolver import resolve_mal_to_kitsu
-            sem = asyncio.Semaphore(10)
-
-            async def resolve_with_sem(mid):
-                async with sem:
-                    try:
-                        await resolve_mal_to_kitsu(mid)
-                    except Exception as ex:
-                        logging.warning("Tier 3 fallback failed for MAL ID %s: %s", mid, ex)
-
-            await asyncio.gather(*[resolve_with_sem(mid) for mid in remaining_mal_ids])
-
-            # Check id_cache for newly resolved items
+        # Resolve any uncached MAL IDs via local MongoDB fribb_mappings database (zero external network latency)
+        uncached_mal_ids = [mid for mid in mal_ids if mid not in mal_to_anilist]
+        if uncached_mal_ids:
             try:
-                fresh_docs = list(id_cache_collection.find({"mal_id": {"$in": remaining_mal_ids}}))
-                for doc in fresh_docs:
-                    if doc.get("mal_id") and doc.get("anilist_id"):
-                        mal_to_anilist[str(doc["mal_id"])] = str(doc["anilist_id"])
+                fribb_docs = list(db.fribb_mappings.find({"mal_id": {"$in": uncached_mal_ids}}))
+                for fdoc in fribb_docs:
+                    m_id = str(fdoc.get("mal_id") or "")
+                    al_id = str(fdoc.get("anilist_id") or "")
+                    if m_id and al_id:
+                        mal_to_anilist[m_id] = al_id
             except Exception as e:
-                logging.error("Failed to re-query id_cache after Tier 3 resolution: %s", e)
+                logging.error("Failed to query fribb_mappings for bulk AniList details: %s", e)
 
-    anilist_ids = list(mal_to_anilist.values())
-    if not anilist_ids:
+            # 3. HTTP Fallback for any remaining unmapped IDs (e.g. brand new / niche anime not yet in Fribb)
+            remaining_mal_ids = [mid for mid in uncached_mal_ids if mid not in mal_to_anilist]
+            if remaining_mal_ids:
+                from app.lib.id_resolver import resolve_mal_to_kitsu
+                sem = asyncio.Semaphore(10)
+
+                async def resolve_with_sem(mid):
+                    async with sem:
+                        try:
+                            await resolve_mal_to_kitsu(mid)
+                        except Exception as ex:
+                            logging.warning("Tier 3 fallback failed for MAL ID %s: %s", mid, ex)
+
+                await asyncio.gather(*[resolve_with_sem(mid) for mid in remaining_mal_ids])
+
+                # Check id_cache for newly resolved items
+                try:
+                    fresh_docs = list(id_cache_collection.find({"mal_id": {"$in": remaining_mal_ids}}))
+                    for doc in fresh_docs:
+                        if doc.get("mal_id") and doc.get("anilist_id"):
+                            mal_to_anilist[str(doc["mal_id"])] = str(doc["anilist_id"])
+                except Exception as e:
+                    logging.error("Failed to re-query id_cache after Tier 3 resolution: %s", e)
+
+    target_al_ids = set(direct_al_ids)
+    target_al_ids.update(mal_to_anilist.values())
+    target_al_ids = [x for x in target_al_ids if x]
+    if not target_al_ids:
         return {}
 
     # 1. Query local airing cache
@@ -278,7 +357,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
     cached_details = {}
     try:
         cached_docs = list(
-            airing_col.find({"anilist_id": {"$in": [int(x) for x in anilist_ids]}, "expires_at": {"$gt": now}})
+            airing_col.find({"anilist_id": {"$in": [int(x) for x in target_al_ids if x.isdigit()]}, "expires_at": {"$gt": now}})
         )
         for doc in cached_docs:
             cached_details[str(doc["anilist_id"])] = {
@@ -288,12 +367,13 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
                 "averageScore": doc.get("averageScore"),
                 "episodes": doc.get("episodes"),
                 "endDate": doc.get("endDate"),
+                "title": doc.get("title"),
             }
     except Exception as e:
         logging.error("Failed to read from anilist_airing_cache: %s", e)
 
     # 2. Determine which IDs need to be fetched
-    uncached_anilist_ids = [aid for aid in anilist_ids if aid not in cached_details]
+    uncached_anilist_ids = [aid for aid in target_al_ids if aid not in cached_details]
 
     if uncached_anilist_ids:
         query = """
@@ -313,20 +393,22 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
                 episode
                 airingAt
               }
+              title {
+                english
+                romaji
+                native
+                userPreferred
+              }
             }
           }
         }
         """
         try:
-            headers = {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            }
             chunks = [uncached_anilist_ids[i : i + 50] for i in range(0, len(uncached_anilist_ids), 50)]
 
             async def fetch_chunk(chunk_ids):
                 try:
-                    res = await anilist_api._gql(None, query, {"ids": [int(x) for x in chunk_ids]})
+                    res = await anilist_api._gql(None, query, {"ids": [int(x) for x in chunk_ids if x.isdigit()]})
                     return res.get("data", {}).get("Page", {}).get("media", [])
                 except Exception as e:
                     logging.error("AniList chunk query failed: %s", e)
@@ -346,6 +428,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
                 status = media.get("status", "")
                 next_ep = media.get("nextAiringEpisode")
                 avg_score = media.get("averageScore")
+                m_title = media.get("title")
 
                 # Expiry calculations:
                 if status == "FINISHED":
@@ -355,7 +438,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
                     max_cap = now + datetime.timedelta(hours=12)
                     expires_at = min(target_time, max_cap)
                 elif status == "NOT_YET_RELEASED":
-                    expires_at = now + datetime.timedelta(days=1)
+                    expires_at = now + datetime.timedelta(days=2)
                 else:
                     expires_at = now + datetime.timedelta(hours=12)
 
@@ -370,6 +453,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
                                 "averageScore": avg_score,
                                 "episodes": media.get("episodes"),
                                 "endDate": media.get("endDate"),
+                                "title": m_title,
                                 "expires_at": expires_at,
                             }
                         },
@@ -380,14 +464,17 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str]) -> dict:
 
                 cached_details[str(aid)] = media
         except Exception as e:
-            logging.error("Failed bulk AniList query for MAL: %s", e)
+            logging.error("Failed bulk AniList query: %s", e)
 
-    # 3. Map back to MAL IDs
-    mal_details = {}
+    # 3. Map back to MAL IDs and AniList IDs
+    result_details = {}
     for mid, aid in mal_to_anilist.items():
         if aid in cached_details:
-            mal_details[mid] = cached_details[aid]
-    return mal_details
+            result_details[str(mid)] = cached_details[aid]
+    for aid in target_al_ids:
+        if aid in cached_details:
+            result_details[str(aid)] = cached_details[aid]
+    return result_details
 
 
 def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=None):
@@ -411,7 +498,7 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                 )
             elif tracker_type == "simkl":
                 show_obj = item.get("show") or item.get("anime") or item
-                title = show_obj.get("title", "")
+                title = show_obj.get("en_title") or show_obj.get("title", "")
             elif tracker_type == "combined":
                 if item.get("anilist_item"):
                     media = item["anilist_item"].get("media", {})
@@ -425,7 +512,7 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     title = item["mal_item"].get("node", {}).get("title", "")
                 if not title and item.get("simkl_item"):
                     show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
-                    title = show_obj.get("title", "")
+                    title = show_obj.get("en_title") or show_obj.get("title", "")
             if not title and isinstance(item, dict):
                 title = str(item.get("name") or "")
             return title.lower()
@@ -2026,9 +2113,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             )
             if needs_bulk:
                 airing_mal_ids = []
+                airing_al_ids = []
                 for item in combined_items:
                     mal_id = item.get("mal_id")
-                    if not mal_id:
+                    al_id = item.get("anilist_id")
+                    if not mal_id and not al_id:
                         continue
                     is_candidate = False
                     if item.get("anilist_item"):
@@ -2040,15 +2129,18 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     elif item.get("simkl_item"):
                         show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
                         simkl_status_str = (show_obj.get("status") or "").lower()
-                        is_candidate = simkl_status_str in ["airing", "currently airing"] or not simkl_status_str
+                        is_candidate = simkl_status_str not in ["ended", "completed", "canceled", "cancelled"]
                     else:
                         is_candidate = True
 
                     if is_candidate:
-                        airing_mal_ids.append(mal_id)
+                        if mal_id:
+                            airing_mal_ids.append(mal_id)
+                        if al_id:
+                            airing_al_ids.append(al_id)
 
-                if airing_mal_ids:
-                    bulk_details = await fetch_anilist_details_in_bulk(airing_mal_ids)
+                if airing_mal_ids or airing_al_ids:
+                    bulk_details = await fetch_anilist_details_in_bulk(airing_mal_ids, anilist_ids=airing_al_ids)
 
             # Helper to compute flags for combined items
             def compute_comb_flags(item):
@@ -2321,6 +2413,25 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             simkl_ids = [str(x["simkl_id"]) for x in paged_items if x["simkl_id"]]
             kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, anilist_ids=anilist_ids, simkl_ids=simkl_ids, skip_external=True)
 
+            # If title language is not romaji, resolve missing titles for Simkl-exclusive items on the current page
+            if title_lang != "romaji":
+                missing_simkl_al_ids = []
+                missing_simkl_mal_ids = []
+                for p_item in paged_items:
+                    if p_item.get("simkl_item") and not p_item.get("anilist_item") and not p_item.get("mal_item"):
+                        s_obj = p_item["simkl_item"].get("show") or p_item["simkl_item"].get("anime") or p_item["simkl_item"]
+                        if title_lang == "english" and s_obj.get("en_title"):
+                            continue
+                        s_al_id = p_item.get("anilist_id")
+                        s_mal_id = p_item.get("mal_id")
+                        if s_al_id and s_al_id not in bulk_details:
+                            missing_simkl_al_ids.append(s_al_id)
+                        elif s_mal_id and s_mal_id not in bulk_details:
+                            missing_simkl_mal_ids.append(s_mal_id)
+                if missing_simkl_al_ids or missing_simkl_mal_ids:
+                    page_titles_bulk = await fetch_anilist_details_in_bulk(missing_simkl_mal_ids, anilist_ids=missing_simkl_al_ids)
+                    bulk_details.update(page_titles_bulk)
+
             # Build meta items
             for item in paged_items:
                 mal_id = item["mal_id"]
@@ -2388,7 +2499,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         if total_eps == "?":
                             total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
                         if not name:
-                            name = show_obj.get("title", "")
+                            name = get_simkl_display_title(show_obj, title_lang, bulk_details=bulk_details)
                         if not poster:
                             simkl_poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
                             if simkl_poster and not simkl_poster.startswith("http"):
@@ -2502,16 +2613,20 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             )
             if needs_bulk:
                 airing_mal_ids = []
+                airing_al_ids = []
                 for item in data_items:
                     show_obj = item.get("show") or item.get("anime") or item
                     simkl_status_str = (show_obj.get("status") or "").lower()
-                    if simkl_status_str in ["airing", "currently airing"] or item.get("not_aired_episodes_count", 0) > 0 or not simkl_status_str:
+                    if simkl_status_str not in ["ended", "completed", "canceled", "cancelled"] or item.get("not_aired_episodes_count", 0) > 0 or not simkl_status_str:
                         ids = show_obj.get("ids") or {}
                         mal_id = str(ids.get("mal") or "")
+                        al_id = str(ids.get("anilist") or "")
                         if mal_id:
                             airing_mal_ids.append(mal_id)
-                if airing_mal_ids:
-                    bulk_details = await fetch_anilist_details_in_bulk(airing_mal_ids)
+                        if al_id:
+                            airing_al_ids.append(al_id)
+                if airing_mal_ids or airing_al_ids:
+                    bulk_details = await fetch_anilist_details_in_bulk(airing_mal_ids, anilist_ids=airing_al_ids)
 
             def compute_simkl_flags(item, mal_id):
                 show_obj = item.get("show") or item.get("anime") or item
@@ -2697,6 +2812,25 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     simkl_ids.append(simkl_id)
             kitsu_mappings = await bulk_resolve_to_kitsu(simkl_ids=simkl_ids, skip_external=True)
 
+            # If title language is not romaji, resolve missing titles for items on the current page in bulk
+            if title_lang != "romaji":
+                missing_simkl_al_ids = []
+                missing_simkl_mal_ids = []
+                for item in paged_data_items:
+                    show_obj = item.get("show") or item.get("anime") or item
+                    if title_lang == "english" and show_obj.get("en_title"):
+                        continue
+                    ids = show_obj.get("ids") or {}
+                    al_id = str(ids.get("anilist") or "")
+                    mal_id = str(ids.get("mal") or "")
+                    if al_id and al_id not in bulk_details:
+                        missing_simkl_al_ids.append(al_id)
+                    elif mal_id and mal_id not in bulk_details:
+                        missing_simkl_mal_ids.append(mal_id)
+                if missing_simkl_al_ids or missing_simkl_mal_ids:
+                    page_titles_bulk = await fetch_anilist_details_in_bulk(missing_simkl_mal_ids, anilist_ids=missing_simkl_al_ids)
+                    bulk_details.update(page_titles_bulk)
+
             # Build meta items
             for item in paged_data_items:
                 if "show" in item and isinstance(item["show"], dict):
@@ -2714,7 +2848,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     item.get("watched_episodes_count") or item.get("episodes_watched") or item.get("progress") or 0
                 )
                 total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
-                name = show_obj.get("title", "")
+                name = get_simkl_display_title(show_obj, title_lang, bulk_details=bulk_details)
                 poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
                 if poster and not poster.startswith("http"):
                     poster = f"https://simkl.in/posters/{poster}_m.jpg"
