@@ -600,7 +600,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
         # Resolve simkl_id if not present but we have kitsu_id
         if not simkl_id and kitsu_id:
-            from app.services.db import get_cached_ids, db
+            from app.services.db import get_cached_ids, cache_ids, db
 
             cached_ids = get_cached_ids(kitsu_id)
             if cached_ids:
@@ -610,6 +610,10 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
                     fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
                     if fribb_doc and fribb_doc.get("simkl_id"):
                         simkl_id = str(fribb_doc["simkl_id"])
+                        try:
+                            cache_ids(kitsu_id, mal_id, anilist_id, simkl_id=simkl_id)
+                        except Exception:
+                            pass
                 except Exception as e:
                     logging.warning("Failed to query fribb_mappings for simkl_id: %s", e)
         show_filler = user.get("show_filler_tags", True) if user else True

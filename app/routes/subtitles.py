@@ -65,7 +65,7 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
     logging.info("Resolved: kitsu=%s → mal=%s anilist=%s", kitsu_id, mal_id, anilist_id)
 
     simkl_id = None
-    from app.services.db import get_cached_ids, db, update_user_watchlist_cache_progress
+    from app.services.db import get_cached_ids, cache_ids, db, update_user_watchlist_cache_progress
 
     cached_ids = get_cached_ids(kitsu_id)
     if cached_ids:
@@ -75,6 +75,10 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
             fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
             if fribb_doc and fribb_doc.get("simkl_id"):
                 simkl_id = str(fribb_doc["simkl_id"])
+                try:
+                    cache_ids(kitsu_id, mal_id, anilist_id, simkl_id=simkl_id)
+                except Exception:
+                    pass
         except Exception:
             pass
 
