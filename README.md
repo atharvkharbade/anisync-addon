@@ -56,7 +56,7 @@ Search for any anime directly inside Stremio or Nuvio:
 
 ---
 
-### 🤖 Personalized Recommendations (100% Explained)
+### 🤖 Personalized Anime Recommendations
 Discover new anime right on your home screen based on what you enjoy:
 * **Clear Reasons**: Every suggested anime explains why it's there (e.g. *"Inspired by your favorites: Hunter x Hunter"* or *"Popular Dark Fantasy based on your taste"*).
 * **Gemini AI Insights**: You can optionally add a free Google Gemini API key to get natural language recommendation notes.
@@ -111,8 +111,10 @@ Explore curated anime rows updated directly from the community:
 
 ---
 
-### ⏳ Real-Time Airing Countdowns
-Shows live release countdowns in the synopsis of ongoing anime (e.g. `[Next Airing: Episode 7 releases in 6d]`), so you know when the next episode drops.
+### 📝 Progress Tracking & Airing Countdowns in Synopsis
+Shows your watch progress and upcoming release countdowns directly in the anime synopsis:
+* **Tracking Status**: Prepends your current watch status, episode progress, and rating (e.g. `[Status: Watching • Progress: 9/12 Ep]`).
+* **Next Airing Countdown**: Prepends live release countdowns for upcoming episodes and movies (e.g. `[Next Airing: Episode 10 releases in 23h]`).
 
 ---
 
