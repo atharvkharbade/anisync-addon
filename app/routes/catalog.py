@@ -956,132 +956,126 @@ async def update_discovery_catalogs_cache() -> dict:
     year = now.year
     if month in [1, 2, 3]:
         cur_season = "WINTER"
+        next_season = "SPRING"
+        next_year = year
     elif month in [4, 5, 6]:
         cur_season = "SPRING"
+        next_season = "SUMMER"
+        next_year = year
     elif month in [7, 8, 9]:
         cur_season = "SUMMER"
+        next_season = "FALL"
+        next_year = year
     else:
         cur_season = "FALL"
+        next_season = "WINTER"
+        next_year = year + 1
 
     query = f"""
+    fragment MediaFields on Media {{
+      id
+      idMal
+      format
+      duration
+      averageScore
+      popularity
+      episodes
+      startDate {{ year }}
+      seasonYear
+      title {{
+        english
+        userPreferred
+        romaji
+      }}
+      coverImage {{
+        large
+      }}
+      description
+      nextAiringEpisode {{
+        airingAt
+        episode
+        timeUntilAiring
+      }}
+    }}
     query {{
       trending: Page(page: 1, perPage: 50) {{
         media(type: ANIME, sort: TRENDING_DESC, isAdult: false) {{
-          id
-          idMal
-          format
-          duration
-          title {{
-            english
-            userPreferred
-            romaji
-          }}
-          coverImage {{
-            large
-          }}
-          description
+          ...MediaFields
         }}
       }}
       highestRated: Page(page: 1, perPage: 50) {{
         media(type: ANIME, sort: SCORE_DESC, isAdult: false) {{
-          id
-          idMal
-          format
-          duration
-          title {{
-            english
-            userPreferred
-            romaji
-          }}
-          coverImage {{
-            large
-          }}
-          description
+          ...MediaFields
         }}
       }}
       mostPopular: Page(page: 1, perPage: 50) {{
         media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {{
-          id
-          idMal
-          format
-          duration
-          title {{
-            english
-            userPreferred
-            romaji
-          }}
-          coverImage {{
-            large
-          }}
-          description
+          ...MediaFields
         }}
       }}
       topAiring: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {{
-          id
-          idMal
-          format
-          duration
-          title {{
-            english
-            userPreferred
-            romaji
-          }}
-          coverImage {{
-            large
-          }}
-          description
+        media(type: ANIME, status: RELEASING, sort: SCORE_DESC, popularity_greater: 2000, isAdult: false) {{
+          ...MediaFields
         }}
       }}
       seasonal: Page(page: 1, perPage: 50) {{
         media(type: ANIME, season: {cur_season}, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
-          id
-          idMal
-          format
-          duration
-          title {{
-            english
-            userPreferred
-            romaji
-          }}
-          coverImage {{
-            large
-          }}
-          description
+          ...MediaFields
+        }}
+      }}
+      seasonalNext: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, season: {next_season}, seasonYear: {next_year}, sort: POPULARITY_DESC, isAdult: false) {{
+          ...MediaFields
+        }}
+      }}
+      seasonalUpcoming: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, status: NOT_YET_RELEASED, sort: POPULARITY_DESC, isAdult: false) {{
+          ...MediaFields
+        }}
+      }}
+      seasonalWinter: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, season: WINTER, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
+          ...MediaFields
+        }}
+      }}
+      seasonalSpring: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, season: SPRING, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
+          ...MediaFields
+        }}
+      }}
+      seasonalSummer: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, season: SUMMER, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
+          ...MediaFields
+        }}
+      }}
+      seasonalFall: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, season: FALL, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
+          ...MediaFields
         }}
       }}
       schedule: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC, isAdult: false) {{
-          id
-          idMal
-          format
-          duration
-          title {{
-            english
-            userPreferred
-            romaji
-          }}
-          coverImage {{
-            large
-          }}
-          description
+        media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {{
+          ...MediaFields
         }}
       }}
-      spotlight: Page(page: 1, perPage: 50) {{
+      spotlightMovies: Page(page: 1, perPage: 50) {{
         media(type: ANIME, format: MOVIE, sort: SCORE_DESC, isAdult: false) {{
-          id
-          idMal
-          format
-          duration
-          title {{
-            english
-            userPreferred
-            romaji
-          }}
-          coverImage {{
-            large
-          }}
-          description
+          ...MediaFields
+        }}
+      }}
+      spotlightNewMovies: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, format: MOVIE, sort: START_DATE_DESC, isAdult: false) {{
+          ...MediaFields
+        }}
+      }}
+      spotlightOva: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, format_in: [OVA, SPECIAL], sort: SCORE_DESC, isAdult: false) {{
+          ...MediaFields
+        }}
+      }}
+      spotlightClassics: Page(page: 1, perPage: 50) {{
+        media(type: ANIME, startDate_lesser: 20120101, sort: SCORE_DESC, popularity_greater: 10000, isAdult: false) {{
+          ...MediaFields
         }}
       }}
     }}
@@ -1095,12 +1089,11 @@ async def update_discovery_catalogs_cache() -> dict:
         logging.warning("AniList GraphQL discovery fetch failed (%s), relying on Jikan data...", e)
 
     # Fetch Jikan and Kitsu discovery lists in parallel
-    from app.api.jikan import get_top_anime, get_airing_schedule, get_season_now
+    from app.api.jikan import get_airing_schedule, get_season_now, get_top_anime
 
     def _fetch_kitsu_sync(query_str: str) -> list:
-        """Fetch from Kitsu API using urllib (bypasses httpx bracket-encoding issue)."""
-        import urllib.request
         import json as _json
+        import urllib.request
         try:
             url = f"https://kitsu.io/api/edge/anime?{query_str}"
             req = urllib.request.Request(
@@ -1204,7 +1197,24 @@ async def update_discovery_catalogs_cache() -> dict:
 
     mal_ids = []
     anilist_ids = []
-    all_keys = ["trending", "highestRated", "mostPopular", "topAiring", "seasonal", "schedule", "spotlight"]
+    all_keys = [
+        "trending",
+        "highestRated",
+        "mostPopular",
+        "topAiring",
+        "seasonal",
+        "seasonalNext",
+        "seasonalUpcoming",
+        "seasonalWinter",
+        "seasonalSpring",
+        "seasonalSummer",
+        "seasonalFall",
+        "schedule",
+        "spotlightMovies",
+        "spotlightNewMovies",
+        "spotlightOva",
+        "spotlightClassics",
+    ]
     for key in all_keys:
         media_list = data.get(key, {}).get("media", [])
         for m in media_list:
@@ -1228,8 +1238,17 @@ async def update_discovery_catalogs_cache() -> dict:
         "mostPopular": "anisync_most_popular",
         "topAiring": "anisync_top_airing",
         "seasonal": "anisync_seasonal",
+        "seasonalNext": "anisync_seasonal:Next Season",
+        "seasonalUpcoming": "anisync_seasonal:Upcoming",
+        "seasonalWinter": "anisync_seasonal:Winter",
+        "seasonalSpring": "anisync_seasonal:Spring",
+        "seasonalSummer": "anisync_seasonal:Summer",
+        "seasonalFall": "anisync_seasonal:Fall",
         "schedule": "anisync_schedule",
-        "spotlight": "anisync_spotlight",
+        "spotlightMovies": "anisync_spotlight",
+        "spotlightNewMovies": "anisync_spotlight:New Movies",
+        "spotlightOva": "anisync_spotlight:OVAs & Specials",
+        "spotlightClassics": "anisync_spotlight:Classic Masterpieces",
     }
 
     expires_at = now + datetime.timedelta(hours=12)
@@ -1237,60 +1256,82 @@ async def update_discovery_catalogs_cache() -> dict:
 
     result_metas = {}
 
-    for gql_key, catalog_id in key_mapping.items():
+    def _parse_media_to_meta(m: dict) -> dict | None:
+        m_format = m.get("format")
+        duration = m.get("duration")
+        if m_format in ["MUSIC", "TV_SHORT"]:
+            return None
+        if duration is not None and duration <= 5:
+            return None
+
+        item_type = "movie" if m_format == "MOVIE" else "series"
+
+        title_pref = m.get("title") or {}
+        name = title_pref.get("english") or title_pref.get("userPreferred") or title_pref.get("romaji") or "Unknown"
+
+        desc = m.get("description") or ""
+        desc = re.sub("<[^<]+?>", "", desc)
+        desc = desc.replace("\n", " ").replace("  ", " ").strip()
+        if len(desc) > 200:
+            desc = desc[:200] + "..."
+
+        poster = (m.get("coverImage") or {}).get("large") or ""
+
+        aid = str(m["id"])
+        mid = str(m["idMal"]) if m.get("idMal") else None
+
+        kitsu_id = None
+        if mid:
+            kitsu_id = kitsu_mappings.get(f"mal:{mid}")
+        if not kitsu_id:
+            kitsu_id = kitsu_mappings.get(f"anilist:{aid}")
+
+        stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mid}" if mid else f"anilist:{aid}")
+
+        meta = {
+            "id": stremio_id,
+            "type": item_type,
+            "name": name,
+            "title_obj": title_pref,
+            "poster": poster,
+            "description": desc,
+            "score": float((m.get("averageScore") or 0) / 10),
+            "year": int((m.get("startDate") or {}).get("year") or m.get("seasonYear") or 0),
+            "episodes": int(m.get("episodes") or 0),
+            "popularity": int(m.get("popularity") or 0),
+            "mal_id": mid,
+            "anilist_id": aid,
+        }
+
+        nae = m.get("nextAiringEpisode")
+        if nae and nae.get("airingAt"):
+            airing_at = nae["airingAt"]
+            meta["airing_at"] = airing_at
+            meta["next_episode"] = nae.get("episode")
+            meta["time_until_airing"] = nae.get("timeUntilAiring")
+            dt = datetime.datetime.fromtimestamp(airing_at, tz=datetime.timezone.utc)
+            meta["airing_day"] = dt.strftime("%A")
+            now_dt = datetime.datetime.utcnow()
+            meta["is_today"] = (dt.date() == now_dt.date()) or (0 <= (nae.get("timeUntilAiring") or -1) <= 86400)
+
+        return meta
+
+    for gql_key, catalog_key in key_mapping.items():
         media_list = data.get(gql_key, {}).get("media", [])
         metas = []
         seen_mal_ids = set()
 
         for m in media_list:
-            m_format = m.get("format")
-            duration = m.get("duration")
-            if m_format in ["MUSIC", "TV_SHORT"]:
-                continue
-            if duration is not None and duration <= 5:
-                continue
-
-            item_type = "movie" if m_format == "MOVIE" else "series"
-
-            title_pref = m.get("title") or {}
-            name = title_pref.get("english") or title_pref.get("userPreferred") or title_pref.get("romaji") or "Unknown"
-
-            desc = m.get("description") or ""
-            desc = re.sub("<[^<]+?>", "", desc)
-            desc = desc.replace("\n", " ").replace("  ", " ").strip()
-            if len(desc) > 200:
-                desc = desc[:200] + "..."
-
-            poster = (m.get("coverImage") or {}).get("large") or ""
-
-            aid = str(m["id"])
             mid = str(m["idMal"]) if m.get("idMal") else None
+            meta = _parse_media_to_meta(m)
+            if not meta:
+                continue
             if mid:
-                seen_mal_ids.add(str(mid))
+                seen_mal_ids.add(mid)
+            metas.append(meta)
 
-            kitsu_id = None
-            if mid:
-                kitsu_id = kitsu_mappings.get(f"mal:{mid}")
-            if not kitsu_id:
-                kitsu_id = kitsu_mappings.get(f"anilist:{aid}")
-
-            stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mid}" if mid else f"anilist:{aid}")
-
-            metas.append({
-                "id": stremio_id,
-                "type": item_type,
-                "name": name,
-                "title_obj": title_pref,
-                "poster": poster,
-                "description": desc,
-                "score": float((m.get("averageScore") or 0) / 10),
-                "year": int(m.get("startDate", {}).get("year") or m.get("seasonYear") or 0),
-                "episodes": int(m.get("episodes") or 0),
-                "popularity": int(m.get("popularity") or 0)
-            })
-
-        # Blend unique Jikan/MAL discovery items for this catalog
-        j_items = jikan_map.get(catalog_id, [])
+        # Blend unique Jikan/MAL discovery items for base discovery catalogs
+        j_items = jikan_map.get(catalog_key, [])
         for item in j_items:
             j_mid = item.get("mal_id")
             if not j_mid or str(j_mid) in seen_mal_ids:
@@ -1326,11 +1367,12 @@ async def update_discovery_catalogs_cache() -> dict:
                 "score": float(item.get("score") or 0),
                 "year": j_yr,
                 "episodes": int(item.get("episodes") or 0),
-                "popularity": int(item.get("members") or 0)
+                "popularity": int(item.get("members") or 0),
+                "mal_id": str(j_mid),
             })
 
         # Enrich with Kitsu discovery items if catalog has fewer than 25 items
-        k_items = kitsu_map.get(catalog_id, [])
+        k_items = kitsu_map.get(catalog_key, [])
         for k_item in k_items:
             if len(metas) >= 25:
                 break
@@ -1366,25 +1408,78 @@ async def update_discovery_catalogs_cache() -> dict:
                 "score": float((float(attr.get("averageRating") or 0) / 10)),
                 "year": k_yr,
                 "episodes": int(attr.get("episodeCount") or 0),
-                "popularity": int(attr.get("userCount") or 0)
+                "popularity": int(attr.get("userCount") or 0),
             })
 
-        result_metas[catalog_id] = metas
+        result_metas[catalog_key] = metas
 
+    # Aliases
+    result_metas["anisync_seasonal:Current Season"] = list(result_metas.get("anisync_seasonal", []))
+    result_metas["anisync_spotlight:Feature Films"] = list(result_metas.get("anisync_spotlight", []))
+
+    # Cross-catalog de-duplication between Trending and Seasonal Showcase:
+    # Deprioritize top trending shows in Seasonal so user discovers fresh seasonal gems first
+    trending_top_ids = set(m["id"] for m in result_metas.get("anisync_trending", [])[:10])
+    seasonal_metas = result_metas.get("anisync_seasonal", [])
+    fresh_seasonal = [m for m in seasonal_metas if m["id"] not in trending_top_ids]
+    rep_seasonal = [m for m in seasonal_metas if m["id"] in trending_top_ids]
+    result_metas["anisync_seasonal"] = fresh_seasonal + rep_seasonal
+    result_metas["anisync_seasonal:Current Season"] = list(result_metas["anisync_seasonal"])
+
+    # Weekly Release Calendar processing:
+    # Sort main schedule items chronologically by next airing episode
+    schedule_metas = result_metas.get("anisync_schedule", [])
+    schedule_metas.sort(key=lambda x: x.get("airing_at") or float("inf"))
+    result_metas["anisync_schedule"] = schedule_metas
+
+    # Daily sub-genres for anisync_schedule
+    result_metas["anisync_schedule:Airing Today"] = [m for m in schedule_metas if m.get("is_today")]
+
+    # Populate each day of week for schedule
+    days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    for day in days_of_week:
+        day_items = [m for m in schedule_metas if m.get("airing_day") == day]
+        # Enrich from Jikan schedule if day has fewer than 10 items
+        for j_item in jikan_schedule:
+            b_day = ((j_item.get("broadcast") or {}).get("day") or "").rstrip("s").capitalize()
+            if b_day == day:
+                j_mid = str(j_item.get("mal_id") or "")
+                stremio_id = f"kitsu:{kitsu_mappings.get(f'mal:{j_mid}')}" if kitsu_mappings.get(f"mal:{j_mid}") else f"mal:{j_mid}"
+                if not any(x["id"] == stremio_id for x in day_items):
+                    j_name = j_item.get("title_english") or j_item.get("title") or "Unknown"
+                    images = j_item.get("images", {}).get("jpg", {})
+                    j_poster = images.get("large_image_url") or images.get("image_url") or ""
+                    day_items.append({
+                        "id": stremio_id,
+                        "type": "series",
+                        "name": j_name,
+                        "title_obj": {"english": j_name, "romaji": j_name},
+                        "poster": j_poster,
+                        "description": (j_item.get("synopsis") or "")[:200],
+                        "score": float(j_item.get("score") or 0),
+                        "year": int((j_item.get("aired", {}).get("from") or "")[:4] or 0),
+                        "episodes": int(j_item.get("episodes") or 0),
+                        "popularity": int(j_item.get("members") or 0),
+                        "airing_day": day,
+                    })
+        result_metas[f"anisync_schedule:{day}"] = day_items
+
+    # Save all discovery catalogs and sub-genre lists to database cache
+    for cat_key, cat_metas in result_metas.items():
         try:
             discovery_col.update_one(
-                {"catalog_id": catalog_id},
+                {"catalog_id": cat_key},
                 {
                     "$set": {
-                        "catalog_id": catalog_id,
-                        "metas": metas,
+                        "catalog_id": cat_key,
+                        "metas": cat_metas,
                         "expires_at": expires_at
                     }
                 },
                 upsert=True
             )
         except Exception as ex:
-            logging.error("Failed to write to discovery_catalogs_cache for %s: %s", catalog_id, ex)
+            logging.error("Failed to write to discovery_catalogs_cache for %s: %s", cat_key, ex)
 
     return result_metas
 
@@ -1477,9 +1572,28 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         from app.services.db import db
         discovery_col = db.get_collection("discovery_catalogs_cache")
         now = datetime.datetime.utcnow()
+
+        genre = filters.get("genre")
+        cache_key = f"{catalog_id}:{genre}" if genre else catalog_id
+
         cached = None
         try:
-            cached = discovery_col.find_one({"catalog_id": catalog_id})
+            cached = discovery_col.find_one({"catalog_id": cache_key})
+            if not cached and genre:
+                # Check base catalog for dynamic in-memory filter fallback
+                base_cached = discovery_col.find_one({"catalog_id": catalog_id})
+                if base_cached and base_cached.get("expires_at", now) > now:
+                    base_metas = base_cached.get("metas", [])
+                    if catalog_id == "anisync_schedule":
+                        if genre == "Airing Today":
+                            sub_metas = [m for m in base_metas if m.get("is_today")]
+                        else:
+                            sub_metas = [m for m in base_metas if m.get("airing_day") == genre]
+                        cached = {"metas": sub_metas, "expires_at": base_cached["expires_at"]}
+                    elif catalog_id == "anisync_seasonal" and genre == "Current Season":
+                        cached = base_cached
+                    elif catalog_id == "anisync_spotlight" and genre == "Feature Films":
+                        cached = base_cached
         except Exception as e:
             logging.error("Failed to query discovery_catalogs_cache: %s", e)
 
@@ -1489,11 +1603,17 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         else:
             try:
                 all_metas = await update_discovery_catalogs_cache()
-                metas = all_metas.get(catalog_id, [])
+                metas = all_metas.get(cache_key) or all_metas.get(catalog_id, [])
+                if not metas and genre and catalog_id == "anisync_schedule":
+                    base_metas = all_metas.get("anisync_schedule", [])
+                    if genre == "Airing Today":
+                        metas = [m for m in base_metas if m.get("is_today")]
+                    else:
+                        metas = [m for m in base_metas if m.get("airing_day") == genre]
             except Exception as e:
                 logging.error("Failed to update discovery catalogs from AniList: %s", e)
                 if cached:
-                    logging.warning("Returning expired discovery cache for %s", catalog_id)
+                    logging.warning("Returning expired discovery cache for %s", cache_key)
                     metas = cached["metas"]
                 else:
                     metas = []

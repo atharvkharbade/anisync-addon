@@ -28,6 +28,8 @@ def is_trusted_url(url: str) -> bool:
             "simkl.in",
             "simkl.com",
             "kitsu.io",
+            "kitsu.app",
+            "fanart.tv",
             "metahub.space",
             "ratingposterdb.com",
             "topposters.com",
