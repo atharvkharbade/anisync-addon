@@ -315,30 +315,6 @@
         margin-bottom: 1rem;
     }
 
-    .btn-save-preferences {
-        background: rgba(255, 255, 255, 0.03);
-        color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        border-radius: 8px;
-        padding: 0.65rem 1.25rem;
-        font-weight: 600;
-        font-size: 0.95rem;
-        width: 100%;
-        transition: background 0.2s ease, border-color 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .btn-save-preferences:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.38);
-        color: #ffffff !important;
-    }
-
-    .btn-save-preferences:active {
-        background: rgba(255, 255, 255, 0.05);
-    }
 
     /* Custom Dropdown select menu styling */
     .custom-select-wrapper {
@@ -792,37 +768,33 @@
     }
     .btn-save-preferences {
         min-height: 44px;
-        background: #ffffff;
-        color: #09090b !important;
+        background: linear-gradient(135deg, #0284c7 0%, #02a9ff 100%);
+        color: #ffffff !important;
         border: none;
         padding: 0.72rem 1.2rem;
         border-radius: 9px;
-        font-weight: 700;
+        font-weight: 600;
         font-size: 0.875rem;
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: background 0.2s ease, opacity 0.2s ease;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
     }
     .btn-save-preferences * {
-        color: #09090b !important;
+        color: #ffffff !important;
     }
     .btn-save-preferences:hover {
-        background: #f1f5f9;
-        color: #000000 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
+        background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+        color: #ffffff !important;
     }
     .btn-save-preferences:hover * {
-        color: #000000 !important;
+        color: #ffffff !important;
     }
     .btn-save-preferences:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        opacity: 0.9;
     }
     .btn-save-preferences:focus-visible {
-        outline: 2px solid #ffffff;
+        outline: 2px solid #02a9ff;
         outline-offset: 2px;
     }
     @media (min-width: 768px) {
