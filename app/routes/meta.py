@@ -227,7 +227,10 @@ def map_kitsu_to_stremio(
         elif img.get("coverType") == "Poster" and not anizp_poster:
             anizp_poster = img.get("url")
         elif img.get("coverType") in ["Clearlogo", "Logo"] and not anizp_logo:
-            anizp_logo = img.get("url")
+            img_url = img.get("url") or ""
+            # Filter out TheTVDB square icons/avatars (which AniZip mistakenly tags as Clearlogo)
+            if "/icons/" not in img_url and "/icon/" not in img_url:
+                anizp_logo = img_url
 
     poster_data = attributes.get("posterImage") or {}
     kitsu_poster = poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or ""
@@ -253,7 +256,7 @@ def map_kitsu_to_stremio(
     logo = anizp_logo
     if not logo and cinemeta_data:
         logo = cinemeta_data.get("logo")
-    if not logo and imdb_id:
+    if not logo and not cinemeta_data and imdb_id:
         logo = f"https://images.metahub.space/logo/medium/{imdb_id}/img"
 
     average_rating = attributes.get("averageRating")
