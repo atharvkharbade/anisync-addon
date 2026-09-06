@@ -673,34 +673,39 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         # Collect dynamic metadata headers
         dynamic_headers = []
 
-        user_status_hdr = build_user_status_header(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
-        if user_status_hdr:
-            dynamic_headers.append(user_status_hdr)
+        show_tracking = user.get("show_tracking_in_synopsis", True) if user else True
+        show_airing = user.get("show_airing_in_synopsis", True) if user else True
 
-        airing_prov = effective_provs.get("airing", "anilist")
-        al_data = al_data_override if (airing_prov == "anilist" and al_data_override) else None
-        if airing_prov == "anilist" and not al_data and anilist_id:
-            try:
-                from app.api.anilist import get_media_status
+        if show_tracking:
+            user_status_hdr = build_user_status_header(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
+            if user_status_hdr:
+                dynamic_headers.append(user_status_hdr)
 
-                token = user.get("anilist_token", "") if user else ""
-                al_data = await asyncio.wait_for(get_media_status(token, int(anilist_id)), timeout=3.0)
-            except Exception as e:
-                logging.debug("Could not fetch AniList media status for airing countdown: %s", e)
+        if show_airing:
+            airing_prov = effective_provs.get("airing", "anilist")
+            al_data = al_data_override if (airing_prov == "anilist" and al_data_override) else None
+            if airing_prov == "anilist" and not al_data and anilist_id:
+                try:
+                    from app.api.anilist import get_media_status
 
-        mal_data_airing = mal_data_override if (airing_prov == "mal" and mal_data_override) else None
-        if airing_prov == "mal" and not mal_data_airing and mal_id:
-            try:
-                from app.api.jikan import get_anime_by_id
+                    token = user.get("anilist_token", "") if user else ""
+                    al_data = await asyncio.wait_for(get_media_status(token, int(anilist_id)), timeout=3.0)
+                except Exception as e:
+                    logging.debug("Could not fetch AniList media status for airing countdown: %s", e)
 
-                mal_data_airing = await asyncio.wait_for(get_anime_by_id(mal_id), timeout=3.0)
-            except Exception:
-                pass
+            mal_data_airing = mal_data_override if (airing_prov == "mal" and mal_data_override) else None
+            if airing_prov == "mal" and not mal_data_airing and mal_id:
+                try:
+                    from app.api.jikan import get_anime_by_id
 
-        if airing_prov != "kitsu":
-            next_airing_hdr = build_next_airing_header(al_data, mal_data=mal_data_airing)
-            if next_airing_hdr:
-                dynamic_headers.append(next_airing_hdr)
+                    mal_data_airing = await asyncio.wait_for(get_anime_by_id(mal_id), timeout=3.0)
+                except Exception:
+                    pass
+
+            if airing_prov != "kitsu":
+                next_airing_hdr = build_next_airing_header(al_data, mal_data=mal_data_airing)
+                if next_airing_hdr:
+                    dynamic_headers.append(next_airing_hdr)
 
         filler_arc_hdr = build_filler_arc_header(anizp_data, watched_progress=watched_progress, mal_id=mal_id)
         if filler_arc_hdr:

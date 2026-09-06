@@ -1003,6 +1003,10 @@
                     value="{{ 'true' if user.get('hide_nsfw', True) else 'false' }}">
                 <input type="hidden" id="show_watched_tags_val" name="show_watched_tags"
                     value="{{ 'true' if user.get('show_watched_tags', False) else 'false' }}">
+                <input type="hidden" id="show_tracking_in_synopsis_val" name="show_tracking_in_synopsis"
+                    value="{{ 'true' if user.get('show_tracking_in_synopsis', True) else 'false' }}">
+                <input type="hidden" id="show_airing_in_synopsis_val" name="show_airing_in_synopsis"
+                    value="{{ 'true' if user.get('show_airing_in_synopsis', True) else 'false' }}">
                 <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
                     value="{{ 'true' if user.get('combine_watchlists', False) else 'false' }}">
                 <input type="hidden" id="custom_sort_enabled_val" name="custom_sort_enabled"
@@ -1270,6 +1274,17 @@
                     </label>
                 </div>
 
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="show_airing_in_synopsis" {% if
+                        user.get('show_airing_in_synopsis', True) %}checked{% endif %}>
+                    <label class="form-check-label ms-1" for="show_airing_in_synopsis">
+                        <span class="fw-medium d-block">Show next airing countdown in synopsis</span>
+                        <span class="text-secondary small d-block">
+                            Prepends releasing anime countdowns (e.g. <code style="font-size: 0.75rem; color: #38bdf8;">[Next Airing: Episode 10 releases in 23h]</code>) to currently airing anime descriptions.
+                        </span>
+                    </label>
+                </div>
+
                 <div class="form-check form-switch mb-0">
                     <input class="form-check-input" type="checkbox" role="switch" id="hide_nsfw" {% if
                         user.get('hide_nsfw', True) %}checked{% endif %}>
@@ -1335,6 +1350,17 @@
                             <span class="fw-medium d-block">Show watched tags on episodes</span>
                             <span class="text-secondary small d-block">
                                 Prepends a [Watched] tag to episode titles in the Stremio episode list.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="show_tracking_in_synopsis" {% if
+                            user.get('show_tracking_in_synopsis', True) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="show_tracking_in_synopsis">
+                            <span class="fw-medium d-block">Show tracking status in synopsis</span>
+                            <span class="text-secondary small d-block">
+                                Prepends your live watch status, episode progress, and rating (e.g. <code style="font-size: 0.75rem; color: #38bdf8;">[Status: Watching • Progress: 9/12 Ep]</code>) to the synopsis.
                             </span>
                         </label>
                     </div>
@@ -2075,6 +2101,8 @@
                     </div>
                 </div>
             </div>
+
+
 
 
 
@@ -3457,6 +3485,14 @@
         const showWatched = document.getElementById('show_watched_tags');
         const showWatchedVal = document.getElementById('show_watched_tags_val');
         if (showWatched && showWatchedVal) showWatchedVal.value = showWatched.checked ? 'true' : 'false';
+
+        const showTracking = document.getElementById('show_tracking_in_synopsis');
+        const showTrackingVal = document.getElementById('show_tracking_in_synopsis_val');
+        if (showTracking && showTrackingVal) showTrackingVal.value = showTracking.checked ? 'true' : 'false';
+
+        const showAiring = document.getElementById('show_airing_in_synopsis');
+        const showAiringVal = document.getElementById('show_airing_in_synopsis_val');
+        if (showAiring && showAiringVal) showAiringVal.value = showAiring.checked ? 'true' : 'false';
 
         const malEnabledCheckbox = document.getElementById('mal_enabled');
         const malEnabledVal = document.getElementById('mal_enabled_val');

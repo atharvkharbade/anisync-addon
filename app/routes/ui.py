@@ -235,6 +235,10 @@ async def configure(user_id: str = ""):
             user["hide_nsfw"] = form.get("hide_nsfw") == "true"
         if "show_watched_tags" in form:
             user["show_watched_tags"] = form.get("show_watched_tags") == "true"
+        if "show_tracking_in_synopsis" in form:
+            user["show_tracking_in_synopsis"] = form.get("show_tracking_in_synopsis") == "true"
+        if "show_airing_in_synopsis" in form:
+            user["show_airing_in_synopsis"] = form.get("show_airing_in_synopsis") == "true"
 
         if "custom_sort_enabled" in form:
             user["custom_sort_enabled"] = form.get("custom_sort_enabled") == "true"
