@@ -555,6 +555,22 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> str | None:
     except Exception as e:
         logging.warning("Failed to resolve simkl_id=%s via user watchlist cache: %s", simkl_id, e)
 
+    # Fallback 1.5: Local Fribb Mappings Database
+    try:
+        simkl_id_int = int(simkl_id) if simkl_id.isdigit() else None
+        f_query = [{"simkl_id": str(simkl_id)}]
+        if simkl_id_int is not None:
+            f_query.append({"simkl_id": simkl_id_int})
+        fribb_doc = db.fribb_mappings.find_one({"$or": f_query})
+        if fribb_doc and fribb_doc.get("kitsu_id"):
+            kid = str(fribb_doc["kitsu_id"])
+            mid = fribb_doc.get("mal_id")
+            aid = fribb_doc.get("anilist_id")
+            cache_ids(kid, mid, aid, simkl_id)
+            return kid
+    except Exception as e:
+        logging.warning("Failed to resolve simkl_id=%s via fribb_mappings: %s", simkl_id, e)
+
     # Fallback 2: Simkl API lookup
     client = get_client()
     try:
@@ -637,14 +653,19 @@ async def bulk_resolve_to_kitsu(
     # 2. Check fribb_mappings
     unresolved_mal = [x for x in (mal_ids or []) if f"mal:{x}" not in resolved]
     unresolved_al = [x for x in (anilist_ids or []) if f"anilist:{x}" not in resolved]
+    unresolved_simkl = [x for x in (simkl_ids or []) if f"simkl:{x}" not in resolved]
 
-    if unresolved_mal or unresolved_al:
+    if unresolved_mal or unresolved_al or unresolved_simkl:
         try:
             fribb_query = []
             if unresolved_mal:
                 fribb_query.append({"mal_id": {"$in": [str(x) for x in unresolved_mal]}})
             if unresolved_al:
                 fribb_query.append({"anilist_id": {"$in": [str(x) for x in unresolved_al]}})
+            if unresolved_simkl:
+                simkl_strs = [str(x) for x in unresolved_simkl]
+                simkl_ints = [int(x) for x in unresolved_simkl if str(x).isdigit()]
+                fribb_query.append({"simkl_id": {"$in": simkl_strs + simkl_ints}})
             if fribb_query:
                 fribb_docs = list(db.fribb_mappings.find({"$or": fribb_query}))
                 for doc in fribb_docs:
@@ -655,6 +676,8 @@ async def bulk_resolve_to_kitsu(
                         resolved[f"mal:{doc['mal_id']}"] = k_id
                     if doc.get("anilist_id"):
                         resolved[f"anilist:{doc['anilist_id']}"] = k_id
+                    if doc.get("simkl_id"):
+                        resolved[f"simkl:{doc['simkl_id']}"] = k_id
         except Exception as e:
             logging.error("bulk_resolve_to_kitsu: fribb query failed: %s", e)
 

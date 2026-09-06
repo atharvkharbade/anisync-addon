@@ -21,6 +21,7 @@ async def sync_simkl(
     episode: int,
     content_type: str,
     sync_unlisted: bool,
+    simkl_id: str | None = None,
 ) -> UpdateStatus:
     """Sync watch progress for a movie or show episode to Simkl."""
     user_id = user.get("uid")
@@ -52,6 +53,9 @@ async def sync_simkl(
                     show_ids = item.get("ids") or {}
 
                 # Match against any of the provided IDs
+                if simkl_id and str(show_ids.get("simkl")) == str(simkl_id):
+                    found = True
+                    break
                 if mal_id and str(show_ids.get("mal")) == str(mal_id):
                     found = True
                     break
@@ -64,10 +68,11 @@ async def sync_simkl(
 
             if not found:
                 logger.info(
-                    "Simkl sync skipped: item kitsu:%s / mal:%s / al:%s not in user watchlist.",
+                    "Simkl sync skipped: item kitsu:%s / mal:%s / al:%s / simkl:%s not in user watchlist.",
                     kitsu_id,
                     mal_id,
                     anilist_id,
+                    simkl_id,
                 )
                 return UpdateStatus.NOT_LIST
         except Exception as e:
@@ -84,13 +89,14 @@ async def sync_simkl(
             kitsu_id=kitsu_id,
             mal_id=mal_id,
             anilist_id=anilist_id,
+            simkl_id=simkl_id,
             episode=episode,
             content_type=content_type,
         )
         if success:
             reset_simkl_error_counter(user_id)
             logger.info(
-                "Simkl updated: kitsu=%s mal=%s al=%s ep=%d type=%s", kitsu_id, mal_id, anilist_id, episode, content_type
+                "Simkl updated: kitsu=%s mal=%s al=%s simkl=%s ep=%d type=%s", kitsu_id, mal_id, anilist_id, simkl_id, episode, content_type
             )
             return UpdateStatus.OK
         else:

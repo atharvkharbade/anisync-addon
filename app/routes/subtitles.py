@@ -64,13 +64,27 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
     mal_id, anilist_id = await resolve(kitsu_id)
     logging.info("Resolved: kitsu=%s → mal=%s anilist=%s", kitsu_id, mal_id, anilist_id)
 
+    simkl_id = None
+    from app.services.db import get_cached_ids, db, update_user_watchlist_cache_progress
+
+    cached_ids = get_cached_ids(kitsu_id)
+    if cached_ids:
+        simkl_id = cached_ids.get("simkl_id")
+    if not simkl_id:
+        try:
+            fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
+            if fribb_doc and fribb_doc.get("simkl_id"):
+                simkl_id = str(fribb_doc["simkl_id"])
+        except Exception:
+            pass
+
     tasks = []
     if mal_enabled and mal_id and user.get("mal_access_token"):
         tasks.append(sync_mal(user, mal_id, episode, sync_unlisted))
     if anilist_enabled and anilist_id and user.get("anilist_token"):
         tasks.append(sync_anilist(user, anilist_id, episode, sync_unlisted))
     if simkl_enabled and user.get("simkl_access_token"):
-        tasks.append(sync_simkl(user, kitsu_id, mal_id, anilist_id, episode, content_type, sync_unlisted))
+        tasks.append(sync_simkl(user, kitsu_id, mal_id, anilist_id, episode, content_type, sync_unlisted, simkl_id=simkl_id))
 
     if tasks:
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -84,13 +98,6 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
                     any_updated = True
 
         if any_updated:
-            from app.services.db import get_cached_ids, update_user_watchlist_cache_progress
-
-            simkl_id = None
-            cached_ids = get_cached_ids(kitsu_id)
-            if cached_ids:
-                simkl_id = cached_ids.get("simkl_id")
-
             update_user_watchlist_cache_progress(
                 user_id=user_id,
                 episode=episode,

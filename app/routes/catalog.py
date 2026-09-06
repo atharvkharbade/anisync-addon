@@ -665,6 +665,9 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     yr = int(item["anilist_item"].get("media", {}).get("startDate", {}).get("year", 0) or item["anilist_item"].get("media", {}).get("seasonYear", 0) or 0)
                 if not yr and item.get("mal_item"):
                     yr = int(item["mal_item"].get("node", {}).get("start_season", {}).get("year", 0) or 0)
+                if not yr and item.get("simkl_item"):
+                    show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
+                    yr = int(show_obj.get("year", 0) or 0)
             if not yr and isinstance(item, dict):
                 try:
                     yr = int(item.get("year") or item.get("releaseInfo") or 0)
@@ -680,12 +683,15 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                 eps = int(item.get("media", {}).get("episodes", 0) or 0)
             elif tracker_type == "simkl":
                 show_obj = item.get("show") or item.get("anime") or item
-                eps = int(show_obj.get("total_episodes", 0) or 0)
+                eps = int(show_obj.get("total_episodes", 0) or show_obj.get("episodes_count", 0) or show_obj.get("num_episodes", 0) or item.get("total_episodes_count", 0) or 0)
             elif tracker_type == "combined":
                 if item.get("anilist_item"):
                     eps = int(item["anilist_item"].get("media", {}).get("episodes", 0) or 0)
                 if not eps and item.get("mal_item"):
                     eps = int(item["mal_item"].get("node", {}).get("num_episodes", 0) or 0)
+                if not eps and item.get("simkl_item"):
+                    show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
+                    eps = int(item["simkl_item"].get("total_episodes_count") or show_obj.get("episodes_count") or show_obj.get("num_episodes") or show_obj.get("total_episodes", 0) or 0)
             if not eps and isinstance(item, dict):
                 try:
                     eps = int(item.get("episodes") or item.get("totalEpisodes") or 0)
@@ -700,11 +706,18 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
             elif tracker_type == "anilist":
                 prog = int(item.get("progress", 0) or 0)
             elif tracker_type == "simkl":
-                prog = int(item.get("user_episodes_watched", 0) or item.get("watched_episodes_count", 0) or 0)
+                prog = int(item.get("user_episodes_watched", 0) or item.get("watched_episodes_count", 0) or item.get("episodes_watched", 0) or item.get("progress", 0) or 0)
             elif tracker_type == "combined":
                 al_p = int(item.get("anilist_item", {}).get("progress", 0) or 0)
                 mal_p = int(item.get("mal_item", {}).get("node", {}).get("my_list_status", {}).get("num_episodes_watched", 0) or 0)
-                prog = max(al_p, mal_p)
+                simkl_item = item.get("simkl_item") or {}
+                simkl_p = int(
+                    simkl_item.get("watched_episodes_count")
+                    or simkl_item.get("episodes_watched")
+                    or simkl_item.get("progress", 0)
+                    or 0
+                )
+                prog = max(al_p, mal_p, simkl_p)
             if not prog and isinstance(item, dict):
                 try:
                     prog = float(item.get("progress") or 0)
@@ -720,11 +733,14 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                 pop = int(item.get("media", {}).get("popularity", 0) or 0)
             elif tracker_type == "simkl":
                 show_obj = item.get("show") or item.get("anime") or item
-                pop = int(show_obj.get("users_count", 0) or 0)
+                pop = int(show_obj.get("users_count") or show_obj.get("user_count") or show_obj.get("watchers") or 0)
             elif tracker_type == "combined":
                 al_p = int(item.get("anilist_item", {}).get("media", {}).get("popularity", 0) or 0)
                 mal_p = int(item.get("mal_item", {}).get("node", {}).get("num_list_users", 0) or 0)
-                pop = max(al_p, mal_p)
+                simkl_item = item.get("simkl_item") or {}
+                show_obj = simkl_item.get("show") or simkl_item.get("anime") or simkl_item
+                simkl_pop = int(show_obj.get("users_count") or show_obj.get("user_count") or show_obj.get("watchers") or 0)
+                pop = max(al_p, mal_p, simkl_pop)
             if not pop and isinstance(item, dict):
                 try:
                     pop = float(item.get("popularity") or 0)
@@ -740,11 +756,17 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
             elif tracker_type == "anilist":
                 ts = item.get("createdAt") or item.get("updatedAt") or 0
             elif tracker_type == "simkl":
-                ts = parse_iso_timestamp(item.get("last_watched_at"))
+                ts = parse_iso_timestamp(item.get("added_to_watchlist_at") or item.get("last_watched_at"))
             elif tracker_type == "combined":
                 mal_ts = parse_iso_timestamp((item.get("mal_item", {}).get("node", {}).get("my_list_status") or {}).get("updated_at", ""))
                 al_ts = item.get("anilist_item", {}).get("createdAt") or item.get("anilist_item", {}).get("updatedAt") or 0
-                ts = max(mal_ts, al_ts)
+                simkl_item = item.get("simkl_item") or {}
+                simkl_ts = parse_iso_timestamp(
+                    simkl_item.get("added_to_watchlist_at")
+                    or simkl_item.get("last_watched_at")
+                    or ""
+                )
+                ts = max(mal_ts, al_ts, simkl_ts)
             return ts
 
         # Fallback key extraction if item is formatted Stremio meta dict
@@ -2748,7 +2770,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 if airing_mal_ids or airing_al_ids:
                     bulk_details = await fetch_anilist_details_in_bulk(airing_mal_ids, anilist_ids=airing_al_ids)
 
-            def compute_simkl_flags(item, mal_id):
+            def compute_simkl_flags(item, mal_id, al_id=None):
                 show_obj = item.get("show") or item.get("anime") or item
                 progress = (
                     item.get("watched_episodes_count") or item.get("episodes_watched") or item.get("progress") or 0
@@ -2760,7 +2782,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     or 0
                 )
 
-                al_media = (bulk_details.get(mal_id) or {}) if mal_id else {}
+                al_media = {}
+                if mal_id and mal_id in bulk_details:
+                    al_media = bulk_details[mal_id]
+                elif al_id and al_id in bulk_details:
+                    al_media = bulk_details[al_id]
                 next_ep = al_media.get("nextAiringEpisode")
                 next_ep_num = next_ep.get("episode") if next_ep else None
                 next_ep_airing_at = next_ep.get("airingAt") if next_ep else None
@@ -2829,7 +2855,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         show_obj = item.get("show") or item.get("anime") or item
                         ids = show_obj.get("ids") or {}
                         mal_id = str(ids.get("mal") or "") or None
-                        is_new, _, _, _ = compute_simkl_flags(item, mal_id)
+                        al_id = str(ids.get("anilist") or "") or None
+                        is_new, _, _, _ = compute_simkl_flags(item, mal_id, al_id=al_id)
                         if is_new:
                             new_ep_items.append(item)
                         else:
@@ -2852,10 +2879,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     show_obj = item.get("show") or item.get("anime") or item
                     ids = show_obj.get("ids") or {}
                     mal_id = str(ids.get("mal") or "") or None
+                    al_id = str(ids.get("anilist") or "") or None
 
-                    is_new_ep, has_unwatched, latest_aired_at, _ = compute_simkl_flags(item, mal_id)
+                    is_new_ep, has_unwatched, latest_aired_at, _ = compute_simkl_flags(item, mal_id, al_id=al_id)
 
-                    al_media = (bulk_details.get(mal_id) or {}) if mal_id else {}
+                    al_media = ((bulk_details.get(mal_id) if mal_id else None) or (bulk_details.get(al_id) if al_id else None) or {})
                     is_airing = False
                     if al_media:
                         al_status = al_media.get("status", "")
@@ -2963,11 +2991,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 show_ids = show_obj.get("ids") or {}
                 simkl_id = str(show_ids.get("simkl") or "")
                 mal_id = str(show_ids.get("mal") or "") or None
+                al_id = str(show_ids.get("anilist") or "") or None
 
                 progress = (
                     item.get("watched_episodes_count") or item.get("episodes_watched") or item.get("progress") or 0
                 )
-                total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or "?"
+                total_eps = show_obj.get("episodes_count") or show_obj.get("num_episodes") or item.get("total_episodes_count") or "?"
                 name = get_simkl_display_title(show_obj, title_lang, bulk_details=bulk_details)
                 poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
                 if poster and not poster.startswith("http"):
@@ -2975,7 +3004,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 is_new_ep = False
                 if simkl_status in ["watching", "plantowatch"]:
-                    is_new_ep, _, _, _ = compute_simkl_flags(item, mal_id)
+                    is_new_ep, _, _, _ = compute_simkl_flags(item, mal_id, al_id=al_id)
 
                 if is_new_ep and enable_new_ep_badge and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
@@ -2988,6 +3017,15 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 simkl_media_type = show_obj.get("anime_type") or show_obj.get("type") or "series"
                 stremio_type = "movie" if simkl_media_type == "movie" else "series"
 
+                simkl_status_titles = {
+                    "watching": "Watching",
+                    "plantowatch": "Plan to Watch",
+                    "completed": "Completed",
+                    "hold": "On Hold",
+                    "dropped": "Dropped",
+                }
+                disp_simkl_status = simkl_status_titles.get(simkl_status, simkl_status.replace('_', ' ').title())
+
                 metas.append(
                     {
                         "id": stremio_id,
@@ -2995,7 +3033,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         "name": name,
                         "poster": poster,
                         "description": (
-                            f"Simkl Watchlist - {simkl_status.replace('_', ' ').title()}.\n"
+                            f"Simkl Watchlist - {disp_simkl_status}.\n"
                             f"Progress: {progress} / {total_eps}."
                         ),
                     }

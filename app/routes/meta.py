@@ -600,11 +600,18 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
         # Resolve simkl_id if not present but we have kitsu_id
         if not simkl_id and kitsu_id:
-            from app.services.db import get_cached_ids
+            from app.services.db import get_cached_ids, db
 
             cached_ids = get_cached_ids(kitsu_id)
             if cached_ids:
                 simkl_id = cached_ids.get("simkl_id")
+            if not simkl_id:
+                try:
+                    fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
+                    if fribb_doc and fribb_doc.get("simkl_id"):
+                        simkl_id = str(fribb_doc["simkl_id"])
+                except Exception as e:
+                    logging.warning("Failed to query fribb_mappings for simkl_id: %s", e)
         show_filler = user.get("show_filler_tags", True) if user else True
         show_watched = user.get("show_watched_tags", False) if user else False
         watched_progress = 0
@@ -721,14 +728,16 @@ def build_user_status_header(user_id: str, mal_id: str | None, anilist_id: str |
         "completed": "Completed",
         "planning": "Plan to Watch",
         "plan_to_watch": "Plan to Watch",
+        "plantowatch": "Plan to Watch",
         "on_hold": "On Hold",
         "paused": "On Hold",
+        "hold": "On Hold",
         "dropped": "Dropped",
     }
     status_title = status_display_map.get(status, status.capitalize() if status else "Tracked")
 
     parts = [f"Status: {status_title}"]
-    if status in ["watching", "current", "on_hold", "paused", "dropped", "completed"] and progress > 0:
+    if status in ["watching", "current", "on_hold", "paused", "hold", "dropped", "completed"] and progress > 0:
         if total_eps > 0:
             parts.append(f"Progress: {progress}/{total_eps} Ep")
         else:

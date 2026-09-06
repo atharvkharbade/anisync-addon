@@ -117,6 +117,7 @@ async def sync_history(
     anilist_id: str | None,
     episode: int,
     content_type: str,
+    simkl_id: str | None = None,
 ) -> bool:
     """Post watch history update to Simkl."""
     client = get_client()
@@ -137,6 +138,8 @@ async def sync_history(
         ids["anilist"] = (
             int(anilist_id) if isinstance(anilist_id, (int, str)) and str(anilist_id).isdigit() else anilist_id
         )
+    if simkl_id:
+        ids["simkl"] = int(simkl_id) if isinstance(simkl_id, (int, str)) and str(simkl_id).isdigit() else simkl_id
 
     # Format the payload based on movie vs show content type
     if content_type == "movie":

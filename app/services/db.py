@@ -630,7 +630,14 @@ def get_user_anime_meta_status(
                     if match:
                         status = (item.get("status") or "").lower()
                         progress = item.get("watched_episodes_count") or item.get("episodes_watched") or item.get("progress") or 0
-                        total_eps = show_obj.get("episodes") or 0
+                        total_eps = (
+                            item.get("total_episodes_count")
+                            or show_obj.get("total_episodes_count")
+                            or show_obj.get("episodes_count")
+                            or show_obj.get("num_episodes")
+                            or show_obj.get("episodes")
+                            or 0
+                        )
                         score = item.get("user_rating") or item.get("score") or 0
                         return {"status": status, "progress": progress, "total_episodes": total_eps, "score": score}
 
