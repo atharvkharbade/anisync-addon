@@ -143,6 +143,10 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
     al_strs = [a for a in known_al if a]
     if al_strs:
         or_clauses.append({"anilist_id": {"$in": al_strs}})
+    s_strs = [s for s in known_simkl if s]
+    s_ints = [int(s) for s in known_simkl if s.isdigit()]
+    if s_strs:
+        or_clauses.append({"simkl_id": {"$in": list(set(s_strs + s_ints))}})
 
     if or_clauses:
         try:
@@ -153,22 +157,43 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                 k = str(doc["kitsu_id"]) if doc.get("kitsu_id") else None
                 m_id = str(doc["mal_id"]) if doc.get("mal_id") else None
                 a_id = str(doc["anilist_id"]) if doc.get("anilist_id") else None
-                s_id = str(doc["simkl_id"]) if doc.get("simkl_id") else None
+                s_id = str(doc.get("simkl_id") or doc.get("simkl") or "") or None
                 im_id = clean_imdb_id(doc.get("imdb_id"))
 
-                entry = {
-                    "kitsu_id": k,
-                    "mal_id": m_id,
-                    "anilist_id": a_id,
-                    "simkl_id": s_id,
-                    "imdb_id": im_id,
-                }
-                if k:
-                    id_map[("kitsu", k)] = entry
-                if m_id:
-                    id_map[("mal", m_id)] = entry
-                if a_id:
-                    id_map[("anilist", a_id)] = entry
+                keys_to_update = []
+                for id_type, id_val in [("kitsu", k), ("mal", m_id), ("anilist", a_id), ("simkl", s_id)]:
+                    if id_val:
+                        keys_to_update.append((id_type, id_val))
+
+                # Find any existing entry among these keys
+                existing_entry = None
+                for key_tuple in keys_to_update:
+                    if key_tuple in id_map:
+                        existing_entry = id_map[key_tuple]
+                        break
+
+                if not existing_entry:
+                    existing_entry = {
+                        "kitsu_id": k,
+                        "mal_id": m_id,
+                        "anilist_id": a_id,
+                        "simkl_id": s_id,
+                        "imdb_id": im_id,
+                    }
+                else:
+                    if k and not existing_entry.get("kitsu_id"):
+                        existing_entry["kitsu_id"] = k
+                    if m_id and not existing_entry.get("mal_id"):
+                        existing_entry["mal_id"] = m_id
+                    if a_id and not existing_entry.get("anilist_id"):
+                        existing_entry["anilist_id"] = a_id
+                    if s_id and not existing_entry.get("simkl_id"):
+                        existing_entry["simkl_id"] = s_id
+                    if im_id and not existing_entry.get("imdb_id"):
+                        existing_entry["imdb_id"] = im_id
+
+                for key_tuple in keys_to_update:
+                    id_map[key_tuple] = existing_entry
         except Exception as e:
             logging.error("enrich_catalog_metas_artwork: ID lookup failed: %s", e)
 
@@ -181,6 +206,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
             resolved = id_map[("mal", item_info["mal_id"])]
         elif item_info["anilist_id"] and ("anilist", item_info["anilist_id"]) in id_map:
             resolved = id_map[("anilist", item_info["anilist_id"])]
+        elif item_info["simkl_id"] and ("simkl", item_info["simkl_id"]) in id_map:
+            resolved = id_map[("simkl", item_info["simkl_id"])]
 
         if resolved:
             if not item_info["imdb_id"] and resolved.get("imdb_id"):
@@ -195,6 +222,9 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
             if not item_info["kitsu_id"] and resolved.get("kitsu_id"):
                 item_info["kitsu_id"] = resolved["kitsu_id"]
                 known_kitsu.add(resolved["kitsu_id"])
+            if not item_info["simkl_id"] and resolved.get("simkl_id"):
+                item_info["simkl_id"] = resolved["simkl_id"]
+                known_simkl.add(resolved["simkl_id"])
 
     # 3. Bulk fetch cached rich metadata (AniZip, Cinemeta, Kitsu)
     anizp_by_key = {}
