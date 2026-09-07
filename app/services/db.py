@@ -799,6 +799,7 @@ def get_cached_anilist_media(anilist_id: int) -> dict | None:
         return None
 
 
+
 def cache_anilist_media(anilist_id: int, media_data: dict) -> None:
     """Cache AniList media metadata with smart TTL."""
     if not media_data or not isinstance(media_data, dict):
@@ -842,4 +843,19 @@ def cache_anilist_media(anilist_id: int, media_data: dict) -> None:
         )
     except Exception as e:
         logging.error("Failed to write to anilist_meta_cache for anilist_id=%s: %s", anilist_id, e)
+
+
+def get_al_cover(aid: str | int | None) -> str:
+    """Return cached AniList cover image URL from anilist_airing_cache if available."""
+    if not aid:
+        return ""
+    try:
+        col = db.get_collection("anilist_airing_cache")
+        doc = col.find_one({"anilist_id": int(aid)})
+        if doc and doc.get("coverImage"):
+            return str(doc["coverImage"])
+    except Exception:
+        pass
+    return ""
+
 

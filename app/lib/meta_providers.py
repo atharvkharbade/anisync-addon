@@ -33,3 +33,11 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "backdrop": "fanart",
             "airing": "anilist",
         }
+
+
+def get_al_cover(aid: str | int | None) -> str:
+    """Convenience accessor to retrieve cached AniList cover image URL."""
+    from app.services.db import get_al_cover as _get_al_cover
+
+    return _get_al_cover(aid)
+

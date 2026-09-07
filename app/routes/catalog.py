@@ -914,7 +914,7 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         m_copy["type"] = item_type
 
         # Apply metadata provider poster preference (unless this is an individual tracker watchlist)
-        from app.lib.meta_providers import get_effective_meta_providers
+        from app.lib.meta_providers import get_al_cover, get_effective_meta_providers
 
         effective = get_effective_meta_providers(user)
         poster_pref = effective.get("poster", "kitsu")
@@ -934,17 +934,10 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                 if al_poster:
                     new_poster = al_poster
                 elif m_copy.get("anilist_id"):
-                    try:
-                        from app.services.db import db
-
-                        doc = db.get_collection("anilist_airing_cache").find_one(
-                            {"anilist_id": int(m_copy["anilist_id"])}
-                        )
-                        if doc and doc.get("coverImage"):
-                            new_poster = doc["coverImage"]
-                            m_copy["poster_al"] = doc["coverImage"]
-                    except Exception:
-                        pass
+                    al_cov = get_al_cover(m_copy.get("anilist_id"))
+                    if al_cov:
+                        new_poster = al_cov
+                        m_copy["poster_al"] = al_cov
             elif poster_pref == "mal":
                 if m_copy.get("poster_mal"):
                     new_poster = m_copy["poster_mal"]
@@ -1526,7 +1519,7 @@ async def update_discovery_catalogs_cache() -> dict:
             except Exception:
                 pass
 
-            j_yr = 0
+            k_yr = 0
             try:
                 k_yr = int((attr.get("startDate") or "")[:4] or 0)
             except Exception:

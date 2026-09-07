@@ -466,17 +466,8 @@ async def get_recommendations_for_seeds(
                 except Exception:
                     pass
 
-                al_poster = ""
-                if aid:
-                    try:
-                        from app.services.db import db
-                        ac = db.get_collection("anilist_airing_cache").find_one({"anilist_id": int(aid)})
-                        if ac and ac.get("coverImage"):
-                            al_poster = ac["coverImage"]
-                    except Exception:
-                        pass
-
-                from app.lib.meta_providers import get_effective_meta_providers
+                from app.lib.meta_providers import get_al_cover, get_effective_meta_providers
+                al_poster = get_al_cover(aid)
                 rec_poster_pref = get_effective_meta_providers(user).get("poster", "kitsu")
                 chosen_poster = al_poster if (rec_poster_pref == "anilist" and al_poster) else poster
 
@@ -614,19 +605,8 @@ async def get_recommendations_for_seeds(
                 key = f"mal:{mid}" if mid else f"anilist:{aid}" if aid else f"kitsu:{r_item['kitsu_id']}"
                 syn = clean_html(r_item.get("description") or "")
 
-                al_poster = ""
-                if aid:
-                    try:
-                        from app.services.db import db
-
-                        ac = db.get_collection("anilist_airing_cache").find_one({"anilist_id": int(aid)})
-                        if ac and ac.get("coverImage"):
-                            al_poster = ac["coverImage"]
-                    except Exception:
-                        pass
-
-                from app.lib.meta_providers import get_effective_meta_providers
-
+                from app.lib.meta_providers import get_al_cover, get_effective_meta_providers
+                al_poster = get_al_cover(aid)
                 rec_poster_pref = get_effective_meta_providers(user).get("poster", "kitsu")
                 chosen_poster = al_poster if (rec_poster_pref == "anilist" and al_poster) else r_item["poster"]
 
@@ -1281,17 +1261,8 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 except Exception:
                     pass
 
-                al_poster = ""
-                if aid:
-                    try:
-                        from app.services.db import db
-                        ac = db.get_collection("anilist_airing_cache").find_one({"anilist_id": int(aid)})
-                        if ac and ac.get("coverImage"):
-                            al_poster = ac["coverImage"]
-                    except Exception:
-                        pass
-
-                from app.lib.meta_providers import get_effective_meta_providers
+                from app.lib.meta_providers import get_al_cover, get_effective_meta_providers
+                al_poster = get_al_cover(aid)
                 rec_poster_pref = get_effective_meta_providers(user).get("poster", "kitsu")
                 chosen_poster = al_poster if (rec_poster_pref == "anilist" and al_poster) else poster
 
