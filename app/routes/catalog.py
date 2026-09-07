@@ -1839,7 +1839,13 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     )
                     if poster:
                         poster = poster.split("?")[0]
-                    synopsis = attrs.get("synopsis") or ""
+                    cover_img = attrs.get("coverImage") or {}
+                    cover = (
+                        cover_img.get("large")
+                        or cover_img.get("original")
+                        or cover_img.get("small")
+                        or None
+                    )
                     metas.append(
                         {
                             "id": f"kitsu:{item['id']}",
@@ -1847,6 +1853,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             "name": title,
                             "title_obj": title_obj,
                             "poster": poster,
+                            "background": cover,
+                            "kitsu_id": str(item["id"]),
                             "description": synopsis[:200] + "..." if len(synopsis) > 200 else synopsis,
                             "ageRating": attrs.get("ageRating"),
                             "nsfw": attrs.get("nsfw"),
@@ -1880,6 +1888,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         large
                         medium
                       }
+                      bannerImage
                     }
                   }
                 }
@@ -2023,6 +2032,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                                 "name": title_name,
                                 "title_obj": title_obj,
                                 "poster": poster,
+                                "background": m.get("bannerImage"),
+                                "anilist_id": al_id,
+                                "mal_id": mal_id,
+                                "kitsu_id": kitsu_id,
                                 "description": clean_desc,
                                 "ageRating": "R18" if m.get("isAdult") else None,
                                 "nsfw": bool(m.get("isAdult")),
