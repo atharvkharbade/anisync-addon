@@ -378,6 +378,9 @@ async def get_recommendations_for_seeds(
                 "type": item_type,
                 "name": title,
                 "poster": poster,
+                "poster_al": poster,
+                "anilist_id": aid,
+                "mal_id": mid,
                 "score": rec.get("rating", 1),
                 "description": "Recommended based on your history.",
                 "synopsis": syn,
@@ -454,13 +457,40 @@ async def get_recommendations_for_seeds(
                 poster = node.get("main_picture", {}).get("large") or node.get("main_picture", {}).get("medium") or ""
                 syn = clean_html(node.get("synopsis") or "")
 
+                from app.services.db import get_cached_ids_by_mal
+                aid = None
+                try:
+                    c_doc = get_cached_ids_by_mal(str(mid))
+                    if c_doc and c_doc.get("anilist_id"):
+                        aid = str(c_doc["anilist_id"])
+                except Exception:
+                    pass
+
+                al_poster = ""
+                if aid:
+                    try:
+                        from app.services.db import db
+                        ac = db.get_collection("anilist_airing_cache").find_one({"anilist_id": int(aid)})
+                        if ac and ac.get("coverImage"):
+                            al_poster = ac["coverImage"]
+                    except Exception:
+                        pass
+
+                from app.lib.meta_providers import get_effective_meta_providers
+                rec_poster_pref = get_effective_meta_providers(user).get("poster", "kitsu")
+                chosen_poster = al_poster if (rec_poster_pref == "anilist" and al_poster) else poster
+
                 key = f"mal:{mid}"
                 if key not in rec_candidates:
                     rec_candidates[key] = {
                         "id": key,
                         "type": item_type,
                         "name": title,
-                        "poster": poster,
+                        "poster": chosen_poster,
+                        "poster_mal": poster,
+                        "poster_al": al_poster or poster,
+                        "mal_id": str(mid),
+                        "anilist_id": aid,
                         "score": rec.get("num_recommendations", 1),
                         "description": "Recommended based on your history.",
                         "synopsis": syn,
@@ -584,13 +614,34 @@ async def get_recommendations_for_seeds(
                 key = f"mal:{mid}" if mid else f"anilist:{aid}" if aid else f"kitsu:{r_item['kitsu_id']}"
                 syn = clean_html(r_item.get("description") or "")
 
+                al_poster = ""
+                if aid:
+                    try:
+                        from app.services.db import db
+
+                        ac = db.get_collection("anilist_airing_cache").find_one({"anilist_id": int(aid)})
+                        if ac and ac.get("coverImage"):
+                            al_poster = ac["coverImage"]
+                    except Exception:
+                        pass
+
+                from app.lib.meta_providers import get_effective_meta_providers
+
+                rec_poster_pref = get_effective_meta_providers(user).get("poster", "kitsu")
+                chosen_poster = al_poster if (rec_poster_pref == "anilist" and al_poster) else r_item["poster"]
+
                 # Add to candidates
                 if key not in rec_candidates:
                     rec_candidates[key] = {
                         "id": key,
                         "type": r_item["type"],
                         "name": r_item["name"],
-                        "poster": r_item["poster"],
+                        "poster": chosen_poster,
+                        "poster_kitsu": r_item["poster"],
+                        "poster_al": al_poster or r_item["poster"],
+                        "kitsu_id": str(r_item["kitsu_id"]),
+                        "mal_id": str(mid) if mid else None,
+                        "anilist_id": str(aid) if aid else None,
                         "score": 10,  # Score boost for franchise expansions
                         "description": r_item["description"] or "Franchise sequel, prequel, or spin-off.",
                         "synopsis": syn,
@@ -740,6 +791,9 @@ async def generate_genre_recommendations(
             "type": item_type,
             "name": title,
             "poster": poster,
+            "poster_al": poster,
+            "anilist_id": aid,
+            "mal_id": mid,
             "description": full_desc,
             "synopsis": syn,
         })
@@ -1139,6 +1193,9 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 "type": item_type,
                 "name": title,
                 "poster": poster,
+                "poster_al": poster,
+                "anilist_id": aid,
+                "mal_id": mid,
                 "score": rec.get("rating", 1),
                 "description": "AniList Community Recommendation.",
                 "synopsis": syn,
@@ -1215,13 +1272,40 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 poster = node.get("main_picture", {}).get("large") or node.get("main_picture", {}).get("medium") or ""
                 syn = clean_html(node.get("synopsis") or "")
 
+                from app.services.db import get_cached_ids_by_mal
+                aid = None
+                try:
+                    c_doc = get_cached_ids_by_mal(str(mid))
+                    if c_doc and c_doc.get("anilist_id"):
+                        aid = str(c_doc["anilist_id"])
+                except Exception:
+                    pass
+
+                al_poster = ""
+                if aid:
+                    try:
+                        from app.services.db import db
+                        ac = db.get_collection("anilist_airing_cache").find_one({"anilist_id": int(aid)})
+                        if ac and ac.get("coverImage"):
+                            al_poster = ac["coverImage"]
+                    except Exception:
+                        pass
+
+                from app.lib.meta_providers import get_effective_meta_providers
+                rec_poster_pref = get_effective_meta_providers(user).get("poster", "kitsu")
+                chosen_poster = al_poster if (rec_poster_pref == "anilist" and al_poster) else poster
+
                 key = f"mal:{mid}"
                 if key not in rec_candidates:
                     rec_candidates[key] = {
                         "id": key,
                         "type": item_type,
                         "name": title,
-                        "poster": poster,
+                        "poster": chosen_poster,
+                        "poster_mal": poster,
+                        "poster_al": al_poster or poster,
+                        "mal_id": str(mid),
+                        "anilist_id": aid,
                         "score": rec.get("num_recommendations", 1),
                         "description": "MAL Community Recommendation.",
                         "synopsis": syn,
@@ -1727,7 +1811,16 @@ async def update_popular_fallbacks_cache():
                     desc = desc[:150] + "..." if len(desc) > 150 else desc
                     desc = desc.replace("\n", " ").replace("  ", " ").strip()
                     new_items.append(
-                        {"id": item_id, "type": item_type, "name": name, "poster": poster, "description": desc}
+                        {
+                            "id": item_id,
+                            "type": item_type,
+                            "name": name,
+                            "poster": poster,
+                            "poster_al": poster,
+                            "anilist_id": str(media.get("id")),
+                            "mal_id": str(mal_id) if mal_id else None,
+                            "description": desc,
+                        }
                     )
                 if new_items:
                     # Wipe and insert
@@ -1755,12 +1848,24 @@ async def update_popular_fallbacks_cache():
                 images = item.get("images", {}).get("jpg", {})
                 poster = images.get("large_image_url") or images.get("image_url") or ""
                 if mal_id:
+                    aid = None
+                    try:
+                        from app.services.db import get_cached_ids_by_mal
+
+                        c_doc = get_cached_ids_by_mal(str(mal_id))
+                        if c_doc and c_doc.get("anilist_id"):
+                            aid = str(c_doc["anilist_id"])
+                    except Exception:
+                        pass
                     new_items.append({
                         "id": f"mal:{mal_id}",
                         "type": "series",
                         "name": name,
                         "poster": poster,
-                        "description": desc
+                        "poster_mal": poster,
+                        "mal_id": str(mal_id),
+                        "anilist_id": aid,
+                        "description": desc,
                     })
             if new_items:
                 popular_fallbacks_collection.delete_many({})

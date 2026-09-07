@@ -368,6 +368,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
                 "episodes": doc.get("episodes"),
                 "endDate": doc.get("endDate"),
                 "title": doc.get("title"),
+                "coverImage": doc.get("coverImage") or "",
             }
     except Exception as e:
         logging.error("Failed to read from anilist_airing_cache: %s", e)
@@ -399,6 +400,9 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
                 native
                 userPreferred
               }
+              coverImage {
+                large
+              }
             }
           }
         }
@@ -429,6 +433,8 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
                 next_ep = media.get("nextAiringEpisode")
                 avg_score = media.get("averageScore")
                 m_title = media.get("title")
+                cover_img = (media.get("coverImage") or {}).get("large") or ""
+                media["coverImage"] = cover_img
 
                 # Expiry calculations:
                 if status == "FINISHED":
@@ -454,6 +460,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
                                 "episodes": media.get("episodes"),
                                 "endDate": media.get("endDate"),
                                 "title": m_title,
+                                "coverImage": cover_img,
                                 "expires_at": expires_at,
                             }
                         },
@@ -906,6 +913,59 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                 item_type = "series"
         m_copy["type"] = item_type
 
+        # Apply metadata provider poster preference (unless this is an individual tracker watchlist)
+        from app.lib.meta_providers import get_effective_meta_providers
+
+        effective = get_effective_meta_providers(user)
+        poster_pref = effective.get("poster", "kitsu")
+
+        is_individual_tracker_catalog = bool(
+            catalog_id and any(catalog_id.startswith(p) for p in ["mal_", "anilist_", "simkl_"])
+        )
+        if not is_individual_tracker_catalog:
+            new_poster = None
+            if poster_pref == "anilist":
+                al_poster = m_copy.get("poster_al")
+                if not al_poster and (
+                    m_copy.get("poster", "").startswith("https://s4.anilist.co")
+                    or "/anilist/" in m_copy.get("poster", "")
+                ):
+                    al_poster = m_copy.get("poster")
+                if al_poster:
+                    new_poster = al_poster
+                elif m_copy.get("anilist_id"):
+                    try:
+                        from app.services.db import db
+
+                        doc = db.get_collection("anilist_airing_cache").find_one(
+                            {"anilist_id": int(m_copy["anilist_id"])}
+                        )
+                        if doc and doc.get("coverImage"):
+                            new_poster = doc["coverImage"]
+                            m_copy["poster_al"] = doc["coverImage"]
+                    except Exception:
+                        pass
+            elif poster_pref == "mal":
+                if m_copy.get("poster_mal"):
+                    new_poster = m_copy["poster_mal"]
+            elif poster_pref == "kitsu":
+                if m_copy.get("poster_kitsu"):
+                    new_poster = m_copy["poster_kitsu"]
+
+            if new_poster:
+                curr = m_copy.get("poster", "")
+                if "/poster/" in curr and "url=" in curr:
+                    try:
+                        parsed = urllib.parse.urlparse(curr)
+                        q_params = {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query).items()}
+                        q_params["url"] = new_poster
+                        base_u = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+                        m_copy["poster"] = f"{base_u}?{urllib.parse.urlencode(q_params)}"
+                    except Exception:
+                        m_copy["poster"] = new_poster
+                else:
+                    m_copy["poster"] = new_poster
+
         # Apply RPDB poster overlay if configured
         has_poster_provider = user and (
             (user.get("poster_provider") and user.get("poster_provider") != "none") or user.get("rpdb_api_key")
@@ -1316,6 +1376,7 @@ async def update_discovery_catalogs_cache() -> dict:
             "name": name,
             "title_obj": title_pref,
             "poster": poster,
+            "poster_al": poster,
             "description": desc,
             "score": float((m.get("averageScore") or 0) / 10),
             "year": int((m.get("startDate") or {}).get("year") or m.get("seasonYear") or 0),
@@ -1323,6 +1384,7 @@ async def update_discovery_catalogs_cache() -> dict:
             "popularity": int(m.get("popularity") or 0),
             "mal_id": mid,
             "anilist_id": aid,
+            "kitsu_id": kitsu_id,
         }
 
         nae = m.get("nextAiringEpisode")
@@ -1337,6 +1399,21 @@ async def update_discovery_catalogs_cache() -> dict:
             meta["is_today"] = (dt.date() == now_dt.date()) or (0 <= (nae.get("timeUntilAiring") or -1) <= 86400)
 
         return meta
+
+    # Pre-fetch AniList covers and mappings in bulk for all Jikan discovery items
+    all_j_mal_ids = []
+    for j_list in [jikan_pop, jikan_airing, jikan_top, jikan_movies, jikan_season_now, jikan_schedule, jikan_fav]:
+        for item in j_list:
+            mid = item.get("mal_id")
+            if mid:
+                all_j_mal_ids.append(str(mid))
+
+    jikan_al_details = {}
+    if all_j_mal_ids:
+        try:
+            jikan_al_details = await fetch_anilist_details_in_bulk(mal_ids=all_j_mal_ids)
+        except Exception as e:
+            logging.warning("Failed to bulk fetch AniList details for Jikan discovery items: %s", e)
 
     for gql_key, catalog_key in key_mapping.items():
         media_list = data.get(gql_key, {}).get("media", [])
@@ -1374,6 +1451,15 @@ async def update_discovery_catalogs_cache() -> dict:
             kitsu_id = kitsu_mappings.get(f"mal:{j_mid}")
             stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"mal:{j_mid}"
 
+            mid_str = str(j_mid)
+            al_detail = jikan_al_details.get(mid_str) or {}
+            al_cover = al_detail.get("coverImage")
+            if isinstance(al_cover, dict):
+                al_cover = al_cover.get("large") or al_cover.get("medium") or ""
+            elif not isinstance(al_cover, str):
+                al_cover = ""
+            al_aid = str(al_detail.get("id") or "") if al_detail.get("id") else None
+
             j_yr = 0
             try:
                 j_yr = int(item.get("year") or (item.get("aired", {}).get("from") or "")[:4] or 0)
@@ -1384,13 +1470,17 @@ async def update_discovery_catalogs_cache() -> dict:
                 "type": j_type,
                 "name": j_name,
                 "title_obj": {"english": j_name, "romaji": j_name},
-                "poster": j_poster,
+                "poster": al_cover or j_poster,
+                "poster_al": al_cover or j_poster,
+                "poster_mal": j_poster,
                 "description": j_desc,
                 "score": float(item.get("score") or 0),
                 "year": j_yr,
                 "episodes": int(item.get("episodes") or 0),
                 "popularity": int(item.get("members") or 0),
-                "mal_id": str(j_mid),
+                "mal_id": mid_str,
+                "anilist_id": al_aid,
+                "kitsu_id": kitsu_id,
             })
 
         # Enrich with Kitsu discovery items if catalog has fewer than 25 items
@@ -1415,7 +1505,28 @@ async def update_discovery_catalogs_cache() -> dict:
             k_poster = p_obj.get("large") or p_obj.get("medium") or p_obj.get("small") or ""
             k_type = "movie" if attr.get("subtype") == "movie" else "series"
 
-            k_yr = 0
+            # Check if AniList mapping exists in id_cache
+            k_aid = None
+            k_mid = None
+            k_al_cover = ""
+            try:
+                from app.services.db import get_cached_ids
+
+                c_ids = get_cached_ids(str(k_id))
+                if c_ids:
+                    k_aid = str(c_ids.get("anilist_id") or "") or None
+                    k_mid = str(c_ids.get("mal_id") or "") or None
+                    if k_aid:
+                        k_al_detail = jikan_al_details.get(str(k_aid)) or {}
+                        cov = k_al_detail.get("coverImage")
+                        if isinstance(cov, dict):
+                            k_al_cover = cov.get("large") or cov.get("medium") or ""
+                        elif isinstance(cov, str):
+                            k_al_cover = cov
+            except Exception:
+                pass
+
+            j_yr = 0
             try:
                 k_yr = int((attr.get("startDate") or "")[:4] or 0)
             except Exception:
@@ -1426,11 +1537,17 @@ async def update_discovery_catalogs_cache() -> dict:
                 "name": k_name,
                 "title_obj": {"english": k_name, "romaji": k_name},
                 "poster": k_poster,
+                "poster_kitsu": k_poster,
+                "poster_al": k_al_cover or k_poster,
+                "poster_mal": k_poster,
                 "description": k_desc,
                 "score": float((float(attr.get("averageRating") or 0) / 10)),
                 "year": k_yr,
                 "episodes": int(attr.get("episodeCount") or 0),
                 "popularity": int(attr.get("userCount") or 0),
+                "kitsu_id": str(k_id),
+                "anilist_id": k_aid,
+                "mal_id": k_mid,
             })
 
         result_metas[catalog_key] = metas
