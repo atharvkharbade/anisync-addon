@@ -258,7 +258,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
     # 4. Resolve Background and Logo for each item
     for item_info in extracted_items:
         m = item_info["meta"]
-        poster_url = m.get("poster") or ""
+        _poster = m.get("poster")
+        poster_url = _poster if isinstance(_poster, str) else ""
         aid = item_info["anilist_id"]
         mid = item_info["mal_id"]
         kid = item_info["kitsu_id"]
@@ -301,7 +302,11 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
 
         # Simkl fanart (16:9 widescreen)
         simkl_fanart = m.get("fanart") or m.get("simkl_fanart")
-        if simkl_fanart and not simkl_fanart.startswith("http"):
+        if isinstance(simkl_fanart, list):
+            simkl_fanart = next((u for u in simkl_fanart if isinstance(u, str) and u), None) or (simkl_fanart[0] if simkl_fanart else None)
+        if simkl_fanart and not isinstance(simkl_fanart, str):
+            simkl_fanart = None
+        elif simkl_fanart and not simkl_fanart.startswith("http"):
             simkl_fanart = f"https://simkl.in/fanart/{simkl_fanart}_medium.jpg"
 
         # Metahub artwork (fallback using IMDB ID)
@@ -310,7 +315,9 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
 
         # Existing background / bannerImage on item
         item_bg = m.get("background") or m.get("bannerImage")
-        if item_bg and item_bg.strip() == poster_url.strip():
+        if item_bg and not isinstance(item_bg, str):
+            item_bg = None
+        elif item_bg and isinstance(poster_url, str) and item_bg.strip() == poster_url.strip():
             item_bg = None
             m.pop("background", None)
 
