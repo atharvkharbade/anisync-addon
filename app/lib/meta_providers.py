@@ -345,4 +345,42 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
         if chosen_logo:
             m["logo"] = chosen_logo
 
+    # 5. Background-warm missing AniZip metadata so subsequent requests have Clearlogo & Fanart
+    missing_for_anizp = []
+    for item_info in extracted_items:
+        aid = item_info["anilist_id"]
+        mid = item_info["mal_id"]
+        if (aid and f"al_{aid}" not in anizp_by_key) or (mid and f"mal_{mid}" not in anizp_by_key):
+            missing_for_anizp.append(item_info)
+
+    if missing_for_anizp:
+        try:
+            import asyncio
+            loop = asyncio.get_running_loop()
+            loop.create_task(bg_warm_anizip(missing_for_anizp[:25]))
+        except (RuntimeError, Exception):
+            pass
+
+
+async def bg_warm_anizip(item_infos: list[dict]):
+    """Background task to fetch and cache AniZip metadata for items missing from anizp_meta_cache."""
+    import asyncio
+    from app.routes.meta import fetch_anizp_metadata
+
+    sem = asyncio.Semaphore(5)
+
+    async def fetch_one(info):
+        aid = info.get("anilist_id")
+        mid = info.get("mal_id")
+        if not aid and not mid:
+            return
+        async with sem:
+            try:
+                await fetch_anizp_metadata(anilist_id=aid, mal_id=mid)
+            except Exception:
+                pass
+
+    tasks = [fetch_one(info) for info in item_infos]
+    await asyncio.gather(*tasks, return_exceptions=True)
+
 

@@ -60,7 +60,7 @@ async def fetch_anizp_metadata(anilist_id: str = None, mal_id: str = None) -> di
         resp = await client.get(url, params=params, timeout=8)
         if resp.status_code == 200:
             data = resp.json()
-            ttl = datetime.timedelta(hours=2)
+            ttl = datetime.timedelta(days=30)
             try:
                 col.update_one(
                     {"key": cache_key},
@@ -74,6 +74,21 @@ async def fetch_anizp_metadata(anilist_id: str = None, mal_id: str = None) -> di
                     },
                     upsert=True,
                 )
+                mappings = data.get("mappings", {}) or {}
+                other_al = str(mappings.get("anilist_id") or "")
+                other_mal = str(mappings.get("mal_id") or "")
+                if other_al and f"al_{other_al}" != cache_key:
+                    col.update_one(
+                        {"key": f"al_{other_al}"},
+                        {"$set": {"key": f"al_{other_al}", "data": data, "expires_at": now + ttl, "updated_at": now}},
+                        upsert=True,
+                    )
+                if other_mal and f"mal_{other_mal}" != cache_key:
+                    col.update_one(
+                        {"key": f"mal_{other_mal}"},
+                        {"$set": {"key": f"mal_{other_mal}", "data": data, "expires_at": now + ttl, "updated_at": now}},
+                        upsert=True,
+                    )
             except Exception as ex:
                 logging.error("Failed to write anizp_meta_cache for %s: %s", cache_key, ex)
             return data

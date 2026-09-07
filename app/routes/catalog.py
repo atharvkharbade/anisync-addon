@@ -1632,6 +1632,24 @@ async def update_discovery_catalogs_cache() -> dict:
             )
         except Exception as ex:
             logging.error("Failed to write to discovery_catalogs_cache for %s: %s", cat_key, ex)
+    # Pre-warm AniZip clearlogo and fanart cache for top discovery items
+    try:
+        from app.lib.meta_providers import bg_warm_anizip
+        unique_discovery = {}
+        for m in (
+            result_metas.get("anisync_trending", [])
+            + result_metas.get("anisync_top_airing", [])
+            + result_metas.get("anisync_most_popular", [])
+            + result_metas.get("anisync_spotlight", [])
+        ):
+            aid = m.get("anilist_id")
+            mid = m.get("mal_id")
+            if (aid or mid) and m.get("id") and m["id"] not in unique_discovery:
+                unique_discovery[m["id"]] = {"anilist_id": aid, "mal_id": mid}
+        if unique_discovery:
+            asyncio.create_task(bg_warm_anizip(list(unique_discovery.values())[:60]))
+    except Exception as e:
+        logging.warning("Failed to dispatch AniZip prewarm for discovery catalogs: %s", e)
 
     return result_metas
 
