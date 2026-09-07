@@ -1616,19 +1616,51 @@ async def update_discovery_catalogs_cache() -> dict:
                     })
         result_metas[f"anisync_schedule:{day}"] = day_items
 
+    # Ensure all seasonal and spotlight sub-filters have fallbacks if AniList returned empty
+    base_seasonal = result_metas.get("anisync_seasonal", [])
+    for s_genre in ["Winter", "Spring", "Summer", "Fall"]:
+        s_key = f"anisync_seasonal:{s_genre}"
+        if not result_metas.get(s_key):
+            filtered = [m for m in base_seasonal if m.get("season") == s_genre.upper()]
+            result_metas[s_key] = filtered if filtered else list(base_seasonal)
+    if not result_metas.get("anisync_seasonal:Next Season"):
+        result_metas["anisync_seasonal:Next Season"] = list(base_seasonal)
+    if not result_metas.get("anisync_seasonal:Upcoming"):
+        result_metas["anisync_seasonal:Upcoming"] = list(base_seasonal)
+
+    base_spotlight = result_metas.get("anisync_spotlight", [])
+    for sp_key in [
+        "anisync_spotlight:New Movies",
+        "anisync_spotlight:Classic Masterpieces",
+        "anisync_spotlight:OVAs & Specials",
+    ]:
+        if not result_metas.get(sp_key):
+            result_metas[sp_key] = list(base_spotlight)
+
     # Save all discovery catalogs and sub-genre lists to database cache
     for cat_key, cat_metas in result_metas.items():
         try:
+            if not cat_metas:
+                # If newly fetched metas is empty (e.g. upstream AniList 403), preserve existing healthy cached documents!
+                # Only bump expires_at so we don't spam upstream APIs while continuing to serve cached data.
+                res = discovery_col.update_one(
+                    {"catalog_id": cat_key, "metas.0": {"$exists": True}},
+                    {"$set": {"expires_at": expires_at}},
+                )
+                if res.matched_count > 0:
+                    logging.info("Preserved existing healthy discovery cache for %s while extending expiry", cat_key)
+                    continue
+
             discovery_col.update_one(
                 {"catalog_id": cat_key},
                 {
                     "$set": {
                         "catalog_id": cat_key,
                         "metas": cat_metas,
-                        "expires_at": expires_at
+                        "expires_at": expires_at,
                     }
                 },
-                upsert=True
+                upsert=True,
             )
         except Exception as ex:
             logging.error("Failed to write to discovery_catalogs_cache for %s: %s", cat_key, ex)
@@ -1747,46 +1779,47 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         cache_key = f"{catalog_id}:{genre}" if genre else catalog_id
 
         cached = None
+        base_cached = None
         try:
-            cached = discovery_col.find_one({"catalog_id": cache_key})
-            if not cached and genre:
-                # Check base catalog for dynamic in-memory filter fallback
-                base_cached = discovery_col.find_one({"catalog_id": catalog_id})
-                if base_cached and base_cached.get("expires_at", now) > now:
+            base_cached = discovery_col.find_one({"catalog_id": catalog_id})
+            if genre:
+                cached = discovery_col.find_one({"catalog_id": cache_key})
+                if (not cached or not cached.get("metas")) and base_cached:
                     base_metas = base_cached.get("metas", [])
                     if catalog_id == "anisync_schedule":
                         if genre == "Airing Today":
                             sub_metas = [m for m in base_metas if m.get("is_today")]
                         else:
                             sub_metas = [m for m in base_metas if m.get("airing_day") == genre]
-                        cached = {"metas": sub_metas, "expires_at": base_cached["expires_at"]}
-                    elif catalog_id == "anisync_seasonal" and genre == "Current Season":
+                        cached = {"metas": sub_metas, "expires_at": base_cached.get("expires_at", now)}
+                    elif catalog_id == "anisync_seasonal":
+                        if genre in ["Winter", "Spring", "Summer", "Fall"]:
+                            sub_metas = [m for m in base_metas if m.get("season") == genre.upper()]
+                            cached = {"metas": sub_metas or base_metas, "expires_at": base_cached.get("expires_at", now)}
+                        else:
+                            cached = base_cached
+                    else:
                         cached = base_cached
-                    elif catalog_id == "anisync_spotlight" and genre == "Feature Films":
-                        cached = base_cached
+            else:
+                cached = base_cached
         except Exception as e:
             logging.error("Failed to query discovery_catalogs_cache: %s", e)
 
         metas = []
-        if cached and cached.get("expires_at") > now:
+        if cached and cached.get("metas") and cached.get("expires_at", now) > now:
             metas = cached["metas"]
+        elif base_cached and base_cached.get("metas"):
+            # Serve parent base catalog immediately — zero latency stall for invalid/missing genres!
+            metas = base_cached["metas"]
+            if base_cached.get("expires_at", now) <= now:
+                trigger_discovery_catalogs_prefetch()
         else:
             try:
                 all_metas = await update_discovery_catalogs_cache()
                 metas = all_metas.get(cache_key) or all_metas.get(catalog_id, [])
-                if not metas and genre and catalog_id == "anisync_schedule":
-                    base_metas = all_metas.get("anisync_schedule", [])
-                    if genre == "Airing Today":
-                        metas = [m for m in base_metas if m.get("is_today")]
-                    else:
-                        metas = [m for m in base_metas if m.get("airing_day") == genre]
             except Exception as e:
                 logging.error("Failed to update discovery catalogs from AniList: %s", e)
-                if cached:
-                    logging.warning("Returning expired discovery cache for %s", cache_key)
-                    metas = cached["metas"]
-                else:
-                    metas = []
+                metas = []
 
         # Apply Custom Sorting for Discovery Catalogs if enabled
         if user.get("custom_sort_enabled", False):
@@ -1803,7 +1836,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
         # Handle pagination skip
         metas = metas[offset : offset + 40]
-        return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)})
+        return await respond_with(
+            {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+            max_age=3600,
+            stale_while_revalidate=7200,
+        )
 
     # --- Search Catalog ---
     if catalog_id == "anisync_search":
@@ -1819,7 +1856,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             cached = cache_col.find_one({"query": search_query, "offset": offset})
             if cached and cached.get("expires_at") > now:
                 return await respond_with(
-                    {"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)}
+                    {"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)},
+                    max_age=1800,
+                    stale_while_revalidate=3600,
                 )
         except Exception as e:
             logging.error("Failed to query kitsu_search_cache: %s", e)
@@ -1864,6 +1903,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         or cover_img.get("small")
                         or None
                     )
+                    synopsis = attrs.get("synopsis") or ""
                     metas.append(
                         {
                             "id": f"kitsu:{item['id']}",
@@ -1930,7 +1970,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     al_resp = await client.post(
                         "https://graphql.anilist.co",
                         json={"query": anilist_query, "variables": {"search": candidate_query, "page": page_num, "perPage": 20}},
-                        headers={"Content-Type": "application/json", "Accept": "application/json"},
+                        headers={
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                            "Referer": "https://anilist.co/",
+                        },
                         timeout=5,
                     )
                     if al_resp.status_code == 200:
@@ -2086,10 +2131,16 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         elif cached:
             logging.warning("Search returned 0 results, returning expired cache for query '%s'", search_query)
             return await respond_with(
-                {"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)}
+                {"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)},
+                max_age=1800,
+                stale_while_revalidate=3600,
             )
 
-        return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)})
+        return await respond_with(
+            {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+            max_age=1800,
+            stale_while_revalidate=3600,
+        )
 
     # --- Recommendations Catalogs ---
     elif catalog_id in ["anisync_rec", "anisync_loved", "anisync_liked"]:
@@ -2124,7 +2175,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
         # Handle pagination skip
         metas = metas[offset : offset + 40]
-        return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)})
+        return await respond_with(
+            {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+            max_age=3600,
+            stale_while_revalidate=7200,
+        )
 
     # --- Combined Watchlists ---
     elif catalog_id.startswith("comb_"):
@@ -3721,4 +3776,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         except Exception as e:
             logging.error("AniList catalog load failed for status %s: %s", anilist_status, e)
 
-    return await respond_with({"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)})
+    return await respond_with(
+        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+        max_age=300,
+        stale_while_revalidate=600,
+    )

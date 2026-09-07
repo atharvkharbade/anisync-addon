@@ -7,10 +7,15 @@ from functools import wraps
 
 from quart import Response, jsonify, request
 
-async def respond_with(data: dict) -> Response:
+async def respond_with(data: dict, max_age: int | None = None, stale_while_revalidate: int | None = None) -> Response:
     resp = jsonify(data)
     resp.headers["Access-Control-Allow-Origin"] = "*"
     resp.headers["Access-Control-Allow-Headers"] = "*"
+    if max_age is not None:
+        cc = f"public, max-age={max_age}"
+        if stale_while_revalidate is not None:
+            cc += f", stale-while-revalidate={stale_while_revalidate}"
+        resp.headers["Cache-Control"] = cc
     return resp
 
 

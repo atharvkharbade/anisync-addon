@@ -731,7 +731,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             curr_desc = meta.get("description", "")
             meta["description"] = f"{header_text}\n\n{curr_desc}" if curr_desc else header_text
 
-        return await respond_with({"meta": meta})
+        return await respond_with({"meta": meta}, max_age=86400, stale_while_revalidate=604800)
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)
         return await respond_with({"meta": {}})

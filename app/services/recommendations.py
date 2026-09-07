@@ -280,9 +280,12 @@ async def get_recommendations_for_seeds(
     watched_anilist_ids: set,
     watched_titles: set,
     max_seeds: int = 15,
+    watched_kitsu_ids: set | None = None,
 ) -> list[dict]:
     if not seeds:
         return []
+    if watched_kitsu_ids is None:
+        watched_kitsu_ids = set()
 
     rec_language = user.get("rec_language", "en")
     rec_popularity = user.get("rec_popularity", "balanced")
@@ -596,7 +599,11 @@ async def get_recommendations_for_seeds(
                 mid, aid = await resolve(r_item["kitsu_id"])
 
                 if filter_watched:
-                    if (mid and mid in watched_mal_ids) or (aid and aid in watched_anilist_ids):
+                    if (
+                        (mid and mid in watched_mal_ids)
+                        or (aid and aid in watched_anilist_ids)
+                        or (r_item.get("kitsu_id") and str(r_item["kitsu_id"]) in watched_kitsu_ids)
+                    ):
                         continue
 
                 # Year filter
@@ -682,8 +689,15 @@ async def get_top_anime_by_genre(token: str, genre: str, sort: str = "POPULARITY
 
 
 async def generate_genre_recommendations(
-    genre: str, user: dict, watched_mal_ids: set, watched_anilist_ids: set, watched_titles: set
+    genre: str,
+    user: dict,
+    watched_mal_ids: set,
+    watched_anilist_ids: set,
+    watched_titles: set,
+    watched_kitsu_ids: set | None = None,
 ) -> list[dict]:
+    if watched_kitsu_ids is None:
+        watched_kitsu_ids = set()
     rec_language = user.get("rec_language", "en")
     rec_popularity = user.get("rec_popularity", "balanced")
     rec_year_min = user.get("rec_year_min", 1980)
@@ -904,6 +918,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
             "title": title,
             "mal_id": mal_id,
             "anilist_id": None,
+            "kitsu_id": None,
             "simkl_id": None,
             "status": status,
             "rating": rating,
@@ -934,6 +949,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 "title": title,
                 "mal_id": mal_id,
                 "anilist_id": anilist_id,
+                "kitsu_id": None,
                 "simkl_id": None,
                 "status": status,
                 "rating": rating,
@@ -984,6 +1000,8 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
 
         if matched_key:
             merged_shows[matched_key]["simkl_id"] = simkl_id
+            if kitsu_id:
+                merged_shows[matched_key]["kitsu_id"] = kitsu_id
             merged_shows[matched_key]["rating"] = max(merged_shows[matched_key].get("rating") or 0, rating)
 
             old_status = merged_shows[matched_key]["status"]
@@ -1007,6 +1025,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 "title": title,
                 "mal_id": mal_id,
                 "anilist_id": anilist_id,
+                "kitsu_id": kitsu_id,
                 "simkl_id": simkl_id,
                 "status": status,
                 "rating": rating,
@@ -1016,38 +1035,53 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
     # Watched sets for filtering
     watched_mal_ids = set()
     watched_anilist_ids = set()
+    watched_kitsu_ids = set()
     watched_titles = set()
 
     for show in merged_shows.values():
         if show["status"] == "planning":
             continue
 
-        if show["mal_id"]:
+        if show.get("mal_id"):
             watched_mal_ids.add(str(show["mal_id"]))
-        if show["anilist_id"]:
+        if show.get("anilist_id"):
             watched_anilist_ids.add(str(show["anilist_id"]))
-        if show["title"]:
+        if show.get("kitsu_id"):
+            watched_kitsu_ids.add(str(show["kitsu_id"]))
+        if show.get("title"):
             watched_titles.add(show["title"].lower())
 
     # Bulk-resolve IDs from fribb_mappings and id_cache to ensure complete cross-tracker filtering
     raw_mal_ids = list(watched_mal_ids)
     raw_al_ids = list(watched_anilist_ids)
-    if raw_mal_ids or raw_al_ids:
+    raw_kitsu_ids = list(watched_kitsu_ids)
+    if raw_mal_ids or raw_al_ids or raw_kitsu_ids:
         # Query fribb_mappings
         fribb_query = []
         if raw_mal_ids:
             fribb_query.append({"mal_id": {"$in": raw_mal_ids}})
         if raw_al_ids:
             fribb_query.append({"anilist_id": {"$in": raw_al_ids}})
+        if raw_kitsu_ids:
+            kitsu_int_ids = []
+            for k in raw_kitsu_ids:
+                try:
+                    kitsu_int_ids.append(int(k))
+                except Exception:
+                    pass
+            fribb_query.append({"kitsu_id": {"$in": raw_kitsu_ids + kitsu_int_ids}})
         if fribb_query:
             try:
                 for doc in db.fribb_mappings.find({"$or": fribb_query}):
                     m_id = doc.get("mal_id")
                     a_id = doc.get("anilist_id")
+                    k_id = doc.get("kitsu_id")
                     if m_id:
                         watched_mal_ids.add(str(m_id))
                     if a_id:
                         watched_anilist_ids.add(str(a_id))
+                    if k_id:
+                        watched_kitsu_ids.add(str(k_id))
             except Exception as e:
                 logger.warning("Failed to bulk query fribb_mappings for ID resolving: %s", e)
 
@@ -1057,15 +1091,20 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
             cache_query.append({"mal_id": {"$in": raw_mal_ids}})
         if raw_al_ids:
             cache_query.append({"anilist_id": {"$in": raw_al_ids}})
+        if raw_kitsu_ids:
+            cache_query.append({"kitsu_id": {"$in": raw_kitsu_ids}})
         if cache_query:
             try:
                 for doc in db.get_collection("id_cache").find({"$or": cache_query}):
                     m_id = doc.get("mal_id")
                     a_id = doc.get("anilist_id")
+                    k_id = doc.get("kitsu_id")
                     if m_id:
                         watched_mal_ids.add(str(m_id))
                     if a_id:
                         watched_anilist_ids.add(str(a_id))
+                    if k_id:
+                        watched_kitsu_ids.add(str(k_id))
             except Exception as e:
                 logger.warning("Failed to bulk query id_cache for ID resolving: %s", e)
 
@@ -1315,7 +1354,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
 
     if seed_show:
         item_recs = await get_recommendations_for_seeds(
-            [seed_show], user, watched_mal_ids, watched_anilist_ids, watched_titles
+            [seed_show], user, watched_mal_ids, watched_anilist_ids, watched_titles, watched_kitsu_ids=watched_kitsu_ids
         )
         for ir in item_recs:
             desc = f"Recommended because you watched {seed_show['title']}."
@@ -1341,6 +1380,8 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                         continue
                     if tracker == "anilist" and ext_id in watched_anilist_ids:
                         continue
+                    if tracker == "kitsu" and ext_id in watched_kitsu_ids:
+                        continue
 
             item_copy = fb.copy()
             desc = "Popular trending anime you might enjoy."
@@ -1363,6 +1404,8 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                     continue
                 if tracker == "anilist" and ext_id in watched_anilist_ids:
                     continue
+                if tracker == "kitsu" and ext_id in watched_kitsu_ids:
+                    continue
             filtered_item_recs.append(ir)
         item_recs = filtered_item_recs
 
@@ -1372,7 +1415,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         loved_count = max(1, len(seed_pool) // 2)
     loved_seeds = select_weighted_seeds(seed_pool, loved_count)
     loved_items = await get_recommendations_for_seeds(
-        loved_seeds, user, watched_mal_ids, watched_anilist_ids, watched_titles
+        loved_seeds, user, watched_mal_ids, watched_anilist_ids, watched_titles, watched_kitsu_ids=watched_kitsu_ids
     )
     for lr in loved_items:
         inspired_by = lr.get("inspired_by_titles", [])
@@ -1398,7 +1441,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         liked_count = len(seed_pool) - len(loved_seeds)
     liked_seeds = select_weighted_seeds(remaining_liked_pool, liked_count)
     liked_items = await get_recommendations_for_seeds(
-        liked_seeds, user, watched_mal_ids, watched_anilist_ids, watched_titles
+        liked_seeds, user, watched_mal_ids, watched_anilist_ids, watched_titles, watched_kitsu_ids=watched_kitsu_ids
     )
     for lr in liked_items:
         inspired_by = lr.get("inspired_by_titles", [])
@@ -1437,10 +1480,10 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
     genre_2_name = fav_genres[1]
 
     genre_1_items = await generate_genre_recommendations(
-        genre_1_name, user, watched_mal_ids, watched_anilist_ids, watched_titles
+        genre_1_name, user, watched_mal_ids, watched_anilist_ids, watched_titles, watched_kitsu_ids=watched_kitsu_ids
     )
     genre_2_items = await generate_genre_recommendations(
-        genre_2_name, user, watched_mal_ids, watched_anilist_ids, watched_titles
+        genre_2_name, user, watched_mal_ids, watched_anilist_ids, watched_titles, watched_kitsu_ids=watched_kitsu_ids
     )
     if not genre_1_items:
         genre_1_items = []
@@ -1567,6 +1610,8 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                         continue
                     if tracker == "anilist" and ext_id in watched_anilist_ids:
                         continue
+                    if tracker == "kitsu" and ext_id in watched_kitsu_ids:
+                        continue
             if item["id"] not in shown_ids_set:
                 shown_ids_set.add(item["id"])
                 item_copy = item.copy()
@@ -1590,6 +1635,8 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 if tracker == "mal" and ext_id in watched_mal_ids:
                     continue
                 if tracker == "anilist" and ext_id in watched_anilist_ids:
+                    continue
+                if tracker == "kitsu" and ext_id in watched_kitsu_ids:
                     continue
             shown_ids_set.add(fb_item["id"])
             item_copy = fb_item.copy()
@@ -1615,6 +1662,8 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                     if tracker == "mal" and ext_id in watched_mal_ids:
                         continue
                     if tracker == "anilist" and ext_id in watched_anilist_ids:
+                        continue
+                    if tracker == "kitsu" and ext_id in watched_kitsu_ids:
                         continue
                 item_copy = fb_item.copy()
                 fb_desc = item_copy.get("synopsis") or item_copy.get("description") or ""

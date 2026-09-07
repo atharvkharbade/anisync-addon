@@ -406,7 +406,7 @@ async def base_manifest():
         "configurable": True,
         "configurationRequired": True,
     }
-    return await respond_with(unconfigured_manifest)
+    return await respond_with(unconfigured_manifest, max_age=86400, stale_while_revalidate=86400)
 
 
 @manifest_bp.route("/<user_id>/manifest.json")
@@ -420,7 +420,7 @@ async def user_manifest(user_id: str):
             "configurable": True,
             "configurationRequired": True,
         }
-        return await respond_with(fallback)
+        return await respond_with(fallback, max_age=86400, stale_while_revalidate=86400)
 
     user = get_user(user_id)
     if not user:
@@ -432,7 +432,7 @@ async def user_manifest(user_id: str):
             "configurable": True,
             "configurationRequired": True,
         }
-        return await respond_with(fallback)
+        return await respond_with(fallback, max_age=86400, stale_while_revalidate=86400)
 
     # Filter catalogs and resources based on active toggles
     if user.get("is_guest"):
@@ -450,7 +450,7 @@ async def user_manifest(user_id: str):
     if not enable_catalogs and not enable_search and not enable_recommendations and not enable_discovery_catalogs:
         user_manifest_data["catalogs"] = []
         user_manifest_data["resources"] = ["subtitles"]
-        return await respond_with(user_manifest_data)
+        return await respond_with(user_manifest_data, max_age=43200, stale_while_revalidate=86400)
 
     user_manifest_data["resources"] = ["subtitles", "catalog", "meta"]
 
@@ -593,4 +593,4 @@ async def user_manifest(user_id: str):
                 active_catalogs.append(configured_cat)
 
     user_manifest_data["catalogs"] = active_catalogs
-    return await respond_with(user_manifest_data)
+    return await respond_with(user_manifest_data, max_age=43200, stale_while_revalidate=86400)
