@@ -369,6 +369,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
                 "endDate": doc.get("endDate"),
                 "title": doc.get("title"),
                 "coverImage": doc.get("coverImage") or "",
+                "bannerImage": doc.get("bannerImage") or "",
             }
     except Exception as e:
         logging.error("Failed to read from anilist_airing_cache: %s", e)
@@ -403,6 +404,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
               coverImage {
                 large
               }
+              bannerImage
             }
           }
         }
@@ -434,7 +436,9 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
                 avg_score = media.get("averageScore")
                 m_title = media.get("title")
                 cover_img = (media.get("coverImage") or {}).get("large") or ""
+                banner_img = media.get("bannerImage") or ""
                 media["coverImage"] = cover_img
+                media["bannerImage"] = banner_img
 
                 # Expiry calculations:
                 if status == "FINISHED":
@@ -461,6 +465,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
                                 "endDate": media.get("endDate"),
                                 "title": m_title,
                                 "coverImage": cover_img,
+                                "bannerImage": banner_img,
                                 "expires_at": expires_at,
                             }
                         },
@@ -1018,6 +1023,10 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                     m_copy["poster"] = rpdb_poster
 
         formatted_metas.append(m_copy)
+
+    from app.lib.meta_providers import enrich_catalog_metas_artwork
+
+    enrich_catalog_metas_artwork(formatted_metas, user)
     return formatted_metas
 
 
@@ -1065,6 +1074,7 @@ async def update_discovery_catalogs_cache() -> dict:
       coverImage {{
         large
       }}
+      bannerImage
       description
       nextAiringEpisode {{
         airingAt
@@ -1380,6 +1390,10 @@ async def update_discovery_catalogs_cache() -> dict:
             "kitsu_id": kitsu_id,
         }
 
+        banner = m.get("bannerImage")
+        if banner:
+            meta["background"] = banner
+
         nae = m.get("nextAiringEpisode")
         if nae and nae.get("airingAt"):
             airing_at = nae["airingAt"]
@@ -1452,6 +1466,7 @@ async def update_discovery_catalogs_cache() -> dict:
             elif not isinstance(al_cover, str):
                 al_cover = ""
             al_aid = str(al_detail.get("id") or "") if al_detail.get("id") else None
+            al_banner = al_detail.get("bannerImage") or ""
 
             j_yr = 0
             try:
@@ -1466,6 +1481,7 @@ async def update_discovery_catalogs_cache() -> dict:
                 "poster": al_cover or j_poster,
                 "poster_al": al_cover or j_poster,
                 "poster_mal": j_poster,
+                "background": al_banner,
                 "description": j_desc,
                 "score": float(item.get("score") or 0),
                 "year": j_yr,
@@ -1519,6 +1535,8 @@ async def update_discovery_catalogs_cache() -> dict:
             except Exception:
                 pass
 
+            cov_obj = attr.get("coverImage") or {}
+            k_cover = cov_obj.get("original") or cov_obj.get("large") or cov_obj.get("medium") or ""
             k_yr = 0
             try:
                 k_yr = int((attr.get("startDate") or "")[:4] or 0)
@@ -1533,6 +1551,8 @@ async def update_discovery_catalogs_cache() -> dict:
                 "poster_kitsu": k_poster,
                 "poster_al": k_al_cover or k_poster,
                 "poster_mal": k_poster,
+                "background": k_cover,
+                "coverImage": cov_obj,
                 "description": k_desc,
                 "score": float((float(attr.get("averageRating") or 0) / 10)),
                 "year": k_yr,
@@ -2813,12 +2833,32 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 )
                 stremio_type = "movie" if is_movie else "series"
 
+                simkl_fanart = None
+                if item.get("simkl_item"):
+                    show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
+                    sf = show_obj.get("fanart")
+                    if sf:
+                        simkl_fanart = sf if sf.startswith("http") else f"https://simkl.in/fanart/{sf}_medium.jpg"
+
+                al_banner = None
+                if item.get("anilist_item"):
+                    al_banner = item["anilist_item"].get("media", {}).get("bannerImage")
+                elif item.get("mal_id") and bulk_details:
+                    al_banner = (bulk_details.get(item["mal_id"]) or {}).get("bannerImage")
+                elif item.get("anilist_id") and bulk_details:
+                    al_banner = (bulk_details.get(item["anilist_id"]) or {}).get("bannerImage")
+
                 metas.append(
                     {
                         "id": stremio_id,
                         "type": stremio_type,
                         "name": name,
                         "poster": poster,
+                        "background": simkl_fanart or al_banner,
+                        "kitsu_id": kitsu_id,
+                        "mal_id": mal_id,
+                        "anilist_id": anilist_id,
+                        "simkl_id": simkl_id,
                         "description": (
                             f"Watchlist - {comb_status.replace('_', ' ').title()} (Combined).\n"
                             f"Progress: {progress} / {total_eps}."
@@ -3136,12 +3176,20 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 }
                 disp_simkl_status = simkl_status_titles.get(simkl_status, simkl_status.replace('_', ' ').title())
 
+                sf = show_obj.get("fanart")
+                simkl_fanart = (sf if sf.startswith("http") else f"https://simkl.in/fanart/{sf}_medium.jpg") if sf else None
+
                 metas.append(
                     {
                         "id": stremio_id,
                         "type": stremio_type,
                         "name": name,
                         "poster": poster,
+                        "background": simkl_fanart,
+                        "simkl_id": simkl_id,
+                        "mal_id": mal_id,
+                        "anilist_id": al_id,
+                        "kitsu_id": kitsu_id,
                         "description": (
                             f"Simkl Watchlist - {disp_simkl_status}.\n"
                             f"Progress: {progress} / {total_eps}."
@@ -3396,6 +3444,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         "type": stremio_type,
                         "name": name,
                         "poster": poster,
+                        "mal_id": mal_id,
+                        "kitsu_id": kitsu_id,
                         "description": (
                             f"MAL Watchlist - {mal_status.replace('_', ' ').title()}.\n"
                             f"Progress: {progress} / {node.get('num_episodes') or '?'}."
@@ -3628,6 +3678,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         "type": stremio_type,
                         "name": name,
                         "poster": poster,
+                        "background": media.get("bannerImage"),
+                        "anilist_id": al_id,
+                        "kitsu_id": kitsu_id,
                         "description": (
                             f"AniList Watchlist - {anilist_status.title()}.\n"
                             f"Progress: {progress} / {media.get('episodes') or '?'}."

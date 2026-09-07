@@ -205,6 +205,7 @@ query ($userId: Int, $status: MediaListStatus) {
             large
             medium
           }
+          bannerImage
         }
       }
     }
@@ -228,6 +229,7 @@ query ($search: String, $limit: Int) {
         large
         medium
       }
+      bannerImage
     }
   }
 }

@@ -195,6 +195,7 @@ async def get_anilist_recommendations_bulk(token: str, anilist_ids: list[int]) -
               large
               medium
             }
+            bannerImage
             startDate {
               year
             }
@@ -379,6 +380,7 @@ async def get_recommendations_for_seeds(
                 "name": title,
                 "poster": poster,
                 "poster_al": poster,
+                "background": media.get("bannerImage"),
                 "anilist_id": aid,
                 "mal_id": mid,
                 "score": rec.get("rating", 1),
@@ -657,6 +659,7 @@ async def get_top_anime_by_genre(token: str, genre: str, sort: str = "POPULARITY
             large
             medium
           }
+          bannerImage
           startDate {
             year
           }
@@ -772,6 +775,7 @@ async def generate_genre_recommendations(
             "name": title,
             "poster": poster,
             "poster_al": poster,
+            "background": media.get("bannerImage"),
             "anilist_id": aid,
             "mal_id": mid,
             "description": full_desc,
@@ -1746,6 +1750,7 @@ async def update_popular_fallbacks_cache():
           coverImage {
             large
           }
+          bannerImage
           description
         }
       }
@@ -1788,6 +1793,7 @@ async def update_popular_fallbacks_cache():
                             "name": name,
                             "poster": poster,
                             "poster_al": poster,
+                            "background": media.get("bannerImage"),
                             "anilist_id": str(media.get("id")),
                             "mal_id": str(mal_id) if mal_id else None,
                             "description": desc,
