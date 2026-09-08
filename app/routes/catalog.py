@@ -1027,6 +1027,15 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
     from app.lib.meta_providers import enrich_catalog_metas_artwork
 
     enrich_catalog_metas_artwork(formatted_metas, user)
+
+    # Handle landscape card shape if user selected landscape for this catalog
+    catalog_shapes = user.get("catalog_shapes", {}) if user else {}
+    if catalog_id and catalog_shapes.get(catalog_id) == "landscape":
+        for m in formatted_metas:
+            bg = m.get("background")
+            if bg and isinstance(bg, str) and bg.strip():
+                m["poster"] = bg.strip()
+
     return formatted_metas
 
 

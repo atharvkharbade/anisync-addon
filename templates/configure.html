@@ -840,6 +840,60 @@
         color: #ffffff;
         font-weight: 700;
     }
+
+    /* Catalog Orientation Segmented Pill Toggles */
+    .catalog-shape-pill-group {
+        display: inline-flex;
+        background: rgba(15, 23, 42, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 2px;
+        gap: 2px;
+        backdrop-filter: blur(8px);
+    }
+    .shape-pill-btn {
+        border: none;
+        background: transparent;
+        color: #94a3b8;
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        line-height: 1.25;
+        user-select: none;
+    }
+    .shape-pill-btn:hover {
+        color: #e2e8f0;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .shape-pill-btn.active {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: 0 1px 4px rgba(2, 132, 199, 0.35);
+    }
+    .shape-batch-btn {
+        font-size: 0.72rem;
+        border-radius: 6px;
+        border-color: rgba(255, 255, 255, 0.12);
+        color: #cbd5e1;
+        transition: all 0.2s ease;
+    }
+    .shape-batch-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+    }
+    @media (max-width: 576px) {
+        .shape-pill-btn {
+            padding: 2px 6px;
+            font-size: 0.68rem;
+        }
+    }
 </style>
 <div class="container-fluid px-2 px-md-3 px-xl-4 mt-1 mt-sm-2 pb-5">
 
@@ -1706,8 +1760,17 @@
                     user.get('enable_discovery_catalogs', True) %}style="display: none;" {% endif %}>
                     <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
                         Management</h6>
-                    <p class="text-secondary small mb-3">Toggle visibility and drag-and-drop to reorder the catalogs
-                        exactly as they should appear in your app.</p>
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <p class="text-secondary small mb-0">Toggle visibility, drag-and-drop to reorder, and choose Portrait (2:3) or Landscape (16:9) per catalog.</p>
+                        <div class="d-flex align-items-center gap-1">
+                            <button type="button" class="btn btn-outline-secondary py-1 px-2 shape-batch-btn" onclick="setAllCatalogShapes('poster')" title="Set all catalogs to Portrait (2:3)">
+                                <i class="fa-solid fa-mobile-screen me-1"></i>All Portrait
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary py-1 px-2 shape-batch-btn" onclick="setAllCatalogShapes('landscape')" title="Set all catalogs to Landscape (16:9)">
+                                <i class="fa-solid fa-tv me-1"></i>All Landscape
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- Hidden input to store ordered comma-separated IDs -->
                     <input type="hidden" id="sorted_catalogs" name="sorted_catalogs" value="">
@@ -1787,10 +1850,11 @@
 
                         <!-- 3. Render the orderable items -->
                         {% for item_id, item_name, item_source in active_user_order %}
+                        {% set cur_shape = user.get('catalog_shapes', {}).get(item_id, 'poster') if user.get('catalog_shapes') else 'poster' %}
                         <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
                             draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}"
                             style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
-                            <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center me-2">
                                 <i class="fa-solid fa-grip-vertical text-secondary me-3" style="cursor: move;"></i>
                                 <div class="form-check mb-0">
                                     <input class="form-check-input catalog-checkbox" type="checkbox"
@@ -1803,12 +1867,31 @@
                                     </label>
                                 </div>
                             </div>
-                            <span
-                                class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}"
-                                style="font-size:0.68rem; letter-spacing:0.02em;">
-                                {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery'
-                                else item_source | upper) }}
-                            </span>
+                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                <input type="hidden" id="shape_{{ item_id }}" name="shape_{{ item_id }}" value="{{ cur_shape }}">
+                                <div class="catalog-shape-pill-group" data-cat-id="{{ item_id }}" role="group" aria-label="Card Shape">
+                                    <button type="button" 
+                                            class="shape-pill-btn {% if cur_shape != 'landscape' %}active{% endif %}" 
+                                            data-shape="poster" 
+                                            onclick="setCatalogShape('{{ item_id }}', 'poster', this)" 
+                                            title="Portrait card (2:3)">
+                                        <i class="fa-solid fa-mobile-screen me-1 d-none d-sm-inline" style="font-size: 0.72rem;"></i><span>Portrait</span>
+                                    </button>
+                                    <button type="button" 
+                                            class="shape-pill-btn {% if cur_shape == 'landscape' %}active{% endif %}" 
+                                            data-shape="landscape" 
+                                            onclick="setCatalogShape('{{ item_id }}', 'landscape', this)" 
+                                            title="Landscape widescreen card (16:9)">
+                                        <i class="fa-solid fa-tv me-1 d-none d-sm-inline" style="font-size: 0.72rem;"></i><span>Landscape</span>
+                                    </button>
+                                </div>
+                                <span
+                                    class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}"
+                                    style="font-size:0.68rem; letter-spacing:0.02em;">
+                                    {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery'
+                                    else item_source | upper) }}
+                                </span>
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
@@ -2919,12 +3002,41 @@
             });
         }
 
+        window.setCatalogShape = function (catId, shape, btn) {
+            const hidden = document.getElementById('shape_' + catId);
+            if (hidden) hidden.value = shape;
+            const group = btn.closest('.catalog-shape-pill-group');
+            if (group) {
+                group.querySelectorAll('.shape-pill-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+        };
+
+        window.setAllCatalogShapes = function (shape) {
+            document.querySelectorAll('.catalog-shape-pill-group').forEach(group => {
+                const catId = group.getAttribute('data-cat-id');
+                const hidden = document.getElementById('shape_' + catId);
+                if (hidden) hidden.value = shape;
+                group.querySelectorAll('.shape-pill-btn').forEach(b => {
+                    if (b.getAttribute('data-shape') === shape) {
+                        b.classList.add('active');
+                    } else {
+                        b.classList.remove('active');
+                    }
+                });
+            });
+        };
+
         const list = document.getElementById("drag-drop-catalog-list");
         if (!list) return;
 
         let draggedItem = null;
 
         list.addEventListener("dragstart", function (e) {
+            if (e.target.closest(".catalog-shape-pill-group") || e.target.closest("input") || e.target.closest("label") || e.target.closest("button")) {
+                e.preventDefault();
+                return;
+            }
             draggedItem = e.target.closest(".catalog-order-item");
             if (draggedItem) {
                 draggedItem.classList.add("dragging");

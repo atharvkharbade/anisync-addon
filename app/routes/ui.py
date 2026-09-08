@@ -339,6 +339,16 @@ async def configure(user_id: str = ""):
 
             user["catalogs"] = enabled_list
 
+            # Save catalog card shape preferences (poster vs landscape)
+            catalog_shapes = user.get("catalog_shapes", {}) or {}
+            for cat in possible_cats:
+                shape_val = form.get(f"shape_{cat}")
+                if shape_val:
+                    val = shape_val.strip().lower()
+                    if val in ["landscape", "poster"]:
+                        catalog_shapes[cat] = val
+            user["catalog_shapes"] = catalog_shapes
+
         if "enable_recommendations" in form:
             user["enable_recommendations"] = form.get("enable_recommendations") == "true"
         if "recommendations_filter_watched" in form:

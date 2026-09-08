@@ -469,8 +469,17 @@ async def user_manifest(user_id: str):
     if user_catalogs is not None:
         user_catalogs = [c if c != "anime_tracker_search" else "anisync_search" for c in user_catalogs]
 
+    catalog_shapes = user.get("catalog_shapes", {}) or {}
+
     def get_configured_catalog(cat):
-        return cat.copy()
+        c = cat.copy()
+        cat_id = c.get("id")
+        shape = catalog_shapes.get(cat_id, "poster")
+        if shape == "landscape":
+            c["posterShape"] = "landscape"
+        else:
+            c["posterShape"] = "poster"
+        return c
 
     active_catalogs = []
     rec_catalog_ids = ["anisync_rec", "anisync_loved", "anisync_liked"]
