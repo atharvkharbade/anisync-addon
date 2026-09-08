@@ -171,7 +171,9 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
             return {}
         data = resp.json()
 
-        status = (data.get("data", {}).get("attributes", {}).get("status") or "").lower()
+        k_data = data.get("data") or {} if isinstance(data, dict) else {}
+        k_attrs = k_data.get("attributes") or {} if isinstance(k_data, dict) else {}
+        status = (k_attrs.get("status") or "").lower()
         if status in ["current", "releasing", "unreleased", "not_yet_released"]:
             ttl = datetime.timedelta(hours=2)
         else:
@@ -610,9 +612,11 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
         cinemeta_data = {}
         if imdb_id:
-            k_status = (kitsu_data.get("data", {}).get("attributes", {}).get("status") or "").lower()
+            k_data = kitsu_data.get("data") or {} if isinstance(kitsu_data, dict) else {}
+            k_attrs = k_data.get("attributes") or {} if isinstance(k_data, dict) else {}
+            k_status = (k_attrs.get("status") or "").lower()
             is_releasing = k_status in ["current", "releasing", "unreleased", "not_yet_released"]
-            subtype = (kitsu_data.get("data", {}).get("attributes", {}).get("subtype") or "tv").lower()
+            subtype = (k_attrs.get("subtype") or "tv").lower()
             media_type = "movie" if subtype == "movie" else "series"
             cinemeta_data = await fetch_cinemeta_metadata(imdb_id, media_type, is_releasing=is_releasing)
 

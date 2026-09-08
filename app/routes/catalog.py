@@ -1048,7 +1048,7 @@ def get_catalog_sorting(user, catalog_id, default_category_key=None):
         if cfg_sort and cfg_sort != "default":
             return True, cfg_sort, cat_cfg.get("sort_order", "desc")
 
-    cat_sort = user.get("catalog_sorts", {}).get(catalog_id)
+    cat_sort = (user.get("catalog_sorts") or {}).get(catalog_id)
     if cat_sort and isinstance(cat_sort, dict) and cat_sort.get("by", "default") != "default":
         return True, cat_sort.get("by", "default"), cat_sort.get("order", "desc")
 
@@ -1070,7 +1070,7 @@ def is_catalog_shuffle_enabled(user, catalog_id):
     if isinstance(cat_cfg, dict) and "shuffle" in cat_cfg:
         return bool(cat_cfg["shuffle"])
 
-    cat_shuffle = user.get("catalog_shuffles", {}).get(catalog_id)
+    cat_shuffle = (user.get("catalog_shuffles") or {}).get(catalog_id)
     if cat_shuffle is not None:
         return bool(cat_shuffle)
 
@@ -1215,11 +1215,12 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
             new_poster = None
             if poster_pref == "anilist":
                 al_poster = m_copy.get("poster_al")
+                poster_val = m_copy.get("poster") or ""
                 if not al_poster and (
-                    m_copy.get("poster", "").startswith("https://s4.anilist.co")
-                    or "/anilist/" in m_copy.get("poster", "")
+                    poster_val.startswith("https://s4.anilist.co")
+                    or "/anilist/" in poster_val
                 ):
-                    al_poster = m_copy.get("poster")
+                    al_poster = poster_val
                 if al_poster:
                     new_poster = al_poster
                 elif m_copy.get("anilist_id"):
@@ -1235,7 +1236,7 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                     new_poster = m_copy["poster_kitsu"]
 
             if new_poster:
-                curr = m_copy.get("poster", "")
+                curr = m_copy.get("poster") or ""
                 if "/poster/" in curr and "url=" in curr:
                     try:
                         parsed = urllib.parse.urlparse(curr)
@@ -1248,7 +1249,7 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                 else:
                     m_copy["poster"] = new_poster
 
-        current_poster = m_copy.get("poster", "")
+        current_poster = m_copy.get("poster") or ""
         clean_poster = current_poster
         is_badge = False
         badge_query_params = {}
@@ -1283,10 +1284,10 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
             simkl_id = stremio_id.split(":")[1]
 
         # Apply RPDB poster overlay if configured (supports per-catalog poster art on/off toggle)
-        catalog_poster_arts = user.get("catalog_poster_arts", {}) if user else {}
+        catalog_poster_arts = (user.get("catalog_poster_arts") or {}) if user else {}
         cat_art_override = catalog_poster_arts.get(catalog_id)
         if cat_art_override is None and user:
-            cat_configs = user.get("catalog_configs", {}) or {}
+            cat_configs = user.get("catalog_configs") or {}
             cat_art_override = (cat_configs.get(catalog_id) or {}).get("poster_art")
 
         is_art_disabled = (cat_art_override is False or cat_art_override in ("false", "off", "clean", "none"))
@@ -1338,8 +1339,8 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
     enrich_catalog_metas_artwork(formatted_metas, user)
 
     # Handle card shape (landscape vs poster) for Stremio and modern clients
-    catalog_shapes = user.get("catalog_shapes", {}) if user else {}
-    catalog_configs = user.get("catalog_configs", {}) if user else {}
+    catalog_shapes = (user.get("catalog_shapes") or {}) if user else {}
+    catalog_configs = (user.get("catalog_configs") or {}) if user else {}
     cat_cfg = catalog_configs.get(catalog_id, {}) if isinstance(catalog_configs, dict) else {}
     is_landscape = bool(catalog_id and (cat_cfg.get("shape") == "landscape" or catalog_shapes.get(catalog_id) == "landscape"))
     for m in formatted_metas:
@@ -1800,7 +1801,7 @@ async def update_discovery_catalogs_cache() -> dict:
             if len(j_desc) > 200:
                 j_desc = j_desc[:200] + "..."
 
-            images = item.get("images", {}).get("jpg", {})
+            images = (item.get("images") or {}).get("jpg") or {}
             j_poster = images.get("large_image_url") or images.get("image_url") or ""
 
             kitsu_id = kitsu_mappings.get(f"mal:{j_mid}")
@@ -1818,7 +1819,8 @@ async def update_discovery_catalogs_cache() -> dict:
 
             j_yr = 0
             try:
-                j_yr = int(item.get("year") or (item.get("aired", {}).get("from") or "")[:4] or 0)
+                aired_dict = item.get("aired") or {}
+                j_yr = int(item.get("year") or (aired_dict.get("from") or "")[:4] or 0)
             except Exception:
                 j_yr = 0
             metas.append({
@@ -1947,8 +1949,9 @@ async def update_discovery_catalogs_cache() -> dict:
                 stremio_id = f"kitsu:{kitsu_mappings.get(f'mal:{j_mid}')}" if kitsu_mappings.get(f"mal:{j_mid}") else f"mal:{j_mid}"
                 if not any(x["id"] == stremio_id for x in day_items):
                     j_name = j_item.get("title_english") or j_item.get("title") or "Unknown"
-                    images = j_item.get("images", {}).get("jpg", {})
+                    images = (j_item.get("images") or {}).get("jpg") or {}
                     j_poster = images.get("large_image_url") or images.get("image_url") or ""
+                    j_aired = j_item.get("aired") or {}
                     day_items.append({
                         "id": stremio_id,
                         "type": "series",
@@ -1957,7 +1960,7 @@ async def update_discovery_catalogs_cache() -> dict:
                         "poster": j_poster,
                         "description": (j_item.get("synopsis") or "")[:200],
                         "score": float(j_item.get("score") or 0),
-                        "year": int((j_item.get("aired", {}).get("from") or "")[:4] or 0),
+                        "year": int((j_aired.get("from") or "")[:4] or 0),
                         "episodes": int(j_item.get("episodes") or 0),
                         "popularity": int(j_item.get("members") or 0),
                         "airing_day": day,
@@ -2234,10 +2237,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         "canonicalTitle": attrs.get("canonicalTitle"),
                         "titles": titles
                     }
+                    poster_img = attrs.get("posterImage") or {}
                     poster = (
-                        attrs.get("posterImage", {}).get("large")
-                        or attrs.get("posterImage", {}).get("medium")
-                        or attrs.get("posterImage", {}).get("original")
+                        poster_img.get("large")
+                        or poster_img.get("medium")
+                        or poster_img.get("original")
                         or ""
                     )
                     if poster:
@@ -2831,13 +2835,16 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                         continue
                     is_candidate = False
                     if item.get("anilist_item"):
-                        al_status_str = item["anilist_item"].get("media", {}).get("status", "")
+                        al_media = (item["anilist_item"].get("media") or {}) if isinstance(item["anilist_item"], dict) else {}
+                        al_status_str = al_media.get("status", "")
                         is_candidate = al_status_str in ["RELEASING", "NOT_YET_RELEASED"] or not al_status_str
                     elif item.get("mal_item"):
-                        mal_status_str = item["mal_item"].get("node", {}).get("status", "")
+                        mal_node = (item["mal_item"].get("node") or {}) if isinstance(item["mal_item"], dict) else {}
+                        mal_status_str = mal_node.get("status", "")
                         is_candidate = mal_status_str in ["currently_airing", "not_yet_aired"] or not mal_status_str
                     elif item.get("simkl_item"):
-                        show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
+                        s_item = item["simkl_item"] if isinstance(item.get("simkl_item"), dict) else {}
+                        show_obj = s_item.get("show") or s_item.get("anime") or s_item
                         simkl_status_str = (show_obj.get("status") or "").lower()
                         is_candidate = simkl_status_str not in ["ended", "completed", "canceled", "cancelled"]
                     else:
@@ -3689,19 +3696,25 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 (enable_new_ep_badge or sort_by_new_ep) or (custom_sort_enabled and sort_by in ["airing_date", "score"])
             )
             if needs_bulk:
-                airing_mal_ids = [
-                    str(item["node"]["id"]) for item in data_items
-                    if item.get("node", {}).get("status") in ["currently_airing", "not_yet_aired"] or not item.get("node", {}).get("status")
-                ]
+                airing_mal_ids = []
+                for item in data_items:
+                    node = (item.get("node") or {}) if isinstance(item, dict) else {}
+                    nid = node.get("id")
+                    if not nid:
+                        continue
+                    nstatus = node.get("status") or ""
+                    if nstatus in ["currently_airing", "not_yet_aired"] or not nstatus:
+                        airing_mal_ids.append(str(nid))
                 if airing_mal_ids:
                     bulk_details = await fetch_anilist_details_in_bulk(airing_mal_ids)
 
             # ── Compute per-item: is_new_ep (with time-gating) ────────────────
             def compute_mal_flags(item, mal_id):
                 """Return (is_new_ep, has_unwatched, latest_aired_at, latest_aired_num, recently_finished)."""
-                node = item.get("node", {})
-                progress = node.get("my_list_status", {}).get("num_episodes_watched", 0)
-                total = node.get("num_episodes", 0)
+                node = (item.get("node") or {}) if isinstance(item, dict) else {}
+                status_obj = node.get("my_list_status") or {}
+                progress = status_obj.get("num_episodes_watched", 0) or 0
+                total = node.get("num_episodes", 0) or 0
                 al_media = bulk_details.get(mal_id) or {}
                 next_ep = al_media.get("nextAiringEpisode")
                 next_ep_num = next_ep.get("episode") if next_ep else None
@@ -3794,8 +3807,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             elif sort_by_new_ep and mal_status in ["watching", "plan_to_watch"]:
 
                 def get_mal_priority(item):
-                    node = item.get("node", {})
-                    mal_id = str(node["id"])
+                    node = (item.get("node") or {}) if isinstance(item, dict) else {}
+                    mal_id = str(node.get("id") or "")
+                    if not mal_id:
+                        return (3, 0, 0)
                     is_new_ep, has_unwatched, latest_aired_at, _, recently_finished = compute_mal_flags(item, mal_id)
 
                     status = node.get("status", "")
@@ -3833,7 +3848,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             else:
 
                 def get_mal_updated_ts(item):
-                    node = item.get("node", {})
+                    node = (item.get("node") or {}) if isinstance(item, dict) else {}
                     status = node.get("my_list_status") or {}
                     return parse_iso_timestamp(status.get("updated_at", ""))
 
@@ -3962,8 +3977,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
             # ── Compute per-entry flags (with time-gating) ────────────────────
             def compute_al_flags(entry):
-                media = entry.get("media", {})
-                progress = entry.get("progress", 0)
+                media = (entry.get("media") or {}) if isinstance(entry, dict) else {}
+                progress = entry.get("progress", 0) or 0
                 total = media.get("episodes") or 0
                 next_ep = media.get("nextAiringEpisode")
                 next_ep_num = next_ep.get("episode") if next_ep else None
@@ -4032,10 +4047,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 def get_al_priority(entry):
                     is_new_ep, has_unwatched, latest_aired_at, recently_finished = compute_al_flags(entry)
-                    media = entry.get("media", {})
+                    media = (entry.get("media") or {}) if isinstance(entry, dict) else {}
                     status = media.get("status", "")
                     is_airing = status in ["RELEASING", "NOT_YET_RELEASED"]
-                    updated_ts = entry.get("updatedAt") or 0
+                    updated_ts = entry.get("updatedAt") or 0 if isinstance(entry, dict) else 0
 
                     next_ep = media.get("nextAiringEpisode")
                     airing_at = next_ep.get("airingAt") if next_ep else None
@@ -4064,7 +4079,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             else:
 
                 def get_al_updated_ts(entry):
-                    return entry.get("updatedAt") or 0
+                    return (entry.get("updatedAt") or 0) if isinstance(entry, dict) else 0
 
                 entries = sorted(entries, key=get_al_updated_ts, reverse=True)
 

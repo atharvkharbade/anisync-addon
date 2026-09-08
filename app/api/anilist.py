@@ -135,7 +135,7 @@ async def _gql(token: str | None, query: str, variables: dict | None = None) -> 
 
 async def get_viewer(token: str) -> dict:
     data = await _gql(token, VIEWER_QUERY)
-    return data["data"]["Viewer"]
+    return (data.get("data") or {}).get("Viewer") or {}
 
 
 async def get_media_status(token: str, anilist_id: int, use_cache: bool = True) -> dict:
@@ -148,7 +148,7 @@ async def get_media_status(token: str, anilist_id: int, use_cache: bool = True) 
             return cached
 
     data = await _gql(token, MEDIA_QUERY, {"mediaId": anilist_id})
-    media = data.get("data", {}).get("Media")
+    media = (data.get("data") or {}).get("Media")
     if media:
         cache_anilist_media(anilist_id, media)
     return media
@@ -249,9 +249,9 @@ async def get_user_anime_list(token: str, user_id: int, status: str = None) -> d
     if status:
         variables["status"] = status
     data = await _gql(token, USER_LIST_QUERY, variables)
-    return data.get("data", {}).get("MediaListCollection", {})
+    return (data.get("data") or {}).get("MediaListCollection") or {}
 
 
 async def search_anime(token: str, query: str, limit: int = 20) -> list:
     data = await _gql(token, SEARCH_ANIME_QUERY, {"search": query, "limit": limit})
-    return data.get("data", {}).get("Page", {}).get("media", [])
+    return ((data.get("data") or {}).get("Page") or {}).get("media") or []

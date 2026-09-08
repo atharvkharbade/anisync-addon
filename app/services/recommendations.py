@@ -334,7 +334,7 @@ async def get_recommendations_for_seeds(
                 continue
 
         # Year filter
-        year = media.get("startDate", {}).get("year")
+        year = (media.get("startDate") or {}).get("year")
         if year and (year < rec_year_min or year > rec_year_max):
             continue
 
@@ -437,7 +437,7 @@ async def get_recommendations_for_seeds(
                         continue
 
                 # Year filter
-                year = node.get("start_season", {}).get("year")
+                year = (node.get("start_season") or {}).get("year")
                 if year and (year < rec_year_min or year > rec_year_max):
                     continue
 
@@ -459,7 +459,7 @@ async def get_recommendations_for_seeds(
                     if (pop_rank and pop_rank <= 1200) or (mean_score and mean_score < 7.3):
                         continue
 
-                poster = node.get("main_picture", {}).get("large") or node.get("main_picture", {}).get("medium") or ""
+                poster = (node.get("main_picture") or {}).get("large") or (node.get("main_picture") or {}).get("medium") or ""
                 syn = clean_html(node.get("synopsis") or "")
 
                 from app.services.db import get_cached_ids_by_mal
@@ -556,14 +556,15 @@ async def get_recommendations_for_seeds(
                                 pass
 
                         item_type = "movie" if subtype == "movie" else "series"
-                        titles = attrs.get("titles", {})
+                        titles = attrs.get("titles") or {}
                         title = attrs.get("canonicalTitle") or titles.get("en") or titles.get("en_jp")
                         if not is_proper_anime(title):
                             continue
+                        poster_img = attrs.get("posterImage") or {}
                         poster = (
-                            attrs.get("posterImage", {}).get("large")
-                            or attrs.get("posterImage", {}).get("medium")
-                            or attrs.get("posterImage", {}).get("original")
+                            poster_img.get("large")
+                            or poster_img.get("medium")
+                            or poster_img.get("original")
                             or ""
                         )
                         if poster:
@@ -738,7 +739,7 @@ async def generate_genre_recommendations(
                 continue
 
         # Year filter
-        year = media.get("startDate", {}).get("year")
+        year = (media.get("startDate") or {}).get("year")
         if year and (year < rec_year_min or year > rec_year_max):
             continue
 
@@ -1171,7 +1172,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 continue
 
         # Year filter
-        year = media.get("startDate", {}).get("year")
+        year = (media.get("startDate") or {}).get("year")
         if year and (year < rec_year_min or year > rec_year_max):
             continue
 
@@ -1270,7 +1271,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                         continue
 
                 # Year filter
-                year = node.get("start_season", {}).get("year")
+                year = (node.get("start_season") or {}).get("year")
                 if year and (year < rec_year_min or year > rec_year_max):
                     continue
 
@@ -1292,7 +1293,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                     if (pop_rank and pop_rank <= 1200) or (mean_score and mean_score < 7.3):
                         continue
 
-                poster = node.get("main_picture", {}).get("large") or node.get("main_picture", {}).get("medium") or ""
+                poster = (node.get("main_picture") or {}).get("large") or (node.get("main_picture") or {}).get("medium") or ""
                 syn = clean_html(node.get("synopsis") or "")
 
                 from app.services.db import get_cached_ids_by_mal
