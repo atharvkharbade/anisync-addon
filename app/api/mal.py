@@ -129,7 +129,7 @@ async def get_anime_details(token: str, anime_id: str) -> dict:
 
 
 async def get_user_anime_list(token: str, status: str = "", limit: int = 100, offset: int = 0) -> dict:
-    fields = "id,title,alternative_titles,main_picture,num_episodes,status,mean,my_list_status{status,score,num_episodes_watched,updated_at},genres,media_type,end_date"
+    fields = "id,title,alternative_titles,main_picture,num_episodes,status,mean,my_list_status{status,score,num_episodes_watched,updated_at},genres,media_type,start_date,start_season,end_date"
     params = {"fields": fields, "limit": limit, "offset": offset, "nsfw": "true"}
     if status:
         params["status"] = status
