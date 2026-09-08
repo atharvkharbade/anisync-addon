@@ -381,10 +381,18 @@
         padding: 0.35rem;
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        max-height: 280px;
+        max-height: 290px;
         overflow-y: auto;
-        scrollbar-width: thin;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
         animation: fadeInTab 0.15s ease;
+    }
+    .custom-options-menu::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
     }
 
     .custom-options-menu.show {
@@ -876,180 +884,427 @@
         font-weight: 600;
         box-shadow: 0 1px 4px rgba(2, 132, 199, 0.35);
     }
-    .shape-batch-btn {
-        font-size: 0.72rem;
-        border-radius: 6px;
-        border-color: rgba(255, 255, 255, 0.12);
-        color: #cbd5e1;
-        transition: all 0.2s ease;
-    }
-    .shape-batch-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.2);
-        color: #ffffff;
-    }
-
     /* Catalog Row Customization Button & Badge */
+    /* Catalog Row Layout & Responsive Subtitle Structure */
+    .catalog-content-col {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-width: 0;
+    }
+    .catalog-content-col .catalog-item-title {
+        flex-grow: 1;
+        min-width: 0;
+        line-height: 1.4;
+    }
+    .catalog-source-badge {
+        font-size: 0.68rem;
+        letter-spacing: 0.03em;
+        width: 105px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 6px;
+        text-align: center;
+        flex-shrink: 0;
+    }
     .catalog-config-btn {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         border-radius: 8px;
         background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         color: #94a3b8;
         position: relative;
         padding: 0;
         cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        flex-shrink: 0;
     }
     .catalog-config-btn:hover {
         background: rgba(2, 132, 199, 0.15);
         border-color: rgba(56, 189, 248, 0.35);
         color: #38bdf8;
+        transform: translateY(-1px);
     }
-    .catalog-config-btn.has-overrides {
-        border-color: rgba(14, 165, 233, 0.45);
-        color: #38bdf8;
-        background: rgba(14, 165, 233, 0.12);
-    }
-    .catalog-config-badge {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        background: #0284c7;
-        color: #ffffff;
-        font-size: 0.62rem;
-        font-weight: 700;
-        min-width: 16px;
-        height: 16px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 3px;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+    .catalog-order-item:hover .grip-handle {
+        opacity: 0.85 !important;
     }
 
-    /* Catalog Customization Modal */
+    /* Mobile: 2-line Subtitle Layout */
+    @media (max-width: 576px) {
+        .catalog-order-item {
+            padding: 8px 10px !important;
+        }
+        .catalog-content-col {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+            gap: 3px !important;
+        }
+        .catalog-content-col .catalog-item-title {
+            width: 100% !important;
+            line-height: 1.25 !important;
+        }
+        .catalog-source-badge {
+            width: auto !important;
+            font-size: 0.62rem !important;
+            padding: 2px 7px !important;
+            letter-spacing: 0.02em !important;
+            border-radius: 20px !important;
+        }
+        .catalog-config-btn {
+            width: 34px !important;
+            height: 34px !important;
+        }
+    }
+
+    /* Catalog Customization Modal - AniSync Native Dark/Cyan Design System */
     .catalog-modal-content {
-        background: #0f172a;
+        background: #141416;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 16px;
-        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(2, 132, 199, 0.1);
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(2, 132, 199, 0.12);
         color: #f1f5f9;
         backdrop-filter: blur(24px);
     }
-    .catalog-modal-input, .catalog-modal-select {
-        background: rgba(15, 23, 42, 0.75) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        color: #f8fafc !important;
-        border-radius: 8px;
-        font-size: 0.85rem;
-        padding: 6px 12px;
+    .catalog-header-badge {
+        background: #0284c7;
+        color: #ffffff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+        transition: all 0.2s ease;
     }
-    .catalog-modal-input:focus, .catalog-modal-select:focus {
-        border-color: #38bdf8 !important;
-        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
+    .catalog-header-badge.zero {
+        background: rgba(255, 255, 255, 0.08);
+        color: #94a3b8;
+        box-shadow: none;
+    }
+    .btn-modal-reset-field {
+        background: transparent;
+        border: none;
+        color: #38bdf8;
+        font-size: 0.75rem;
+        cursor: pointer;
+        padding: 0;
+        text-decoration: none;
+        transition: color 0.15s ease;
+    }
+    .btn-modal-reset-field:hover {
+        color: #7dd3fc;
+    }
+    .catalog-modal-input {
+        background: #141416 !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #f8fafc !important;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        padding: 0.55rem 0.85rem;
+        min-height: 40px;
+    }
+    .catalog-modal-input:focus {
+        border-color: rgba(56, 189, 248, 0.5) !important;
+        background: #141416 !important;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
     }
     .modal-segmented-group {
         display: flex;
-        background: rgba(15, 23, 42, 0.85);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 8px;
+        background: #141416;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
         padding: 3px;
         gap: 3px;
+        min-height: 40px;
+        align-items: stretch;
     }
     .modal-segmented-btn {
         flex: 1;
-        border: none;
+        border: 1px solid transparent;
         background: transparent;
         color: #94a3b8;
-        font-size: 0.78rem;
+        font-size: 0.82rem;
         font-weight: 500;
-        padding: 6px 10px;
-        border-radius: 6px;
+        padding: 0.45rem 0.6rem;
+        border-radius: 7px;
         cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
         display: flex;
         align-items: center;
         justify-content: center;
         user-select: none;
     }
     .modal-segmented-btn:hover {
-        color: #e2e8f0;
+        color: #f1f5f9;
         background: rgba(255, 255, 255, 0.04);
     }
     .modal-segmented-btn.active {
+        background: rgba(56, 189, 248, 0.14);
+        border-color: rgba(56, 189, 248, 0.32);
+        color: #38bdf8;
+        font-weight: 600;
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.12);
+    }
+
+    .catalog-modal-content .custom-select {
+        background: #141416;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        min-height: 40px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.82rem;
+        color: #f1f5f9;
+    }
+    .catalog-modal-content .custom-select:hover {
+        border-color: rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.035);
+    }
+    .catalog-modal-content .custom-select.active {
+        border-color: rgba(56, 189, 248, 0.4);
+        background: rgba(255, 255, 255, 0.035);
+    }
+    @keyframes fadeInDropup {
+        from {
+            opacity: 0;
+            transform: translateY(4px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .custom-select-wrapper.dropup .custom-options-menu,
+    .catalog-modal-content .custom-select-wrapper .custom-options-menu {
+        top: auto;
+        bottom: calc(100% + 6px);
+        box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.95), 0 0 25px rgba(0, 0, 0, 0.7);
+        transform-origin: bottom center;
+        animation: fadeInDropup 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .catalog-modal-content .custom-options-menu {
+        z-index: 1065;
+        max-height: 280px;
+        background: #141416;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 12px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+    .catalog-modal-content .custom-options-menu::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+    .catalog-modal-content .custom-option-item {
+        padding: 0.45rem 0.75rem;
+        font-size: 0.82rem;
+    }
+
+    /* Modal Live Preview Gallery (Matching Stremio & Nuvio) */
+    .preview-stage-wrap {
+        background: #0d0d0f;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        max-height: 512px;
+    }
+    .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        flex-shrink: 0;
+    }
+    .preview-title {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #f1f5f9;
+        letter-spacing: -0.01em;
+    }
+    .preview-gallery-container {
+        height: 456px;
+        max-height: 456px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 2px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+    .preview-gallery-container::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+    .preview-grid {
+        display: grid;
+        gap: 8px;
+    }
+    .preview-grid.portrait {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .preview-grid.landscape {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    @keyframes shapeSwitchMorph {
+        0% {
+            opacity: 0.45;
+            transform: scale(0.98);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    .preview-grid.animate-switch {
+        animation: shapeSwitchMorph 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        will-change: opacity, transform;
+    }
+    .preview-card {
+        position: relative;
+        border-radius: 6px;
+        overflow: hidden;
+        background: #1a1926;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .preview-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
+    }
+    .preview-grid.portrait .preview-card {
+        aspect-ratio: 2 / 3;
+    }
+    .preview-grid.landscape .preview-card {
+        aspect-ratio: 16 / 9;
+    }
+    .preview-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    #modalPosterArtSection.disabled {
+        opacity: 0.45;
+        pointer-events: none;
+        user-select: none;
+    }
+    #modalPosterArtSection.disabled .btn-modal-reset-field {
+        display: none;
+    }
+
+    .preview-card.skeleton {
+        background: linear-gradient(110deg, rgba(255, 255, 255, 0.03) 8%, rgba(255, 255, 255, 0.08) 18%, rgba(255, 255, 255, 0.03) 33%);
+        background-size: 200% 100%;
+        animation: 1.4s previewShimmer linear infinite;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    @keyframes previewShimmer {
+        to {
+            background-position-x: -200%;
+        }
+    }
+    .preview-empty-state {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 240px;
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: rgba(255, 255, 255, 0.45);
+    }
+    .preview-empty-state i {
+        font-size: 2.2rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.6;
+        color: #38bdf8;
+    }
+    .preview-empty-title {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #e2e8f0;
+        margin-bottom: 0.25rem;
+    }
+    .preview-empty-desc {
+        font-size: 0.72rem;
+        color: rgba(255, 255, 255, 0.45);
+    }
+
+    /* Footer buttons */
+    .btn-modal-reset {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 9px;
+        color: #94a3b8;
+        font-size: 0.84rem;
+        font-weight: 500;
+        padding: 0.45rem 0.85rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all 0.18s ease;
+    }
+    .btn-modal-reset:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #f1f5f9;
+    }
+    .btn-modal-duplicate {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #cbd5e1;
+        font-size: 0.82rem;
+        font-weight: 500;
+        padding: 6px 14px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+    .btn-modal-duplicate:hover {
+        background: rgba(255, 255, 255, 0.09);
+        color: #38bdf8;
+        border-color: rgba(56, 189, 248, 0.35);
+    }
+    .btn-modal-done {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         color: #ffffff;
         font-weight: 600;
-        box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+        font-size: 0.85rem;
+        border-radius: 8px;
+        padding: 7px 22px;
+        border: none;
+        box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+        transition: all 0.2s ease;
+        cursor: pointer;
     }
-
-    /* Modal Live Preview Card */
-    .preview-stage-wrap {
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        min-height: 290px;
-    }
-    .catalog-live-card {
-        position: relative;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-    }
-    .catalog-live-card.portrait {
-        width: 155px;
-        aspect-ratio: 2 / 3;
-        background-image: url('https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx154587-n2bBGnSEoq7k.jpg'), linear-gradient(135deg, #1e293b, #0f172a);
-    }
-    .catalog-live-card.landscape {
-        width: 250px;
-        aspect-ratio: 16 / 9;
-        max-width: 100%;
-        background-image: url('https://s4.anilist.co/file/anilistcdn/media/anime/banner/154587-iv4LGDM2FuTw.jpg'), linear-gradient(135deg, #0284c7, #0f172a);
-    }
-    .catalog-live-card-badge {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
-        color: #fff;
-        font-size: 0.62rem;
-        font-weight: 700;
-        padding: 2px 6px;
-        border-radius: 4px;
-        letter-spacing: 0.04em;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-    }
-    .catalog-live-card-overlay {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        padding: 24px 8px 8px 8px;
-        background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.65) 60%, transparent 100%);
-    }
-    .catalog-live-card-title {
-        font-size: 0.76rem;
-        font-weight: 600;
+    .btn-modal-done:hover {
+        background: linear-gradient(135deg, #0284c7 0%, #0284c7 100%);
         color: #ffffff;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .catalog-live-card-sub {
-        font-size: 0.65rem;
-        color: #94a3b8;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.5);
     }
 </style>
 <div class="container-fluid px-2 px-md-3 px-xl-4 mt-1 mt-sm-2 pb-5">
@@ -1590,19 +1845,6 @@
                                 AniList, or Simkl to enable watchlist combining.
                             </span>
                         </label>
-                    </div>                    <!-- Per-Catalog Customization Notice -->
-                    <div class="card p-3 mb-3 border-0" style="background: rgba(14, 165, 233, 0.05); border: 1px dashed rgba(14, 165, 233, 0.25) !important; border-radius: 12px;">
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-circle p-2 me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="background: rgba(14, 165, 233, 0.15); width: 38px; height: 38px;">
-                                <i class="fa-solid fa-sliders text-info" style="font-size: 0.95rem;"></i>
-                            </div>
-                            <div>
-                                <span class="fw-semibold text-light small d-block mb-0.5">Per-Catalog Sorting & Customization</span>
-                                <span class="text-secondary small" style="font-size: 0.78rem; line-height: 1.4;">
-                                    You can now customize sorting, card shapes (Portrait/Landscape), custom titles, and shuffle directly on each catalog using the <i class="fa-solid fa-sliders text-info mx-1"></i> icon in <strong>Catalogs Management</strong> below.
-                                </span>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1637,16 +1879,8 @@
                     user.get('enable_discovery_catalogs', True) %}style="display: none;" {% endif %}>
                     <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
                         Management</h6>
-                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                        <p class="text-secondary small mb-0">Toggle visibility, drag-and-drop to reorder, and choose Portrait (2:3) or Landscape (16:9) per catalog.</p>
-                        <div class="d-flex align-items-center gap-1">
-                            <button type="button" class="btn btn-outline-secondary py-1 px-2 shape-batch-btn" onclick="setAllCatalogShapes('poster')" title="Set all catalogs to Portrait (2:3)">
-                                <i class="fa-solid fa-mobile-screen me-1"></i>All Portrait
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary py-1 px-2 shape-batch-btn" onclick="setAllCatalogShapes('landscape')" title="Set all catalogs to Landscape (16:9)">
-                                <i class="fa-solid fa-tv me-1"></i>All Landscape
-                            </button>
-                        </div>
+                    <div class="mb-3">
+                        <p class="text-secondary small mb-0">Toggle visibility, drag-and-drop to reorder, and customize individual catalogs.</p>
                     </div>
 
                     <!-- Hidden input to store ordered comma-separated IDs -->
@@ -1732,34 +1966,32 @@
                         <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
                             draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}" data-default-name="{{ item_name }}"
                             style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
-                            <div class="d-flex align-items-center me-2 overflow-hidden">
-                                <i class="fa-solid fa-grip-vertical text-secondary me-3" style="cursor: move;"></i>
-                                <div class="form-check mb-0 text-truncate">
-                                    <input class="form-check-input catalog-checkbox" type="checkbox"
-                                        id="cat_{{ item_id }}" name="cat_{{ item_id }}" {% if user.get('catalogs') is
-                                        none or item_id in user.get('catalogs', []) or (item_source=='discovery'
-                                        and 'enable_discovery_catalogs' not in user) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
-                                    <label class="form-check-label small fw-medium text-light text-truncate" for="cat_{{ item_id }}"
-                                        style="user-select: none;">
+                            <div class="d-flex align-items-center flex-grow-1 overflow-hidden min-w-0 me-3">
+                                <i class="fa-solid fa-grip-vertical text-secondary grip-handle" style="cursor: move; width: 14px; text-align: center; opacity: 0.35; margin-right: 14px; flex-shrink: 0;"></i>
+                                <input class="form-check-input catalog-checkbox flex-shrink-0" type="checkbox"
+                                    id="cat_{{ item_id }}" name="cat_{{ item_id }}"
+                                    style="margin: 0 12px 0 0; cursor: pointer; float: none;"
+                                    {% if user.get('catalogs') is none or item_id in user.get('catalogs', []) or (item_source=='discovery' and 'enable_discovery_catalogs' not in user) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
+                                <div class="catalog-content-col d-flex flex-grow-1 overflow-hidden min-w-0">
+                                    <label class="catalog-item-title small fw-medium text-light text-truncate mb-0" for="cat_{{ item_id }}"
+                                        style="user-select: none; cursor: pointer;">
                                         <span id="label_text_{{ item_id }}">{{ cur_title if cur_title else item_name }}</span>
                                     </label>
+                                    <span
+                                        class="badge rounded-pill catalog-source-badge {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}">
+                                        {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery'
+                                        else item_source | upper) }}
+                                    </span>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                            <div class="d-flex align-items-center flex-shrink-0">
                                 <button type="button" 
                                         class="btn btn-sm catalog-config-btn" 
                                         id="cfg_btn_{{ item_id }}"
                                         onclick="openCatalogConfigModal('{{ item_id }}')" 
-                                        title="Customize {{ item_name }}">
-                                    <i class="fa-solid fa-sliders" style="font-size: 0.82rem;"></i>
-                                    <span class="catalog-config-badge d-none" id="badge_count_{{ item_id }}">0</span>
+                                        title="Configure {{ item_name }}">
+                                    <i class="fa-solid fa-pen" style="font-size: 0.8rem;"></i>
                                 </button>
-                                <span
-                                    class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}"
-                                    style="font-size:0.68rem; letter-spacing:0.02em;">
-                                    {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery'
-                                    else item_source | upper) }}
-                                </span>
                             </div>
                         </div>
                         {% endfor %}
@@ -2500,19 +2732,18 @@
                     <h5 class="modal-title fw-bold text-white mb-0" id="catalogConfigModalLabel" style="font-size: 1.1rem;">
                         <span id="modalCatalogName">Catalog</span>
                     </h5>
-                    <span class="badge rounded-pill bg-primary" id="modalConfigCountBadge" style="font-size: 0.72rem; padding: 3px 8px;">0</span>
                 </div>
                 <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body px-4 py-3">
-                <div class="row g-4">
+                <div class="row g-4 align-items-stretch">
                     <!-- Left: Configuration Form -->
                     <div class="col-12 col-md-7 d-flex flex-column gap-3">
                         <!-- 1. Custom Name -->
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-1">
-                                <label class="form-label small fw-semibold text-secondary mb-0" for="modalInputTitle">Name</label>
-                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" id="modalResetTitleBtn" onclick="resetModalTitle()" title="Reset to original name" style="font-size: 0.75rem;">
+                                <label class="form-label small fw-semibold text-light mb-0" for="modalInputTitle">Name</label>
+                                <button type="button" class="btn-modal-reset-field" id="modalResetTitleBtn" onclick="resetModalTitle()" title="Reset to original name">
                                     <i class="fa-solid fa-rotate-left me-1"></i>Reset
                                 </button>
                             </div>
@@ -2521,60 +2752,107 @@
 
                         <!-- 2. Placement -->
                         <div>
-                            <label class="form-label small fw-semibold text-secondary mb-1 d-block">Placement</label>
+                            <label class="form-label small fw-semibold text-light mb-1 d-block">Placement</label>
                             <div class="modal-segmented-group" id="modalPlacementGroup">
                                 <button type="button" class="modal-segmented-btn active" data-placement="all" onclick="setModalPlacement('all')">
-                                    <i class="fa-solid fa-house-chimney me-1.5" style="font-size: 0.75rem;"></i>Home + Discover
+                                    Home + Discover
                                 </button>
                                 <button type="button" class="modal-segmented-btn" data-placement="discover_only" onclick="setModalPlacement('discover_only')">
-                                    <i class="fa-solid fa-compass me-1.5" style="font-size: 0.75rem;"></i>Discover only
+                                    Discover only
                                 </button>
                             </div>
-                            <span class="text-secondary small d-block mt-1" style="font-size: 0.72rem;">"Discover only" removes this row from Home while keeping it in Discover (Nuvio).</span>
+                            <span class="text-secondary small d-block mt-1" style="font-size: 0.72rem; opacity: 0.55; line-height: 1.35;"><strong>Discover only</strong> removes this row from Home while keeping it in Discover.</span>
                         </div>
 
                         <!-- 3. Poster Shape -->
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-1">
-                                <label class="form-label small fw-semibold text-secondary mb-0">Poster shape</label>
+                                <label class="form-label small fw-semibold text-light mb-0">Poster shape</label>
+                                <button type="button" class="btn-modal-reset-field" onclick="setModalShape('poster')" title="Reset shape">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
                             </div>
                             <div class="modal-segmented-group" id="modalShapeGroup">
                                 <button type="button" class="modal-segmented-btn active" data-shape="poster" onclick="setModalShape('poster')">
-                                    <i class="fa-solid fa-mobile-screen me-1.5" style="font-size: 0.75rem;"></i>Portrait (2:3)
+                                    Portrait
                                 </button>
                                 <button type="button" class="modal-segmented-btn" data-shape="landscape" onclick="setModalShape('landscape')">
-                                    <i class="fa-solid fa-tv me-1.5" style="font-size: 0.75rem;"></i>Landscape (16:9)
+                                    Landscape
                                 </button>
                             </div>
                         </div>
 
-                        <!-- 4. Sorting -->
+                        <!-- 4. Poster Art -->
+                        <div id="modalPosterArtSection">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label small fw-semibold text-light mb-0">Poster art</label>
+                                <button type="button" class="btn-modal-reset-field" id="btnModalResetPosterArt" onclick="resetModalPosterArt()" title="Reset poster art">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </div>
+                            <div class="modal-segmented-group" id="modalPosterArtGroup">
+                                <button type="button" class="modal-segmented-btn" data-art="false" onclick="setModalPosterArt(false)">
+                                    Off
+                                </button>
+                                <button type="button" class="modal-segmented-btn active" data-art="true" onclick="setModalPosterArt(true)">
+                                    On
+                                </button>
+                            </div>
+                            <div id="modalPosterArtDisabledNote" class="text-secondary small mt-1 d-none" style="font-size: 0.73rem; line-height: 1.3;">
+                                <i class="fa-solid fa-lock me-1"></i><strong>Default</strong> is selected in Poster Art Cover Provider. Configure RPDB, TOP Posters, or Custom in Settings first.
+                            </div>
+                        </div>
+
+                        <!-- 5. Sorting -->
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-1">
-                                <label class="form-label small fw-semibold text-secondary mb-0" for="modalSortBySelect">Sort</label>
-                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" onclick="resetModalSort()" title="Reset sorting" style="font-size: 0.75rem;">
-                                    <i class="fa-solid fa-rotate-left me-1"></i>Reset
+                                <label class="form-label small fw-semibold text-light mb-0">Sort</label>
+                                <button type="button" class="btn-modal-reset-field" onclick="resetModalSort()" title="Reset sorting">
+                                    <i class="fa-solid fa-rotate-left"></i>
                                 </button>
                             </div>
                             <div class="row g-2">
-                                <div class="col-7">
-                                    <select class="form-select catalog-modal-select" id="modalSortBySelect" onchange="onModalSortByChange(this.value)">
-                                        <option value="default">Default (Source order)</option>
-                                        <option value="score">Score / Rating</option>
-                                        <option value="airing_date">Airing Date</option>
-                                        <option value="last_updated">Last Updated</option>
-                                        <option value="title">Title (Alphabetical)</option>
-                                        <option value="release_date">Release Year</option>
-                                        <option value="episodes">Episode Count</option>
-                                    </select>
+                                <div class="col-12 col-sm-7">
+                                    <input type="hidden" id="modal_sort_by" value="default">
+                                    <div class="custom-select-wrapper dropup" data-input-id="modal_sort_by">
+                                        <div class="custom-select">
+                                            <span class="custom-select-text d-flex align-items-center">
+                                                <i class="fa-solid fa-bars-staggered me-2 text-secondary"></i>Default (Source order)
+                                            </span>
+                                            <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                        </div>
+                                        <div class="custom-options-menu">
+                                            <div class="custom-option-item selected d-flex align-items-center" data-value="default">
+                                                <i class="fa-solid fa-bars-staggered me-2 text-secondary"></i>Default (Source order)
+                                            </div>
+                                            <div class="custom-option-item d-flex align-items-center" data-value="score">
+                                                <i class="fa-solid fa-star me-2 text-warning"></i>Score / Rating
+                                            </div>
+                                            <div class="custom-option-item d-flex align-items-center" data-value="airing_date">
+                                                <i class="fa-solid fa-calendar me-2 text-info"></i>Airing Date
+                                            </div>
+                                            <div class="custom-option-item d-flex align-items-center" data-value="last_updated">
+                                                <i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Last Updated
+                                            </div>
+                                            <div class="custom-option-item d-flex align-items-center" data-value="title">
+                                                <i class="fa-solid fa-arrow-down-a-z me-2 text-success"></i>Title (Alphabetical)
+                                            </div>
+                                            <div class="custom-option-item d-flex align-items-center" data-value="release_date">
+                                                <i class="fa-solid fa-film me-2 text-secondary"></i>Release Year
+                                            </div>
+                                            <div class="custom-option-item d-flex align-items-center" data-value="episodes">
+                                                <i class="fa-solid fa-list-ol me-2 text-info"></i>Episode Count
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-5">
+                                <div class="col-12 col-sm-5">
                                     <div class="modal-segmented-group" id="modalSortOrderGroup">
                                         <button type="button" class="modal-segmented-btn active" data-order="desc" onclick="setModalSortOrder('desc')" title="Descending">
-                                            <i class="fa-solid fa-arrow-down-wide-short me-1" style="font-size: 0.72rem;"></i>Desc
+                                            <i class="fa-solid fa-arrow-down-wide-short me-1"></i>Desc
                                         </button>
                                         <button type="button" class="modal-segmented-btn" data-order="asc" onclick="setModalSortOrder('asc')" title="Ascending">
-                                            <i class="fa-solid fa-arrow-up-wide-short me-1" style="font-size: 0.72rem;"></i>Asc
+                                            <i class="fa-solid fa-arrow-up-wide-short me-1"></i>Asc
                                         </button>
                                     </div>
                                 </div>
@@ -2584,9 +2862,9 @@
                         <!-- 5. Shuffle -->
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-1">
-                                <label class="form-label small fw-semibold text-secondary mb-0">Shuffle</label>
-                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" onclick="setModalShuffle(false)" title="Turn off shuffle" style="font-size: 0.75rem;">
-                                    <i class="fa-solid fa-rotate-left me-1"></i>Off
+                                <label class="form-label small fw-semibold text-light mb-0">Shuffle</label>
+                                <button type="button" class="btn-modal-reset-field" onclick="setModalShuffle(false)" title="Turn off shuffle">
+                                    <i class="fa-solid fa-rotate-left"></i>
                                 </button>
                             </div>
                             <div class="modal-segmented-group" id="modalShuffleGroup">
@@ -2594,42 +2872,34 @@
                                     Off
                                 </button>
                                 <button type="button" class="modal-segmented-btn" data-shuffle="true" onclick="setModalShuffle(true)">
-                                    <i class="fa-solid fa-shuffle me-1.5" style="font-size: 0.75rem;"></i>On
+                                    <i class="fa-solid fa-shuffle me-1"></i>On
                                 </button>
                             </div>
-                            <span class="text-secondary small d-block mt-1" style="font-size: 0.72rem;">Randomizes order when viewing this catalog.</span>
                         </div>
                     </div>
 
-                    <!-- Right: Live Preview -->
-                    <div class="col-12 col-md-5 d-flex flex-column align-items-center justify-content-center">
-                        <div class="w-100 p-3 rounded-3 d-flex flex-column align-items-center justify-content-center preview-stage-wrap">
-                            <div class="d-flex align-items-center justify-content-between w-100 mb-2">
-                                <span class="text-secondary small fw-medium" style="font-size: 0.75rem; letter-spacing: 0.03em;">LIVE PREVIEW</span>
-                                <span class="badge rounded-pill" id="previewAspectBadge" style="background: rgba(255,255,255,0.08); font-size: 0.65rem; color: #cbd5e1;">Portrait (2:3)</span>
+                    <!-- Right: Live Preview (Matching Stremio & Nuvio) -->
+                    <div class="col-12 col-md-5 d-flex flex-column">
+                        <div class="preview-stage-wrap">
+                            <div class="preview-header d-flex align-items-center justify-content-between">
+                                <span class="preview-title">Live preview</span>
+                                <span class="preview-item-count text-secondary small" id="modalPreviewCount" style="font-size: 0.72rem; font-weight: 500;"></span>
                             </div>
 
-                            <!-- Live Card -->
-                            <div id="modalLiveCard" class="catalog-live-card portrait">
-                                <div class="catalog-live-card-badge" id="previewNewEpBadge">NEW EP</div>
-                                <div class="catalog-live-card-overlay">
-                                    <div class="catalog-live-card-title" id="previewCardTitle">Frieren: Beyond Journey's End</div>
-                                    <div class="catalog-live-card-sub" id="previewCardSub">2023 • ★ 9.1</div>
+                            <div class="preview-gallery-container">
+                                <div class="preview-grid portrait" id="modalPreviewGrid">
+                                    <!-- 15 poster cards generated in JS matching shape (3 per row portrait, 2 per row landscape) -->
                                 </div>
-                            </div>
-                            
-                            <div class="catalog-preview-info mt-2 text-center text-secondary small" style="font-size: 0.72rem;">
-                                <span id="previewCatalogLabel">Catalog Preview</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-0 pt-0 pb-3 px-4 d-flex align-items-center justify-content-between">
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="resetCurrentCatalogConfig()">
-                    <i class="fa-solid fa-rotate-left me-1"></i>Reset all
+            <div class="modal-footer border-top border-secondary border-opacity-10 pt-3 pb-3 px-4 d-flex align-items-center justify-content-between">
+                <button type="button" class="btn-modal-reset" onclick="resetCurrentCatalogConfig()">
+                    <i class="fa-solid fa-rotate-left"></i>Reset all
                 </button>
-                <button type="button" class="btn btn-sm btn-primary px-4 fw-semibold" data-bs-dismiss="modal">
+                <button type="button" class="btn-modal-done" data-bs-dismiss="modal">
                     Done
                 </button>
             </div>
@@ -2688,12 +2958,15 @@
 {% block scripts %}
 <script id="catalog-init-data" type="application/json">
 {
+  "userId": {{ (user.get('uid') or '') | tojson }},
   "catalogConfigs": {{ (user.get('catalog_configs') or {}) | tojson }},
   "legacyShapes": {{ (user.get('catalog_shapes') or {}) | tojson }},
   "legacyTitles": {{ (user.get('catalog_titles') or {}) | tojson }},
   "legacyPlacements": {{ (user.get('catalog_placements') or {}) | tojson }},
   "legacySorts": {{ (user.get('catalog_sorts') or {}) | tojson }},
-  "legacyShuffles": {{ (user.get('catalog_shuffles') or {}) | tojson }}
+  "legacyShuffles": {{ (user.get('catalog_shuffles') or {}) | tojson }},
+  "legacyPosterArts": {{ (user.get('catalog_poster_arts') or {}) | tojson }},
+  "globalPosterProvider": {{ (user.get('poster_provider') or 'none') | tojson }}
 }
 </script>
 <script>
@@ -2754,6 +3027,10 @@
         try {
             localStorage.setItem('anisync_active_tab', tabId);
         } catch (e) {}
+
+        if (tabId === 'catalogs' && typeof window.prefetchVisibleCatalogs === 'function') {
+            window.prefetchVisibleCatalogs();
+        }
 
         // 4. Scroll smoothly to top of active pane on mobile if called from step nav
         if (window.innerWidth < 768) {
@@ -2849,6 +3126,38 @@
                 textEl.innerHTML = matchedOption.innerHTML;
             }
 
+            // Contain scrolling within menu to prevent scrolling the parent page or modal
+            menuEl.addEventListener("wheel", function (e) {
+                const scrollTop = this.scrollTop;
+                const scrollHeight = this.scrollHeight;
+                const height = this.clientHeight;
+                const delta = e.deltaY;
+
+                if ((delta > 0 && scrollTop + height >= scrollHeight) || (delta < 0 && scrollTop <= 0)) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            let touchStartY = 0;
+            menuEl.addEventListener("touchstart", function (e) {
+                if (e.touches && e.touches.length > 0) {
+                    touchStartY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+
+            menuEl.addEventListener("touchmove", function (e) {
+                if (!e.touches || e.touches.length === 0) return;
+                const touchCurrentY = e.touches[0].clientY;
+                const deltaY = touchStartY - touchCurrentY;
+                const scrollTop = this.scrollTop;
+                const scrollHeight = this.scrollHeight;
+                const height = this.clientHeight;
+
+                if ((deltaY > 0 && scrollTop + height >= scrollHeight) || (deltaY < 0 && scrollTop <= 0)) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
             // 2. Click to toggle open
             selectEl.addEventListener("click", function (e) {
                 e.stopPropagation();
@@ -2884,9 +3193,49 @@
                     if (inputId === "metadata_provider") {
                         syncMetadataProviderFields();
                     }
+                    if (inputId === "modal_sort_by") {
+                        if (typeof onModalSortByChange === "function") {
+                            onModalSortByChange(val);
+                        }
+                    }
                 });
             });
         });
+
+        // Prevent scroll chaining from preview gallery container
+        const previewGalleryEl = document.querySelector('.preview-gallery-container');
+        if (previewGalleryEl) {
+            previewGalleryEl.addEventListener("wheel", function (e) {
+                const scrollTop = this.scrollTop;
+                const scrollHeight = this.scrollHeight;
+                const height = this.clientHeight;
+                const delta = e.deltaY;
+
+                if ((delta > 0 && scrollTop + height >= scrollHeight) || (delta < 0 && scrollTop <= 0)) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            let pTouchStartY = 0;
+            previewGalleryEl.addEventListener("touchstart", function (e) {
+                if (e.touches && e.touches.length > 0) {
+                    pTouchStartY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+
+            previewGalleryEl.addEventListener("touchmove", function (e) {
+                if (!e.touches || e.touches.length === 0) return;
+                const touchCurrentY = e.touches[0].clientY;
+                const deltaY = pTouchStartY - touchCurrentY;
+                const scrollTop = this.scrollTop;
+                const scrollHeight = this.scrollHeight;
+                const height = this.clientHeight;
+
+                if ((deltaY > 0 && scrollTop + height >= scrollHeight) || (deltaY < 0 && scrollTop <= 0)) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
 
         function syncMetadataProviderFields() {
             const metaProvInput = document.getElementById("metadata_provider");
@@ -2912,8 +3261,24 @@
             if (topContainer) topContainer.classList.toggle("d-none", val !== "top_poster");
             if (customContainer) customContainer.classList.toggle("d-none", val !== "custom");
             if (typeof syncRpdbSearchState === "function") syncRpdbSearchState();
+            if (typeof updatePosterArtSectionAvailability === "function") updatePosterArtSectionAvailability();
+            if (typeof updateModalLivePreview === "function" && typeof activeModalCatalogId !== "undefined" && activeModalCatalogId) {
+                updateModalLivePreview();
+            }
         }
         syncPosterProviderFields();
+
+        ['rpdb_api_key', 'top_poster_key', 'custom_poster_pattern'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => {
+                    if (typeof updatePosterArtSectionAvailability === "function") updatePosterArtSectionAvailability();
+                    if (typeof updateModalLivePreview === "function" && typeof activeModalCatalogId !== "undefined" && activeModalCatalogId) {
+                        updateModalLivePreview();
+                    }
+                });
+            }
+        });
 
         // Click outside to close all open custom dropdowns
         document.addEventListener("click", function () {
@@ -3029,25 +3394,31 @@
         }
 
         // ── Catalog Customization Modal & State Management ─────────────────
-        let activeModalCatalogId = null;
-        const defaultCatalogNames = {};
-        let catalogConfigs = {};
-        let legacyShapes = {};
-        let legacyTitles = {};
-        let legacyPlacements = {};
-        let legacySorts = {};
-        let legacyShuffles = {};
+        var activeModalCatalogId = null;
+        var defaultCatalogNames = window.defaultCatalogNames = {};
+        var catalogConfigs = window.catalogConfigs = {};
+        var legacyShapes = {};
+        var legacyTitles = {};
+        var legacyPlacements = {};
+        var legacySorts = {};
+        var legacyShuffles = {};
+        var legacyPosterArts = {};
+        var globalPosterProvider = 'none';
+        var currentUserId = '';
 
         try {
             const rawInitEl = document.getElementById("catalog-init-data");
             if (rawInitEl) {
                 const initData = JSON.parse(rawInitEl.textContent || "{}");
-                catalogConfigs = initData.catalogConfigs || {};
+                currentUserId = initData.userId || '';
+                catalogConfigs = window.catalogConfigs = initData.catalogConfigs || {};
                 legacyShapes = initData.legacyShapes || {};
                 legacyTitles = initData.legacyTitles || {};
                 legacyPlacements = initData.legacyPlacements || {};
                 legacySorts = initData.legacySorts || {};
                 legacyShuffles = initData.legacyShuffles || {};
+                legacyPosterArts = initData.legacyPosterArts || {};
+                globalPosterProvider = initData.globalPosterProvider || 'none';
             }
         } catch (e) {
             console.error("Failed to parse catalog-init-data:", e);
@@ -3083,7 +3454,54 @@
             if (catalogConfigs[catId].shuffle === undefined) {
                 catalogConfigs[catId].shuffle = legacyShuffles[catId] !== undefined ? Boolean(legacyShuffles[catId]) : false;
             }
+            if (catalogConfigs[catId].poster_art === undefined) {
+                catalogConfigs[catId].poster_art = legacyPosterArts[catId] !== undefined ? Boolean(legacyPosterArts[catId]) : true;
+            }
         });
+
+        function isPosterProviderConfigured() {
+            const providerInput = document.getElementById("poster_provider");
+            const prov = providerInput ? providerInput.value : "none";
+            if (!prov || prov === "none" || prov === "clean") {
+                return false;
+            }
+            if (prov === "rpdb") {
+                const keyEl = document.getElementById("rpdb_api_key");
+                return Boolean(keyEl && keyEl.value.trim().length > 0);
+            }
+            if (prov === "top_poster" || prov === "topposters") {
+                const keyEl = document.getElementById("top_poster_key");
+                return Boolean(keyEl && keyEl.value.trim().length > 0);
+            }
+            if (prov === "custom") {
+                const patEl = document.getElementById("custom_poster_pattern");
+                return Boolean(patEl && patEl.value.trim().length > 0);
+            }
+            return false;
+        }
+
+        function updatePosterArtSectionAvailability() {
+            const isConfigured = isPosterProviderConfigured();
+            const section = document.getElementById('modalPosterArtSection');
+            const note = document.getElementById('modalPosterArtDisabledNote');
+            if (section) {
+                if (isConfigured) {
+                    section.classList.remove('disabled');
+                } else {
+                    section.classList.add('disabled');
+                }
+            }
+            if (note) {
+                if (isConfigured) {
+                    note.classList.add('d-none');
+                } else {
+                    note.classList.remove('d-none');
+                }
+            }
+            if (window.defaultCatalogNames && typeof updateCatalogRowBadge === 'function') {
+                Object.keys(window.defaultCatalogNames).forEach(updateCatalogRowBadge);
+            }
+        }
 
         function getCatalogOverrideCount(catId) {
             const cfg = catalogConfigs[catId] || {};
@@ -3093,30 +3511,15 @@
             if (cfg.placement && cfg.placement !== 'all') count++;
             if (cfg.sort_by && cfg.sort_by !== 'default') count++;
             if (cfg.shuffle) count++;
+            if (isPosterProviderConfigured() && cfg.poster_art === false) count++;
             return count;
         }
 
         function updateCatalogRowBadge(catId) {
-            const count = getCatalogOverrideCount(catId);
-            const btn = document.getElementById('cfg_btn_' + catId);
-            const badge = document.getElementById('badge_count_' + catId);
             const labelText = document.getElementById('label_text_' + catId);
-
             if (labelText) {
                 const customTitle = (catalogConfigs[catId] && catalogConfigs[catId].title) ? catalogConfigs[catId].title.trim() : '';
                 labelText.textContent = customTitle || defaultCatalogNames[catId] || catId;
-            }
-
-            if (btn && badge) {
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.classList.remove('d-none');
-                    btn.classList.add('has-overrides');
-                } else {
-                    badge.textContent = '0';
-                    badge.classList.add('d-none');
-                    btn.classList.remove('has-overrides');
-                }
             }
         }
 
@@ -3132,10 +3535,11 @@
             const titleEl = document.getElementById('modalCatalogName');
             if (titleEl) titleEl.textContent = defName;
 
-            // Name Input
+            // Name Input: show current catalog name so user can edit or clear it
             const nameInput = document.getElementById('modalInputTitle');
             if (nameInput) {
-                nameInput.value = cfg.title || '';
+                const currentName = (cfg.title !== undefined && cfg.title !== null && cfg.title.trim() !== '') ? cfg.title.trim() : defName;
+                nameInput.value = currentName;
                 nameInput.placeholder = defName;
             }
 
@@ -3145,16 +3549,20 @@
             // Poster Shape
             updateShapeUI(cfg.shape || 'poster');
 
-            // Sort
-            const sortSelect = document.getElementById('modalSortBySelect');
-            if (sortSelect) sortSelect.value = cfg.sort_by || 'default';
+            // Poster Art Toggle & Section availability
+            updatePosterArtSectionAvailability();
+            updatePosterArtUI(cfg.poster_art !== false);
+
+            // Sort Custom Dropdown & Order
+            updateModalSortDropdown(cfg.sort_by || 'default');
             updateSortOrderUI(cfg.sort_order || 'desc');
 
             // Shuffle
-            updateShuffleUI(Boolean(cfg.shuffle));
+            const isShuffled = Boolean(cfg.shuffle);
+            updateShuffleUI(isShuffled);
 
-            // Live Preview Card & Header Count
-            updateModalLivePreview();
+            // Load and render actual anime items for this catalog
+            loadCatalogPreviewItems(catId);
 
             const modalEl = document.getElementById('catalogConfigModal');
             if (modalEl) {
@@ -3175,6 +3583,12 @@
             });
         }
 
+        function updatePosterArtUI(enabled) {
+            document.querySelectorAll('#modalPosterArtGroup .modal-segmented-btn').forEach(btn => {
+                btn.classList.toggle('active', (btn.getAttribute('data-art') === 'true') === Boolean(enabled));
+            });
+        }
+
         function updateSortOrderUI(order) {
             document.querySelectorAll('#modalSortOrderGroup .modal-segmented-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.getAttribute('data-order') === order);
@@ -3187,69 +3601,408 @@
             });
         }
 
-        function updateModalLivePreview() {
+        function updateModalSortDropdown(val) {
+            val = val || 'default';
+            const hiddenInput = document.getElementById('modal_sort_by');
+            if (hiddenInput) hiddenInput.value = val;
+            const wrapper = document.querySelector('.custom-select-wrapper[data-input-id="modal_sort_by"]');
+            if (!wrapper) return;
+            const textEl = wrapper.querySelector('.custom-select-text');
+            const optionItems = wrapper.querySelectorAll('.custom-option-item');
+            let matchedOption = wrapper.querySelector(`.custom-option-item[data-value="${val}"]`);
+            if (!matchedOption && optionItems.length > 0) {
+                matchedOption = optionItems[0];
+            }
+            if (matchedOption) {
+                optionItems.forEach(opt => opt.classList.remove('selected'));
+                matchedOption.classList.add('selected');
+                if (textEl) textEl.innerHTML = matchedOption.innerHTML;
+            }
+        }
+
+        const PREVIEW_ANIME_ITEMS = [
+            {
+                title: "Attack on Titan",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-buvcRTBx4NSm.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/16498-8jpFCOcDmneX.jpg",
+                score: "8.9",
+                imdb_id: "tt2560140"
+            },
+            {
+                title: "Demon Slayer: Kimetsu no Yaiba",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-WBsBl0ClmgYL.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/101922-33MtJGsUSxga.jpg",
+                score: "8.5",
+                imdb_id: "tt9335498"
+            },
+            {
+                title: "JUJUTSU KAISEN",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/113415-jQBSkxWAAk83.jpg",
+                score: "8.6",
+                imdb_id: "tt12343534"
+            },
+            {
+                title: "Death Note",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1535-kUgkcrfOrkUM.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/1535.jpg",
+                score: "9.0",
+                imdb_id: "tt0877057"
+            },
+            {
+                title: "My Hero Academia",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21459-nYh85uj2Fuwr.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21459-yeVkolGKdGUV.jpg",
+                score: "8.1",
+                imdb_id: "tt5626028"
+            },
+            {
+                title: "Hunter x Hunter",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx11061-y5gsT1hoHuHw.png",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/11061-8WkkTZ6duKpq.jpg",
+                score: "9.1",
+                imdb_id: "tt2098220"
+            },
+            {
+                title: "One-Punch Man",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21087-B5DHjqZ3kW4b.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21087-sHb9zUZFsHe1.jpg",
+                score: "8.5",
+                imdb_id: "tt4508902"
+            },
+            {
+                title: "ONE PIECE",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21-ELSYx3yMPcKM.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21-wf37VakJmZqs.jpg",
+                score: "8.7",
+                imdb_id: "tt0388629"
+            },
+            {
+                title: "Tokyo Ghoul",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/b20605-k665mVkSug8D.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/20605-RCJ7M71zLmrh.jpg",
+                score: "7.8",
+                imdb_id: "tt3741634"
+            },
+            {
+                title: "Attack on Titan Season 2",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20958-HuFJyr54Mmir.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/20958-Y7eQdz9VENBD.jpg",
+                score: "8.5",
+                imdb_id: "tt2560140"
+            },
+            {
+                title: "Fullmetal Alchemist: Brotherhood",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx5114-nSWCgQlmOMtj.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/5114-q0V5URebphSG.jpg",
+                score: "9.2",
+                imdb_id: "tt1374989"
+            },
+            {
+                title: "Naruto",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20-dE6UHbFFg1A5.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/20-HHxhPj5JD13a.jpg",
+                score: "8.2",
+                imdb_id: "tt0409591"
+            },
+            {
+                title: "Sword Art Online",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx11757-SxYDUzdr9rh2.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/11757-TlEEV9weG4Ag.jpg",
+                score: "7.5",
+                imdb_id: "tt2250192"
+            },
+            {
+                title: "A Silent Voice",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20954-sYRfE5jQRtSB.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/20954-f30bHMXa5Qoe.jpg",
+                score: "8.9",
+                imdb_id: "tt5323662"
+            },
+            {
+                title: "Your Name.",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21519-SUo3ZQuCbYhJ.png",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21519-1ayMXgNlmByb.jpg",
+                score: "9.0",
+                imdb_id: "tt5311514"
+            }
+        ];
+
+        let currentPreviewAnimeList = [...PREVIEW_ANIME_ITEMS];
+        const catalogItemsCache = {};
+        const catalogFetchPromises = {};
+
+        function fetchCatalogItems(catId) {
+            if (catalogItemsCache[catId]) {
+                return Promise.resolve(catalogItemsCache[catId]);
+            }
+            if (catalogFetchPromises[catId]) {
+                return catalogFetchPromises[catId];
+            }
+            if (!currentUserId) {
+                return Promise.resolve(PREVIEW_ANIME_ITEMS);
+            }
+
+            const fetchUrl = `/${currentUserId}/catalog/anime/${catId}.json`;
+            catalogFetchPromises[catId] = fetch(fetchUrl)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    const metas = (data && data.metas) || [];
+                    const items = metas.map(m => {
+                        let scoreStr = '8.5';
+                        if (m.score !== undefined && m.score !== null) {
+                            scoreStr = String(m.score);
+                            if (!scoreStr.includes('.')) scoreStr += '.0';
+                        }
+                        return {
+                            title: m.name || m.title || '',
+                            cover: m.poster || m.cover || '',
+                            clean_poster: m.clean_poster || m.cover || m.poster || '',
+                            art_poster: m.art_poster || '',
+                            imdb_id: m.imdb_id || '',
+                            banner: m.background || m.poster || m.cover || '',
+                            score: scoreStr,
+                            airing_date: m.airing_at || 0,
+                            episodes: m.episodes || 0,
+                            year: m.year || 0
+                        };
+                    });
+                    catalogItemsCache[catId] = items;
+                    delete catalogFetchPromises[catId];
+                    return items;
+                })
+                .catch(err => {
+                    console.warn(`Could not load preview items for ${catId}:`, err);
+                    delete catalogFetchPromises[catId];
+                    return PREVIEW_ANIME_ITEMS;
+                });
+
+            return catalogFetchPromises[catId];
+        }
+
+        function applySortAndShuffle(items, cfg) {
+            if (!items || items.length === 0) return [];
+            let list = [...items];
+
+            const sortBy = cfg.sort_by || 'default';
+            const sortOrder = cfg.sort_order || 'desc';
+            const isAsc = sortOrder === 'asc';
+
+            if (sortBy !== 'default') {
+                list.sort((a, b) => {
+                    let cmp = 0;
+                    if (sortBy === 'score') {
+                        cmp = (parseFloat(a.score) || 0) - (parseFloat(b.score) || 0);
+                    } else if (sortBy === 'title') {
+                        cmp = (a.title || '').localeCompare(b.title || '');
+                    } else if (sortBy === 'release_date' || sortBy === 'airing_date' || sortBy === 'last_updated') {
+                        cmp = (a.year || a.airing_date || 0) - (b.year || b.airing_date || 0);
+                    } else if (sortBy === 'episodes') {
+                        cmp = (a.episodes || 0) - (b.episodes || 0);
+                    }
+                    return isAsc ? cmp : -cmp;
+                });
+            }
+
+            if (cfg.shuffle) {
+                list = shuffleArray(list);
+            }
+
+            return list;
+        }
+
+        function renderSkeletonPreview(shape) {
+            const previewGrid = document.getElementById('modalPreviewGrid');
+            if (!previewGrid) return;
+            const count = 12;
+            const cardsHtml = Array.from({ length: count }).map(() => `
+                <div class="preview-card skeleton"></div>
+            `).join('');
+            previewGrid.className = `preview-grid ${shape === 'landscape' ? 'landscape' : 'portrait'}`;
+            previewGrid.innerHTML = cardsHtml;
+        }
+
+        function loadCatalogPreviewItems(catId) {
+            const cfg = catalogConfigs[catId] || {};
+            const countEl = document.getElementById('modalPreviewCount');
+
+            // If already cached, apply configs and render immediately!
+            if (catalogItemsCache[catId]) {
+                const items = catalogItemsCache[catId];
+                if (countEl) {
+                    countEl.textContent = `${items.length} title${items.length === 1 ? '' : 's'}`;
+                }
+                currentPreviewAnimeList = applySortAndShuffle(items, cfg);
+                updateModalLivePreview();
+                return;
+            }
+
+            // Otherwise, show skeleton loading state in preview
+            renderSkeletonPreview(cfg.shape || 'poster');
+            if (countEl) {
+                countEl.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin me-1"></i>Loading...`;
+            }
+
+            fetchCatalogItems(catId).then(items => {
+                if (activeModalCatalogId === catId) {
+                    if (countEl) {
+                        countEl.textContent = `${items.length} title${items.length === 1 ? '' : 's'}`;
+                    }
+                    const currentCfg = catalogConfigs[catId] || {};
+                    currentPreviewAnimeList = applySortAndShuffle(items, currentCfg);
+                    updateModalLivePreview(true);
+                }
+            });
+        }
+
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            if (arr.length > 1 && arr[0].title === array[0].title) {
+                const tmp = arr[0];
+                arr[0] = arr[1];
+                arr[1] = tmp;
+            }
+            return arr;
+        }
+
+        function updateModalLivePreview(animate = false) {
             if (!activeModalCatalogId) return;
             const cfg = catalogConfigs[activeModalCatalogId] || {};
             const shape = cfg.shape || 'poster';
             const count = getCatalogOverrideCount(activeModalCatalogId);
 
-            // Modal count badge
-            const countBadge = document.getElementById('modalConfigCountBadge');
-            if (countBadge) {
-                countBadge.textContent = count;
-                countBadge.classList.toggle('bg-primary', count > 0);
-                countBadge.classList.toggle('bg-secondary', count === 0);
-            }
+            const providerInput = document.getElementById("poster_provider");
+            const curProvider = providerInput ? providerInput.value : "none";
+            const rpdbKey = (document.getElementById("rpdb_api_key")?.value || "").trim();
+            const topKey = (document.getElementById("top_poster_key")?.value || "").trim();
+            const customPattern = (document.getElementById("custom_poster_pattern")?.value || "").trim();
 
-            // Live card
-            const liveCard = document.getElementById('modalLiveCard');
-            const aspectBadge = document.getElementById('previewAspectBadge');
-            const previewLabel = document.getElementById('previewCatalogLabel');
+            const isConfigured = isPosterProviderConfigured();
+            const isArtEnabled = isConfigured && (cfg.poster_art !== false);
 
-            if (liveCard) {
+            // Update Multi-Poster Live Grid
+            const previewGrid = document.getElementById('modalPreviewGrid');
+            if (previewGrid) {
+                const listToRender = currentPreviewAnimeList;
+                if (!listToRender || listToRender.length === 0) {
+                    previewGrid.className = 'preview-grid empty';
+                    previewGrid.innerHTML = `
+                        <div class="preview-empty-state">
+                            <i class="fa-regular fa-folder-open"></i>
+                            <span class="preview-empty-title">Catalog is empty</span>
+                            <span class="preview-empty-desc">No anime in this catalog yet</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const fallbackCover = 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/default.jpg';
+
+                const escapeAttr = (str) => (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+                const resolveItemPoster = (item) => {
+                    if (shape === 'landscape') {
+                        return item.banner || item.cover || fallbackCover;
+                    }
+                    if (!isArtEnabled) {
+                        return item.clean_poster || item.cover || fallbackCover;
+                    }
+                    if (item.imdb_id) {
+                        if (curProvider === 'rpdb' && rpdbKey) {
+                            return `https://api.ratingposterdb.com/${encodeURIComponent(rpdbKey)}/imdb/poster-default/${encodeURIComponent(item.imdb_id)}.jpg?fallback=true`;
+                        }
+                        if ((curProvider === 'top_poster' || curProvider === 'topposters') && topKey) {
+                            return `https://top-posters.com/${encodeURIComponent(topKey)}/imdb/poster-default/${encodeURIComponent(item.imdb_id)}.jpg`;
+                        }
+                        if (curProvider === 'custom' && customPattern) {
+                            return customPattern
+                                .replace('{imdb_id}', item.imdb_id)
+                                .replace('{rpdb_key}', rpdbKey)
+                                .replace('{top_key}', topKey);
+                        }
+                    }
+                    if (item.art_poster && item.art_poster !== item.clean_poster) {
+                        return item.art_poster;
+                    }
+                    return item.clean_poster || item.cover || fallbackCover;
+                };
+
                 if (shape === 'landscape') {
-                    liveCard.classList.remove('portrait');
-                    liveCard.classList.add('landscape');
+                    previewGrid.className = 'preview-grid landscape';
+                    previewGrid.innerHTML = listToRender.slice(0, 16).map(item => {
+                        const src = resolveItemPoster(item);
+                        const cleanSrc = item.clean_poster || item.cover || fallbackCover;
+                        const safeTitle = escapeAttr(item.title);
+                        const safeCleanSrc = cleanSrc.replace(/'/g, "\\'");
+                        return `
+                            <div class="preview-card" title="${safeTitle}">
+                                <img src="${src}" alt="${safeTitle}" loading="lazy" onerror="if (this.src !== '${safeCleanSrc}') { this.src = '${safeCleanSrc}'; } else { this.onerror=null; this.src='${fallbackCover}'; }" />
+                            </div>
+                        `;
+                    }).join('');
                 } else {
-                    liveCard.classList.remove('landscape');
-                    liveCard.classList.add('portrait');
+                    previewGrid.className = 'preview-grid portrait';
+                    previewGrid.innerHTML = listToRender.slice(0, 24).map(item => {
+                        const src = resolveItemPoster(item);
+                        const cleanSrc = item.clean_poster || item.cover || fallbackCover;
+                        const safeTitle = escapeAttr(item.title);
+                        const safeCleanSrc = cleanSrc.replace(/'/g, "\\'");
+                        return `
+                            <div class="preview-card" title="${safeTitle}">
+                                <img src="${src}" alt="${safeTitle}" loading="lazy" onerror="if (this.src !== '${safeCleanSrc}') { this.src = '${safeCleanSrc}'; } else { this.onerror=null; this.src='${fallbackCover}'; }" />
+                            </div>
+                        `;
+                    }).join('');
                 }
-            }
 
-            if (aspectBadge) {
-                aspectBadge.textContent = shape === 'landscape' ? 'Landscape (16:9)' : 'Portrait (2:3)';
-            }
-
-            if (previewLabel) {
-                const dispTitle = (cfg.title && cfg.title.trim()) ? cfg.title.trim() : (defaultCatalogNames[activeModalCatalogId] || 'Catalog Preview');
-                const details = [];
-                if (cfg.placement === 'discover_only') details.push('Discover only');
-                if (cfg.sort_by && cfg.sort_by !== 'default') {
-                    const sortLabels = {
-                        score: 'Score',
-                        airing_date: 'Airing Date',
-                        last_updated: 'Last Updated',
-                        title: 'Title',
-                        release_date: 'Release Year',
-                        episodes: 'Episodes'
-                    };
-                    const label = sortLabels[cfg.sort_by] || cfg.sort_by;
-                    const orderLabel = (cfg.sort_order === 'asc') ? '▲' : '▼';
-                    details.push(`Sort: ${label} ${orderLabel}`);
+                if (animate) {
+                    previewGrid.classList.remove('animate-switch');
+                    void previewGrid.offsetWidth;
+                    previewGrid.classList.add('animate-switch');
                 }
-                if (cfg.shuffle) details.push('Shuffle ON');
-
-                const detailsStr = details.length ? ` • (${details.join(', ')})` : '';
-                previewLabel.textContent = dispTitle + detailsStr;
             }
         }
 
         window.setModalShape = function (shape) {
             if (!activeModalCatalogId) return;
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
+            const prevShape = catalogConfigs[activeModalCatalogId].shape || 'poster';
             catalogConfigs[activeModalCatalogId].shape = shape;
             updateShapeUI(shape);
-            updateModalLivePreview();
+            updateModalLivePreview(prevShape !== shape);
+            updateCatalogRowBadge(activeModalCatalogId);
+        };
+
+        window.setModalPosterArt = function (enabled) {
+            if (!activeModalCatalogId) return;
+            if (!isPosterProviderConfigured()) return;
+            if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
+            const val = Boolean(enabled);
+            if (val) {
+                delete catalogConfigs[activeModalCatalogId].poster_art;
+            } else {
+                catalogConfigs[activeModalCatalogId].poster_art = false;
+            }
+            updatePosterArtUI(val);
+            updateModalLivePreview(true);
+            updateCatalogRowBadge(activeModalCatalogId);
+        };
+
+        window.resetModalPosterArt = function () {
+            if (!activeModalCatalogId) return;
+            if (!isPosterProviderConfigured()) return;
+            if (catalogConfigs[activeModalCatalogId]) {
+                delete catalogConfigs[activeModalCatalogId].poster_art;
+            }
+            updatePosterArtUI(true);
+            updateModalLivePreview(true);
             updateCatalogRowBadge(activeModalCatalogId);
         };
 
@@ -3265,23 +4018,41 @@
         window.onModalTitleChange = function (val) {
             if (!activeModalCatalogId) return;
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
-            catalogConfigs[activeModalCatalogId].title = val;
+            const defName = defaultCatalogNames[activeModalCatalogId] || activeModalCatalogId;
+            const trimmed = (val || '').trim();
+            if (trimmed === '' || trimmed === defName) {
+                delete catalogConfigs[activeModalCatalogId].title;
+            } else {
+                catalogConfigs[activeModalCatalogId].title = val;
+            }
             updateModalLivePreview();
             updateCatalogRowBadge(activeModalCatalogId);
         };
 
         window.resetModalTitle = function () {
             if (!activeModalCatalogId) return;
+            const defName = defaultCatalogNames[activeModalCatalogId] || activeModalCatalogId;
             const input = document.getElementById('modalInputTitle');
-            if (input) input.value = '';
-            onModalTitleChange('');
+            if (input) input.value = defName;
+            if (catalogConfigs[activeModalCatalogId]) {
+                delete catalogConfigs[activeModalCatalogId].title;
+            }
+            updateModalLivePreview();
+            updateCatalogRowBadge(activeModalCatalogId);
         };
 
         window.onModalSortByChange = function (val) {
             if (!activeModalCatalogId) return;
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
-            catalogConfigs[activeModalCatalogId].sort_by = val;
-            updateModalLivePreview();
+            if (val === 'default') {
+                delete catalogConfigs[activeModalCatalogId].sort_by;
+            } else {
+                catalogConfigs[activeModalCatalogId].sort_by = val;
+            }
+            updateModalSortDropdown(val);
+            const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
+            currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId]);
+            updateModalLivePreview(true);
             updateCatalogRowBadge(activeModalCatalogId);
         };
 
@@ -3290,16 +4061,24 @@
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
             catalogConfigs[activeModalCatalogId].sort_order = order;
             updateSortOrderUI(order);
-            updateModalLivePreview();
+            const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
+            currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId]);
+            updateModalLivePreview(true);
             updateCatalogRowBadge(activeModalCatalogId);
         };
 
         window.resetModalSort = function () {
             if (!activeModalCatalogId) return;
-            const select = document.getElementById('modalSortBySelect');
-            if (select) select.value = 'default';
-            onModalSortByChange('default');
-            setModalSortOrder('desc');
+            if (catalogConfigs[activeModalCatalogId]) {
+                delete catalogConfigs[activeModalCatalogId].sort_by;
+                delete catalogConfigs[activeModalCatalogId].sort_order;
+            }
+            updateModalSortDropdown('default');
+            updateSortOrderUI('desc');
+            const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
+            currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId] || {});
+            updateModalLivePreview(true);
+            updateCatalogRowBadge(activeModalCatalogId);
         };
 
         window.setModalShuffle = function (shuffle) {
@@ -3307,12 +4086,15 @@
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
             catalogConfigs[activeModalCatalogId].shuffle = Boolean(shuffle);
             updateShuffleUI(Boolean(shuffle));
-            updateModalLivePreview();
+            const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
+            currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId]);
+            updateModalLivePreview(true);
             updateCatalogRowBadge(activeModalCatalogId);
         };
 
         window.resetCurrentCatalogConfig = function () {
             if (!activeModalCatalogId) return;
+            const defName = defaultCatalogNames[activeModalCatalogId] || 'Catalog';
             catalogConfigs[activeModalCatalogId] = {
                 shape: 'poster',
                 title: '',
@@ -3323,20 +4105,49 @@
             };
             openCatalogConfigModal(activeModalCatalogId);
             updateCatalogRowBadge(activeModalCatalogId);
+            showToast(`Reset settings for ${defName}`, 'info');
         };
 
-        window.setAllCatalogShapes = function (shape) {
+        window.duplicateCurrentCatalogConfig = function () {
+            if (!activeModalCatalogId) return;
+            const srcCfg = catalogConfigs[activeModalCatalogId] || {};
+            const keysToCopy = ['shape', 'placement', 'sort_by', 'sort_order', 'shuffle', 'poster_art'];
+            let copiedCount = 0;
             Object.keys(defaultCatalogNames).forEach(catId => {
-                if (!catalogConfigs[catId]) catalogConfigs[catId] = {};
-                catalogConfigs[catId].shape = shape;
-                updateCatalogRowBadge(catId);
+                if (catId !== activeModalCatalogId) {
+                    if (!catalogConfigs[catId]) catalogConfigs[catId] = {};
+                    keysToCopy.forEach(k => {
+                        if (srcCfg[k] !== undefined) {
+                            catalogConfigs[catId][k] = srcCfg[k];
+                        }
+                    });
+                    updateCatalogRowBadge(catId);
+                    copiedCount++;
+                }
             });
-            if (activeModalCatalogId) {
-                updateShapeUI(shape);
-                updateModalLivePreview();
-            }
-            showToast('All catalogs set to ' + (shape === 'landscape' ? 'Landscape (16:9)' : 'Portrait (2:3)'), 'info');
+            showToast(`Applied configuration (${srcCfg.shape === 'landscape' ? 'Landscape' : 'Portrait'}, ${srcCfg.placement === 'discover_only' ? 'Discover only' : 'Home+Discover'}) to all ${copiedCount} catalogs!`, 'success');
         };
+
+        window.prefetchVisibleCatalogs = function () {
+            const items = document.querySelectorAll('.catalog-order-item:not(.d-none)');
+            const ids = Array.from(items).map(el => el.getAttribute('data-id')).filter(Boolean).slice(0, 6);
+            ids.forEach(id => {
+                if (!catalogItemsCache[id]) {
+                    fetchCatalogItems(id);
+                }
+            });
+        };
+
+        // Prefetch on mouse hover over catalog row or configure button
+        document.addEventListener('mouseover', function (e) {
+            const row = e.target.closest('.catalog-order-item') || e.target.closest('.catalog-config-btn');
+            if (row) {
+                const catId = row.getAttribute('data-id') || row.id?.replace('cfg_btn_', '');
+                if (catId && !catalogItemsCache[catId]) {
+                    fetchCatalogItems(catId);
+                }
+            }
+        });
 
         const list = document.getElementById("drag-drop-catalog-list");
         if (!list) return;
@@ -3344,7 +4155,7 @@
         let draggedItem = null;
 
         list.addEventListener("dragstart", function (e) {
-            if (e.target.closest(".catalog-config-btn") || e.target.closest(".shape-batch-btn") || e.target.closest("input") || e.target.closest("label") || e.target.closest("button")) {
+            if (e.target.closest(".catalog-config-btn") || e.target.closest("input") || e.target.closest("label") || e.target.closest("button")) {
                 e.preventDefault();
                 return;
             }
@@ -3964,8 +4775,9 @@
 
         // Sync catalog configs JSON payload
         const catalogConfigsVal = document.getElementById('catalog_configs_val');
-        if (catalogConfigsVal && typeof catalogConfigs !== 'undefined') {
-            catalogConfigsVal.value = JSON.stringify(catalogConfigs);
+        const configsToSave = (typeof window !== 'undefined' && window.catalogConfigs) || (typeof catalogConfigs !== 'undefined' ? catalogConfigs : null);
+        if (catalogConfigsVal && configsToSave) {
+            catalogConfigsVal.value = JSON.stringify(configsToSave);
         }
     }
 </script>

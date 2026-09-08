@@ -997,63 +997,85 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                 else:
                     m_copy["poster"] = new_poster
 
-        # Apply RPDB poster overlay if configured
-        has_poster_provider = user and (
-            (user.get("poster_provider") and user.get("poster_provider") != "none") or user.get("rpdb_api_key")
+        current_poster = m_copy.get("poster", "")
+        clean_poster = current_poster
+        is_badge = False
+        badge_query_params = {}
+        badge_base_url = ""
+
+        # Check if this is a badge redirect poster URL (from serve_modified_poster)
+        if "/poster/" in current_poster and "url=" in current_poster:
+            is_badge = True
+            try:
+                parsed = urllib.parse.urlparse(current_poster)
+                badge_base_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+                badge_query_params = {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query).items()}
+                clean_poster = badge_query_params.get("url", current_poster)
+            except Exception:
+                is_badge = False
+
+        m_copy["clean_poster"] = clean_poster
+
+        stremio_id = m_copy.get("id", "")
+        kitsu_id = m_copy.get("kitsu_id")
+        mal_id = m_copy.get("mal_id")
+        anilist_id = m_copy.get("anilist_id")
+        simkl_id = m_copy.get("simkl_id")
+
+        if not kitsu_id and stremio_id.startswith("kitsu:"):
+            kitsu_id = stremio_id.split(":")[1]
+        elif not mal_id and stremio_id.startswith("mal:"):
+            mal_id = stremio_id.split(":")[1]
+        elif not anilist_id and stremio_id.startswith("anilist:"):
+            anilist_id = stremio_id.split(":")[1]
+        elif not simkl_id and stremio_id.startswith("simkl:"):
+            simkl_id = stremio_id.split(":")[1]
+
+        # Apply RPDB poster overlay if configured (supports per-catalog poster art on/off toggle)
+        catalog_poster_arts = user.get("catalog_poster_arts", {}) if user else {}
+        cat_art_override = catalog_poster_arts.get(catalog_id)
+        if cat_art_override is None and user:
+            cat_configs = user.get("catalog_configs", {}) or {}
+            cat_art_override = (cat_configs.get(catalog_id) or {}).get("poster_art")
+
+        is_art_disabled = (cat_art_override is False or cat_art_override in ("false", "off", "clean", "none"))
+
+        ids_dict = {}
+        rpdb_poster = get_rpdb_poster_url(
+            user=user,
+            media_type=item_type,
+            kitsu_id=kitsu_id,
+            mal_id=mal_id,
+            anilist_id=anilist_id,
+            simkl_id=simkl_id,
+            fallback_poster=clean_poster,
+            provider_override=None,
+            resolved_ids=ids_dict,
         )
-        if has_poster_provider:
-            if catalog_id == "anisync_search" and not user.get("rpdb_in_search", True):
-                # Skip RPDB poster overlay for search catalog if disabled
-                formatted_metas.append(m_copy)
-                continue
 
-            stremio_id = m_copy.get("id", "")
-            kitsu_id = None
-            mal_id = None
-            anilist_id = None
-            simkl_id = None
+        if ids_dict.get("imdb_id"):
+            m_copy["imdb_id"] = ids_dict["imdb_id"]
 
-            if stremio_id.startswith("kitsu:"):
-                kitsu_id = stremio_id.split(":")[1]
-            elif stremio_id.startswith("mal:"):
-                mal_id = stremio_id.split(":")[1]
-            elif stremio_id.startswith("anilist:"):
-                anilist_id = stremio_id.split(":")[1]
-            elif stremio_id.startswith("simkl:"):
-                simkl_id = stremio_id.split(":")[1]
+        if rpdb_poster and rpdb_poster != clean_poster:
+            if is_badge:
+                badge_query_params["url"] = rpdb_poster
+                art_poster = f"{badge_base_url}?{urllib.parse.urlencode(badge_query_params)}"
+            else:
+                art_poster = rpdb_poster
+        else:
+            art_poster = clean_poster
 
-            current_poster = m_copy.get("poster", "")
-            is_badge = False
-            badge_query_params = {}
-            badge_base_url = ""
+        m_copy["art_poster"] = art_poster
 
-            # Check if this is a badge redirect poster URL (from serve_modified_poster)
-            if "/poster/" in current_poster and "url=" in current_poster:
-                is_badge = True
-                try:
-                    parsed = urllib.parse.urlparse(current_poster)
-                    badge_base_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-                    badge_query_params = {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query).items()}
-                    current_poster = badge_query_params.get("url", "")
-                except Exception:
-                    is_badge = False
+        # If poster art is not disabled and art_poster is available, use it; otherwise use clean_poster
+        if (not is_art_disabled) and art_poster and art_poster != clean_poster:
+            m_copy["poster"] = art_poster
+        else:
+            m_copy["poster"] = clean_poster
 
-            rpdb_poster = get_rpdb_poster_url(
-                user=user,
-                media_type=item_type,
-                kitsu_id=kitsu_id,
-                mal_id=mal_id,
-                anilist_id=anilist_id,
-                simkl_id=simkl_id,
-                fallback_poster=current_poster,
-            )
-
-            if rpdb_poster and rpdb_poster != current_poster:
-                if is_badge:
-                    badge_query_params["url"] = rpdb_poster
-                    m_copy["poster"] = f"{badge_base_url}?{urllib.parse.urlencode(badge_query_params)}"
-                else:
-                    m_copy["poster"] = rpdb_poster
+        if catalog_id == "anisync_search" and not user.get("rpdb_in_search", True):
+            # Skip RPDB poster overlay for search catalog if disabled
+            m_copy["poster"] = clean_poster
 
         formatted_metas.append(m_copy)
 

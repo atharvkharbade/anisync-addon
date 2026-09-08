@@ -240,6 +240,8 @@ def get_rpdb_poster_url(
     anilist_id: str | None = None,
     simkl_id: str | None = None,
     fallback_poster: str | None = None,
+    provider_override: str | None = None,
+    resolved_ids: dict | None = None,
 ) -> str | None:
     """
     Resolve and construct the poster URL for an item based on user's poster_provider setting:
@@ -252,15 +254,25 @@ def get_rpdb_poster_url(
     if not user:
         return fallback_poster
 
-    # Determine provider (backward compatibility for existing rpdb_api_key users)
-    provider = user.get("poster_provider")
-    if not provider:
-        provider = "rpdb" if user.get("rpdb_api_key") else "none"
+    # Determine provider (with per-catalog override support and backward compatibility)
+    if provider_override:
+        if provider_override in ["clean", "none"]:
+            return fallback_poster
+        elif provider_override in ["topposters", "top_poster"]:
+            provider = "top_poster"
+        elif provider_override in ["rpdb", "btttr", "custom"]:
+            provider = provider_override
+        else:
+            provider = user.get("poster_provider")
+    else:
+        provider = user.get("poster_provider")
+        if not provider:
+            provider = "rpdb" if user.get("rpdb_api_key") else "none"
 
     if provider in ["topposters", "top_poster"]:
         provider = "top_poster"
 
-    if provider == "none":
+    if provider in ["none", "clean"] and resolved_ids is None:
         return fallback_poster
 
     # Provider specific key validation
@@ -268,26 +280,11 @@ def get_rpdb_poster_url(
     top_key = user.get("top_poster_key")
     custom_pattern = user.get("custom_poster_pattern", "").strip()
 
-    if provider == "rpdb":
-        if not rpdb_key:
-            return fallback_poster
-        if user.get("rpdb_key_valid") is False:
-            return fallback_poster
-
+    if provider == "rpdb" and rpdb_key:
         from datetime import datetime, timedelta
         last_checked = user.get("rpdb_key_last_checked")
         if (not last_checked or (datetime.utcnow() - last_checked) > timedelta(days=1)) and user.get("uid"):
             check_rpdb_key_validity_background(user["uid"], rpdb_key)
-
-    elif provider == "top_poster":
-        if not top_key:
-            return fallback_poster
-        if user.get("top_key_valid") is False:
-            return fallback_poster
-
-    elif provider == "custom":
-        if not custom_pattern:
-            return fallback_poster
 
     from app.services.db import id_cache_collection
 
@@ -384,6 +381,26 @@ def get_rpdb_poster_url(
                         )
             except Exception as e:
                 logging.error("Failed to query fribb_mappings for poster resolution: %s", e)
+
+    if resolved_ids is not None:
+        if imdb_id:
+            resolved_ids["imdb_id"] = imdb_id
+        if tmdb_id:
+            resolved_ids["tmdb_id"] = tmdb_id
+        if tvdb_id:
+            resolved_ids["tvdb_id"] = tvdb_id
+
+    # If provider is none or clean, return fallback_poster
+    if provider in ["none", "clean"]:
+        return fallback_poster
+
+    # Provider specific key validation
+    if provider == "rpdb" and (not rpdb_key or user.get("rpdb_key_valid") is False):
+        return fallback_poster
+    if provider == "top_poster" and (not top_key or user.get("top_key_valid") is False):
+        return fallback_poster
+    if provider == "custom" and not custom_pattern:
+        return fallback_poster
 
     # Trigger background mappings resolution if we still lack external IDs
     if not (imdb_id or tmdb_id or tvdb_id):

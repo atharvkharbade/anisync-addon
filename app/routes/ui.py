@@ -200,7 +200,7 @@ async def configure(user_id: str = ""):
     # Time-gated background profile sync (once every 7 days)
     last_sync = user.get("last_profile_sync")
     now_check = datetime.datetime.utcnow()
-    if not last_sync or (now_check - last_sync) > datetime.timedelta(days=7):
+    if not user.get("is_guest") and (not last_sync or (now_check - last_sync) > datetime.timedelta(days=7)):
         asyncio.create_task(sync_user_profiles_task(uid))
 
     base = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}"
@@ -345,6 +345,7 @@ async def configure(user_id: str = ""):
             catalog_placements = user.get("catalog_placements", {}) or {}
             catalog_sorts = user.get("catalog_sorts", {}) or {}
             catalog_shuffles = user.get("catalog_shuffles", {}) or {}
+            catalog_poster_arts = user.get("catalog_poster_arts", {}) or {}
             catalog_configs = user.get("catalog_configs", {}) or {}
 
             # 1. Parse JSON payload if provided
@@ -354,10 +355,13 @@ async def configure(user_id: str = ""):
                     import json
                     parsed_configs = json.loads(raw_configs_str)
                     if isinstance(parsed_configs, dict):
-                        catalog_configs.update(parsed_configs)
                         for cat_id, cfg in parsed_configs.items():
                             if not isinstance(cfg, dict):
                                 continue
+                            if cat_id not in catalog_configs:
+                                catalog_configs[cat_id] = {}
+                            catalog_configs[cat_id].update(cfg)
+
                             if "shape" in cfg and cfg["shape"] in ["poster", "landscape"]:
                                 catalog_shapes[cat_id] = cfg["shape"]
                             if "title" in cfg:
@@ -368,6 +372,20 @@ async def configure(user_id: str = ""):
                                     del catalog_titles[cat_id]
                             if "placement" in cfg and cfg["placement"] in ["all", "discover_only"]:
                                 catalog_placements[cat_id] = cfg["placement"]
+                            if "poster_art" in cfg:
+                                art_val = cfg.get("poster_art")
+                                if art_val is False or art_val == "false" or art_val == "off":
+                                    catalog_poster_arts[cat_id] = False
+                                    catalog_configs[cat_id]["poster_art"] = False
+                                else:
+                                    if cat_id in catalog_poster_arts:
+                                        del catalog_poster_arts[cat_id]
+                                    catalog_configs[cat_id].pop("poster_art", None)
+                            else:
+                                if cat_id in catalog_poster_arts:
+                                    del catalog_poster_arts[cat_id]
+                                catalog_configs[cat_id].pop("poster_art", None)
+
                             if "sort_by" in cfg:
                                 sort_by = cfg.get("sort_by", "default")
                                 sort_order = cfg.get("sort_order", "desc")
@@ -394,6 +412,7 @@ async def configure(user_id: str = ""):
             user["catalog_shapes"] = catalog_shapes
             user["catalog_titles"] = catalog_titles
             user["catalog_placements"] = catalog_placements
+            user["catalog_poster_arts"] = catalog_poster_arts
             user["catalog_sorts"] = catalog_sorts
             user["catalog_shuffles"] = catalog_shuffles
             user["catalog_configs"] = catalog_configs
