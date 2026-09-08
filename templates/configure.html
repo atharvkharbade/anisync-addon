@@ -1413,8 +1413,9 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
         color: #94a3b8;
         border-radius: 6px;
-        padding: 2px 7px;
-        font-size: 0.7rem;
+        padding: 3px 9px;
+        font-size: 0.72rem;
+        font-weight: 500;
         cursor: pointer;
         transition: all 0.15s ease;
     }
@@ -2028,32 +2029,23 @@
                     </div>
                 </div>
 
-                <!-- Right Column: Live Poster Preview -->
+                <!-- Right Column: Poster Preview -->
                 <div class="col-12 col-lg-5">
                     <div id="posterLivePreviewContainer" class="artwork-preview-panel">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between w-100 gap-2 mb-2">
-                            <span class="preview-panel-title">Live Preview</span>
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <!-- Shape Switcher: Portrait vs Landscape -->
-                                <div class="preview-mode-switch" id="previewShapeToggle">
-                                    <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait">
-                                        Portrait
-                                    </button>
-                                    <button type="button" class="preview-mode-btn" id="btnPreviewLandscape" onclick="setArtworkPreviewShape('landscape')" title="Landscape">
-                                        Landscape
-                                    </button>
-                                </div>
-                                <!-- State Switcher: Airing vs Normal (Hidden for Guest Users) -->
-                                {% if not user.get('is_guest') %}
-                                <div class="preview-mode-switch" id="previewEpisodeToggle">
-                                    <button type="button" class="preview-mode-btn active" id="btnPreviewAiring" onclick="setArtworkPreviewState('airing')" title="Preview with new episode badge">
-                                        New Episode
-                                    </button>
-                                    <button type="button" class="preview-mode-btn" id="btnPreviewNormal" onclick="setArtworkPreviewState('normal')" title="Preview without badge">
-                                        Normal
-                                    </button>
-                                </div>
-                                {% endif %}
+                        <!-- Top Header: Single Line (Title + Shape Toggle) -->
+                        <div class="d-flex align-items-center justify-content-between w-100 mb-2">
+                            <span class="preview-panel-title d-flex align-items-center gap-1.5">
+                                <i class="fa-regular fa-image text-warning" style="font-size: 0.85rem;"></i>
+                                <span>Preview</span>
+                            </span>
+                            <!-- Shape Switcher: Portrait vs Landscape -->
+                            <div class="preview-mode-switch" id="previewShapeToggle">
+                                <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait">
+                                    Portrait
+                                </button>
+                                <button type="button" class="preview-mode-btn" id="btnPreviewLandscape" onclick="setArtworkPreviewShape('landscape')" title="Landscape">
+                                    Landscape
+                                </button>
                             </div>
                         </div>
 
@@ -2069,11 +2061,23 @@
                             </div>
                         </div>
 
-                        <!-- Only Refresh Button beneath poster -->
-                        <div class="d-flex align-items-center justify-content-center w-100 mt-2">
-                            <button type="button" class="btn-cycle-sample" onclick="cycleArtworkSample()" title="Cycle Anime Preview">
+                        <!-- Bottom Footer Toolbar -->
+                        <div class="d-flex align-items-center {% if user.get('is_guest') %}justify-content-center{% else %}justify-content-between{% endif %} w-100 mt-2 pt-2 border-top border-secondary border-opacity-10">
+                            <button type="button" class="btn-cycle-sample d-inline-flex align-items-center gap-1.5" onclick="cycleArtworkSample()" title="Cycle Anime Preview">
                                 <i class="fa-solid fa-arrows-rotate"></i>
+                                <span>Next Anime</span>
                             </button>
+                            <!-- State Switcher: Airing vs Normal (Hidden for Guest Users) -->
+                            {% if not user.get('is_guest') %}
+                            <div class="preview-mode-switch" id="previewEpisodeToggle">
+                                <button type="button" class="preview-mode-btn active" id="btnPreviewAiring" onclick="setArtworkPreviewState('airing')" title="Preview with new episode badge">
+                                    New Episode
+                                </button>
+                                <button type="button" class="preview-mode-btn" id="btnPreviewNormal" onclick="setArtworkPreviewState('normal')" title="Preview without badge">
+                                    Normal
+                                </button>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
