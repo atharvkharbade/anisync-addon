@@ -3849,29 +3849,53 @@
 
             if (sortBy !== 'default') {
                 list.sort((a, b) => {
-                    let cmp = 0;
+                    let aVal = 0;
+                    let bVal = 0;
+                    let isNumeric = true;
+
                     if (sortBy === 'score') {
-                        cmp = (parseFloat(a.score) || 0) - (parseFloat(b.score) || 0);
-                    } else if (sortBy === 'title') {
-                        cmp = (a.title || '').localeCompare(b.title || '');
+                        aVal = parseFloat(a.score) || 0;
+                        bVal = parseFloat(b.score) || 0;
                     } else if (sortBy === 'release_date' || sortBy === 'year') {
-                        cmp = (parseInt(a.year) || 0) - (parseInt(b.year) || 0);
+                        aVal = parseInt(a.year) || 0;
+                        bVal = parseInt(b.year) || 0;
                     } else if (sortBy === 'airing_date') {
-                        const aAiring = parseInt(a.airing_date) || (isAsc ? 2147483647 : 0);
-                        const bAiring = parseInt(b.airing_date) || (isAsc ? 2147483647 : 0);
-                        cmp = aAiring - bAiring;
-                    } else if (sortBy === 'last_updated') {
-                        cmp = (parseInt(a.updated_at) || 0) - (parseInt(b.updated_at) || 0);
+                        aVal = parseInt(a.airing_date) || 0;
+                        bVal = parseInt(b.airing_date) || 0;
                     } else if (sortBy === 'episodes') {
-                        cmp = (parseInt(a.episodes) || 0) - (parseInt(b.episodes) || 0);
+                        aVal = parseInt(a.episodes) || 0;
+                        bVal = parseInt(b.episodes) || 0;
+                    } else if (sortBy === 'last_updated') {
+                        aVal = parseInt(a.updated_at) || 0;
+                        bVal = parseInt(b.updated_at) || 0;
+                    } else if (sortBy === 'title') {
+                        isNumeric = false;
                     }
 
-                    // Tie-breaker by title for deterministic sorting
-                    if (cmp === 0) {
-                        cmp = (a.title || '').localeCompare(b.title || '');
+                    if (isNumeric) {
+                        const aMissing = aVal <= 0;
+                        const bMissing = bVal <= 0;
+
+                        // Missing/zero values ALWAYS go to the very end regardless of Asc or Desc!
+                        if (aMissing && bMissing) {
+                            return (a.title || '').localeCompare(b.title || '');
+                        }
+                        if (aMissing) return 1;
+                        if (bMissing) return -1;
+
+                        const diff = aVal - bVal;
+                        if (diff !== 0) {
+                            return isAsc ? diff : -diff;
+                        }
+                    } else if (sortBy === 'title') {
+                        const diff = (a.title || '').localeCompare(b.title || '');
+                        if (diff !== 0) {
+                            return isAsc ? diff : -diff;
+                        }
                     }
 
-                    return isAsc ? cmp : -cmp;
+                    // Deterministic tie-breaker by title
+                    return (a.title || '').localeCompare(b.title || '');
                 });
             }
 

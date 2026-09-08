@@ -607,51 +607,51 @@ def extract_item_metadata_fields(item, tracker_type, bulk_details=None):
         "episodes": int(episodes),
         "year": int(year),
         "airing_at": airing_at,
-        "updated_at": updated_at,
+            "updated_at": updated_at,
     }
 
 
 def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=None):
-    if not items:
+    if not items or sort_by == "default":
         return items
 
-    reverse = sort_order == "desc"
+    reverse = (sort_order == "desc")
 
-    def get_sort_key(item):
-        if sort_by == "title":
-            title = ""
-            if tracker_type == "mal":
-                title = item.get("node", {}).get("title", "")
-            elif tracker_type == "anilist":
-                media = item.get("media", {})
+    def extract_title(item):
+        title = ""
+        if tracker_type == "mal":
+            title = item.get("node", {}).get("title", "")
+        elif tracker_type == "anilist":
+            media = item.get("media", {})
+            title = (
+                media.get("title", {}).get("userPreferred")
+                or media.get("title", {}).get("english")
+                or media.get("title", {}).get("romaji")
+                or ""
+            )
+        elif tracker_type == "simkl":
+            show_obj = item.get("show") or item.get("anime") or item
+            title = show_obj.get("en_title") or show_obj.get("title", "")
+        elif tracker_type == "combined":
+            if item.get("anilist_item"):
+                media = item["anilist_item"].get("media", {})
                 title = (
                     media.get("title", {}).get("userPreferred")
                     or media.get("title", {}).get("english")
                     or media.get("title", {}).get("romaji")
                     or ""
                 )
-            elif tracker_type == "simkl":
-                show_obj = item.get("show") or item.get("anime") or item
+            if not title and item.get("mal_item"):
+                title = item["mal_item"].get("node", {}).get("title", "")
+            if not title and item.get("simkl_item"):
+                show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
                 title = show_obj.get("en_title") or show_obj.get("title", "")
-            elif tracker_type == "combined":
-                if item.get("anilist_item"):
-                    media = item["anilist_item"].get("media", {})
-                    title = (
-                        media.get("title", {}).get("userPreferred")
-                        or media.get("title", {}).get("english")
-                        or media.get("title", {}).get("romaji")
-                        or ""
-                    )
-                if not title and item.get("mal_item"):
-                    title = item["mal_item"].get("node", {}).get("title", "")
-                if not title and item.get("simkl_item"):
-                    show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
-                    title = show_obj.get("en_title") or show_obj.get("title", "")
-            if not title and isinstance(item, dict):
-                title = str(item.get("name") or "")
-            return title.lower()
+        if not title and isinstance(item, dict):
+            title = str(item.get("name") or item.get("title") or "")
+        return title.strip()
 
-        elif sort_by == "score":
+    def extract_numeric(item):
+        if sort_by == "score":
             score = 0
             if tracker_type == "mal":
                 status = item.get("node", {}).get("my_list_status") or {}
@@ -704,20 +704,14 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                 if rated_user_scores:
                     score = sum(rated_user_scores) / len(rated_user_scores)
                 else:
-                    # Fallback to global scores
                     mal_global = mal_item.get("node", {}).get("mean", 0) or 0
-                    
-                    al_global = anilist_item.get("media", {}).get("averageScore", 0) or 0
-                    al_global = al_global / 10
-
+                    al_global = (anilist_item.get("media", {}).get("averageScore", 0) or 0) / 10
                     mal_id = item.get("mal_id")
                     al_media = bulk_details.get(mal_id) if (bulk_details and mal_id) else {}
                     bulk_global = (al_media.get("averageScore") or 0) / 10
-
                     simkl_global = bulk_global
                     if mal_global == 0 and bulk_global > 0:
                         mal_global = bulk_global
-
                     global_scores = [mal_global, al_global, simkl_global]
                     rated_global_scores = [s for s in global_scores if s > 0]
                     score = sum(rated_global_scores) / len(rated_global_scores) if rated_global_scores else 0.0
@@ -738,17 +732,15 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
             elif tracker_type == "simkl":
                 ts = parse_iso_timestamp(item.get("last_watched_at"))
             elif tracker_type == "combined":
-                mal_item = item.get("mal_item") or {}
-                mal_status = mal_item.get("node", {}).get("my_list_status") or {}
+                mal_status = (item.get("mal_item", {}).get("node", {}).get("my_list_status") or {})
                 mal_ts = parse_iso_timestamp(mal_status.get("updated_at", ""))
-
                 anilist_item = item.get("anilist_item") or {}
                 al_ts = anilist_item.get("updatedAt") or 0
-
                 simkl_item = item.get("simkl_item") or {}
                 simkl_ts = parse_iso_timestamp(simkl_item.get("last_watched_at"))
-
                 ts = max(mal_ts, al_ts, simkl_ts)
+            if not ts and isinstance(item, dict):
+                ts = int(item.get("updated_at") or 0)
             return ts
 
         elif sort_by == "airing_date":
@@ -776,13 +768,9 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     al_media = bulk_details.get(item["mal_id"]) or {}
                     next_ep = al_media.get("nextAiringEpisode")
                     airing_at = next_ep.get("airingAt") if next_ep else None
-
             if airing_at is None and isinstance(item, dict):
                 airing_at = item.get("airing_at")
-
-            if airing_at is None:
-                return 0 if reverse else 2**31 - 1
-            return airing_at
+            return int(airing_at or 0)
 
         elif sort_by in ["year", "release_date"]:
             yr = 0
@@ -802,6 +790,10 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     yr = int(item["anilist_item"].get("media", {}).get("startDate", {}).get("year", 0) or item["anilist_item"].get("media", {}).get("seasonYear", 0) or 0)
                 if not yr and item.get("mal_item"):
                     yr = int(item["mal_item"].get("node", {}).get("start_season", {}).get("year", 0) or 0)
+                    if not yr:
+                        d_str = str(item["mal_item"].get("node", {}).get("start_date") or "")
+                        if len(d_str) >= 4 and d_str[:4].isdigit():
+                            yr = int(d_str[:4])
                 if not yr and item.get("simkl_item"):
                     show_obj = item["simkl_item"].get("show") or item["simkl_item"].get("anime") or item["simkl_item"]
                     yr = int(show_obj.get("year", 0) or 0)
@@ -818,12 +810,17 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                 eps = int(item.get("node", {}).get("num_episodes", 0) or 0)
             elif tracker_type == "anilist":
                 eps = int(item.get("media", {}).get("episodes", 0) or 0)
+                if not eps and item.get("media", {}).get("nextAiringEpisode", {}).get("episode"):
+                    eps = max(0, int(item["media"]["nextAiringEpisode"]["episode"]) - 1)
             elif tracker_type == "simkl":
                 show_obj = item.get("show") or item.get("anime") or item
                 eps = int(show_obj.get("total_episodes", 0) or show_obj.get("episodes_count", 0) or show_obj.get("num_episodes", 0) or item.get("total_episodes_count", 0) or 0)
             elif tracker_type == "combined":
                 if item.get("anilist_item"):
-                    eps = int(item["anilist_item"].get("media", {}).get("episodes", 0) or 0)
+                    al_m = item["anilist_item"].get("media", {})
+                    eps = int(al_m.get("episodes", 0) or 0)
+                    if not eps and al_m.get("nextAiringEpisode", {}).get("episode"):
+                        eps = max(0, int(al_m["nextAiringEpisode"]["episode"]) - 1)
                 if not eps and item.get("mal_item"):
                     eps = int(item["mal_item"].get("node", {}).get("num_episodes", 0) or 0)
                 if not eps and item.get("simkl_item"):
@@ -911,19 +908,42 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                 ts = max(mal_ts, al_ts, simkl_ts)
             return ts
 
-        # Fallback key extraction if item is formatted Stremio meta dict
-        if isinstance(item, dict):
-            if sort_by == "title":
-                return str(item.get("name") or "").lower()
-            elif sort_by == "score":
-                try:
-                    return float(item.get("score") or item.get("imdbRating") or 0)
-                except Exception:
-                    return 0.0
-
         return 0
 
-    return sorted(items, key=get_sort_key, reverse=reverse)
+    from functools import cmp_to_key
+
+    def compare_items(a, b):
+        if sort_by == "title":
+            title_a = extract_title(a).lower()
+            title_b = extract_title(b).lower()
+            diff = (title_a > title_b) - (title_a < title_b)
+            return -diff if reverse else diff
+
+        val_a = extract_numeric(a)
+        val_b = extract_numeric(b)
+
+        a_missing = (val_a is None or val_a <= 0)
+        b_missing = (val_b is None or val_b <= 0)
+
+        # Missing/zero values ALWAYS go to the very end regardless of Asc or Desc
+        if a_missing and b_missing:
+            title_a = extract_title(a).lower()
+            title_b = extract_title(b).lower()
+            return (title_a > title_b) - (title_a < title_b)
+        if a_missing:
+            return 1
+        if b_missing:
+            return -1
+
+        diff = (val_a > val_b) - (val_a < val_b)
+        if diff != 0:
+            return -diff if reverse else diff
+
+        title_a = extract_title(a).lower()
+        title_b = extract_title(b).lower()
+        return (title_a > title_b) - (title_a < title_b)
+
+    return sorted(items, key=cmp_to_key(compare_items))
 
 
 def get_catalog_sorting(user, catalog_id, default_category_key=None):
