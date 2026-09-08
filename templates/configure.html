@@ -1928,47 +1928,7 @@
                 </div>
 
         
-            <!-- Display Preferences Card -->
-            <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-language me-2 text-warning"></i>Display Preferences</h6>
-                <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                    Configure your preferred anime title language for catalog cards and search results.
-                </p>
 
-                <!-- Catalog Title Language Option -->
-                <div>
-                    <label class="form-label small fw-semibold text-light mb-1">Catalog Title Language</label>
-                    <input type="hidden" id="title_language" name="title_language" value="{{ user.get('title_language', 'english') }}">
-                    <div style="max-width: 400px;">
-                        <div class="custom-select-wrapper mb-2" data-input-id="title_language">
-                            <div class="custom-select">
-                                <span class="custom-select-text d-flex align-items-center">
-                                    {% if user.get('title_language', 'english') == 'romaji' %}
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
-                                    {% elif user.get('title_language', 'english') == 'japanese' %}
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
-                                    {% else %}
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
-                                    {% endif %}
-                                </span>
-                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                            </div>
-                            <div class="custom-options-menu">
-                                <div class="custom-option-item d-flex align-items-center" data-value="english">
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
-                                </div>
-                                <div class="custom-option-item d-flex align-items-center" data-value="romaji">
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
-                                </div>
-                                <div class="custom-option-item d-flex align-items-center" data-value="japanese">
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
-                                </div>
-                            </div>
-                        </div>
-                        <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; color: #e0a92e !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</p>
-                    </div>
-                </div>
-            </div>
 
         <!-- Step Navigation (Previous: Trackers, Next: Catalogs) -->
         <div class="step-nav-bar mt-4 pt-3 step-nav-2col">
@@ -2543,6 +2503,43 @@
                                 </p>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Catalog Title Language Option -->
+                <div class="pt-3 border-top border-secondary border-opacity-10">
+                    <label class="form-label small fw-semibold text-light mb-1">Catalog Title Language</label>
+                    <p class="text-secondary small mb-2" style="font-size: 0.78rem; line-height: 1.4;">
+                        Configure your preferred anime title language for catalog cards and search results.
+                    </p>
+                    <input type="hidden" id="title_language" name="title_language" value="{{ user.get('title_language', 'english') }}">
+                    <div style="max-width: 400px;">
+                        <div class="custom-select-wrapper mb-2" data-input-id="title_language">
+                            <div class="custom-select">
+                                <span class="custom-select-text d-flex align-items-center">
+                                    {% if user.get('title_language', 'english') == 'romaji' %}
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
+                                    {% elif user.get('title_language', 'english') == 'japanese' %}
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
+                                    {% else %}
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
+                                    {% endif %}
+                                </span>
+                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                            </div>
+                            <div class="custom-options-menu">
+                                <div class="custom-option-item d-flex align-items-center" data-value="english">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="romaji">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="japanese">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; color: #e0a92e !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</p>
                     </div>
                 </div>
             
