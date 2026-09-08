@@ -1362,20 +1362,46 @@
         font-weight: 600;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
     }
-    #btnPreviewCycle {
-        display: inline-flex;
+    .btn-cycle-floating {
+        position: absolute;
+        right: -18px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(18, 24, 38, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: #f1f5f9;
+        display: flex;
         align-items: center;
         justify-content: center;
+        font-size: 0.85rem;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), 0 0 10px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 10;
     }
-    #btnPreviewCycle i {
-        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+    .btn-cycle-floating:hover {
+        background: rgba(28, 38, 58, 0.98);
+        border-color: rgba(251, 191, 36, 0.6);
+        color: #fbbf24;
+        transform: translateY(-50%) scale(1.1);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.85), 0 0 14px rgba(251, 191, 36, 0.3);
     }
-    #btnPreviewCycle:hover i {
+    .btn-cycle-floating:hover i {
         transform: rotate(90deg);
-        color: #ffffff;
     }
-    #btnPreviewCycle:active i {
+    .btn-cycle-floating:active {
+        transform: translateY(-50%) scale(0.94);
+    }
+    .btn-cycle-floating:active i {
         transform: rotate(270deg);
+    }
+    .btn-cycle-floating i {
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
     }
     .artwork-poster-stage {
         display: flex;
@@ -2047,16 +2073,13 @@
                 <!-- Right Column: Poster Preview -->
                 <div class="col-12 col-lg-5">
                     <div id="posterLivePreviewContainer" class="artwork-preview-panel">
-                        <!-- Top Header: Single Line (Title + Shape/Cycle Controls) -->
-                        <div class="d-flex align-items-center justify-content-between w-100 mb-2">
-                            <span class="preview-panel-title">Preview</span>
-                            <!-- Shape Switcher: Portrait vs Landscape with Next Anime in middle -->
+                        <!-- Top Header: Preview on Top-Left, Shape Toggle Centered in Middle -->
+                        <div class="position-relative w-100 d-flex align-items-center justify-content-center mb-2" style="min-height: 28px;">
+                            <span class="preview-panel-title position-absolute start-0">Preview</span>
+                            <!-- Shape Switcher: Portrait vs Landscape (Centered in Middle) -->
                             <div class="preview-mode-switch" id="previewShapeToggle">
-                                <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait (Normal Poster)">
+                                <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait">
                                     Portrait
-                                </button>
-                                <button type="button" class="preview-mode-btn px-2" id="btnPreviewCycle" onclick="cycleArtworkSample()" title="Next Anime">
-                                    <i class="fa-solid fa-arrows-rotate"></i>
                                 </button>
                                 <button type="button" class="preview-mode-btn" id="btnPreviewLandscape" onclick="setArtworkPreviewShape('landscape')" title="Landscape">
                                     Landscape
@@ -2064,15 +2087,21 @@
                             </div>
                         </div>
 
-                        <!-- Dynamic Poster Showcase Card -->
+                        <!-- Dynamic Poster Showcase Card with Floating Next Anime Cycle Button -->
                         <div class="artwork-poster-stage">
-                            <div class="artwork-poster-card" id="artworkPreviewCard">
-                                <div id="artworkPreviewSpinner" class="artwork-preview-spinner d-none">
-                                    <div class="spinner-border spinner-border-sm text-warning" role="status">
-                                        <span class="visually-hidden">Loading...</span>
+                            <div class="position-relative d-inline-flex justify-content-center align-items-center">
+                                <div class="artwork-poster-card" id="artworkPreviewCard">
+                                    <div id="artworkPreviewSpinner" class="artwork-preview-spinner d-none">
+                                        <div class="spinner-border spinner-border-sm text-warning" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
                                     </div>
+                                    <img id="artworkPreviewImg" src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg" alt="Preview Poster" class="artwork-poster-img">
                                 </div>
-                                <img id="artworkPreviewImg" src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg" alt="Preview Poster" class="artwork-poster-img">
+                                <!-- Floating Next Anime button on the right side of the poster -->
+                                <button type="button" class="btn-cycle-floating" id="btnPreviewCycle" onclick="cycleArtworkSample()" title="Next Anime">
+                                    <i class="fa-solid fa-arrows-rotate"></i>
+                                </button>
                             </div>
                         </div>
 
