@@ -1224,19 +1224,22 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
             else:
                 art_poster = rpdb_poster
         else:
-            art_poster = clean_poster
+            art_poster = current_poster if is_badge else clean_poster
 
         m_copy["art_poster"] = art_poster
+        m_copy["is_badge"] = is_badge
+        m_copy["badge_base_url"] = badge_base_url
+        m_copy["badge_query_params"] = badge_query_params
 
-        # If poster art is not disabled and art_poster is available, use it; otherwise use clean_poster
-        if (not is_art_disabled) and art_poster and art_poster != clean_poster:
+        # If poster art is not disabled and art_poster is available, use it; otherwise preserve badge or clean_poster
+        if (not is_art_disabled) and art_poster:
             m_copy["poster"] = art_poster
         else:
-            m_copy["poster"] = clean_poster
+            m_copy["poster"] = current_poster if is_badge else clean_poster
 
         if catalog_id == "anisync_search" and not user.get("rpdb_in_search", True):
             # Skip RPDB poster overlay for search catalog if disabled
-            m_copy["poster"] = clean_poster
+            m_copy["poster"] = current_poster if is_badge else clean_poster
 
         formatted_metas.append(m_copy)
 
@@ -1246,13 +1249,37 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
 
     # Handle card shape (landscape vs poster) for Stremio and modern clients
     catalog_shapes = user.get("catalog_shapes", {}) if user else {}
-    is_landscape = bool(catalog_id and catalog_shapes.get(catalog_id) == "landscape")
+    catalog_configs = user.get("catalog_configs", {}) if user else {}
+    cat_cfg = catalog_configs.get(catalog_id, {}) if isinstance(catalog_configs, dict) else {}
+    is_landscape = bool(catalog_id and (cat_cfg.get("shape") == "landscape" or catalog_shapes.get(catalog_id) == "landscape"))
     for m in formatted_metas:
         if is_landscape:
             m["posterShape"] = "landscape"
             bg = m.get("background")
             if bg and isinstance(bg, str) and bg.strip():
-                m["poster"] = bg.strip()
+                clean_bg = bg.strip()
+                current_poster = str(m.get("poster") or "")
+                if m.get("is_badge") or ("/poster/" in current_poster and "badge=new" in current_poster):
+                    # Transform existing badge poster URL into landscape-oriented badge URL
+                    try:
+                        base_u = m.get("badge_base_url")
+                        b_params = dict(m.get("badge_query_params") or {})
+                        if not base_u:
+                            parsed = urllib.parse.urlparse(current_poster)
+                            base_u = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+                            b_params = {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query).items()}
+
+                        b_params["url"] = clean_bg
+                        b_params["shape"] = "landscape"
+                        b_params["v"] = "hd_land_v2"
+                        if "_land" not in base_u and base_u.endswith(".jpg"):
+                            base_u = base_u[:-4] + "_land.jpg"
+                        m["poster"] = f"{base_u}?{urllib.parse.urlencode(b_params)}"
+                    except Exception as e:
+                        logging.warning("Failed to construct landscape badge URL: %s", e)
+                        m["poster"] = clean_bg
+                else:
+                    m["poster"] = clean_bg
         else:
             m["posterShape"] = "poster"
 

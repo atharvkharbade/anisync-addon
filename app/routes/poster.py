@@ -44,21 +44,31 @@ def is_trusted_url(url: str) -> bool:
         return False
 
 
-def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: str) -> bytes:
-    """CPU-bound Pillow image rendering executed in background worker thread."""
+def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: str, shape: str = "poster") -> bytes:
+    """CPU-bound Pillow image rendering executed in background worker thread.
+    Supports both 2:3 portrait posters and 16:9 landscape posters for Classic & Modern designs.
+    """
     img = Image.open(io.BytesIO(img_bytes))
     if img.mode != "RGBA":
         img = img.convert("RGBA")
 
     w, h = img.size
-    scale = w / 225.0
+    aspect_ratio = w / float(h) if h > 0 else 1.0
+    is_landscape = (shape == "landscape") or (aspect_ratio >= 1.25)
+
+    if is_landscape:
+        # Scale proportionally to height for 16:9 landscape banners (calibrated for widescreen card height in Stremio/Nuvio)
+        scale = h / 195.0
+    else:
+        # Scale proportionally to width for 2:3 portrait posters
+        scale = w / 225.0
 
     overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
 
     try:
         font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-        font_size_classic = max(10, int(12 * scale))
+        font_size_classic = max(14, int(13 * scale)) if is_landscape else max(10, int(12 * scale))
         font_size_small = max(8, int(10 * scale))
         try:
             font = ImageFont.truetype(font_path, font_size_classic)
@@ -76,17 +86,31 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
         assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
         resample_filter = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
 
-        logo_w, logo_h = max(12, int(16 * scale)), max(12, int(16 * scale))
-        logo_gap = max(2, int(4 * scale))
-
         if badge_style == "modern":
             # --- MODERN DESIGN: Liquid Glass Blur (Glassmorphism) & Symmetric Margins ---
-            glass_fill = (15, 23, 42, 160)
-            glass_outline = (255, 255, 255, 65)
+            glass_fill = (15, 23, 42, 175) if is_landscape else (15, 23, 42, 160)
+            glass_outline = (255, 255, 255, 75) if is_landscape else (255, 255, 255, 65)
             text_color = (255, 255, 255, 255)
 
-            font_top_size = max(12, int(15 * scale))
-            font_bottom_size = max(11, int(14 * scale))
+            if is_landscape:
+                font_top_size = max(14, int(13 * scale))
+                font_bottom_size = max(12, int(11 * scale))
+                pad_x = int(24 * scale)
+                pad_y = int(12 * scale)
+                margin_y = int(14 * (h / 350.0))
+                radius = max(6, int(6 * scale))
+                blur_radius = max(6, int(8 * scale))
+                outline_w = max(1, int(1.2 * (h / 350.0)))
+            else:
+                font_top_size = max(12, int(15 * scale))
+                font_bottom_size = max(11, int(14 * scale))
+                pad_x = int(28 * scale)
+                pad_y = int(14 * scale)
+                margin_y = int(12 * scale)
+                radius = max(4, int(8 * scale))
+                blur_radius = max(5, int(10 * scale))
+                outline_w = 1
+
             try:
                 font_top = ImageFont.truetype(font_path, font_top_size)
                 font_bottom = ImageFont.truetype(font_path, font_bottom_size)
@@ -104,14 +128,12 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
                 tw, th = int(110 * scale), int(14 * scale)
                 left_t, top_t = 0, 0
 
-            box_w = tw + int(28 * scale)
-            box_h = th + int(14 * scale)
+            box_w = tw + pad_x
+            box_h = th + pad_y
             box_x1 = int((w - box_w) / 2)
-            box_y1 = int(12 * scale)
+            box_y1 = margin_y
             box_x2 = int(box_x1 + box_w)
             box_y2 = int(box_y1 + box_h)
-            radius = max(4, int(8 * scale))
-            blur_radius = max(5, int(10 * scale))
 
             # Apply Gaussian Blur to poster background slice under top badge
             try:
@@ -129,7 +151,7 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
 
             # Draw liquid glass overlay and text
             if hasattr(draw, "rounded_rectangle"):
-                draw.rounded_rectangle([(box_x1, box_y1), (box_x2, box_y2)], radius=radius, fill=glass_fill, outline=glass_outline)
+                draw.rounded_rectangle([(box_x1, box_y1), (box_x2, box_y2)], radius=radius, fill=glass_fill, outline=glass_outline, width=outline_w)
             else:
                 draw.rectangle([(box_x1, box_y1), (box_x2, box_y2)], fill=glass_fill)
 
@@ -156,10 +178,10 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
                 btw, bth = int(65 * scale), int(14 * scale)
                 left_b, top_b = 0, 0
 
-            bot_box_w = btw + int(26 * scale)
-            bot_box_h = bth + int(14 * scale)
+            bot_box_w = btw + pad_x
+            bot_box_h = bth + pad_y
             bot_box_x1 = int((w - bot_box_w) / 2)
-            bot_box_y1 = int(h - bot_box_h - int(12 * scale))
+            bot_box_y1 = int(h - bot_box_h - margin_y)
             bot_box_x2 = int(bot_box_x1 + bot_box_w)
             bot_box_y2 = int(bot_box_y1 + bot_box_h)
 
@@ -179,7 +201,7 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
 
             # Draw liquid glass overlay and text
             if hasattr(draw, "rounded_rectangle"):
-                draw.rounded_rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], radius=radius, fill=glass_fill, outline=glass_outline)
+                draw.rounded_rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], radius=radius, fill=glass_fill, outline=glass_outline, width=outline_w)
             else:
                 draw.rectangle([(bot_box_x1, bot_box_y1), (bot_box_x2, bot_box_y2)], fill=glass_fill)
 
@@ -189,7 +211,15 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
 
         else:
             # --- CLASSIC DESIGN: Solid Bottom Bar ---
-            bar_h = int(35 * scale)
+            if is_landscape:
+                bar_h = max(34, int(26 * scale))
+                logo_w, logo_h = max(18, int(15 * scale)), max(18, int(15 * scale))
+                logo_gap = max(4, int(4 * scale))
+            else:
+                bar_h = int(35 * scale)
+                logo_w, logo_h = max(12, int(16 * scale)), max(12, int(16 * scale))
+                logo_gap = max(2, int(4 * scale))
+
             bar_y = h - bar_h
             draw.rectangle([(0, bar_y), (w, h)], fill=(0, 0, 0, 255))
 
@@ -239,7 +269,8 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
 
     except Exception as ex:
         logging.error("Failed to dynamically draw overlay: %s. Falling back to solid white bar.", ex)
-        draw.rectangle([(0, int(h - 35 * scale)), (w, h)], fill=(255, 255, 255, 255))
+        fall_h = max(26, int(35 * scale))
+        draw.rectangle([(0, int(h - fall_h)), (w, h)], fill=(255, 255, 255, 255))
         combined = Image.alpha_composite(img, overlay)
         final_img = combined.convert("RGB")
 
@@ -311,9 +342,10 @@ async def serve_modified_poster(user_id: str, media_id: str):
 
         tracker = request.args.get("tracker", "").lower()
         badge_style = request.args.get("style", "modern").lower()
+        shape = request.args.get("shape", "poster").lower()
 
         # Offload CPU-bound Pillow transformation to worker thread
-        jpeg_bytes = await asyncio.to_thread(_render_modified_poster_sync, resp.content, tracker, badge_style)
+        jpeg_bytes = await asyncio.to_thread(_render_modified_poster_sync, resp.content, tracker, badge_style, shape)
 
         response = Response(jpeg_bytes, mimetype="image/jpeg")
         # Aggressive caching to minimize server workload (1 week cache)
