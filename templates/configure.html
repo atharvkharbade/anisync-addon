@@ -1212,13 +1212,16 @@
         object-fit: cover;
         display: block;
     }
-    #modalPosterArtSection.disabled {
+    #modalPosterArtSection.disabled #modalPosterArtGroup {
         opacity: 0.45;
         pointer-events: none;
         user-select: none;
     }
     #modalPosterArtSection.disabled .btn-modal-reset-field {
         display: none;
+    }
+    #modalPosterArtDisabledNote {
+        pointer-events: auto;
     }
 
     .preview-card.skeleton {
