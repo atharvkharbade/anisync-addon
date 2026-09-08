@@ -1912,9 +1912,7 @@
                 <!-- Left Column: Settings Controls -->
                 <div class="col-12 col-lg-7">
                     <div id="poster-provider-section">
-                        <!-- New Episode Overlay Design (only for users with connected trackers) -->
-                        {% set has_trackers = user.get('mal_token') or user.get('anilist_token') or user.get('simkl_token') or user.get('mal_username') or user.get('anilist_username') or user.get('simkl_username') %}
-                        {% if has_trackers and not user.get('is_guest') %}
+                        <!-- New Episode Overlay Design -->
                         <div style="max-width: 400px;" class="mb-4">
                             <label class="rec-label mb-2 small text-secondary">NEW EPISODE OVERLAY STYLE</label>
                             <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
@@ -1943,10 +1941,9 @@
                                 </div>
                             </div>
                         </div>
-                        {% endif %}
 
                         <!-- Divider & Poster Provider Section -->
-                        <div class="{% if has_trackers and not user.get('is_guest') %}pt-3 border-top border-secondary border-opacity-10{% endif %}">
+                        <div class="pt-3 border-top border-secondary border-opacity-10">
                             <label class="rec-label mb-2 small text-secondary">POSTER ART COVER PROVIDER</label>
                             <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
                                 Enhance anime poster covers with Rating Poster DB (RPDB) overlays, TOP Posters, or a custom poster URL.
