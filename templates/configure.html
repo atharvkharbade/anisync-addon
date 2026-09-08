@@ -3092,12 +3092,10 @@
             window.prefetchVisibleCatalogs();
         }
 
-        // 4. Scroll smoothly to top of active pane on mobile if called from step nav
-        if (window.innerWidth < 768) {
-            const mainEl = document.querySelector('main');
-            if (mainEl) {
-                mainEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+        // 4. Scroll smoothly to top of active pane on tab switch
+        const mainEl = document.querySelector('main');
+        if (mainEl && window.scrollY > 120) {
+            mainEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 
