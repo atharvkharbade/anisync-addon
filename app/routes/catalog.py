@@ -489,6 +489,128 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
     return result_details
 
 
+def extract_item_metadata_fields(item, tracker_type, bulk_details=None):
+    """
+    Extracts common sortable metadata (score, episodes, year, airing_at, updated_at) from a watchlist item.
+    Returns: dict with episodes (int), score (float), year (int), airing_at (int/None), updated_at (int)
+    """
+    score = 0.0
+    episodes = 0
+    year = 0
+    airing_at = None
+    updated_at = 0
+
+    if tracker_type == "mal":
+        node = item.get("node", {}) if isinstance(item, dict) else {}
+        status = node.get("my_list_status") or {}
+        score = float(status.get("score") or node.get("mean") or 0)
+        episodes = int(node.get("num_episodes") or 0)
+        year = int(node.get("start_season", {}).get("year") or 0)
+        if not year:
+            d_str = str(node.get("start_date") or "")
+            if len(d_str) >= 4 and d_str[:4].isdigit():
+                year = int(d_str[:4])
+        updated_at = parse_iso_timestamp(status.get("updated_at", ""))
+        mal_id = str(node.get("id") or "")
+        al_media = (bulk_details.get(mal_id) or {}) if (bulk_details and mal_id) else {}
+        next_ep = al_media.get("nextAiringEpisode")
+        airing_at = next_ep.get("airingAt") if next_ep else None
+
+    elif tracker_type == "anilist":
+        media = item.get("media", {}) if isinstance(item, dict) else {}
+        score = float(item.get("score") or 0)
+        if score > 10:
+            score = score / 10
+        if score == 0:
+            score = float(media.get("averageScore") or 0) / 10
+        episodes = int(media.get("episodes") or 0)
+        year = int(media.get("startDate", {}).get("year") or media.get("seasonYear") or 0)
+        updated_at = item.get("updatedAt") or 0
+        next_ep = media.get("nextAiringEpisode")
+        airing_at = next_ep.get("airingAt") if next_ep else None
+
+    elif tracker_type == "simkl":
+        show_obj = (item.get("show") or item.get("anime") or item) if isinstance(item, dict) else {}
+        score = float(item.get("user_rating") or item.get("rating") or 0)
+        episodes = int(item.get("total_episodes_count") or show_obj.get("episodes_count") or show_obj.get("num_episodes") or show_obj.get("total_episodes") or 0)
+        year = int(show_obj.get("year") or 0)
+        updated_at = parse_iso_timestamp(item.get("last_watched_at"))
+        ids = show_obj.get("ids") or {}
+        mal_id = str(ids.get("mal") or "")
+        al_id = str(ids.get("anilist") or "")
+        al_media = ((bulk_details.get(mal_id) if mal_id else None) or (bulk_details.get(al_id) if al_id else None) or {}) if bulk_details else {}
+        next_ep = al_media.get("nextAiringEpisode")
+        airing_at = next_ep.get("airingAt") if next_ep else None
+
+    elif tracker_type == "combined":
+        mal_item = item.get("mal_item") or {}
+        mal_status = mal_item.get("node", {}).get("my_list_status") or {}
+        mal_user = mal_status.get("score", 0) or 0
+
+        anilist_item = item.get("anilist_item") or {}
+        al_user = anilist_item.get("score", 0) or 0
+        if al_user > 10:
+            al_user = al_user / 10
+
+        simkl_item = item.get("simkl_item") or {}
+        simkl_user = simkl_item.get("user_rating") or simkl_item.get("rating") or 0
+
+        user_scores = [mal_user, al_user, simkl_user]
+        rated_user_scores = [s for s in user_scores if s > 0]
+        if rated_user_scores:
+            score = sum(rated_user_scores) / len(rated_user_scores)
+        else:
+            mal_global = mal_item.get("node", {}).get("mean", 0) or 0
+            al_global = (anilist_item.get("media", {}).get("averageScore", 0) or 0) / 10
+            mal_id = item.get("mal_id")
+            al_media = bulk_details.get(mal_id) if (bulk_details and mal_id) else {}
+            bulk_global = (al_media.get("averageScore") or 0) / 10
+            global_scores = [mal_global, al_global, bulk_global]
+            rated_globals = [s for s in global_scores if s > 0]
+            score = sum(rated_globals) / len(rated_globals) if rated_globals else 0.0
+
+        if anilist_item:
+            episodes = int(anilist_item.get("media", {}).get("episodes", 0) or 0)
+        if not episodes and mal_item:
+            episodes = int(mal_item.get("node", {}).get("num_episodes", 0) or 0)
+        if not episodes and simkl_item:
+            show_obj = simkl_item.get("show") or simkl_item.get("anime") or simkl_item
+            episodes = int(simkl_item.get("total_episodes_count") or show_obj.get("episodes_count") or show_obj.get("num_episodes") or show_obj.get("total_episodes", 0) or 0)
+
+        if anilist_item:
+            year = int(anilist_item.get("media", {}).get("startDate", {}).get("year", 0) or anilist_item.get("media", {}).get("seasonYear", 0) or 0)
+        if not year and mal_item:
+            year = int(mal_item.get("node", {}).get("start_season", {}).get("year", 0) or 0)
+            if not year:
+                d_str = str(mal_item.get("node", {}).get("start_date") or "")
+                if len(d_str) >= 4 and d_str[:4].isdigit():
+                    year = int(d_str[:4])
+        if not year and simkl_item:
+            show_obj = simkl_item.get("show") or simkl_item.get("anime") or simkl_item
+            year = int(show_obj.get("year", 0) or 0)
+
+        mal_ts = parse_iso_timestamp(mal_status.get("updated_at", "")) if mal_item else 0
+        al_ts = anilist_item.get("updatedAt") or 0 if anilist_item else 0
+        simkl_ts = parse_iso_timestamp(simkl_item.get("last_watched_at")) if simkl_item else 0
+        updated_at = max(mal_ts, al_ts, simkl_ts)
+
+        if anilist_item:
+            next_ep = anilist_item.get("media", {}).get("nextAiringEpisode")
+            airing_at = next_ep.get("airingAt") if next_ep else None
+        if not airing_at and item.get("mal_id") and bulk_details:
+            al_media = bulk_details.get(item["mal_id"]) or {}
+            next_ep = al_media.get("nextAiringEpisode")
+            airing_at = next_ep.get("airingAt") if next_ep else None
+
+    return {
+        "score": round(float(score), 1),
+        "episodes": int(episodes),
+        "year": int(year),
+        "airing_at": airing_at,
+        "updated_at": updated_at,
+    }
+
+
 def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=None):
     if not items:
         return items
@@ -655,6 +777,9 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     next_ep = al_media.get("nextAiringEpisode")
                     airing_at = next_ep.get("airingAt") if next_ep else None
 
+            if airing_at is None and isinstance(item, dict):
+                airing_at = item.get("airing_at")
+
             if airing_at is None:
                 return 0 if reverse else 2**31 - 1
             return airing_at
@@ -799,9 +924,15 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
 def get_catalog_sorting(user, catalog_id, default_category_key=None):
     """
     Resolves custom sort settings for a catalog.
-    Checks per-catalog configuration first, then falls back to legacy category-wide sort.
+    Checks per-catalog configuration (catalog_configs / catalog_sorts) first, then falls back to legacy category-wide sort.
     Returns: (is_custom, sort_by, sort_order)
     """
+    cat_cfg = (user.get("catalog_configs", {}) or {}).get(catalog_id, {})
+    if isinstance(cat_cfg, dict):
+        cfg_sort = cat_cfg.get("sort_by")
+        if cfg_sort and cfg_sort != "default":
+            return True, cfg_sort, cat_cfg.get("sort_order", "desc")
+
     cat_sort = user.get("catalog_sorts", {}).get(catalog_id)
     if cat_sort and isinstance(cat_sort, dict) and cat_sort.get("by", "default") != "default":
         return True, cat_sort.get("by", "default"), cat_sort.get("order", "desc")
@@ -818,11 +949,16 @@ def get_catalog_sorting(user, catalog_id, default_category_key=None):
 def is_catalog_shuffle_enabled(user, catalog_id):
     """
     Checks whether shuffle is enabled for this catalog.
-    Checks per-catalog shuffle first, then falls back to legacy global discovery shuffle.
+    Checks per-catalog configuration (catalog_configs / catalog_shuffles) first, then falls back to legacy global discovery shuffle.
     """
+    cat_cfg = (user.get("catalog_configs", {}) or {}).get(catalog_id, {})
+    if isinstance(cat_cfg, dict) and "shuffle" in cat_cfg:
+        return bool(cat_cfg["shuffle"])
+
     cat_shuffle = user.get("catalog_shuffles", {}).get(catalog_id)
     if cat_shuffle is not None:
         return bool(cat_shuffle)
+
     # Legacy fallback: only for discovery catalogs except schedule
     if user.get("shuffle_discovery_catalogs", False) and catalog_id.startswith("anisync_") and catalog_id != "anisync_schedule":
         return True
@@ -2711,26 +2847,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 random.shuffle(combined_items)
                 paged_items = combined_items[offset : offset + 40]
             elif custom_sort_enabled and sort_by != "default":
-                if sort_by_new_ep and comb_status in ["watching", "plan_to_watch"]:
-                    new_ep_items = []
-                    other_items = []
-                    for item in combined_items:
-                        is_new, _, _ = compute_comb_flags(item)
-                        if is_new:
-                            new_ep_items.append(item)
-                        else:
-                            other_items.append(item)
-                    sorted_new = sort_watchlist_items(
-                        new_ep_items, sort_by, sort_order, "combined", bulk_details=bulk_details
-                    )
-                    sorted_other = sort_watchlist_items(
-                        other_items, sort_by, sort_order, "combined", bulk_details=bulk_details
-                    )
-                    sorted_items = sorted_new + sorted_other
-                else:
-                    sorted_items = sort_watchlist_items(
-                        combined_items, sort_by, sort_order, "combined", bulk_details=bulk_details
-                    )
+                sorted_items = sort_watchlist_items(
+                    combined_items, sort_by, sort_order, "combined", bulk_details=bulk_details
+                )
                 paged_items = sorted_items[offset : offset + 40]
             elif sort_by_new_ep and comb_status in ["watching", "plan_to_watch"]:
 
@@ -3011,6 +3130,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 elif item.get("anilist_id") and bulk_details:
                     al_banner = (bulk_details.get(item["anilist_id"]) or {}).get("bannerImage")
 
+                meta_fields = extract_item_metadata_fields(item, "combined", bulk_details=bulk_details)
                 metas.append(
                     {
                         "id": stremio_id,
@@ -3026,6 +3146,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             f"Watchlist - {comb_status.replace('_', ' ').title()} (Combined).\n"
                             f"Progress: {progress} / {total_eps}."
                         ),
+                        "score": meta_fields["score"],
+                        "episodes": meta_fields["episodes"] or total_eps,
+                        "year": meta_fields["year"],
+                        "airing_at": meta_fields["airing_at"],
+                        "updated_at": meta_fields["updated_at"],
                     }
                 )
         except Exception as e:
@@ -3161,30 +3286,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 random.shuffle(data_items)
                 paged_items = data_items[offset : offset + 40]
             elif custom_sort_enabled and sort_by != "default":
-                if sort_by_new_ep and simkl_status in ["watching", "plantowatch"]:
-                    new_ep_items = []
-                    other_items = []
-                    for item in data_items:
-                        show_obj = item.get("show") or item.get("anime") or item
-                        ids = show_obj.get("ids") or {}
-                        mal_id = str(ids.get("mal") or "") or None
-                        al_id = str(ids.get("anilist") or "") or None
-                        is_new, _, _, _ = compute_simkl_flags(item, mal_id, al_id=al_id)
-                        if is_new:
-                            new_ep_items.append(item)
-                        else:
-                            other_items.append(item)
-                    sorted_new = sort_watchlist_items(
-                        new_ep_items, sort_by, sort_order, "simkl", bulk_details=bulk_details
-                    )
-                    sorted_other = sort_watchlist_items(
-                        other_items, sort_by, sort_order, "simkl", bulk_details=bulk_details
-                    )
-                    sorted_data_items = sorted_new + sorted_other
-                else:
-                    sorted_data_items = sort_watchlist_items(
-                        data_items, sort_by, sort_order, "simkl", bulk_details=bulk_details
-                    )
+                sorted_data_items = sort_watchlist_items(
+                    data_items, sort_by, sort_order, "simkl", bulk_details=bulk_details
+                )
                 paged_data_items = sorted_data_items[offset : offset + 40]
             elif sort_by_new_ep and simkl_status in ["watching", "plantowatch"]:
 
@@ -3342,6 +3446,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 sf = show_obj.get("fanart")
                 simkl_fanart = (sf if sf.startswith("http") else f"https://simkl.in/fanart/{sf}_medium.jpg") if sf else None
 
+                meta_fields = extract_item_metadata_fields(item, "simkl", bulk_details=bulk_details)
                 metas.append(
                     {
                         "id": stremio_id,
@@ -3357,6 +3462,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             f"Simkl Watchlist - {disp_simkl_status}.\n"
                             f"Progress: {progress} / {total_eps}."
                         ),
+                        "score": meta_fields["score"],
+                        "episodes": meta_fields["episodes"] or (int(total_eps) if isinstance(total_eps, int) or (isinstance(total_eps, str) and total_eps.isdigit()) else 0),
+                        "year": meta_fields["year"],
+                        "airing_at": meta_fields["airing_at"],
+                        "updated_at": meta_fields["updated_at"],
                     }
                 )
         except Exception as e:
@@ -3496,28 +3606,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 random.shuffle(data_items)
                 paged_data_items = data_items[offset : offset + 40]
             elif custom_sort_enabled and sort_by != "default":
-                if sort_by_new_ep and mal_status in ["watching", "plan_to_watch"]:
-                    new_ep_items = []
-                    other_items = []
-                    for item in data_items:
-                        node = item.get("node", {})
-                        mal_id = str(node["id"])
-                        is_new, _, _, _, _ = compute_mal_flags(item, mal_id)
-                        if is_new:
-                            new_ep_items.append(item)
-                        else:
-                            other_items.append(item)
-                    sorted_new = sort_watchlist_items(
-                        new_ep_items, sort_by, sort_order, "mal", bulk_details=bulk_details
-                    )
-                    sorted_other = sort_watchlist_items(
-                        other_items, sort_by, sort_order, "mal", bulk_details=bulk_details
-                    )
-                    sorted_data_items = sorted_new + sorted_other
-                else:
-                    sorted_data_items = sort_watchlist_items(
-                        data_items, sort_by, sort_order, "mal", bulk_details=bulk_details
-                    )
+                sorted_data_items = sort_watchlist_items(
+                    data_items, sort_by, sort_order, "mal", bulk_details=bulk_details
+                )
                 paged_data_items = sorted_data_items[offset : offset + 40]
             elif sort_by_new_ep and mal_status in ["watching", "plan_to_watch"]:
 
@@ -3601,6 +3692,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 mal_media_type = (node.get("media_type") or "tv").lower()
                 stremio_type = "movie" if mal_media_type == "movie" else "series"
 
+                meta_fields = extract_item_metadata_fields(item, "mal", bulk_details=bulk_details)
                 metas.append(
                     {
                         "id": stremio_id,
@@ -3613,6 +3705,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             f"MAL Watchlist - {mal_status.replace('_', ' ').title()}.\n"
                             f"Progress: {progress} / {node.get('num_episodes') or '?'}."
                         ),
+                        "score": meta_fields["score"],
+                        "episodes": meta_fields["episodes"] or (node.get("num_episodes") or 0),
+                        "year": meta_fields["year"],
+                        "airing_at": meta_fields["airing_at"],
+                        "updated_at": meta_fields["updated_at"],
                     }
                 )
         except Exception as e:
@@ -3741,20 +3838,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 entries = list(entries)
                 random.shuffle(entries)
             elif custom_sort_enabled and sort_by != "default":
-                if sort_by_new_ep and anilist_status in ["CURRENT", "PLANNING"]:
-                    new_ep_items = []
-                    other_items = []
-                    for entry in entries:
-                        is_new, _, _, _ = compute_al_flags(entry)
-                        if is_new:
-                            new_ep_items.append(entry)
-                        else:
-                            other_items.append(entry)
-                    sorted_new = sort_watchlist_items(new_ep_items, sort_by, sort_order, "anilist", bulk_details=None)
-                    sorted_other = sort_watchlist_items(other_items, sort_by, sort_order, "anilist", bulk_details=None)
-                    entries = sorted_new + sorted_other
-                else:
-                    entries = sort_watchlist_items(entries, sort_by, sort_order, "anilist", bulk_details=None)
+                entries = sort_watchlist_items(entries, sort_by, sort_order, "anilist", bulk_details=None)
             elif sort_by_new_ep and anilist_status in ["CURRENT", "PLANNING"]:
 
                 def get_al_priority(entry):
@@ -3834,6 +3918,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 al_media_format = (media.get("format") or "tv").lower()
                 stremio_type = "movie" if al_media_format == "movie" else "series"
 
+                meta_fields = extract_item_metadata_fields(entry, "anilist", bulk_details=None)
                 metas.append(
                     {
                         "id": stremio_id,
@@ -3847,6 +3932,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             f"AniList Watchlist - {anilist_status.title()}.\n"
                             f"Progress: {progress} / {media.get('episodes') or '?'}."
                         ),
+                        "score": meta_fields["score"],
+                        "episodes": meta_fields["episodes"] or (media.get("episodes") or 0),
+                        "year": meta_fields["year"],
+                        "airing_at": meta_fields["airing_at"],
+                        "updated_at": meta_fields["updated_at"],
                     }
                 )
         except Exception as e:
