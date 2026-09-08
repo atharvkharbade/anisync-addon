@@ -834,6 +834,11 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     eps = int(item.get("episodes") or item.get("totalEpisodes") or 0)
                 except Exception:
                     eps = 0
+                if not eps and item.get("next_episode"):
+                    try:
+                        eps = max(0, int(item.get("next_episode")) - 1)
+                    except Exception:
+                        pass
             return eps
 
         elif sort_by == "progress":
@@ -1608,6 +1613,8 @@ async def update_discovery_catalogs_cache() -> dict:
             meta["airing_day"] = dt.strftime("%A")
             now_dt = datetime.datetime.utcnow()
             meta["is_today"] = (dt.date() == now_dt.date()) or (0 <= (nae.get("timeUntilAiring") or -1) <= 86400)
+            if not meta.get("episodes") and nae.get("episode"):
+                meta["episodes"] = max(0, int(nae["episode"]) - 1)
 
         return meta
 

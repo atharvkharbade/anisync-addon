@@ -2828,20 +2828,20 @@
                                             <div class="custom-option-item d-flex align-items-center" data-value="score">
                                                 <i class="fa-solid fa-star me-2 text-warning"></i>Score / Rating
                                             </div>
-                                            <div class="custom-option-item d-flex align-items-center" data-value="airing_date">
-                                                <i class="fa-solid fa-calendar me-2 text-info"></i>Airing Date
-                                            </div>
-                                            <div class="custom-option-item d-flex align-items-center" data-value="last_updated">
-                                                <i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Last Updated
-                                            </div>
-                                            <div class="custom-option-item d-flex align-items-center" data-value="title">
-                                                <i class="fa-solid fa-arrow-down-a-z me-2 text-success"></i>Title (Alphabetical)
-                                            </div>
                                             <div class="custom-option-item d-flex align-items-center" data-value="release_date">
-                                                <i class="fa-solid fa-film me-2 text-secondary"></i>Release Year
+                                                <i class="fa-solid fa-calendar-days me-2 text-primary"></i>Release Date / Year
+                                            </div>
+                                            <div class="custom-option-item d-flex align-items-center" data-value="airing_date">
+                                                <i class="fa-solid fa-clock-rotate-left me-2 text-info"></i>Next Airing Episode
                                             </div>
                                             <div class="custom-option-item d-flex align-items-center" data-value="episodes">
-                                                <i class="fa-solid fa-list-ol me-2 text-info"></i>Episode Count
+                                                <i class="fa-solid fa-list-ol me-2 text-success"></i>Episode Count
+                                            </div>
+                                            <div class="custom-option-item d-flex align-items-center" data-value="title">
+                                                <i class="fa-solid fa-arrow-down-a-z me-2 text-info"></i>Title (Alphabetical)
+                                            </div>
+                                            <div class="custom-option-item d-flex align-items-center" data-value="last_updated">
+                                                <i class="fa-solid fa-clock me-2 text-secondary"></i>Last Updated
                                             </div>
                                         </div>
                                     </div>
@@ -2849,10 +2849,10 @@
                                 <div class="col-12 col-sm-5">
                                     <div class="modal-segmented-group" id="modalSortOrderGroup">
                                         <button type="button" class="modal-segmented-btn active" data-order="desc" onclick="setModalSortOrder('desc')" title="Descending">
-                                            <i class="fa-solid fa-arrow-down-wide-short me-1"></i>Desc
+                                            <i class="fa-solid fa-arrow-down-wide-short me-1"></i><span class="modal-sort-order-text" data-order="desc">Desc</span>
                                         </button>
                                         <button type="button" class="modal-segmented-btn" data-order="asc" onclick="setModalSortOrder('asc')" title="Ascending">
-                                            <i class="fa-solid fa-arrow-up-wide-short me-1"></i>Asc
+                                            <i class="fa-solid fa-arrow-up-wide-short me-1"></i><span class="modal-sort-order-text" data-order="asc">Asc</span>
                                         </button>
                                     </div>
                                 </div>
@@ -3555,7 +3555,7 @@
 
             // Sort Custom Dropdown & Order
             updateModalSortDropdown(cfg.sort_by || 'default');
-            updateSortOrderUI(cfg.sort_order || 'desc');
+            updateSortOrderUI(cfg.sort_order || 'desc', cfg.sort_by || 'default');
 
             // Shuffle
             const isShuffled = Boolean(cfg.shuffle);
@@ -3589,9 +3589,27 @@
             });
         }
 
-        function updateSortOrderUI(order) {
+        const SORT_ORDER_LABELS = {
+            'default': { desc: 'Desc', asc: 'Asc' },
+            'score': { desc: 'Desc (High)', asc: 'Asc (Low)' },
+            'release_date': { desc: 'Desc (Newest)', asc: 'Asc (Oldest)' },
+            'airing_date': { desc: 'Desc (Latest)', asc: 'Asc (Soonest)' },
+            'episodes': { desc: 'Desc (Most)', asc: 'Asc (Fewest)' },
+            'title': { desc: 'Desc (Z-A)', asc: 'Asc (A-Z)' },
+            'last_updated': { desc: 'Desc (Newest)', asc: 'Asc (Oldest)' }
+        };
+
+        function updateSortOrderUI(order, sortByVal) {
+            const currentSort = sortByVal || document.getElementById('modal_sort_by')?.value || 'default';
+            const labels = SORT_ORDER_LABELS[currentSort] || SORT_ORDER_LABELS['default'];
+
             document.querySelectorAll('#modalSortOrderGroup .modal-segmented-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-order') === order);
+                const btnOrder = btn.getAttribute('data-order');
+                btn.classList.toggle('active', btnOrder === order);
+                const textSpan = btn.querySelector('.modal-sort-order-text');
+                if (textSpan && labels[btnOrder]) {
+                    textSpan.textContent = labels[btnOrder];
+                }
             });
         }
 
@@ -3618,6 +3636,8 @@
                 matchedOption.classList.add('selected');
                 if (textEl) textEl.innerHTML = matchedOption.innerHTML;
             }
+            const curOrder = document.querySelector('#modalSortOrderGroup .modal-segmented-btn.active')?.getAttribute('data-order') || 'desc';
+            updateSortOrderUI(curOrder, val);
         }
 
         const PREVIEW_ANIME_ITEMS = [
@@ -3787,6 +3807,10 @@
                             scoreStr = String(m.score);
                             if (!scoreStr.includes('.')) scoreStr += '.0';
                         }
+                        let eps = parseInt(m.episodes) || 0;
+                        if (!eps && m.next_episode) {
+                            eps = Math.max(0, parseInt(m.next_episode) - 1);
+                        }
                         return {
                             title: m.name || m.title || '',
                             cover: m.poster || m.cover || '',
@@ -3796,7 +3820,8 @@
                             banner: m.background || m.poster || m.cover || '',
                             score: scoreStr,
                             airing_date: parseInt(m.airing_at) || 0,
-                            episodes: parseInt(m.episodes) || 0,
+                            next_episode: parseInt(m.next_episode) || 0,
+                            episodes: eps,
                             year: parseInt(m.year) || 0,
                             updated_at: parseInt(m.updated_at) || 0
                         };
@@ -3977,15 +4002,33 @@
                     return item.clean_poster || item.cover || fallbackCover;
                 };
 
+                const getCardTooltip = (item) => {
+                    const curSort = cfg.sort_by || 'default';
+                    let extra = '';
+                    if (curSort === 'score') extra = `★ ${item.score}`;
+                    else if (curSort === 'release_date' || curSort === 'year') extra = `${item.year || 'N/A'}`;
+                    else if (curSort === 'episodes') extra = `${item.episodes || 0} eps`;
+                    else if (curSort === 'airing_date') {
+                        if (item.airing_date) {
+                            const d = new Date(item.airing_date * 1000);
+                            extra = `Airs ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+                        } else {
+                            extra = 'No upcoming air date';
+                        }
+                    }
+                    return extra ? `${escapeAttr(item.title)} (${extra})` : escapeAttr(item.title);
+                };
+
                 if (shape === 'landscape') {
                     previewGrid.className = 'preview-grid landscape';
                     previewGrid.innerHTML = listToRender.slice(0, 16).map(item => {
                         const src = resolveItemPoster(item);
                         const cleanSrc = item.clean_poster || item.cover || fallbackCover;
                         const safeTitle = escapeAttr(item.title);
+                        const cardTooltip = getCardTooltip(item);
                         const safeCleanSrc = cleanSrc.replace(/'/g, "\\'");
                         return `
-                            <div class="preview-card" title="${safeTitle}">
+                            <div class="preview-card" title="${cardTooltip}">
                                 <img src="${src}" alt="${safeTitle}" loading="lazy" onerror="if (this.src !== '${safeCleanSrc}') { this.src = '${safeCleanSrc}'; } else { this.onerror=null; this.src='${fallbackCover}'; }" />
                             </div>
                         `;
@@ -3996,9 +4039,10 @@
                         const src = resolveItemPoster(item);
                         const cleanSrc = item.clean_poster || item.cover || fallbackCover;
                         const safeTitle = escapeAttr(item.title);
+                        const cardTooltip = getCardTooltip(item);
                         const safeCleanSrc = cleanSrc.replace(/'/g, "\\'");
                         return `
-                            <div class="preview-card" title="${safeTitle}">
+                            <div class="preview-card" title="${cardTooltip}">
                                 <img src="${src}" alt="${safeTitle}" loading="lazy" onerror="if (this.src !== '${safeCleanSrc}') { this.src = '${safeCleanSrc}'; } else { this.onerror=null; this.src='${fallbackCover}'; }" />
                             </div>
                         `;
@@ -4093,6 +4137,8 @@
                 catalogConfigs[activeModalCatalogId].sort_by = val;
             }
             updateModalSortDropdown(val);
+            const curOrder = catalogConfigs[activeModalCatalogId].sort_order || 'desc';
+            updateSortOrderUI(curOrder, val);
             const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
             currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId]);
             updateModalLivePreview(true);
@@ -4103,7 +4149,8 @@
             if (!activeModalCatalogId) return;
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
             catalogConfigs[activeModalCatalogId].sort_order = order;
-            updateSortOrderUI(order);
+            const curSort = catalogConfigs[activeModalCatalogId].sort_by || 'default';
+            updateSortOrderUI(order, curSort);
             const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
             currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId]);
             updateModalLivePreview(true);
@@ -4117,7 +4164,7 @@
                 delete catalogConfigs[activeModalCatalogId].sort_order;
             }
             updateModalSortDropdown('default');
-            updateSortOrderUI('desc');
+            updateSortOrderUI('desc', 'default');
             const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
             currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId] || {});
             updateModalLivePreview(true);
