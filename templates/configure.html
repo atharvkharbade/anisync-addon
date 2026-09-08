@@ -4049,13 +4049,17 @@
                         if (!eps && m.next_episode) {
                             eps = Math.max(0, parseInt(m.next_episode) - 1);
                         }
+                        const hasRealBanner = m.background && m.background !== m.poster && m.background !== m.cover;
+                        const defaultLandscape = hasRealBanner
+                            ? m.background
+                            : (m.imdb_id ? `https://images.metahub.space/background/medium/${m.imdb_id}/img` : (m.background || m.poster || m.cover || ''));
                         return {
                             title: m.name || m.title || '',
                             cover: m.poster || m.cover || '',
                             clean_poster: m.clean_poster || m.cover || m.poster || '',
                             art_poster: m.art_poster || '',
                             imdb_id: m.imdb_id || '',
-                            banner: m.background || m.poster || m.cover || '',
+                            banner: defaultLandscape,
                             score: scoreStr,
                             airing_date: parseInt(m.airing_at) || 0,
                             next_episode: parseInt(m.next_episode) || 0,
@@ -5141,12 +5145,11 @@
         let sampleAnimeIndex = 0;
         let userWatchlistSamplePool = [];
 
-        // Curated fallback pool of 20 iconic anime with verified covers, 16:9 backdrops, scores, and IDs
         const CURATED_POSTER_SAMPLES = [
             {
                 title: "JUJUTSU KAISEN",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/113415-jQBSkxWAAk83.jpg",
+                banner: "https://images.metahub.space/background/medium/tt12343534/img",
                 score: "8.6",
                 imdb_id: "tt12343534",
                 mal_id: "40748",
@@ -5157,7 +5160,7 @@
             {
                 title: "Demon Slayer: Kimetsu no Yaiba",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-WBsBl0ClmgYL.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/101922-33MtJGsUSxga.jpg",
+                banner: "https://images.metahub.space/background/medium/tt9335498/img",
                 score: "8.6",
                 imdb_id: "tt9335498",
                 mal_id: "38000",
@@ -5168,7 +5171,7 @@
             {
                 title: "Attack on Titan",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-buvcRTBx4NSm.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/16498-8jpFCOcDmneX.jpg",
+                banner: "https://images.metahub.space/background/medium/tt2560140/img",
                 score: "9.1",
                 imdb_id: "tt2560140",
                 mal_id: "16498",
@@ -5179,7 +5182,7 @@
             {
                 title: "Frieren: Beyond Journey's End",
                 cover: "https://media.kitsu.app/anime/46474/poster_image/large-ec9b98dd5fbf8f92532d1edb45f9e882.jpeg",
-                banner: "https://media.kitsu.app/anime/46474/cover_image/large-167edf3e01fac59ce6aacfeb47df5634.jpeg",
+                banner: "https://artworks.thetvdb.com/banners/v4/series/424536/backgrounds/64e6cbe29d9c0.jpg",
                 score: "8.9",
                 imdb_id: "tt22216110",
                 mal_id: "52991",
@@ -5190,7 +5193,7 @@
             {
                 title: "Death Note",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1535-kUgkcrfOrkUM.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/1535.jpg",
+                banner: "https://images.metahub.space/background/medium/tt0877057/img",
                 score: "8.9",
                 imdb_id: "tt0877057",
                 mal_id: "1535",
@@ -5201,7 +5204,7 @@
             {
                 title: "ONE PIECE",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21-ELSYx3yMPcKM.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21-wf37VakJmZqs.jpg",
+                banner: "https://images.metahub.space/background/medium/tt0388629/img",
                 score: "8.9",
                 imdb_id: "tt0388629",
                 mal_id: "21",
@@ -5212,7 +5215,7 @@
             {
                 title: "Fullmetal Alchemist: Brotherhood",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx5114-nSWCgQlmOMtj.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/5114-q0V5URebphSG.jpg",
+                banner: "https://images.metahub.space/background/medium/tt1374989/img",
                 score: "9.1",
                 imdb_id: "tt1374989",
                 mal_id: "5114",
@@ -5223,7 +5226,7 @@
             {
                 title: "Chainsaw Man",
                 cover: "https://media.kitsu.app/anime/43806/poster_image/large-815d6008fb3b56f4291b9f0ffa05cd8f.jpeg",
-                banner: "https://media.kitsu.app/anime/43806/cover_image/large-964674a0f11524f62d65dde845ad8e1f.jpeg",
+                banner: "https://images.metahub.space/background/medium/tt13616990/img",
                 score: "8.4",
                 imdb_id: "tt13616990",
                 mal_id: "44511",
@@ -5234,7 +5237,7 @@
             {
                 title: "Hunter x Hunter (2011)",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx11061-y5gsT1hoHuHw.png",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/11061-8WkkTZ6duKpq.jpg",
+                banner: "https://images.metahub.space/background/medium/tt2098220/img",
                 score: "9.0",
                 imdb_id: "tt2098220",
                 mal_id: "11061",
@@ -5245,7 +5248,7 @@
             {
                 title: "Bleach: Thousand-Year Blood War",
                 cover: "https://media.kitsu.app/anime/43078/poster_image/large-bf36dc3ed0097c8b8c49e064bf0eaa79.jpeg",
-                banner: "https://media.kitsu.app/anime/43078/cover_image/large-45a93d1d5a68cf93aa314a9efbe8bf72.jpeg",
+                banner: "https://images.metahub.space/background/medium/tt14986406/img",
                 score: "9.0",
                 imdb_id: "tt14986406",
                 mal_id: "41467",
@@ -5256,7 +5259,7 @@
             {
                 title: "Solo Leveling",
                 cover: "https://media.kitsu.app/anime/46231/poster_image/large-cdadff31f42490b9f48a035939a01a92.jpeg",
-                banner: "https://media.kitsu.app/anime/46231/cover_image/large-33273dc297cdc8b10cc1140de07d3dae.jpeg",
+                banner: "https://images.metahub.space/background/medium/tt21209876/img",
                 score: "8.3",
                 imdb_id: "tt21209876",
                 mal_id: "52299",
@@ -5267,7 +5270,7 @@
             {
                 title: "Spy x Family",
                 cover: "https://media.kitsu.app/anime/45398/poster_image/large-c26c1e0b77e881fcd66475af6bd22c57.jpeg",
-                banner: "https://media.kitsu.app/anime/45398/cover_image/large-1e81255ff9bde22c072c555cc5998805.jpeg",
+                banner: "https://images.metahub.space/background/medium/tt13706018/img",
                 score: "8.3",
                 imdb_id: "tt13706018",
                 mal_id: "50265",
@@ -5278,7 +5281,7 @@
             {
                 title: "Vinland Saga",
                 cover: "https://media.kitsu.app/anime/poster_images/41084/large.jpg",
-                banner: "https://media.kitsu.app/anime/41084/cover_image/large-2590d6aecb5433b5693f3224e7265bb9.jpeg",
+                banner: "https://images.metahub.space/background/medium/tt10233448/img",
                 score: "8.8",
                 imdb_id: "tt10233448",
                 mal_id: "37521",
@@ -5289,7 +5292,7 @@
             {
                 title: "One-Punch Man",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21087-B5DHjqZ3kW4b.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21087-sHb9zUZFsHe1.jpg",
+                banner: "https://images.metahub.space/background/medium/tt4508902/img",
                 score: "8.5",
                 imdb_id: "tt4508902",
                 mal_id: "30276",
@@ -5300,7 +5303,7 @@
             {
                 title: "My Hero Academia",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21459-nYh85uj2Fuwr.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21459-yeVkolGKdGUV.jpg",
+                banner: "https://images.metahub.space/background/medium/tt5626028/img",
                 score: "8.1",
                 imdb_id: "tt5626028",
                 mal_id: "31964",
@@ -5311,7 +5314,7 @@
             {
                 title: "Tokyo Ghoul",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/b20605-k665mVkSug8D.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/20605-RCJ7M71zLmrh.jpg",
+                banner: "https://images.metahub.space/background/medium/tt3741634/img",
                 score: "7.8",
                 imdb_id: "tt3741634",
                 mal_id: "22319",
@@ -5322,7 +5325,7 @@
             {
                 title: "Sword Art Online",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx11757-SxYDUzdr9rh2.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/11757-TlEEV9weG4Ag.jpg",
+                banner: "https://images.metahub.space/background/medium/tt2250192/img",
                 score: "7.5",
                 imdb_id: "tt2250192",
                 mal_id: "11757",
@@ -5333,7 +5336,7 @@
             {
                 title: "Naruto",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20-dE6UHbFFg1A5.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/20-HHxhPj5JD13a.jpg",
+                banner: "https://images.metahub.space/background/medium/tt0409591/img",
                 score: "8.2",
                 imdb_id: "tt0409591",
                 mal_id: "20",
@@ -5344,7 +5347,7 @@
             {
                 title: "A Silent Voice",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20954-sYRfE5jQRtSB.jpg",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/20954-f30bHMXa5Qoe.jpg",
+                banner: "https://images.metahub.space/background/medium/tt5323662/img",
                 score: "8.9",
                 imdb_id: "tt5323662",
                 mal_id: "28851",
@@ -5355,7 +5358,7 @@
             {
                 title: "Your Name.",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21519-SUo3ZQuCbYhJ.png",
-                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21519-1ayMXgNlmByb.jpg",
+                banner: "https://images.metahub.space/background/medium/tt5311514/img",
                 score: "9.0",
                 imdb_id: "tt5311514",
                 mal_id: "32281",
@@ -5424,9 +5427,19 @@
 
         function resolveGenuinePoster(sample, shape, provider, rpdbKey, topKey, customPattern) {
             const isLandscape = (shape === 'landscape');
-            const defaultCover = isLandscape
-                ? (sample.banner || sample.backdrop || sample.cover)
-                : (sample.cover || sample.clean_poster);
+            let defaultCover = sample.cover || sample.clean_poster;
+            if (isLandscape) {
+                if (sample.banner && sample.banner !== sample.cover && sample.banner !== sample.clean_poster) {
+                    defaultCover = sample.banner;
+                } else if (sample.imdb_id) {
+                    defaultCover = `https://images.metahub.space/background/medium/${sample.imdb_id}/img`;
+                } else if (sample.backdrop) {
+                    defaultCover = sample.backdrop;
+                } else {
+                    const safeCurated = CURATED_POSTER_SAMPLES[sampleAnimeIndex % CURATED_POSTER_SAMPLES.length];
+                    defaultCover = safeCurated ? safeCurated.banner : (sample.banner || sample.cover);
+                }
+            }
 
             if (provider === 'rpdb') {
                 if (rpdbKey && sample.imdb_id) {
@@ -5486,7 +5499,7 @@
 
             const safeCurated = CURATED_POSTER_SAMPLES[sampleAnimeIndex % CURATED_POSTER_SAMPLES.length];
             const cleanFallback = isLandscape
-                ? (sample.banner || sample.backdrop || safeCurated.banner)
+                ? ((sample.banner && sample.banner !== sample.cover) ? sample.banner : (sample.imdb_id ? `https://images.metahub.space/background/medium/${sample.imdb_id}/img` : safeCurated.banner))
                 : (sample.cover || sample.clean_poster || safeCurated.cover);
             const genuineBaseUrl = resolveGenuinePoster(sample, artworkPreviewShape, provider, rpdbKey, topKey, customPattern);
 
