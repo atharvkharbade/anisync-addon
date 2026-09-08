@@ -888,11 +888,168 @@
         border-color: rgba(255, 255, 255, 0.2);
         color: #ffffff;
     }
-    @media (max-width: 576px) {
-        .shape-pill-btn {
-            padding: 2px 6px;
-            font-size: 0.68rem;
-        }
+
+    /* Catalog Row Customization Button & Badge */
+    .catalog-config-btn {
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #94a3b8;
+        position: relative;
+        padding: 0;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .catalog-config-btn:hover {
+        background: rgba(2, 132, 199, 0.15);
+        border-color: rgba(56, 189, 248, 0.35);
+        color: #38bdf8;
+    }
+    .catalog-config-btn.has-overrides {
+        border-color: rgba(14, 165, 233, 0.45);
+        color: #38bdf8;
+        background: rgba(14, 165, 233, 0.12);
+    }
+    .catalog-config-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #0284c7;
+        color: #ffffff;
+        font-size: 0.62rem;
+        font-weight: 700;
+        min-width: 16px;
+        height: 16px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 3px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Catalog Customization Modal */
+    .catalog-modal-content {
+        background: #0f172a;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(2, 132, 199, 0.1);
+        color: #f1f5f9;
+        backdrop-filter: blur(24px);
+    }
+    .catalog-modal-input, .catalog-modal-select {
+        background: rgba(15, 23, 42, 0.75) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        color: #f8fafc !important;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+    .catalog-modal-input:focus, .catalog-modal-select:focus {
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
+    }
+    .modal-segmented-group {
+        display: flex;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 3px;
+        gap: 3px;
+    }
+    .modal-segmented-btn {
+        flex: 1;
+        border: none;
+        background: transparent;
+        color: #94a3b8;
+        font-size: 0.78rem;
+        font-weight: 500;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+    }
+    .modal-segmented-btn:hover {
+        color: #e2e8f0;
+        background: rgba(255, 255, 255, 0.04);
+    }
+    .modal-segmented-btn.active {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+    }
+
+    /* Modal Live Preview Card */
+    .preview-stage-wrap {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        min-height: 290px;
+    }
+    .catalog-live-card {
+        position: relative;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    .catalog-live-card.portrait {
+        width: 155px;
+        aspect-ratio: 2 / 3;
+        background-image: url('https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx154587-n2bBGnSEoq7k.jpg'), linear-gradient(135deg, #1e293b, #0f172a);
+    }
+    .catalog-live-card.landscape {
+        width: 250px;
+        aspect-ratio: 16 / 9;
+        max-width: 100%;
+        background-image: url('https://s4.anilist.co/file/anilistcdn/media/anime/banner/154587-iv4LGDM2FuTw.jpg'), linear-gradient(135deg, #0284c7, #0f172a);
+    }
+    .catalog-live-card-badge {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+        color: #fff;
+        font-size: 0.62rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.04em;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+    .catalog-live-card-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 24px 8px 8px 8px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.65) 60%, transparent 100%);
+    }
+    .catalog-live-card-title {
+        font-size: 0.76rem;
+        font-weight: 600;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .catalog-live-card-sub {
+        font-size: 0.65rem;
+        color: #94a3b8;
     }
 </style>
 <div class="container-fluid px-2 px-md-3 px-xl-4 mt-1 mt-sm-2 pb-5">
@@ -1089,6 +1246,7 @@
                     value="{{ 'true' if user.get('enable_discovery_catalogs', True) else 'false' }}">
                 <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
                     value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
+                <input type="hidden" id="catalog_configs_val" name="catalog_configs" value="">
 
                 <!-- TAB 1: Trackers & Account -->
                 <div class="anisync-tab-pane active" id="tab-trackers" role="tabpanel" aria-labelledby="tab-btn-trackers">
@@ -1432,286 +1590,17 @@
                                 AniList, or Simkl to enable watchlist combining.
                             </span>
                         </label>
-                    </div>
-
-                    <!-- Custom Watchlist Sorting Toggle -->
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" role="switch" id="custom_sort_enabled" {% if
-                            user.get('custom_sort_enabled', False) %}checked{% endif %}>
-                        <label class="form-check-label ms-1" for="custom_sort_enabled">
-                            <span class="fw-medium d-block">Enable Custom Catalog Sorting</span>
-                            <span class="text-secondary small d-block">
-                                Customize how anime in your watchlist catalogs are ordered (overrides default sorting).
-                            </span>
-                        </label>
-                    </div>
-
-                    <!-- Custom Sorting Options Sub-Container -->
-                    <div id="custom-sorting-container"
-                        style="{% if not user.get('custom_sort_enabled', False) %}display: none;{% endif %}"
-                        class="mb-3 ps-0 ps-sm-3">
-                        <p class="text-secondary small mb-3">Set your sorting preference for each watchlist category:</p>
-
-                        <!-- Column Header Bar -->
-                        <div class="d-none d-sm-flex row g-2 mb-2 px-3 text-secondary small fw-medium" style="font-size: 0.72rem; letter-spacing: 0.04em;">
-                            <div class="col-sm-4">CATEGORY</div>
-                            <div class="col-sm-4 text-center">SORT BY</div>
-                            <div class="col-sm-4 text-center">ORDER</div>
-                        </div>
-
-                        <!-- Watching Sort -->
-                        <div class="catalog-sort-subcard">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
-                                    <i class="fa-solid fa-circle me-2" style="color: #22c55e; font-size: 0.55rem;"></i>
-                                    <span class="small fw-semibold text-light">Watching</span>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <div class="custom-select-wrapper" data-input-id="custom_sort_watching_by_val">
-                                        <div class="custom-select">
-                                            <span class="custom-select-text">Default</span>
-                                            <i class="fa-solid fa-chevron-down text-secondary"
-                                                style="font-size:0.75rem;"></i>
-                                        </div>
-                                        <div class="custom-options-menu">
-                                            <div class="custom-option-item" data-value="default"><i
-                                                    class="fa-solid fa-bars me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                            <div class="custom-option-item" data-value="score"><i
-                                                    class="fa-solid fa-star me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                            <div class="custom-option-item" data-value="airing_date"><i
-                                                    class="fa-solid fa-calendar-days me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Airing Date</div>
-                                            <div class="custom-option-item" data-value="last_updated"><i
-                                                    class="fa-solid fa-clock-rotate-left me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                            <div class="custom-option-item" data-value="title"><i
-                                                    class="fa-solid fa-font me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Title</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <div class="custom-select-wrapper" data-input-id="custom_sort_watching_order_val">
-                                        <div class="custom-select">
-                                            <span class="custom-select-text">Descending</span>
-                                            <i class="fa-solid fa-chevron-down text-secondary"
-                                                style="font-size:0.75rem;"></i>
-                                        </div>
-                                        <div class="custom-options-menu">
-                                            <div class="custom-option-item" data-value="desc"><i
-                                                    class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                            <div class="custom-option-item" data-value="asc"><i
-                                                    class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Ascending</div>
-                                        </div>
-                                    </div>
-                                </div>
+                    </div>                    <!-- Per-Catalog Customization Notice -->
+                    <div class="card p-3 mb-3 border-0" style="background: rgba(14, 165, 233, 0.05); border: 1px dashed rgba(14, 165, 233, 0.25) !important; border-radius: 12px;">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle p-2 me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="background: rgba(14, 165, 233, 0.15); width: 38px; height: 38px;">
+                                <i class="fa-solid fa-sliders text-info" style="font-size: 0.95rem;"></i>
                             </div>
-                        </div>
-
-                        <!-- Plan to Watch Sort -->
-                        <div class="catalog-sort-subcard">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
-                                    <i class="fa-solid fa-circle me-2" style="color: #38bdf8; font-size: 0.55rem;"></i>
-                                    <span class="small fw-semibold text-light">Plan to Watch</span>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <div class="custom-select-wrapper" data-input-id="custom_sort_planning_by_val">
-                                        <div class="custom-select">
-                                            <span class="custom-select-text">Default</span>
-                                            <i class="fa-solid fa-chevron-down text-secondary"
-                                                style="font-size:0.75rem;"></i>
-                                        </div>
-                                        <div class="custom-options-menu">
-                                            <div class="custom-option-item" data-value="default"><i
-                                                    class="fa-solid fa-bars me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                            <div class="custom-option-item" data-value="score"><i
-                                                    class="fa-solid fa-star me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                            <div class="custom-option-item" data-value="airing_date"><i
-                                                    class="fa-solid fa-calendar-days me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Airing Date</div>
-                                            <div class="custom-option-item" data-value="last_updated"><i
-                                                    class="fa-solid fa-clock-rotate-left me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                            <div class="custom-option-item" data-value="title"><i
-                                                    class="fa-solid fa-font me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Title</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <div class="custom-select-wrapper" data-input-id="custom_sort_planning_order_val">
-                                        <div class="custom-select">
-                                            <span class="custom-select-text">Descending</span>
-                                            <i class="fa-solid fa-chevron-down text-secondary"
-                                                style="font-size:0.75rem;"></i>
-                                        </div>
-                                        <div class="custom-options-menu">
-                                            <div class="custom-option-item" data-value="desc"><i
-                                                    class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                            <div class="custom-option-item" data-value="asc"><i
-                                                    class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Ascending</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Completed Sort -->
-                        <div class="catalog-sort-subcard">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
-                                    <i class="fa-solid fa-circle me-2" style="color: #a855f7; font-size: 0.55rem;"></i>
-                                    <span class="small fw-semibold text-light">Completed</span>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <div class="custom-select-wrapper" data-input-id="custom_sort_completed_by_val">
-                                        <div class="custom-select">
-                                            <span class="custom-select-text">Default</span>
-                                            <i class="fa-solid fa-chevron-down text-secondary"
-                                                style="font-size:0.75rem;"></i>
-                                        </div>
-                                        <div class="custom-options-menu">
-                                            <div class="custom-option-item" data-value="default"><i
-                                                    class="fa-solid fa-bars me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                            <div class="custom-option-item" data-value="score"><i
-                                                    class="fa-solid fa-star me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                            <div class="custom-option-item" data-value="last_updated"><i
-                                                    class="fa-solid fa-clock-rotate-left me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                            <div class="custom-option-item" data-value="title"><i
-                                                    class="fa-solid fa-font me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Title</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <div class="custom-select-wrapper" data-input-id="custom_sort_completed_order_val">
-                                        <div class="custom-select">
-                                            <span class="custom-select-text">Descending</span>
-                                            <i class="fa-solid fa-chevron-down text-secondary"
-                                                style="font-size:0.75rem;"></i>
-                                        </div>
-                                        <div class="custom-options-menu">
-                                            <div class="custom-option-item" data-value="desc"><i
-                                                    class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                            <div class="custom-option-item" data-value="asc"><i
-                                                    class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Ascending</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- On Hold Sort -->
-                        <div class="catalog-sort-subcard">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
-                                    <i class="fa-solid fa-circle me-2" style="color: #eab308; font-size: 0.55rem;"></i>
-                                    <span class="small fw-semibold text-light">On Hold / Paused</span>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <div class="custom-select-wrapper" data-input-id="custom_sort_on_hold_by_val">
-                                        <div class="custom-select">
-                                            <span class="custom-select-text">Default</span>
-                                            <i class="fa-solid fa-chevron-down text-secondary"
-                                                style="font-size:0.75rem;"></i>
-                                        </div>
-                                        <div class="custom-options-menu">
-                                            <div class="custom-option-item" data-value="default"><i
-                                                    class="fa-solid fa-bars me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                            <div class="custom-option-item" data-value="score"><i
-                                                    class="fa-solid fa-star me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                            <div class="custom-option-item" data-value="last_updated"><i
-                                                    class="fa-solid fa-clock-rotate-left me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                            <div class="custom-option-item" data-value="title"><i
-                                                    class="fa-solid fa-font me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Title</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <div class="custom-select-wrapper" data-input-id="custom_sort_on_hold_order_val">
-                                        <div class="custom-select">
-                                            <span class="custom-select-text">Descending</span>
-                                            <i class="fa-solid fa-chevron-down text-secondary"
-                                                style="font-size:0.75rem;"></i>
-                                        </div>
-                                        <div class="custom-options-menu">
-                                            <div class="custom-option-item" data-value="desc"><i
-                                                    class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                            <div class="custom-option-item" data-value="asc"><i
-                                                    class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Ascending</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Dropped Sort -->
-                        <div class="catalog-sort-subcard">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-12 col-sm-4 mb-1 mb-sm-0 d-flex align-items-center">
-                                    <i class="fa-solid fa-circle me-2" style="color: #ef4444; font-size: 0.55rem;"></i>
-                                    <span class="small fw-semibold text-light">Dropped</span>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <div class="custom-select-wrapper" data-input-id="custom_sort_dropped_by_val">
-                                        <div class="custom-select">
-                                            <span class="custom-select-text">Default</span>
-                                            <i class="fa-solid fa-chevron-down text-secondary"
-                                                style="font-size:0.75rem;"></i>
-                                        </div>
-                                        <div class="custom-options-menu">
-                                            <div class="custom-option-item" data-value="default"><i
-                                                    class="fa-solid fa-bars me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Default</div>
-                                            <div class="custom-option-item" data-value="score"><i
-                                                    class="fa-solid fa-star me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Score / Rating</div>
-                                            <div class="custom-option-item" data-value="last_updated"><i
-                                                    class="fa-solid fa-clock-rotate-left me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Last Updated</div>
-                                            <div class="custom-option-item" data-value="title"><i
-                                                    class="fa-solid fa-font me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Title</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <div class="custom-select-wrapper" data-input-id="custom_sort_dropped_order_val">
-                                        <div class="custom-select">
-                                            <span class="custom-select-text">Descending</span>
-                                            <i class="fa-solid fa-chevron-down text-secondary"
-                                                style="font-size:0.75rem;"></i>
-                                        </div>
-                                        <div class="custom-options-menu">
-                                            <div class="custom-option-item" data-value="desc"><i
-                                                    class="fa-solid fa-arrow-down-wide-short me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Descending</div>
-                                            <div class="custom-option-item" data-value="asc"><i
-                                                    class="fa-solid fa-arrow-up-wide-short me-2 text-secondary"
-                                                    style="font-size:0.8rem; width:12px;"></i>Ascending</div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div>
+                                <span class="fw-semibold text-light small d-block mb-0.5">Per-Catalog Sorting & Customization</span>
+                                <span class="text-secondary small" style="font-size: 0.78rem; line-height: 1.4;">
+                                    You can now customize sorting, card shapes (Portrait/Landscape), custom titles, and shuffle directly on each catalog using the <i class="fa-solid fa-sliders text-info mx-1"></i> icon in <strong>Catalogs Management</strong> below.
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1727,7 +1616,7 @@
                         Shows popular anime discovery catalogs (Spotlight, Trending, Top Airing, Seasonal Showcase, etc.) in your app.
                     </p>
 
-                    <div class="form-check form-switch mb-3">
+                    <div class="form-check form-switch mb-0">
                         <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if user.get('enable_discovery_catalogs', True) %}checked{% endif %}>
                         <label class="form-check-label ms-1" for="enable_discovery_catalogs">
                             <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
@@ -1735,18 +1624,6 @@
                                 Enable general public discovery catalogs in Stremio.
                             </span>
                         </label>
-                    </div>
-
-                    <div id="discovery-sub-options" class="nested-subcard" style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %}">
-                        <div class="form-check form-switch mb-0">
-                            <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {% if user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
-                            <label class="form-check-label ms-1" for="shuffle_discovery_catalogs">
-                                <span class="fw-medium d-block">Shuffle Catalogs on Request</span>
-                                <span class="text-secondary small d-block">
-                                    Randomly shuffle the order of discovery catalogs on every reload.
-                                </span>
-                            </label>
-                        </div>
                     </div>
                 </div>
 
@@ -1850,41 +1727,33 @@
 
                         <!-- 3. Render the orderable items -->
                         {% for item_id, item_name, item_source in active_user_order %}
-                        {% set cur_shape = user.get('catalog_shapes', {}).get(item_id, 'poster') if user.get('catalog_shapes') else 'poster' %}
+                        {% set cur_cfg = user.get('catalog_configs', {}).get(item_id, {}) %}
+                        {% set cur_title = cur_cfg.get('title', user.get('catalog_titles', {}).get(item_id, '')) %}
                         <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
-                            draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}"
+                            draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}" data-default-name="{{ item_name }}"
                             style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
-                            <div class="d-flex align-items-center me-2">
+                            <div class="d-flex align-items-center me-2 overflow-hidden">
                                 <i class="fa-solid fa-grip-vertical text-secondary me-3" style="cursor: move;"></i>
-                                <div class="form-check mb-0">
+                                <div class="form-check mb-0 text-truncate">
                                     <input class="form-check-input catalog-checkbox" type="checkbox"
                                         id="cat_{{ item_id }}" name="cat_{{ item_id }}" {% if user.get('catalogs') is
                                         none or item_id in user.get('catalogs', []) or (item_source=='discovery'
                                         and 'enable_discovery_catalogs' not in user) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
-                                    <label class="form-check-label small fw-medium text-light" for="cat_{{ item_id }}"
+                                    <label class="form-check-label small fw-medium text-light text-truncate" for="cat_{{ item_id }}"
                                         style="user-select: none;">
-                                        {{ item_name }}
+                                        <span id="label_text_{{ item_id }}">{{ cur_title if cur_title else item_name }}</span>
                                     </label>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                <input type="hidden" id="shape_{{ item_id }}" name="shape_{{ item_id }}" value="{{ cur_shape }}">
-                                <div class="catalog-shape-pill-group" data-cat-id="{{ item_id }}" role="group" aria-label="Card Shape">
-                                    <button type="button" 
-                                            class="shape-pill-btn {% if cur_shape != 'landscape' %}active{% endif %}" 
-                                            data-shape="poster" 
-                                            onclick="setCatalogShape('{{ item_id }}', 'poster', this)" 
-                                            title="Portrait card (2:3)">
-                                        <i class="fa-solid fa-mobile-screen me-1 d-none d-sm-inline" style="font-size: 0.72rem;"></i><span>Portrait</span>
-                                    </button>
-                                    <button type="button" 
-                                            class="shape-pill-btn {% if cur_shape == 'landscape' %}active{% endif %}" 
-                                            data-shape="landscape" 
-                                            onclick="setCatalogShape('{{ item_id }}', 'landscape', this)" 
-                                            title="Landscape widescreen card (16:9)">
-                                        <i class="fa-solid fa-tv me-1 d-none d-sm-inline" style="font-size: 0.72rem;"></i><span>Landscape</span>
-                                    </button>
-                                </div>
+                                <button type="button" 
+                                        class="btn btn-sm catalog-config-btn" 
+                                        id="cfg_btn_{{ item_id }}"
+                                        onclick="openCatalogConfigModal('{{ item_id }}')" 
+                                        title="Customize {{ item_name }}">
+                                    <i class="fa-solid fa-sliders" style="font-size: 0.82rem;"></i>
+                                    <span class="catalog-config-badge d-none" id="badge_count_{{ item_id }}">0</span>
+                                </button>
                                 <span
                                     class="badge rounded-pill {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}"
                                     style="font-size:0.68rem; letter-spacing:0.02em;">
@@ -2622,6 +2491,153 @@
 </div>
 
 
+<!-- Catalog Customization Modal -->
+<div class="modal fade" id="catalogConfigModal" tabindex="-1" aria-labelledby="catalogConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content catalog-modal-content">
+            <div class="modal-header border-0 pb-2 pt-3 px-4 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <h5 class="modal-title fw-bold text-white mb-0" id="catalogConfigModalLabel" style="font-size: 1.1rem;">
+                        <span id="modalCatalogName">Catalog</span>
+                    </h5>
+                    <span class="badge rounded-pill bg-primary" id="modalConfigCountBadge" style="font-size: 0.72rem; padding: 3px 8px;">0</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <div class="row g-4">
+                    <!-- Left: Configuration Form -->
+                    <div class="col-12 col-md-7 d-flex flex-column gap-3">
+                        <!-- 1. Custom Name -->
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label small fw-semibold text-secondary mb-0" for="modalInputTitle">Name</label>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" id="modalResetTitleBtn" onclick="resetModalTitle()" title="Reset to original name" style="font-size: 0.75rem;">
+                                    <i class="fa-solid fa-rotate-left me-1"></i>Reset
+                                </button>
+                            </div>
+                            <input type="text" class="form-control catalog-modal-input" id="modalInputTitle" placeholder="Catalog Name" oninput="onModalTitleChange(this.value)">
+                        </div>
+
+                        <!-- 2. Placement -->
+                        <div>
+                            <label class="form-label small fw-semibold text-secondary mb-1 d-block">Placement</label>
+                            <div class="modal-segmented-group" id="modalPlacementGroup">
+                                <button type="button" class="modal-segmented-btn active" data-placement="all" onclick="setModalPlacement('all')">
+                                    <i class="fa-solid fa-house-chimney me-1.5" style="font-size: 0.75rem;"></i>Home + Discover
+                                </button>
+                                <button type="button" class="modal-segmented-btn" data-placement="discover_only" onclick="setModalPlacement('discover_only')">
+                                    <i class="fa-solid fa-compass me-1.5" style="font-size: 0.75rem;"></i>Discover only
+                                </button>
+                            </div>
+                            <span class="text-secondary small d-block mt-1" style="font-size: 0.72rem;">"Discover only" removes this row from Home while keeping it in Discover (Nuvio).</span>
+                        </div>
+
+                        <!-- 3. Poster Shape -->
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label small fw-semibold text-secondary mb-0">Poster shape</label>
+                            </div>
+                            <div class="modal-segmented-group" id="modalShapeGroup">
+                                <button type="button" class="modal-segmented-btn active" data-shape="poster" onclick="setModalShape('poster')">
+                                    <i class="fa-solid fa-mobile-screen me-1.5" style="font-size: 0.75rem;"></i>Portrait (2:3)
+                                </button>
+                                <button type="button" class="modal-segmented-btn" data-shape="landscape" onclick="setModalShape('landscape')">
+                                    <i class="fa-solid fa-tv me-1.5" style="font-size: 0.75rem;"></i>Landscape (16:9)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 4. Sorting -->
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label small fw-semibold text-secondary mb-0" for="modalSortBySelect">Sort</label>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" onclick="resetModalSort()" title="Reset sorting" style="font-size: 0.75rem;">
+                                    <i class="fa-solid fa-rotate-left me-1"></i>Reset
+                                </button>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-7">
+                                    <select class="form-select catalog-modal-select" id="modalSortBySelect" onchange="onModalSortByChange(this.value)">
+                                        <option value="default">Default (Source order)</option>
+                                        <option value="score">Score / Rating</option>
+                                        <option value="airing_date">Airing Date</option>
+                                        <option value="last_updated">Last Updated</option>
+                                        <option value="title">Title (Alphabetical)</option>
+                                        <option value="release_date">Release Year</option>
+                                        <option value="episodes">Episode Count</option>
+                                    </select>
+                                </div>
+                                <div class="col-5">
+                                    <div class="modal-segmented-group" id="modalSortOrderGroup">
+                                        <button type="button" class="modal-segmented-btn active" data-order="desc" onclick="setModalSortOrder('desc')" title="Descending">
+                                            <i class="fa-solid fa-arrow-down-wide-short me-1" style="font-size: 0.72rem;"></i>Desc
+                                        </button>
+                                        <button type="button" class="modal-segmented-btn" data-order="asc" onclick="setModalSortOrder('asc')" title="Ascending">
+                                            <i class="fa-solid fa-arrow-up-wide-short me-1" style="font-size: 0.72rem;"></i>Asc
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Shuffle -->
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label small fw-semibold text-secondary mb-0">Shuffle</label>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" onclick="setModalShuffle(false)" title="Turn off shuffle" style="font-size: 0.75rem;">
+                                    <i class="fa-solid fa-rotate-left me-1"></i>Off
+                                </button>
+                            </div>
+                            <div class="modal-segmented-group" id="modalShuffleGroup">
+                                <button type="button" class="modal-segmented-btn active" data-shuffle="false" onclick="setModalShuffle(false)">
+                                    Off
+                                </button>
+                                <button type="button" class="modal-segmented-btn" data-shuffle="true" onclick="setModalShuffle(true)">
+                                    <i class="fa-solid fa-shuffle me-1.5" style="font-size: 0.75rem;"></i>On
+                                </button>
+                            </div>
+                            <span class="text-secondary small d-block mt-1" style="font-size: 0.72rem;">Randomizes order when viewing this catalog.</span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Preview -->
+                    <div class="col-12 col-md-5 d-flex flex-column align-items-center justify-content-center">
+                        <div class="w-100 p-3 rounded-3 d-flex flex-column align-items-center justify-content-center preview-stage-wrap">
+                            <div class="d-flex align-items-center justify-content-between w-100 mb-2">
+                                <span class="text-secondary small fw-medium" style="font-size: 0.75rem; letter-spacing: 0.03em;">LIVE PREVIEW</span>
+                                <span class="badge rounded-pill" id="previewAspectBadge" style="background: rgba(255,255,255,0.08); font-size: 0.65rem; color: #cbd5e1;">Portrait (2:3)</span>
+                            </div>
+
+                            <!-- Live Card -->
+                            <div id="modalLiveCard" class="catalog-live-card portrait">
+                                <div class="catalog-live-card-badge" id="previewNewEpBadge">NEW EP</div>
+                                <div class="catalog-live-card-overlay">
+                                    <div class="catalog-live-card-title" id="previewCardTitle">Frieren: Beyond Journey's End</div>
+                                    <div class="catalog-live-card-sub" id="previewCardSub">2023 • ★ 9.1</div>
+                                </div>
+                            </div>
+                            
+                            <div class="catalog-preview-info mt-2 text-center text-secondary small" style="font-size: 0.72rem;">
+                                <span id="previewCatalogLabel">Catalog Preview</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-3 px-4 d-flex align-items-center justify-content-between">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="resetCurrentCatalogConfig()">
+                    <i class="fa-solid fa-rotate-left me-1"></i>Reset all
+                </button>
+                <button type="button" class="btn btn-sm btn-primary px-4 fw-semibold" data-bs-dismiss="modal">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <!-- Delete User Records Modal -->
 <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -2670,6 +2686,16 @@
 {% endblock %}
 
 {% block scripts %}
+<script id="catalog-init-data" type="application/json">
+{
+  "catalogConfigs": {{ (user.get('catalog_configs') or {}) | tojson }},
+  "legacyShapes": {{ (user.get('catalog_shapes') or {}) | tojson }},
+  "legacyTitles": {{ (user.get('catalog_titles') or {}) | tojson }},
+  "legacyPlacements": {{ (user.get('catalog_placements') or {}) | tojson }},
+  "legacySorts": {{ (user.get('catalog_sorts') or {}) | tojson }},
+  "legacyShuffles": {{ (user.get('catalog_shuffles') or {}) | tojson }}
+}
+</script>
 <script>
     // Drag and Drop ordering handler
     
@@ -3002,29 +3028,314 @@
             });
         }
 
-        window.setCatalogShape = function (catId, shape, btn) {
-            const hidden = document.getElementById('shape_' + catId);
-            if (hidden) hidden.value = shape;
-            const group = btn.closest('.catalog-shape-pill-group');
-            if (group) {
-                group.querySelectorAll('.shape-pill-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+        // ── Catalog Customization Modal & State Management ─────────────────
+        let activeModalCatalogId = null;
+        const defaultCatalogNames = {};
+        let catalogConfigs = {};
+        let legacyShapes = {};
+        let legacyTitles = {};
+        let legacyPlacements = {};
+        let legacySorts = {};
+        let legacyShuffles = {};
+
+        try {
+            const rawInitEl = document.getElementById("catalog-init-data");
+            if (rawInitEl) {
+                const initData = JSON.parse(rawInitEl.textContent || "{}");
+                catalogConfigs = initData.catalogConfigs || {};
+                legacyShapes = initData.legacyShapes || {};
+                legacyTitles = initData.legacyTitles || {};
+                legacyPlacements = initData.legacyPlacements || {};
+                legacySorts = initData.legacySorts || {};
+                legacyShuffles = initData.legacyShuffles || {};
+            }
+        } catch (e) {
+            console.error("Failed to parse catalog-init-data:", e);
+        }
+
+        // Extract catalog default names directly from rendered catalog items
+        document.querySelectorAll(".catalog-order-item").forEach(item => {
+            const id = item.getAttribute("data-id");
+            const defName = item.getAttribute("data-default-name");
+            if (id && defName) {
+                defaultCatalogNames[id] = defName;
+            }
+        });
+
+        // Ensure all catalogs in defaultCatalogNames have valid config objects
+        Object.keys(defaultCatalogNames).forEach(catId => {
+            if (!catalogConfigs[catId]) {
+                catalogConfigs[catId] = {};
+            }
+            if (!catalogConfigs[catId].shape) {
+                catalogConfigs[catId].shape = legacyShapes[catId] || 'poster';
+            }
+            if (catalogConfigs[catId].title === undefined) {
+                catalogConfigs[catId].title = legacyTitles[catId] || '';
+            }
+            if (!catalogConfigs[catId].placement) {
+                catalogConfigs[catId].placement = legacyPlacements[catId] || 'all';
+            }
+            if (!catalogConfigs[catId].sort_by) {
+                catalogConfigs[catId].sort_by = (legacySorts[catId] && legacySorts[catId].by) || 'default';
+                catalogConfigs[catId].sort_order = (legacySorts[catId] && legacySorts[catId].order) || 'desc';
+            }
+            if (catalogConfigs[catId].shuffle === undefined) {
+                catalogConfigs[catId].shuffle = legacyShuffles[catId] !== undefined ? Boolean(legacyShuffles[catId]) : false;
+            }
+        });
+
+        function getCatalogOverrideCount(catId) {
+            const cfg = catalogConfigs[catId] || {};
+            let count = 0;
+            if (cfg.shape && cfg.shape !== 'poster') count++;
+            if (cfg.title && cfg.title.trim() !== '') count++;
+            if (cfg.placement && cfg.placement !== 'all') count++;
+            if (cfg.sort_by && cfg.sort_by !== 'default') count++;
+            if (cfg.shuffle) count++;
+            return count;
+        }
+
+        function updateCatalogRowBadge(catId) {
+            const count = getCatalogOverrideCount(catId);
+            const btn = document.getElementById('cfg_btn_' + catId);
+            const badge = document.getElementById('badge_count_' + catId);
+            const labelText = document.getElementById('label_text_' + catId);
+
+            if (labelText) {
+                const customTitle = (catalogConfigs[catId] && catalogConfigs[catId].title) ? catalogConfigs[catId].title.trim() : '';
+                labelText.textContent = customTitle || defaultCatalogNames[catId] || catId;
+            }
+
+            if (btn && badge) {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.classList.remove('d-none');
+                    btn.classList.add('has-overrides');
+                } else {
+                    badge.textContent = '0';
+                    badge.classList.add('d-none');
+                    btn.classList.remove('has-overrides');
+                }
+            }
+        }
+
+        // Initialize all badges on load
+        Object.keys(defaultCatalogNames).forEach(updateCatalogRowBadge);
+
+        window.openCatalogConfigModal = function (catId) {
+            activeModalCatalogId = catId;
+            const cfg = catalogConfigs[catId] || {};
+            const defName = defaultCatalogNames[catId] || catId;
+
+            // Modal Header
+            const titleEl = document.getElementById('modalCatalogName');
+            if (titleEl) titleEl.textContent = defName;
+
+            // Name Input
+            const nameInput = document.getElementById('modalInputTitle');
+            if (nameInput) {
+                nameInput.value = cfg.title || '';
+                nameInput.placeholder = defName;
+            }
+
+            // Placement
+            updatePlacementUI(cfg.placement || 'all');
+
+            // Poster Shape
+            updateShapeUI(cfg.shape || 'poster');
+
+            // Sort
+            const sortSelect = document.getElementById('modalSortBySelect');
+            if (sortSelect) sortSelect.value = cfg.sort_by || 'default';
+            updateSortOrderUI(cfg.sort_order || 'desc');
+
+            // Shuffle
+            updateShuffleUI(Boolean(cfg.shuffle));
+
+            // Live Preview Card & Header Count
+            updateModalLivePreview();
+
+            const modalEl = document.getElementById('catalogConfigModal');
+            if (modalEl) {
+                const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                bsModal.show();
             }
         };
 
-        window.setAllCatalogShapes = function (shape) {
-            document.querySelectorAll('.catalog-shape-pill-group').forEach(group => {
-                const catId = group.getAttribute('data-cat-id');
-                const hidden = document.getElementById('shape_' + catId);
-                if (hidden) hidden.value = shape;
-                group.querySelectorAll('.shape-pill-btn').forEach(b => {
-                    if (b.getAttribute('data-shape') === shape) {
-                        b.classList.add('active');
-                    } else {
-                        b.classList.remove('active');
-                    }
-                });
+        function updatePlacementUI(placement) {
+            document.querySelectorAll('#modalPlacementGroup .modal-segmented-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-placement') === placement);
             });
+        }
+
+        function updateShapeUI(shape) {
+            document.querySelectorAll('#modalShapeGroup .modal-segmented-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-shape') === shape);
+            });
+        }
+
+        function updateSortOrderUI(order) {
+            document.querySelectorAll('#modalSortOrderGroup .modal-segmented-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-order') === order);
+            });
+        }
+
+        function updateShuffleUI(shuffle) {
+            document.querySelectorAll('#modalShuffleGroup .modal-segmented-btn').forEach(btn => {
+                btn.classList.toggle('active', (btn.getAttribute('data-shuffle') === 'true') === shuffle);
+            });
+        }
+
+        function updateModalLivePreview() {
+            if (!activeModalCatalogId) return;
+            const cfg = catalogConfigs[activeModalCatalogId] || {};
+            const shape = cfg.shape || 'poster';
+            const count = getCatalogOverrideCount(activeModalCatalogId);
+
+            // Modal count badge
+            const countBadge = document.getElementById('modalConfigCountBadge');
+            if (countBadge) {
+                countBadge.textContent = count;
+                countBadge.classList.toggle('bg-primary', count > 0);
+                countBadge.classList.toggle('bg-secondary', count === 0);
+            }
+
+            // Live card
+            const liveCard = document.getElementById('modalLiveCard');
+            const aspectBadge = document.getElementById('previewAspectBadge');
+            const previewLabel = document.getElementById('previewCatalogLabel');
+
+            if (liveCard) {
+                if (shape === 'landscape') {
+                    liveCard.classList.remove('portrait');
+                    liveCard.classList.add('landscape');
+                } else {
+                    liveCard.classList.remove('landscape');
+                    liveCard.classList.add('portrait');
+                }
+            }
+
+            if (aspectBadge) {
+                aspectBadge.textContent = shape === 'landscape' ? 'Landscape (16:9)' : 'Portrait (2:3)';
+            }
+
+            if (previewLabel) {
+                const dispTitle = (cfg.title && cfg.title.trim()) ? cfg.title.trim() : (defaultCatalogNames[activeModalCatalogId] || 'Catalog Preview');
+                const details = [];
+                if (cfg.placement === 'discover_only') details.push('Discover only');
+                if (cfg.sort_by && cfg.sort_by !== 'default') {
+                    const sortLabels = {
+                        score: 'Score',
+                        airing_date: 'Airing Date',
+                        last_updated: 'Last Updated',
+                        title: 'Title',
+                        release_date: 'Release Year',
+                        episodes: 'Episodes'
+                    };
+                    const label = sortLabels[cfg.sort_by] || cfg.sort_by;
+                    const orderLabel = (cfg.sort_order === 'asc') ? '▲' : '▼';
+                    details.push(`Sort: ${label} ${orderLabel}`);
+                }
+                if (cfg.shuffle) details.push('Shuffle ON');
+
+                const detailsStr = details.length ? ` • (${details.join(', ')})` : '';
+                previewLabel.textContent = dispTitle + detailsStr;
+            }
+        }
+
+        window.setModalShape = function (shape) {
+            if (!activeModalCatalogId) return;
+            if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
+            catalogConfigs[activeModalCatalogId].shape = shape;
+            updateShapeUI(shape);
+            updateModalLivePreview();
+            updateCatalogRowBadge(activeModalCatalogId);
+        };
+
+        window.setModalPlacement = function (placement) {
+            if (!activeModalCatalogId) return;
+            if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
+            catalogConfigs[activeModalCatalogId].placement = placement;
+            updatePlacementUI(placement);
+            updateModalLivePreview();
+            updateCatalogRowBadge(activeModalCatalogId);
+        };
+
+        window.onModalTitleChange = function (val) {
+            if (!activeModalCatalogId) return;
+            if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
+            catalogConfigs[activeModalCatalogId].title = val;
+            updateModalLivePreview();
+            updateCatalogRowBadge(activeModalCatalogId);
+        };
+
+        window.resetModalTitle = function () {
+            if (!activeModalCatalogId) return;
+            const input = document.getElementById('modalInputTitle');
+            if (input) input.value = '';
+            onModalTitleChange('');
+        };
+
+        window.onModalSortByChange = function (val) {
+            if (!activeModalCatalogId) return;
+            if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
+            catalogConfigs[activeModalCatalogId].sort_by = val;
+            updateModalLivePreview();
+            updateCatalogRowBadge(activeModalCatalogId);
+        };
+
+        window.setModalSortOrder = function (order) {
+            if (!activeModalCatalogId) return;
+            if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
+            catalogConfigs[activeModalCatalogId].sort_order = order;
+            updateSortOrderUI(order);
+            updateModalLivePreview();
+            updateCatalogRowBadge(activeModalCatalogId);
+        };
+
+        window.resetModalSort = function () {
+            if (!activeModalCatalogId) return;
+            const select = document.getElementById('modalSortBySelect');
+            if (select) select.value = 'default';
+            onModalSortByChange('default');
+            setModalSortOrder('desc');
+        };
+
+        window.setModalShuffle = function (shuffle) {
+            if (!activeModalCatalogId) return;
+            if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
+            catalogConfigs[activeModalCatalogId].shuffle = Boolean(shuffle);
+            updateShuffleUI(Boolean(shuffle));
+            updateModalLivePreview();
+            updateCatalogRowBadge(activeModalCatalogId);
+        };
+
+        window.resetCurrentCatalogConfig = function () {
+            if (!activeModalCatalogId) return;
+            catalogConfigs[activeModalCatalogId] = {
+                shape: 'poster',
+                title: '',
+                placement: 'all',
+                sort_by: 'default',
+                sort_order: 'desc',
+                shuffle: false
+            };
+            openCatalogConfigModal(activeModalCatalogId);
+            updateCatalogRowBadge(activeModalCatalogId);
+        };
+
+        window.setAllCatalogShapes = function (shape) {
+            Object.keys(defaultCatalogNames).forEach(catId => {
+                if (!catalogConfigs[catId]) catalogConfigs[catId] = {};
+                catalogConfigs[catId].shape = shape;
+                updateCatalogRowBadge(catId);
+            });
+            if (activeModalCatalogId) {
+                updateShapeUI(shape);
+                updateModalLivePreview();
+            }
+            showToast('All catalogs set to ' + (shape === 'landscape' ? 'Landscape (16:9)' : 'Portrait (2:3)'), 'info');
         };
 
         const list = document.getElementById("drag-drop-catalog-list");
@@ -3033,7 +3344,7 @@
         let draggedItem = null;
 
         list.addEventListener("dragstart", function (e) {
-            if (e.target.closest(".catalog-shape-pill-group") || e.target.closest("input") || e.target.closest("label") || e.target.closest("button")) {
+            if (e.target.closest(".catalog-config-btn") || e.target.closest(".shape-batch-btn") || e.target.closest("input") || e.target.closest("label") || e.target.closest("button")) {
                 e.preventDefault();
                 return;
             }
@@ -3649,6 +3960,12 @@
             const items = [...list.querySelectorAll(".catalog-order-item")];
             const ids = items.map(item => item.getAttribute("data-id"));
             sortedInput.value = ids.join(",");
+        }
+
+        // Sync catalog configs JSON payload
+        const catalogConfigsVal = document.getElementById('catalog_configs_val');
+        if (catalogConfigsVal && typeof catalogConfigs !== 'undefined') {
+            catalogConfigsVal.value = JSON.stringify(catalogConfigs);
         }
     }
 </script>

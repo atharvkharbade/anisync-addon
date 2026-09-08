@@ -796,6 +796,39 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
     return sorted(items, key=get_sort_key, reverse=reverse)
 
 
+def get_catalog_sorting(user, catalog_id, default_category_key=None):
+    """
+    Resolves custom sort settings for a catalog.
+    Checks per-catalog configuration first, then falls back to legacy category-wide sort.
+    Returns: (is_custom, sort_by, sort_order)
+    """
+    cat_sort = user.get("catalog_sorts", {}).get(catalog_id)
+    if cat_sort and isinstance(cat_sort, dict) and cat_sort.get("by", "default") != "default":
+        return True, cat_sort.get("by", "default"), cat_sort.get("order", "desc")
+
+    if user.get("custom_sort_enabled", False) and default_category_key:
+        sort_by = user.get(f"custom_sort_{default_category_key}_by", "default")
+        sort_order = user.get(f"custom_sort_{default_category_key}_order", "desc")
+        if sort_by != "default":
+            return True, sort_by, sort_order
+
+    return False, "default", "desc"
+
+
+def is_catalog_shuffle_enabled(user, catalog_id):
+    """
+    Checks whether shuffle is enabled for this catalog.
+    Checks per-catalog shuffle first, then falls back to legacy global discovery shuffle.
+    """
+    cat_shuffle = user.get("catalog_shuffles", {}).get(catalog_id)
+    if cat_shuffle is not None:
+        return bool(cat_shuffle)
+    # Legacy fallback: only for discovery catalogs except schedule
+    if user.get("shuffle_discovery_catalogs", False) and catalog_id.startswith("anisync_") and catalog_id != "anisync_schedule":
+        return True
+    return False
+
+
 currently_fetching_pairs = set()
 currently_fetching_pages = set()
 jikan_semaphore = None
@@ -1835,14 +1868,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 metas = []
 
         # Apply Custom Sorting for Discovery Catalogs if enabled
-        if user.get("custom_sort_enabled", False):
-            sort_by = user.get("custom_sort_watching_by", "default")
-            sort_order = user.get("custom_sort_watching_order", "desc")
-            if sort_by != "default":
-                metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
+        is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, "watching")
+        if is_custom_sort:
+            metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
 
-        # Shuffle if enabled (excluding schedule catalog to preserve release order)
-        if user.get("shuffle_discovery_catalogs", False) and catalog_id != "anisync_schedule":
+        # Shuffle if enabled
+        if is_catalog_shuffle_enabled(user, catalog_id):
             import random
             metas = list(metas)
             random.shuffle(metas)
@@ -2186,6 +2217,17 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             else:
                 metas = cache.get("liked_items", [])
 
+        # Apply Custom Sorting for Recommendation Catalogs if enabled
+        is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, None)
+        if is_custom_sort:
+            metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
+
+        # Shuffle if enabled
+        if is_catalog_shuffle_enabled(user, catalog_id):
+            import random
+            metas = list(metas)
+            random.shuffle(metas)
+
         # Handle pagination skip
         metas = metas[offset : offset + 40]
         return await respond_with(
@@ -2468,12 +2510,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             }
             category_key = comb_map.get(comb_status, "watching")
 
-            custom_sort_enabled = user.get("custom_sort_enabled", False)
-            sort_by = "default"
-            sort_order = "desc"
-            if custom_sort_enabled:
-                sort_by = user.get(f"custom_sort_{category_key}_by", "default")
-                sort_order = user.get(f"custom_sort_{category_key}_order", "desc")
+            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key)
 
             # Bulk fetch AniList next airing details ONLY for combined items that are airing (drastically reduces query volume)
             bulk_details = {}
@@ -2645,8 +2682,13 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 return is_new_ep, latest_aired_at, next_airing_at
 
-            # Sorting
-            if custom_sort_enabled and sort_by != "default":
+            # Sorting & Shuffle
+            if is_catalog_shuffle_enabled(user, catalog_id):
+                import random
+                combined_items = list(combined_items)
+                random.shuffle(combined_items)
+                paged_items = combined_items[offset : offset + 40]
+            elif custom_sort_enabled and sort_by != "default":
                 if sort_by_new_ep and comb_status in ["watching", "plan_to_watch"]:
                     new_ep_items = []
                     other_items = []
@@ -2988,12 +3030,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             }
             category_key = simkl_map.get(simkl_status, "watching")
 
-            custom_sort_enabled = user.get("custom_sort_enabled", False)
-            sort_by = "default"
-            sort_order = "desc"
-            if custom_sort_enabled:
-                sort_by = user.get(f"custom_sort_{category_key}_by", "default")
-                sort_order = user.get(f"custom_sort_{category_key}_order", "desc")
+            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key)
 
             # Fetch AniList next-airing-episode data in bulk ONLY for airing shows
             bulk_details = {}
@@ -3096,7 +3133,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 return is_new_ep, has_unwatched, latest_aired_at, latest_aired_num
 
-            if custom_sort_enabled and sort_by != "default":
+            if is_catalog_shuffle_enabled(user, catalog_id):
+                import random
+                data_items = list(data_items)
+                random.shuffle(data_items)
+                paged_items = data_items[offset : offset + 40]
+            elif custom_sort_enabled and sort_by != "default":
                 if sort_by_new_ep and simkl_status in ["watching", "plantowatch"]:
                     new_ep_items = []
                     other_items = []
@@ -3324,12 +3366,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             }
             category_key = mal_map.get(mal_status, "watching")
 
-            custom_sort_enabled = user.get("custom_sort_enabled", False)
-            sort_by = "default"
-            sort_order = "desc"
-            if custom_sort_enabled:
-                sort_by = user.get(f"custom_sort_{category_key}_by", "default")
-                sort_order = user.get(f"custom_sort_{category_key}_order", "desc")
+            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key)
 
             # Fetch AniList next-airing-episode data in bulk ONLY for airing shows (drastically cuts latency for 500+ lists)
             bulk_details = {}
@@ -3430,8 +3467,13 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 return is_new_ep, has_unwatched, latest_aired_at, latest_aired_num, recently_finished
 
-            # ── Sorting ───────────────────────────────────────────────────────
-            if custom_sort_enabled and sort_by != "default":
+            # ── Sorting & Shuffle ───────────────────────────────────────────────
+            if is_catalog_shuffle_enabled(user, catalog_id):
+                import random
+                data_items = list(data_items)
+                random.shuffle(data_items)
+                paged_data_items = data_items[offset : offset + 40]
+            elif custom_sort_enabled and sort_by != "default":
                 if sort_by_new_ep and mal_status in ["watching", "plan_to_watch"]:
                     new_ep_items = []
                     other_items = []
@@ -3596,12 +3638,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             else:
                 category_key = "watching"
 
-            custom_sort_enabled = user.get("custom_sort_enabled", False)
-            sort_by = "default"
-            sort_order = "desc"
-            if custom_sort_enabled:
-                sort_by = user.get(f"custom_sort_{category_key}_by", "default")
-                sort_order = user.get(f"custom_sort_{category_key}_order", "desc")
+            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key)
 
             collection = await get_cached_anilist_user_anime_list(
                 user_id, user["anilist_token"], anilist_uid=anilist_uid, status=anilist_status
@@ -3676,8 +3713,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
                 return is_new_ep, has_unwatched, latest_aired_at, recently_finished
 
-            # ── Sorting ───────────────────────────────────────────────────────
-            if custom_sort_enabled and sort_by != "default":
+            # ── Sorting & Shuffle ───────────────────────────────────────────────
+            if is_catalog_shuffle_enabled(user, catalog_id):
+                import random
+                entries = list(entries)
+                random.shuffle(entries)
+            elif custom_sort_enabled and sort_by != "default":
                 if sort_by_new_ep and anilist_status in ["CURRENT", "PLANNING"]:
                     new_ep_items = []
                     other_items = []

@@ -339,15 +339,64 @@ async def configure(user_id: str = ""):
 
             user["catalogs"] = enabled_list
 
-            # Save catalog card shape preferences (poster vs landscape)
+            # Save per-catalog custom configurations (Xperience-style modal)
             catalog_shapes = user.get("catalog_shapes", {}) or {}
+            catalog_titles = user.get("catalog_titles", {}) or {}
+            catalog_placements = user.get("catalog_placements", {}) or {}
+            catalog_sorts = user.get("catalog_sorts", {}) or {}
+            catalog_shuffles = user.get("catalog_shuffles", {}) or {}
+            catalog_configs = user.get("catalog_configs", {}) or {}
+
+            # 1. Parse JSON payload if provided
+            raw_configs_str = form.get("catalog_configs")
+            if raw_configs_str:
+                try:
+                    import json
+                    parsed_configs = json.loads(raw_configs_str)
+                    if isinstance(parsed_configs, dict):
+                        catalog_configs.update(parsed_configs)
+                        for cat_id, cfg in parsed_configs.items():
+                            if not isinstance(cfg, dict):
+                                continue
+                            if "shape" in cfg and cfg["shape"] in ["poster", "landscape"]:
+                                catalog_shapes[cat_id] = cfg["shape"]
+                            if "title" in cfg:
+                                title_val = str(cfg["title"]).strip()
+                                if title_val:
+                                    catalog_titles[cat_id] = title_val
+                                elif cat_id in catalog_titles:
+                                    del catalog_titles[cat_id]
+                            if "placement" in cfg and cfg["placement"] in ["all", "discover_only"]:
+                                catalog_placements[cat_id] = cfg["placement"]
+                            if "sort_by" in cfg:
+                                sort_by = cfg.get("sort_by", "default")
+                                sort_order = cfg.get("sort_order", "desc")
+                                if sort_by != "default":
+                                    catalog_sorts[cat_id] = {"by": sort_by, "order": sort_order}
+                                elif cat_id in catalog_sorts:
+                                    del catalog_sorts[cat_id]
+                            if "shuffle" in cfg:
+                                catalog_shuffles[cat_id] = bool(cfg["shuffle"])
+                except Exception as e:
+                    logging.error("Failed to parse catalog_configs: %s", e)
+
+            # 2. Individual fallback for batch shape buttons if submitted separately
             for cat in possible_cats:
                 shape_val = form.get(f"shape_{cat}")
                 if shape_val:
                     val = shape_val.strip().lower()
                     if val in ["landscape", "poster"]:
                         catalog_shapes[cat] = val
+                        if cat not in catalog_configs:
+                            catalog_configs[cat] = {}
+                        catalog_configs[cat]["shape"] = val
+
             user["catalog_shapes"] = catalog_shapes
+            user["catalog_titles"] = catalog_titles
+            user["catalog_placements"] = catalog_placements
+            user["catalog_sorts"] = catalog_sorts
+            user["catalog_shuffles"] = catalog_shuffles
+            user["catalog_configs"] = catalog_configs
 
         if "enable_recommendations" in form:
             user["enable_recommendations"] = form.get("enable_recommendations") == "true"

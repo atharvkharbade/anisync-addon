@@ -470,6 +470,8 @@ async def user_manifest(user_id: str):
         user_catalogs = [c if c != "anime_tracker_search" else "anisync_search" for c in user_catalogs]
 
     catalog_shapes = user.get("catalog_shapes", {}) or {}
+    catalog_titles = user.get("catalog_titles", {}) or {}
+    catalog_placements = user.get("catalog_placements", {}) or {}
 
     def get_configured_catalog(cat):
         c = cat.copy()
@@ -479,6 +481,15 @@ async def user_manifest(user_id: str):
             c["posterShape"] = "landscape"
         else:
             c["posterShape"] = "poster"
+
+        # Custom title override
+        if cat_id in catalog_titles and catalog_titles[cat_id].strip():
+            c["name"] = catalog_titles[cat_id].strip()
+
+        # Placement: "discover_only" hides row from Home board while keeping in Discover (Nuvio)
+        if catalog_placements.get(cat_id) == "discover_only":
+            c["showInHome"] = False
+
         return c
 
     active_catalogs = []
