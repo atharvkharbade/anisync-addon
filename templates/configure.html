@@ -5524,7 +5524,7 @@
             } else {
                 sampleAnimeIndex = 0;
             }
-            updateArtworkLivePreview();
+            updateArtworkLivePreview(true);
         }
 
         async function initUserWatchlistPreview() {
@@ -5600,7 +5600,9 @@
             return defaultCover;
         }
 
-        function updateArtworkLivePreview() {
+        let lastArtworkPreviewStateKey = '';
+
+        function updateArtworkLivePreview(force = false) {
             const cardEl = document.getElementById('artworkPreviewCard');
             const imgEl = document.getElementById('artworkPreviewImg');
             const spinnerEl = document.getElementById('artworkPreviewSpinner');
@@ -5628,14 +5630,25 @@
             const isLandscape = (artworkPreviewShape === 'landscape');
             cardEl.classList.toggle('landscape', isLandscape);
 
+            // Guests only preview Poster Art Cover Provider without new episode overlays
+            const isAiring = (!window.isGuestUser && artworkPreviewState === 'airing');
+
+            const stateKey = `${sampleAnimeIndex}_${artworkPreviewShape}_${artworkPreviewState}_${badgeStyle}_${provider}_${rpdbKey}_${topKey}_${customPattern}_${userWatchlistSamplePool ? userWatchlistSamplePool.length : 0}`;
+
+            if (!force && lastArtworkPreviewStateKey === stateKey && imgEl.getAttribute('src')) {
+                // If it already loaded with identical settings, keep existing image without flashing spinner
+                if (imgEl.complete && spinnerEl) {
+                    spinnerEl.classList.add('d-none');
+                }
+                return;
+            }
+            lastArtworkPreviewStateKey = stateKey;
+
             const safeCurated = CURATED_POSTER_SAMPLES[sampleAnimeIndex % CURATED_POSTER_SAMPLES.length];
             const cleanFallback = isLandscape
                 ? ((sample.banner && sample.banner !== sample.cover) ? sample.banner : (sample.imdb_id ? `https://images.metahub.space/background/medium/${sample.imdb_id}/img` : safeCurated.banner))
                 : (sample.cover || sample.clean_poster || safeCurated.cover);
             const genuineBaseUrl = resolveGenuinePoster(sample, artworkPreviewShape, provider, rpdbKey, topKey, customPattern);
-
-            // Guests only preview Poster Art Cover Provider without new episode overlays
-            const isAiring = (!window.isGuestUser && artworkPreviewState === 'airing');
 
             let targetImgUrl = genuineBaseUrl;
             if (isAiring) {
