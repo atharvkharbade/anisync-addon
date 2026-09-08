@@ -5208,8 +5208,9 @@
         // ==========================================
         let artworkPreviewState = 'airing'; // 'airing' | 'normal'
         let artworkPreviewShape = 'portrait'; // 'portrait' | 'landscape'
-        let sampleAnimeIndex = 0;
         let userWatchlistSamplePool = [];
+        let recentAnimeSampleIndices = [];
+        let sampleAnimeIndex = 0;
 
         const CURATED_POSTER_SAMPLES = [
             {
@@ -5434,6 +5435,10 @@
             }
         ];
 
+        // Randomize initial starting anime from curated list
+        sampleAnimeIndex = Math.floor(Math.random() * CURATED_POSTER_SAMPLES.length);
+        recentAnimeSampleIndices = [sampleAnimeIndex];
+
         function setArtworkPreviewShape(shape) {
             artworkPreviewShape = shape;
             const btnPortrait = document.getElementById('btnPreviewPortrait');
@@ -5475,7 +5480,27 @@
             const activePool = (userWatchlistSamplePool && userWatchlistSamplePool.length > 0)
                 ? userWatchlistSamplePool
                 : CURATED_POSTER_SAMPLES;
-            sampleAnimeIndex = (sampleAnimeIndex + 1) % activePool.length;
+
+            if (activePool.length > 1) {
+                const maxHistory = Math.min(6, activePool.length - 1);
+                const candidates = [];
+                for (let i = 0; i < activePool.length; i++) {
+                    if (!recentAnimeSampleIndices.includes(i)) {
+                        candidates.push(i);
+                    }
+                }
+                const chosen = (candidates.length > 0)
+                    ? candidates[Math.floor(Math.random() * candidates.length)]
+                    : Math.floor(Math.random() * activePool.length);
+
+                sampleAnimeIndex = chosen;
+                recentAnimeSampleIndices.push(chosen);
+                while (recentAnimeSampleIndices.length > maxHistory) {
+                    recentAnimeSampleIndices.shift();
+                }
+            } else {
+                sampleAnimeIndex = 0;
+            }
             updateArtworkLivePreview();
         }
 
@@ -5495,6 +5520,8 @@
                             });
                             if (validItems.length > 0) {
                                 userWatchlistSamplePool = validItems;
+                                sampleAnimeIndex = Math.floor(Math.random() * userWatchlistSamplePool.length);
+                                recentAnimeSampleIndices = [sampleAnimeIndex];
                                 updateArtworkLivePreview();
                                 break;
                             }
