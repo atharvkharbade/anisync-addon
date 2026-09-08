@@ -1381,27 +1381,49 @@
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), 0 0 10px rgba(0, 0, 0, 0.5);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
         z-index: 10;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
     }
-    .btn-cycle-floating:hover {
-        background: rgba(28, 38, 58, 0.98);
-        border-color: rgba(251, 191, 36, 0.6);
-        color: #fbbf24;
-        transform: translateY(-50%) scale(1.1);
-        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.85), 0 0 14px rgba(251, 191, 36, 0.3);
-    }
-    .btn-cycle-floating:hover i {
-        transform: rotate(90deg);
+    .btn-cycle-floating:focus,
+    .btn-cycle-floating:focus-visible {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.18);
+        color: #f1f5f9;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), 0 0 10px rgba(0, 0, 0, 0.5);
     }
     .btn-cycle-floating:active {
-        transform: translateY(-50%) scale(0.94);
+        transform: translateY(-50%) scale(0.92);
     }
-    .btn-cycle-floating:active i {
-        transform: rotate(270deg);
+    @media (hover: hover) and (pointer: fine) {
+        .btn-cycle-floating:hover {
+            background: rgba(28, 38, 58, 0.98);
+            border-color: rgba(251, 191, 36, 0.6);
+            color: #fbbf24;
+            transform: translateY(-50%) scale(1.08);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.85), 0 0 14px rgba(251, 191, 36, 0.3);
+        }
+        .btn-cycle-floating:hover i {
+            transform: rotate(45deg);
+        }
+    }
+    .btn-cycle-floating.cycling,
+    .btn-cycle-floating.cycling:focus {
+        border-color: rgba(251, 191, 36, 0.7);
+        color: #fbbf24;
+    }
+    .btn-cycle-floating.cycling i {
+        animation: spinCycle 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes spinCycle {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
     .btn-cycle-floating i {
-        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
     }
     .artwork-poster-stage {
         display: flex;
@@ -5434,7 +5456,22 @@
             updateArtworkLivePreview();
         }
 
+        let cycleArtworkAnimTimeout = null;
         function cycleArtworkSample() {
+            const btn = document.getElementById('btnPreviewCycle');
+            if (btn) {
+                if (cycleArtworkAnimTimeout) {
+                    clearTimeout(cycleArtworkAnimTimeout);
+                }
+                btn.classList.remove('cycling');
+                void btn.offsetWidth; // Force DOM reflow to restart CSS keyframe animation cleanly
+                btn.classList.add('cycling');
+                cycleArtworkAnimTimeout = setTimeout(() => {
+                    btn.classList.remove('cycling');
+                    cycleArtworkAnimTimeout = null;
+                }, 450);
+                btn.blur();
+            }
             const activePool = (userWatchlistSamplePool && userWatchlistSamplePool.length > 0)
                 ? userWatchlistSamplePool
                 : CURATED_POSTER_SAMPLES;
