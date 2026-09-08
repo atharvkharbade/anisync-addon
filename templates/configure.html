@@ -1362,6 +1362,21 @@
         font-weight: 600;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
     }
+    #btnPreviewCycle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #btnPreviewCycle i {
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+    }
+    #btnPreviewCycle:hover i {
+        transform: rotate(90deg);
+        color: #ffffff;
+    }
+    #btnPreviewCycle:active i {
+        transform: rotate(270deg);
+    }
     .artwork-poster-stage {
         display: flex;
         justify-content: center;
@@ -2032,16 +2047,16 @@
                 <!-- Right Column: Poster Preview -->
                 <div class="col-12 col-lg-5">
                     <div id="posterLivePreviewContainer" class="artwork-preview-panel">
-                        <!-- Top Header: Single Line (Title + Shape Toggle) -->
+                        <!-- Top Header: Single Line (Title + Shape/Cycle Controls) -->
                         <div class="d-flex align-items-center justify-content-between w-100 mb-2">
-                            <span class="preview-panel-title d-flex align-items-center" style="gap: 6px;">
-                                <i class="fa-regular fa-image text-warning" style="font-size: 0.85rem;"></i>
-                                <span>Preview</span>
-                            </span>
-                            <!-- Shape Switcher: Portrait vs Landscape -->
+                            <span class="preview-panel-title">Preview</span>
+                            <!-- Shape Switcher: Portrait vs Landscape with Next Anime in middle -->
                             <div class="preview-mode-switch" id="previewShapeToggle">
-                                <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait">
+                                <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait (Normal Poster)">
                                     Portrait
+                                </button>
+                                <button type="button" class="preview-mode-btn px-2" id="btnPreviewCycle" onclick="cycleArtworkSample()" title="Next Anime">
+                                    <i class="fa-solid fa-arrows-rotate"></i>
                                 </button>
                                 <button type="button" class="preview-mode-btn" id="btnPreviewLandscape" onclick="setArtworkPreviewShape('landscape')" title="Landscape">
                                     Landscape
@@ -2061,14 +2076,9 @@
                             </div>
                         </div>
 
-                        <!-- Bottom Footer Toolbar -->
-                        <div class="d-flex align-items-center {% if user.get('is_guest') %}justify-content-center{% else %}justify-content-between{% endif %} w-100 mt-2 pt-2 border-top border-secondary border-opacity-10">
-                            <button type="button" class="btn-cycle-sample d-inline-flex align-items-center" style="gap: 6px;" onclick="cycleArtworkSample()" title="Cycle Anime Preview">
-                                <i class="fa-solid fa-arrows-rotate"></i>
-                                <span>Next Anime</span>
-                            </button>
-                            <!-- State Switcher: Airing vs Normal (Hidden for Guest Users) -->
-                            {% if not user.get('is_guest') %}
+                        <!-- Bottom Footer Toolbar: Episode State Switch -->
+                        {% if not user.get('is_guest') %}
+                        <div class="d-flex align-items-center justify-content-center w-100 mt-2 pt-2 border-top border-secondary border-opacity-10">
                             <div class="preview-mode-switch" id="previewEpisodeToggle">
                                 <button type="button" class="preview-mode-btn active" id="btnPreviewAiring" onclick="setArtworkPreviewState('airing')" title="Preview with new episode badge">
                                     New Episode
@@ -2077,8 +2087,8 @@
                                     Normal
                                 </button>
                             </div>
-                            {% endif %}
                         </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
