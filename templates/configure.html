@@ -3139,12 +3139,12 @@
 {
   "userId": {{ (user.get('uid') or '') | tojson }},
   "isGuest": {{ (user.get('is_guest') or False) | tojson }},
-  "hasTrackers": {{ ((user.get('mal_token') or user.get('mal_username') or user.get('anilist_token') or user.get('anilist_username') or user.get('simkl_token') or user.get('simkl_username')) is not none and (user.get('mal_token') or user.get('mal_username') or user.get('anilist_token') or user.get('anilist_username') or user.get('simkl_token') or user.get('simkl_username')) != '') | tojson }},
+  "hasTrackers": {{ ((user.get('mal_access_token') or user.get('mal_token') or user.get('mal_username') or user.get('name') or user.get('anilist_token') or user.get('anilist_username') or user.get('simkl_access_token') or user.get('simkl_token') or user.get('simkl_username')) is not none and (user.get('mal_access_token') or user.get('mal_token') or user.get('mal_username') or user.get('name') or user.get('anilist_token') or user.get('anilist_username') or user.get('simkl_access_token') or user.get('simkl_token') or user.get('simkl_username')) != '') | tojson }},
   "userTrackers": [
     {% set trackers_list = [] %}
-    {% if user.get('mal_token') or user.get('mal_username') %}{% set _ = trackers_list.append('mal') %}{% endif %}
-    {% if user.get('anilist_token') or user.get('anilist_username') %}{% set _ = trackers_list.append('anilist') %}{% endif %}
-    {% if user.get('simkl_token') or user.get('simkl_username') %}{% set _ = trackers_list.append('simkl') %}{% endif %}
+    {% if (user.get('mal_access_token') or user.get('mal_token') or user.get('mal_username') or user.get('name')) and user.get('mal_enabled', True) and not user.get('mal_token_expired') %}{% set _ = trackers_list.append('mal') %}{% endif %}
+    {% if (user.get('anilist_token') or user.get('anilist_username')) and user.get('anilist_enabled', True) and not user.get('anilist_token_expired') %}{% set _ = trackers_list.append('anilist') %}{% endif %}
+    {% if (user.get('simkl_access_token') or user.get('simkl_token') or user.get('simkl_username')) and user.get('simkl_enabled', True) and not user.get('simkl_token_expired') %}{% set _ = trackers_list.append('simkl') %}{% endif %}
     {% for t in trackers_list %}{{ t | tojson }}{% if not loop.last %},{% endif %}{% endfor %}
   ],
   "catalogConfigs": {{ (user.get('catalog_configs') or {}) | tojson }},
