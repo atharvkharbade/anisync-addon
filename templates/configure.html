@@ -1858,12 +1858,11 @@
     <div class="anisync-tab-pane" id="tab-appearance" role="tabpanel" aria-labelledby="tab-btn-appearance">
 
         <!-- Poster Art Customization Card -->
-                <div class="card-dark p-3 p-sm-4 mb-3">
-                    <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art Customization</h6>
-
+        <div class="card-dark p-3 p-sm-4 mb-3">
             <div class="row g-4 align-items-start">
                 <!-- Left Column: Settings Controls -->
                 <div class="col-12 col-lg-7">
+                    <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art Customization</h6>
                     <div id="poster-provider-section">
                         {% if not user.get('is_guest') %}
                         <!-- New Episode Overlay Design -->
@@ -2073,10 +2072,12 @@
                 <!-- Right Column: Poster Preview -->
                 <div class="col-12 col-lg-5">
                     <div id="posterLivePreviewContainer" class="artwork-preview-panel">
-                        <!-- Top Header: Preview on Top-Left, Shape Toggle Centered in Middle -->
-                        <div class="position-relative w-100 d-flex align-items-center justify-content-center mb-2" style="min-height: 28px;">
-                            <span class="preview-panel-title position-absolute start-0" style="top: 0;">Preview</span>
-                            <!-- Shape Switcher: Portrait vs Landscape (Centered in Middle) -->
+                        <!-- Top Header: Preview on Top-Left, Shape Toggle Centered Below -->
+                        <div class="d-flex align-items-center justify-content-between w-100 mb-2">
+                            <span class="preview-panel-title">Preview</span>
+                        </div>
+                        <!-- Shape Switcher: Portrait vs Landscape (Centered in Middle) -->
+                        <div class="d-flex justify-content-center w-100 mb-2">
                             <div class="preview-mode-switch" id="previewShapeToggle">
                                 <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait">
                                     Portrait
