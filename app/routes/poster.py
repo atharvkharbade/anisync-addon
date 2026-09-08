@@ -33,6 +33,7 @@ def is_trusted_url(url: str) -> bool:
             "metahub.space",
             "ratingposterdb.com",
             "topposters.com",
+            "top-posters.com",
             "tmdb.org",
             "thetvdb.com",
         )

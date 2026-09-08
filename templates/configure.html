@@ -1379,7 +1379,11 @@
         border: 1px solid rgba(255, 255, 255, 0.12);
         background: #18181b;
         user-select: none;
-        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+        transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+    }
+    .artwork-poster-card.landscape {
+        width: 270px;
+        height: 152px;
     }
     .artwork-poster-card:hover {
         transform: translateY(-2px);
@@ -1390,117 +1394,19 @@
         height: 100%;
         object-fit: cover;
         display: block;
-        transition: opacity 0.2s ease;
+        transition: opacity 0.25s ease;
     }
-    /* Modern Glassmorphism Badges */
-    .artwork-modern-layer {
+    .artwork-preview-spinner {
         position: absolute;
         inset: 0;
-        pointer-events: none;
-    }
-    .artwork-modern-top {
-        position: absolute;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(15, 23, 42, 0.75);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.28);
-        border-radius: 7px;
-        padding: 3px 10px;
-        color: #ffffff;
-        font-size: 0.65rem;
-        font-weight: 800;
-        letter-spacing: 0.05em;
-        white-space: nowrap;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        pointer-events: none;
-    }
-    .artwork-modern-bot {
-        position: absolute;
-        bottom: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(15, 23, 42, 0.75);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.28);
-        border-radius: 7px;
-        padding: 3px 9px;
-        color: #ffffff;
-        font-size: 0.62rem;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        white-space: nowrap;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        pointer-events: none;
-    }
-    /* Classic Solid Bottom Bar */
-    .artwork-classic-layer {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        pointer-events: none;
-    }
-    .artwork-classic-bar {
-        background: #000000;
-        width: 100%;
-        height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        padding: 0 6px;
-        border-top: 1px solid rgba(255, 255, 255, 0.12);
-    }
-    .artwork-classic-text {
-        color: #ffffff;
-        font-size: 0.62rem;
-        font-weight: 800;
-        letter-spacing: 0.04em;
-    }
-    /* RPDB Rating Badges */
-    .artwork-rpdb-layer {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        z-index: 2;
-        pointer-events: none;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        align-items: flex-end;
-    }
-    .artwork-rpdb-badge {
-        background: rgba(0, 0, 0, 0.88);
-        border: 1px solid rgba(255, 193, 7, 0.5);
-        border-radius: 5px;
-        padding: 2px 6px;
-        font-size: 0.62rem;
-        font-weight: 700;
-        color: #ffc107;
-        display: flex;
-        align-items: center;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
-    }
-    .artwork-topposter-layer {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        z-index: 2;
-        pointer-events: none;
-    }
-    .artwork-topposter-badge {
-        background: linear-gradient(135deg, #ef4444, #991b1b);
-        border-radius: 5px;
-        padding: 2px 6px;
-        font-size: 0.62rem;
-        font-weight: 800;
-        color: #ffffff;
-        letter-spacing: 0.04em;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 5;
+        transition: opacity 0.2s ease;
     }
     .btn-cycle-sample {
         background: rgba(255, 255, 255, 0.05);
@@ -1917,6 +1823,7 @@
                 <!-- Left Column: Settings Controls -->
                 <div class="col-12 col-lg-7">
                     <div id="poster-provider-section">
+                        {% if not user.get('is_guest') %}
                         <!-- New Episode Overlay Design -->
                         <div style="max-width: 400px;" class="mb-4">
                             <label class="rec-label mb-2 small text-secondary">NEW EPISODE OVERLAY STYLE</label>
@@ -1946,9 +1853,10 @@
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
 
                         <!-- Divider & Poster Provider Section -->
-                        <div class="pt-3 border-top border-secondary border-opacity-10">
+                        <div class="{% if not user.get('is_guest') %}pt-3 border-top border-secondary border-opacity-10{% endif %}">
                             <label class="rec-label mb-2 small text-secondary">POSTER ART COVER PROVIDER</label>
                             <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
                                 Enhance anime poster covers with Rating Poster DB (RPDB) overlays, TOP Posters, or a custom poster URL.
@@ -2123,90 +2031,49 @@
                 <!-- Right Column: Live Poster Preview -->
                 <div class="col-12 col-lg-5">
                     <div id="posterLivePreviewContainer" class="artwork-preview-panel">
-                        <div class="d-flex align-items-center justify-content-between w-100 mb-2">
-                            <span class="preview-panel-title">
-                                <i class="fa-solid fa-wand-magic-sparkles me-1 text-warning"></i>Live Preview
-                            </span>
-                            <!-- State Segmented Control: Airing vs Normal -->
-                            <div class="preview-mode-switch" id="previewEpisodeToggle">
-                                <button type="button" class="preview-mode-btn active" id="btnPreviewAiring" onclick="setArtworkPreviewState('airing')" title="Preview with new episode badge">
-                                    New Episode
-                                </button>
-                                <button type="button" class="preview-mode-btn" id="btnPreviewNormal" onclick="setArtworkPreviewState('normal')" title="Preview without badge">
-                                    Normal
-                                </button>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between w-100 gap-2 mb-2">
+                            <span class="preview-panel-title">Live Preview</span>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <!-- Shape Switcher: Portrait vs Landscape -->
+                                <div class="preview-mode-switch" id="previewShapeToggle">
+                                    <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait">
+                                        Portrait
+                                    </button>
+                                    <button type="button" class="preview-mode-btn" id="btnPreviewLandscape" onclick="setArtworkPreviewShape('landscape')" title="Landscape">
+                                        Landscape
+                                    </button>
+                                </div>
+                                <!-- State Switcher: Airing vs Normal (Hidden for Guest Users) -->
+                                {% if not user.get('is_guest') %}
+                                <div class="preview-mode-switch" id="previewEpisodeToggle">
+                                    <button type="button" class="preview-mode-btn active" id="btnPreviewAiring" onclick="setArtworkPreviewState('airing')" title="Preview with new episode badge">
+                                        New Episode
+                                    </button>
+                                    <button type="button" class="preview-mode-btn" id="btnPreviewNormal" onclick="setArtworkPreviewState('normal')" title="Preview without badge">
+                                        Normal
+                                    </button>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
 
-                        <!-- Mini Poster Showcase Card -->
+                        <!-- Dynamic Poster Showcase Card -->
                         <div class="artwork-poster-stage">
                             <div class="artwork-poster-card" id="artworkPreviewCard">
-                                <!-- Background Image -->
+                                <div id="artworkPreviewSpinner" class="artwork-preview-spinner d-none">
+                                    <div class="spinner-border spinner-border-sm text-warning" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
                                 <img id="artworkPreviewImg" src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg" alt="Preview Poster" class="artwork-poster-img">
-
-                                <!-- RPDB Overlay Layer (Rating Badges) -->
-                                <div id="artworkRpdbLayer" class="artwork-rpdb-layer d-none">
-                                    <div class="artwork-rpdb-badge">
-                                        <i class="fa-solid fa-star text-warning me-1" style="font-size: 0.6rem;"></i><span class="rpdb-score">8.6</span>
-                                    </div>
-                                </div>
-
-                                <!-- TOP Posters Overlay Layer -->
-                                <div id="artworkTopPosterLayer" class="artwork-topposter-layer d-none">
-                                    <div class="artwork-topposter-badge">
-                                        <span>TOP</span>
-                                    </div>
-                                </div>
-
-                                <!-- Modern Badge Overlay Layer -->
-                                <div id="artworkModernLayer" class="artwork-modern-layer">
-                                    <div class="artwork-modern-top">
-                                        <span>NEW EPISODE</span>
-                                    </div>
-                                    <div class="artwork-modern-bot">
-                                        {% set trackers = [] %}
-                                        {% if user.get('mal_token') or user.get('mal_username') %}{% set _ = trackers.append('MAL') %}{% endif %}
-                                        {% if user.get('anilist_token') or user.get('anilist_username') %}{% set _ = trackers.append('AL') %}{% endif %}
-                                        {% if user.get('simkl_token') or user.get('simkl_username') %}{% set _ = trackers.append('Simkl') %}{% endif %}
-                                        <span>{% if trackers %}{{ trackers|join(' • ') }}{% else %}MAL • AL • Simkl{% endif %}</span>
-                                    </div>
-                                </div>
-
-                                <!-- Classic Badge Overlay Layer -->
-                                <div id="artworkClassicLayer" class="artwork-classic-layer d-none">
-                                    <div class="artwork-classic-bar">
-                                        <div class="d-flex align-items-center gap-1">
-                                            {% if user.get('mal_token') or user.get('mal_username') %}
-                                            <img src="/assets/mal_logo.png" width="13" height="13" class="rounded-circle">
-                                            {% endif %}
-                                            {% if user.get('anilist_token') or user.get('anilist_username') %}
-                                            <img src="/assets/anilist_logo.png" width="13" height="13" class="rounded-circle">
-                                            {% endif %}
-                                            {% if user.get('simkl_token') or user.get('simkl_username') %}
-                                            <img src="/assets/simkl_logo.png" width="13" height="13" class="rounded-circle">
-                                            {% endif %}
-                                            {% if not (user.get('mal_token') or user.get('anilist_token') or user.get('simkl_token') or user.get('mal_username') or user.get('anilist_username') or user.get('simkl_username')) %}
-                                            <img src="/assets/mal_logo.png" width="13" height="13" class="rounded-circle">
-                                            <img src="/assets/anilist_logo.png" width="13" height="13" class="rounded-circle">
-                                            {% endif %}
-                                        </div>
-                                        <span class="artwork-classic-text">NEW EPISODE</span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
-                        <!-- Sample switcher & Meta caption beneath poster -->
-                        <div class="d-flex align-items-center justify-content-between w-100 mt-2 px-1">
-                            <div class="d-flex align-items-center gap-1 min-w-0">
-                                <span id="artworkSampleTitle" class="text-secondary small fw-medium text-truncate" style="max-width: 140px; font-size: 0.72rem;">JUJUTSU KAISEN</span>
-                                <button type="button" class="btn-cycle-sample" onclick="cycleArtworkSample()" title="Flip sample anime poster">
-                                    <i class="fa-solid fa-arrows-rotate"></i>
-                                </button>
-                            </div>
-                            <span id="artworkPreviewCaptionText" class="badge rounded-pill bg-dark bg-opacity-75 text-secondary border border-secondary border-opacity-25 px-2.5 py-1 small" style="font-size: 0.7rem;">
-                                Modern Overlay • Default
-                            </span>
+                        <!-- Only Refresh Button beneath poster -->
+                        <div class="d-flex align-items-center justify-content-center w-100 mt-2">
+                            <button type="button" class="btn-cycle-sample" onclick="cycleArtworkSample()" title="Cycle Anime Preview">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -3271,6 +3138,15 @@
 <script id="catalog-init-data" type="application/json">
 {
   "userId": {{ (user.get('uid') or '') | tojson }},
+  "isGuest": {{ (user.get('is_guest') or False) | tojson }},
+  "hasTrackers": {{ ((user.get('mal_token') or user.get('mal_username') or user.get('anilist_token') or user.get('anilist_username') or user.get('simkl_token') or user.get('simkl_username')) is not none and (user.get('mal_token') or user.get('mal_username') or user.get('anilist_token') or user.get('anilist_username') or user.get('simkl_token') or user.get('simkl_username')) != '') | tojson }},
+  "userTrackers": [
+    {% set trackers_list = [] %}
+    {% if user.get('mal_token') or user.get('mal_username') %}{% set _ = trackers_list.append('mal') %}{% endif %}
+    {% if user.get('anilist_token') or user.get('anilist_username') %}{% set _ = trackers_list.append('anilist') %}{% endif %}
+    {% if user.get('simkl_token') or user.get('simkl_username') %}{% set _ = trackers_list.append('simkl') %}{% endif %}
+    {% for t in trackers_list %}{{ t | tojson }}{% if not loop.last %},{% endif %}{% endfor %}
+  ],
   "catalogConfigs": {{ (user.get('catalog_configs') or {}) | tojson }},
   "legacyShapes": {{ (user.get('catalog_shapes') or {}) | tojson }},
   "legacyTitles": {{ (user.get('catalog_titles') or {}) | tojson }},
@@ -3282,6 +3158,27 @@
 }
 </script>
 <script>
+    // Global user & catalog state
+    window.currentUserId = '';
+    window.isGuestUser = false;
+    window.hasTrackersConnected = false;
+    window.userTrackersList = [];
+    window.catalogConfigs = {};
+
+    try {
+        const rawInitEl = document.getElementById("catalog-init-data");
+        if (rawInitEl) {
+            const initData = JSON.parse(rawInitEl.textContent || "{}");
+            window.currentUserId = initData.userId || '';
+            window.isGuestUser = !!initData.isGuest;
+            window.hasTrackersConnected = !!initData.hasTrackers;
+            window.userTrackersList = Array.isArray(initData.userTrackers) ? initData.userTrackers : [];
+            window.catalogConfigs = initData.catalogConfigs || {};
+        }
+    } catch(e) {
+        console.error("Failed to parse catalog-init-data at script start:", e);
+    }
+
     // Drag and Drop ordering handler
     
     const SECTION_ICONS = {
@@ -3359,6 +3256,9 @@
 
         if (tabId === 'catalogs' && typeof window.prefetchVisibleCatalogs === 'function') {
             window.prefetchVisibleCatalogs();
+        }
+        if (tabId === 'appearance' && typeof updateArtworkLivePreview === 'function') {
+            updateArtworkLivePreview();
         }
 
         // 4. Scroll smoothly to top of active pane on tab switch
@@ -3604,6 +3504,7 @@
             if (el) {
                 el.addEventListener('input', () => {
                     if (typeof updatePosterArtSectionAvailability === "function") updatePosterArtSectionAvailability();
+                    if (typeof updateArtworkLivePreview === "function") updateArtworkLivePreview();
                     if (typeof updateModalLivePreview === "function" && typeof activeModalCatalogId !== "undefined" && activeModalCatalogId) {
                         updateModalLivePreview();
                     }
@@ -3735,13 +3636,19 @@
         var legacyShuffles = {};
         var legacyPosterArts = {};
         var globalPosterProvider = 'none';
-        var currentUserId = '';
+        var currentUserId = window.currentUserId || '';
+        var isGuestUser = window.isGuestUser || false;
+        var hasTrackersConnected = window.hasTrackersConnected || false;
+        var userTrackersList = window.userTrackersList || [];
 
         try {
             const rawInitEl = document.getElementById("catalog-init-data");
             if (rawInitEl) {
                 const initData = JSON.parse(rawInitEl.textContent || "{}");
-                currentUserId = initData.userId || '';
+                currentUserId = window.currentUserId = initData.userId || '';
+                isGuestUser = window.isGuestUser = !!initData.isGuest;
+                hasTrackersConnected = window.hasTrackersConnected = !!initData.hasTrackers;
+                userTrackersList = window.userTrackersList = Array.isArray(initData.userTrackers) ? initData.userTrackers : [];
                 catalogConfigs = window.catalogConfigs = initData.catalogConfigs || {};
                 legacyShapes = initData.legacyShapes || {};
                 legacyTitles = initData.legacyTitles || {};
@@ -5230,27 +5137,244 @@
         // Tab 2 (Artwork) Dynamic Live Poster Preview
         // ==========================================
         let artworkPreviewState = 'airing'; // 'airing' | 'normal'
+        let artworkPreviewShape = 'portrait'; // 'portrait' | 'landscape'
         let sampleAnimeIndex = 0;
-        const ARTWORK_SAMPLE_POSTERS = [
+        let userWatchlistSamplePool = [];
+
+        // Curated fallback pool of 20 iconic anime with verified covers, 16:9 backdrops, scores, and IDs
+        const CURATED_POSTER_SAMPLES = [
             {
                 title: "JUJUTSU KAISEN",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/113415-jQBSkxWAAk83.jpg",
                 score: "8.6",
-                imdb_id: "tt12343534"
+                imdb_id: "tt12343534",
+                mal_id: "40748",
+                anilist_id: "113415",
+                kitsu_id: "42765",
+                tmdb_id: "95479"
+            },
+            {
+                title: "Demon Slayer: Kimetsu no Yaiba",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-WBsBl0ClmgYL.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/101922-33MtJGsUSxga.jpg",
+                score: "8.6",
+                imdb_id: "tt9335498",
+                mal_id: "38000",
+                anilist_id: "101922",
+                kitsu_id: "41370",
+                tmdb_id: "85937"
             },
             {
                 title: "Attack on Titan",
                 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-buvcRTBx4NSm.jpg",
-                score: "8.9",
-                imdb_id: "tt2560140"
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/16498-8jpFCOcDmneX.jpg",
+                score: "9.1",
+                imdb_id: "tt2560140",
+                mal_id: "16498",
+                anilist_id: "16498",
+                kitsu_id: "7442",
+                tmdb_id: "1429"
             },
             {
-                title: "Demon Slayer",
-                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-WBsBl0ClmgYL.jpg",
+                title: "Frieren: Beyond Journey's End",
+                cover: "https://media.kitsu.app/anime/46474/poster_image/large-ec9b98dd5fbf8f92532d1edb45f9e882.jpeg",
+                banner: "https://media.kitsu.app/anime/46474/cover_image/large-167edf3e01fac59ce6aacfeb47df5634.jpeg",
+                score: "8.9",
+                imdb_id: "tt22216110",
+                mal_id: "52991",
+                anilist_id: "154587",
+                kitsu_id: "46474",
+                tmdb_id: "209867"
+            },
+            {
+                title: "Death Note",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1535-kUgkcrfOrkUM.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/1535.jpg",
+                score: "8.9",
+                imdb_id: "tt0877057",
+                mal_id: "1535",
+                anilist_id: "1535",
+                kitsu_id: "1376",
+                tmdb_id: "13916"
+            },
+            {
+                title: "ONE PIECE",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21-ELSYx3yMPcKM.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21-wf37VakJmZqs.jpg",
+                score: "8.9",
+                imdb_id: "tt0388629",
+                mal_id: "21",
+                anilist_id: "21",
+                kitsu_id: "12",
+                tmdb_id: "37854"
+            },
+            {
+                title: "Fullmetal Alchemist: Brotherhood",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx5114-nSWCgQlmOMtj.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/5114-q0V5URebphSG.jpg",
+                score: "9.1",
+                imdb_id: "tt1374989",
+                mal_id: "5114",
+                anilist_id: "5114",
+                kitsu_id: "3936",
+                tmdb_id: "31911"
+            },
+            {
+                title: "Chainsaw Man",
+                cover: "https://media.kitsu.app/anime/43806/poster_image/large-815d6008fb3b56f4291b9f0ffa05cd8f.jpeg",
+                banner: "https://media.kitsu.app/anime/43806/cover_image/large-964674a0f11524f62d65dde845ad8e1f.jpeg",
+                score: "8.4",
+                imdb_id: "tt13616990",
+                mal_id: "44511",
+                anilist_id: "127230",
+                kitsu_id: "43806",
+                tmdb_id: "114410"
+            },
+            {
+                title: "Hunter x Hunter (2011)",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx11061-y5gsT1hoHuHw.png",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/11061-8WkkTZ6duKpq.jpg",
+                score: "9.0",
+                imdb_id: "tt2098220",
+                mal_id: "11061",
+                anilist_id: "11061",
+                kitsu_id: "6448",
+                tmdb_id: "46298"
+            },
+            {
+                title: "Bleach: Thousand-Year Blood War",
+                cover: "https://media.kitsu.app/anime/43078/poster_image/large-bf36dc3ed0097c8b8c49e064bf0eaa79.jpeg",
+                banner: "https://media.kitsu.app/anime/43078/cover_image/large-45a93d1d5a68cf93aa314a9efbe8bf72.jpeg",
+                score: "9.0",
+                imdb_id: "tt14986406",
+                mal_id: "41467",
+                anilist_id: "114446",
+                kitsu_id: "43078",
+                tmdb_id: "126958"
+            },
+            {
+                title: "Solo Leveling",
+                cover: "https://media.kitsu.app/anime/46231/poster_image/large-cdadff31f42490b9f48a035939a01a92.jpeg",
+                banner: "https://media.kitsu.app/anime/46231/cover_image/large-33273dc297cdc8b10cc1140de07d3dae.jpeg",
+                score: "8.3",
+                imdb_id: "tt21209876",
+                mal_id: "52299",
+                anilist_id: "151807",
+                kitsu_id: "46231",
+                tmdb_id: "211089"
+            },
+            {
+                title: "Spy x Family",
+                cover: "https://media.kitsu.app/anime/45398/poster_image/large-c26c1e0b77e881fcd66475af6bd22c57.jpeg",
+                banner: "https://media.kitsu.app/anime/45398/cover_image/large-1e81255ff9bde22c072c555cc5998805.jpeg",
+                score: "8.3",
+                imdb_id: "tt13706018",
+                mal_id: "50265",
+                anilist_id: "140960",
+                kitsu_id: "45340",
+                tmdb_id: "120089"
+            },
+            {
+                title: "Vinland Saga",
+                cover: "https://media.kitsu.app/anime/poster_images/41084/large.jpg",
+                banner: "https://media.kitsu.app/anime/41084/cover_image/large-2590d6aecb5433b5693f3224e7265bb9.jpeg",
+                score: "8.8",
+                imdb_id: "tt10233448",
+                mal_id: "37521",
+                anilist_id: "101348",
+                kitsu_id: "41104",
+                tmdb_id: "89456"
+            },
+            {
+                title: "One-Punch Man",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21087-B5DHjqZ3kW4b.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21087-sHb9zUZFsHe1.jpg",
                 score: "8.5",
-                imdb_id: "tt9335498"
+                imdb_id: "tt4508902",
+                mal_id: "30276",
+                anilist_id: "21087",
+                kitsu_id: "10740",
+                tmdb_id: "63926"
+            },
+            {
+                title: "My Hero Academia",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21459-nYh85uj2Fuwr.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21459-yeVkolGKdGUV.jpg",
+                score: "8.1",
+                imdb_id: "tt5626028",
+                mal_id: "31964",
+                anilist_id: "21459",
+                kitsu_id: "11470",
+                tmdb_id: "65930"
+            },
+            {
+                title: "Tokyo Ghoul",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/b20605-k665mVkSug8D.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/20605-RCJ7M71zLmrh.jpg",
+                score: "7.8",
+                imdb_id: "tt3741634",
+                mal_id: "22319",
+                anilist_id: "20605",
+                kitsu_id: "8336",
+                tmdb_id: "61374"
+            },
+            {
+                title: "Sword Art Online",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx11757-SxYDUzdr9rh2.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/11757-TlEEV9weG4Ag.jpg",
+                score: "7.5",
+                imdb_id: "tt2250192",
+                mal_id: "11757",
+                anilist_id: "11757",
+                kitsu_id: "6686",
+                tmdb_id: "45782"
+            },
+            {
+                title: "Naruto",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20-dE6UHbFFg1A5.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/20-HHxhPj5JD13a.jpg",
+                score: "8.2",
+                imdb_id: "tt0409591",
+                mal_id: "20",
+                anilist_id: "20",
+                kitsu_id: "11",
+                tmdb_id: "46260"
+            },
+            {
+                title: "A Silent Voice",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20954-sYRfE5jQRtSB.jpg",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/20954-f30bHMXa5Qoe.jpg",
+                score: "8.9",
+                imdb_id: "tt5323662",
+                mal_id: "28851",
+                anilist_id: "20954",
+                kitsu_id: "10019",
+                tmdb_id: "378064"
+            },
+            {
+                title: "Your Name.",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21519-SUo3ZQuCbYhJ.png",
+                banner: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21519-1ayMXgNlmByb.jpg",
+                score: "9.0",
+                imdb_id: "tt5311514",
+                mal_id: "32281",
+                anilist_id: "21519",
+                kitsu_id: "11614",
+                tmdb_id: "372058"
             }
         ];
+
+        function setArtworkPreviewShape(shape) {
+            artworkPreviewShape = shape;
+            const btnPortrait = document.getElementById('btnPreviewPortrait');
+            const btnLandscape = document.getElementById('btnPreviewLandscape');
+            if (btnPortrait && btnLandscape) {
+                btnPortrait.classList.toggle('active', shape === 'portrait');
+                btnLandscape.classList.toggle('active', shape === 'landscape');
+            }
+            updateArtworkLivePreview();
+        }
 
         function setArtworkPreviewState(state) {
             artworkPreviewState = state;
@@ -5264,24 +5388,89 @@
         }
 
         function cycleArtworkSample() {
-            sampleAnimeIndex = (sampleAnimeIndex + 1) % ARTWORK_SAMPLE_POSTERS.length;
+            const activePool = (userWatchlistSamplePool && userWatchlistSamplePool.length > 0)
+                ? userWatchlistSamplePool
+                : CURATED_POSTER_SAMPLES;
+            sampleAnimeIndex = (sampleAnimeIndex + 1) % activePool.length;
             updateArtworkLivePreview();
+        }
+
+        async function initUserWatchlistPreview() {
+            if (window.isGuestUser || !window.hasTrackersConnected || !window.currentUserId) {
+                return;
+            }
+            try {
+                const candidates = ['comb_watching', 'anilist_watching', 'mal_watching', 'simkl_watching'];
+                for (const catId of candidates) {
+                    try {
+                        const items = await fetchCatalogItems(catId);
+                        if (items && items.length > 0) {
+                            const validItems = items.filter(it => {
+                                const c = it.cover || it.clean_poster;
+                                return c && (c.startsWith('http://') || c.startsWith('https://')) && !c.includes('/poster/');
+                            });
+                            if (validItems.length > 0) {
+                                userWatchlistSamplePool = validItems;
+                                updateArtworkLivePreview();
+                                break;
+                            }
+                        }
+                    } catch (e) {}
+                }
+            } catch (err) {
+                console.debug("Watchlist preview initialization skipped:", err);
+            }
+        }
+
+        function resolveGenuinePoster(sample, shape, provider, rpdbKey, topKey, customPattern) {
+            const isLandscape = (shape === 'landscape');
+            const defaultCover = isLandscape
+                ? (sample.banner || sample.backdrop || sample.cover)
+                : (sample.cover || sample.clean_poster);
+
+            if (provider === 'rpdb') {
+                if (rpdbKey && sample.imdb_id) {
+                    const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
+                    return `https://api.ratingposterdb.com/${encodeURIComponent(rpdbKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
+                }
+            } else if (provider === 'top_poster') {
+                if (topKey && sample.imdb_id) {
+                    const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
+                    return `https://api.top-posters.com/${encodeURIComponent(topKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
+                }
+            } else if (provider === 'custom') {
+                if (customPattern) {
+                    let res = customPattern
+                        .replace(/{imdb_id}/g, sample.imdb_id || '')
+                        .replace(/{mal_id}/g, sample.mal_id || '')
+                        .replace(/{kitsu_id}/g, sample.kitsu_id || '')
+                        .replace(/{anilist_id}/g, sample.anilist_id || '')
+                        .replace(/{tmdb_id}/g, sample.tmdb_id || '')
+                        .replace(/{tvdb_id}/g, sample.tvdb_id || '')
+                        .replace(/{title}/g, encodeURIComponent(sample.title || ''));
+                    if (res.startsWith('http://') || res.startsWith('https://')) {
+                        return res;
+                    }
+                }
+            }
+            return defaultCover;
         }
 
         function updateArtworkLivePreview() {
             const cardEl = document.getElementById('artworkPreviewCard');
             const imgEl = document.getElementById('artworkPreviewImg');
-            const modernLayer = document.getElementById('artworkModernLayer');
-            const classicLayer = document.getElementById('artworkClassicLayer');
-            const rpdbLayer = document.getElementById('artworkRpdbLayer');
-            const topLayer = document.getElementById('artworkTopPosterLayer');
-            const captionEl = document.getElementById('artworkPreviewCaptionText');
-            const sampleTitleEl = document.getElementById('artworkSampleTitle');
+            const spinnerEl = document.getElementById('artworkPreviewSpinner');
 
             if (!cardEl || !imgEl) return;
 
-            const sample = ARTWORK_SAMPLE_POSTERS[sampleAnimeIndex];
-            if (sampleTitleEl) sampleTitleEl.textContent = sample.title;
+            const activePool = (userWatchlistSamplePool && userWatchlistSamplePool.length > 0)
+                ? userWatchlistSamplePool
+                : CURATED_POSTER_SAMPLES;
+
+            if (sampleAnimeIndex >= activePool.length) {
+                sampleAnimeIndex = 0;
+            }
+            const sample = activePool[sampleAnimeIndex] || CURATED_POSTER_SAMPLES[0];
 
             const badgeStyleInput = document.getElementById('badge_style');
             const badgeStyle = badgeStyleInput ? badgeStyleInput.value : 'modern';
@@ -5289,42 +5478,58 @@
             const providerInput = document.getElementById('poster_provider');
             const provider = providerInput ? providerInput.value : 'none';
             const rpdbKey = (document.getElementById('rpdb_api_key')?.value || '').trim();
+            const topKey = (document.getElementById('top_poster_key')?.value || '').trim();
+            const customPattern = (document.getElementById('custom_poster_pattern')?.value || '').trim();
 
-            // 1. Base Poster
-            imgEl.src = sample.cover;
+            const isLandscape = (artworkPreviewShape === 'landscape');
+            cardEl.classList.toggle('landscape', isLandscape);
 
-            // 2. Provider Overlays
-            if (rpdbLayer) {
-                rpdbLayer.classList.toggle('d-none', provider !== 'rpdb');
-                const scoreSpan = rpdbLayer.querySelector('.rpdb-score');
-                if (scoreSpan) scoreSpan.textContent = sample.score;
+            const safeCurated = CURATED_POSTER_SAMPLES[sampleAnimeIndex % CURATED_POSTER_SAMPLES.length];
+            const cleanFallback = isLandscape
+                ? (sample.banner || sample.backdrop || safeCurated.banner)
+                : (sample.cover || sample.clean_poster || safeCurated.cover);
+            const genuineBaseUrl = resolveGenuinePoster(sample, artworkPreviewShape, provider, rpdbKey, topKey, customPattern);
+
+            // Guests only preview Poster Art Cover Provider without new episode overlays
+            const isAiring = (!window.isGuestUser && artworkPreviewState === 'airing');
+
+            let targetImgUrl = genuineBaseUrl;
+            if (isAiring) {
+                const trackerParam = (window.userTrackersList && window.userTrackersList.length > 0)
+                    ? window.userTrackersList.join('+')
+                    : 'mal+anilist';
+                const shapeParam = isLandscape ? 'landscape' : 'poster';
+                const userId = window.currentUserId || 'guest_preview';
+                targetImgUrl = `/${userId}/poster/preview_${sampleAnimeIndex}.jpg?url=${encodeURIComponent(genuineBaseUrl)}&badge=new&tracker=${trackerParam}&style=${badgeStyle}&shape=${shapeParam}&v=${Date.now()}`;
             }
-            if (topLayer) {
-                topLayer.classList.toggle('d-none', provider !== 'top_poster');
-            }
 
-            // 3. New Episode Overlay Styles
-            const isAiring = (artworkPreviewState === 'airing');
-            if (!isAiring) {
-                if (modernLayer) modernLayer.classList.add('d-none');
-                if (classicLayer) classicLayer.classList.add('d-none');
-            } else {
-                if (badgeStyle === 'classic') {
-                    if (modernLayer) modernLayer.classList.add('d-none');
-                    if (classicLayer) classicLayer.classList.remove('d-none');
-                } else {
-                    if (modernLayer) modernLayer.classList.remove('d-none');
-                    if (classicLayer) classicLayer.classList.add('d-none');
+            if (spinnerEl) spinnerEl.classList.remove('d-none');
+
+            imgEl.onerror = function() {
+                if (spinnerEl) spinnerEl.classList.add('d-none');
+                const safeUrl = isLandscape ? safeCurated.banner : safeCurated.cover;
+                if (imgEl.src !== safeUrl) {
+                    imgEl.onerror = null;
+                    imgEl.src = safeUrl;
                 }
-            }
+            };
+            imgEl.onload = function() {
+                if (spinnerEl) spinnerEl.classList.add('d-none');
+            };
 
-            // 4. Caption
-            if (captionEl) {
-                let badgeDesc = isAiring ? (badgeStyle === 'classic' ? 'Classic Overlay' : 'Modern Overlay') : 'Normal (No Badge)';
-                let provDesc = provider === 'rpdb' ? 'RPDB' : (provider === 'top_poster' ? 'TOP Posters' : (provider === 'custom' ? 'Custom' : 'Default'));
-                captionEl.textContent = `${badgeDesc} • ${provDesc}`;
-            }
+            imgEl.src = targetImgUrl;
         }
+
+        window.setArtworkPreviewShape = setArtworkPreviewShape;
+        window.setArtworkPreviewState = setArtworkPreviewState;
+        window.cycleArtworkSample = cycleArtworkSample;
+        window.updateArtworkLivePreview = updateArtworkLivePreview;
+
+        // Initialize preview on page load
+        if (typeof initUserWatchlistPreview === "function") {
+            initUserWatchlistPreview();
+        }
+        updateArtworkLivePreview();
 
 </script>
 {% endblock %}
