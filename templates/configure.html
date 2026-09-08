@@ -1319,6 +1319,198 @@
         color: #ffffff;
         box-shadow: 0 4px 12px rgba(2, 132, 199, 0.5);
     }
+    /* Artwork Live Poster Preview Panel */
+    .artwork-preview-panel {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 1rem 1.15rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+    .preview-panel-title {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #f1f5f9;
+        letter-spacing: 0.02em;
+    }
+    .preview-mode-switch {
+        display: inline-flex;
+        background: rgba(0, 0, 0, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 2px;
+        gap: 2px;
+    }
+    .preview-mode-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 3px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.16s ease;
+    }
+    .preview-mode-btn.active {
+        background: rgba(255, 255, 255, 0.14);
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+    .artwork-poster-stage {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        padding: 0.75rem 0 0.5rem 0;
+    }
+    .artwork-poster-card {
+        position: relative;
+        width: 175px;
+        height: 255px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: #18181b;
+        user-select: none;
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+    }
+    .artwork-poster-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.9), 0 0 30px rgba(251, 191, 36, 0.15);
+    }
+    .artwork-poster-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: opacity 0.2s ease;
+    }
+    /* Modern Glassmorphism Badges */
+    .artwork-modern-top {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        border-radius: 7px;
+        padding: 3px 10px;
+        color: #ffffff;
+        font-size: 0.65rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+    }
+    .artwork-modern-bot {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        border-radius: 7px;
+        padding: 3px 9px;
+        color: #ffffff;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+    }
+    /* Classic Solid Bottom Bar */
+    .artwork-classic-layer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        pointer-events: none;
+    }
+    .artwork-classic-bar {
+        background: #000000;
+        width: 100%;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 0 6px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .artwork-classic-text {
+        color: #ffffff;
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+    }
+    /* RPDB Rating Badges */
+    .artwork-rpdb-layer {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 2;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-end;
+    }
+    .artwork-rpdb-badge {
+        background: rgba(0, 0, 0, 0.88);
+        border: 1px solid rgba(255, 193, 7, 0.5);
+        border-radius: 5px;
+        padding: 2px 6px;
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: #ffc107;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+    }
+    .artwork-topposter-layer {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 2;
+        pointer-events: none;
+    }
+    .artwork-topposter-badge {
+        background: linear-gradient(135deg, #ef4444, #991b1b);
+        border-radius: 5px;
+        padding: 2px 6px;
+        font-size: 0.62rem;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: 0.04em;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+    }
+    .btn-cycle-sample {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #94a3b8;
+        border-radius: 6px;
+        padding: 2px 7px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .btn-cycle-sample:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+    }
 </style>
 <div class="container-fluid px-2 px-md-3 px-xl-4 mt-1 mt-sm-2 pb-5">
 
@@ -1716,6 +1908,9 @@
                 <div class="card-dark p-3 p-sm-4 mb-3">
                     <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art Customization</h6>
 
+            <div class="row g-4 align-items-start">
+                <!-- Left Column: Settings Controls -->
+                <div class="col-12 col-lg-7">
                     <div id="poster-provider-section">
                         <!-- New Episode Overlay Design (only for users with connected trackers) -->
                         {% set has_trackers = user.get('mal_token') or user.get('anilist_token') or user.get('simkl_token') or user.get('mal_username') or user.get('anilist_username') or user.get('simkl_username') %}
@@ -1921,14 +2116,100 @@
                             </p>
                         </div>
                     </div>
-
-                
-
-
                 </div>
 
-        
+                <!-- Right Column: Live Poster Preview -->
+                <div class="col-12 col-lg-5">
+                    <div id="posterLivePreviewContainer" class="artwork-preview-panel">
+                        <div class="d-flex align-items-center justify-content-between w-100 mb-2">
+                            <span class="preview-panel-title">
+                                <i class="fa-solid fa-wand-magic-sparkles me-1 text-warning"></i>Live Preview
+                            </span>
+                            <!-- State Segmented Control: Airing vs Normal -->
+                            <div class="preview-mode-switch" id="previewEpisodeToggle">
+                                <button type="button" class="preview-mode-btn active" id="btnPreviewAiring" onclick="setArtworkPreviewState('airing')" title="Preview with new episode badge">
+                                    New Episode
+                                </button>
+                                <button type="button" class="preview-mode-btn" id="btnPreviewNormal" onclick="setArtworkPreviewState('normal')" title="Preview without badge">
+                                    Normal
+                                </button>
+                            </div>
+                        </div>
 
+                        <!-- Mini Poster Showcase Card -->
+                        <div class="artwork-poster-stage">
+                            <div class="artwork-poster-card" id="artworkPreviewCard">
+                                <!-- Background Image -->
+                                <img id="artworkPreviewImg" src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg" alt="Preview Poster" class="artwork-poster-img">
+
+                                <!-- RPDB Overlay Layer (Rating Badges) -->
+                                <div id="artworkRpdbLayer" class="artwork-rpdb-layer d-none">
+                                    <div class="artwork-rpdb-badge">
+                                        <i class="fa-solid fa-star text-warning me-1" style="font-size: 0.6rem;"></i><span class="rpdb-score">8.6</span>
+                                    </div>
+                                </div>
+
+                                <!-- TOP Posters Overlay Layer -->
+                                <div id="artworkTopPosterLayer" class="artwork-topposter-layer d-none">
+                                    <div class="artwork-topposter-badge">
+                                        <span>TOP</span>
+                                    </div>
+                                </div>
+
+                                <!-- Modern Badge Overlay Layer -->
+                                <div id="artworkModernLayer" class="artwork-modern-layer">
+                                    <div class="artwork-modern-top">
+                                        <span>NEW EPISODE</span>
+                                    </div>
+                                    <div class="artwork-modern-bot">
+                                        {% set trackers = [] %}
+                                        {% if user.get('mal_token') or user.get('mal_username') %}{% set _ = trackers.append('MAL') %}{% endif %}
+                                        {% if user.get('anilist_token') or user.get('anilist_username') %}{% set _ = trackers.append('AL') %}{% endif %}
+                                        {% if user.get('simkl_token') or user.get('simkl_username') %}{% set _ = trackers.append('Simkl') %}{% endif %}
+                                        <span>{% if trackers %}{{ trackers|join(' • ') }}{% else %}MAL • AL • Simkl{% endif %}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Classic Badge Overlay Layer -->
+                                <div id="artworkClassicLayer" class="artwork-classic-layer d-none">
+                                    <div class="artwork-classic-bar">
+                                        <div class="d-flex align-items-center gap-1">
+                                            {% if user.get('mal_token') or user.get('mal_username') %}
+                                            <img src="/assets/mal_logo.png" width="13" height="13" class="rounded-circle">
+                                            {% endif %}
+                                            {% if user.get('anilist_token') or user.get('anilist_username') %}
+                                            <img src="/assets/anilist_logo.png" width="13" height="13" class="rounded-circle">
+                                            {% endif %}
+                                            {% if user.get('simkl_token') or user.get('simkl_username') %}
+                                            <img src="/assets/simkl_logo.png" width="13" height="13" class="rounded-circle">
+                                            {% endif %}
+                                            {% if not (user.get('mal_token') or user.get('anilist_token') or user.get('simkl_token') or user.get('mal_username') or user.get('anilist_username') or user.get('simkl_username')) %}
+                                            <img src="/assets/mal_logo.png" width="13" height="13" class="rounded-circle">
+                                            <img src="/assets/anilist_logo.png" width="13" height="13" class="rounded-circle">
+                                            {% endif %}
+                                        </div>
+                                        <span class="artwork-classic-text">NEW EPISODE</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sample switcher & Meta caption beneath poster -->
+                        <div class="d-flex align-items-center justify-content-between w-100 mt-2 px-1">
+                            <div class="d-flex align-items-center gap-1 min-w-0">
+                                <span id="artworkSampleTitle" class="text-secondary small fw-medium text-truncate" style="max-width: 140px; font-size: 0.72rem;">JUJUTSU KAISEN</span>
+                                <button type="button" class="btn-cycle-sample" onclick="cycleArtworkSample()" title="Flip sample anime poster">
+                                    <i class="fa-solid fa-arrows-rotate"></i>
+                                </button>
+                            </div>
+                            <span id="artworkPreviewCaptionText" class="badge rounded-pill bg-dark bg-opacity-75 text-secondary border border-secondary border-opacity-25 px-2.5 py-1 small" style="font-size: 0.7rem;">
+                                Modern Overlay • Default
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Step Navigation (Previous: Trackers, Next: Catalogs) -->
         <div class="step-nav-bar mt-4 pt-3 step-nav-2col">
@@ -3231,6 +3512,9 @@
                     menuEl.classList.remove("show");
                     selectEl.classList.remove("active");
 
+                    if (inputId === "poster_provider" || inputId === "badge_style") {
+                        if (typeof updateArtworkLivePreview === "function") updateArtworkLivePreview();
+                    }
                     if (inputId === "poster_provider") {
                         syncPosterProviderFields();
                     }
@@ -3306,6 +3590,7 @@
             if (customContainer) customContainer.classList.toggle("d-none", val !== "custom");
             if (typeof syncRpdbSearchState === "function") syncRpdbSearchState();
             if (typeof updatePosterArtSectionAvailability === "function") updatePosterArtSectionAvailability();
+            if (typeof updateArtworkLivePreview === "function") updateArtworkLivePreview();
             if (typeof updateModalLivePreview === "function" && typeof activeModalCatalogId !== "undefined" && activeModalCatalogId) {
                 updateModalLivePreview();
             }
@@ -4938,5 +5223,106 @@
             catalogConfigsVal.value = JSON.stringify(configsToSave);
         }
     }
+
+        // ==========================================
+        // Tab 2 (Artwork) Dynamic Live Poster Preview
+        // ==========================================
+        let artworkPreviewState = 'airing'; // 'airing' | 'normal'
+        let sampleAnimeIndex = 0;
+        const ARTWORK_SAMPLE_POSTERS = [
+            {
+                title: "JUJUTSU KAISEN",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg",
+                score: "8.6",
+                imdb_id: "tt12343534"
+            },
+            {
+                title: "Attack on Titan",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-buvcRTBx4NSm.jpg",
+                score: "8.9",
+                imdb_id: "tt2560140"
+            },
+            {
+                title: "Demon Slayer",
+                cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-WBsBl0ClmgYL.jpg",
+                score: "8.5",
+                imdb_id: "tt9335498"
+            }
+        ];
+
+        function setArtworkPreviewState(state) {
+            artworkPreviewState = state;
+            const btnAiring = document.getElementById('btnPreviewAiring');
+            const btnNormal = document.getElementById('btnPreviewNormal');
+            if (btnAiring && btnNormal) {
+                btnAiring.classList.toggle('active', state === 'airing');
+                btnNormal.classList.toggle('active', state === 'normal');
+            }
+            updateArtworkLivePreview();
+        }
+
+        function cycleArtworkSample() {
+            sampleAnimeIndex = (sampleAnimeIndex + 1) % ARTWORK_SAMPLE_POSTERS.length;
+            updateArtworkLivePreview();
+        }
+
+        function updateArtworkLivePreview() {
+            const cardEl = document.getElementById('artworkPreviewCard');
+            const imgEl = document.getElementById('artworkPreviewImg');
+            const modernLayer = document.getElementById('artworkModernLayer');
+            const classicLayer = document.getElementById('artworkClassicLayer');
+            const rpdbLayer = document.getElementById('artworkRpdbLayer');
+            const topLayer = document.getElementById('artworkTopPosterLayer');
+            const captionEl = document.getElementById('artworkPreviewCaptionText');
+            const sampleTitleEl = document.getElementById('artworkSampleTitle');
+
+            if (!cardEl || !imgEl) return;
+
+            const sample = ARTWORK_SAMPLE_POSTERS[sampleAnimeIndex];
+            if (sampleTitleEl) sampleTitleEl.textContent = sample.title;
+
+            const badgeStyleInput = document.getElementById('badge_style');
+            const badgeStyle = badgeStyleInput ? badgeStyleInput.value : 'modern';
+
+            const providerInput = document.getElementById('poster_provider');
+            const provider = providerInput ? providerInput.value : 'none';
+            const rpdbKey = (document.getElementById('rpdb_api_key')?.value || '').trim();
+
+            // 1. Base Poster
+            imgEl.src = sample.cover;
+
+            // 2. Provider Overlays
+            if (rpdbLayer) {
+                rpdbLayer.classList.toggle('d-none', provider !== 'rpdb');
+                const scoreSpan = rpdbLayer.querySelector('.rpdb-score');
+                if (scoreSpan) scoreSpan.textContent = sample.score;
+            }
+            if (topLayer) {
+                topLayer.classList.toggle('d-none', provider !== 'top_poster');
+            }
+
+            // 3. New Episode Overlay Styles
+            const isAiring = (artworkPreviewState === 'airing');
+            if (!isAiring) {
+                if (modernLayer) modernLayer.classList.add('d-none');
+                if (classicLayer) classicLayer.classList.add('d-none');
+            } else {
+                if (badgeStyle === 'classic') {
+                    if (modernLayer) modernLayer.classList.add('d-none');
+                    if (classicLayer) classicLayer.classList.remove('d-none');
+                } else {
+                    if (modernLayer) modernLayer.classList.remove('d-none');
+                    if (classicLayer) classicLayer.classList.add('d-none');
+                }
+            }
+
+            // 4. Caption
+            if (captionEl) {
+                let badgeDesc = isAiring ? (badgeStyle === 'classic' ? 'Classic Overlay' : 'Modern Overlay') : 'Normal (No Badge)';
+                let provDesc = provider === 'rpdb' ? 'RPDB' : (provider === 'top_poster' ? 'TOP Posters' : (provider === 'custom' ? 'Custom' : 'Default'));
+                captionEl.textContent = `${badgeDesc} • ${provDesc}`;
+            }
+        }
+
 </script>
 {% endblock %}
