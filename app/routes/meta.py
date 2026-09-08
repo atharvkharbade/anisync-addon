@@ -726,9 +726,10 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
                 if next_airing_hdr:
                     dynamic_headers.append(next_airing_hdr)
 
-        filler_arc_hdr = build_filler_arc_header(anizp_data, watched_progress=watched_progress, mal_id=mal_id)
-        if filler_arc_hdr:
-            dynamic_headers.append(filler_arc_hdr)
+        if show_filler:
+            filler_arc_hdr = build_filler_arc_header(anizp_data, watched_progress=watched_progress, mal_id=mal_id)
+            if filler_arc_hdr:
+                dynamic_headers.append(filler_arc_hdr)
 
         if dynamic_headers:
             header_text = "\n".join(dynamic_headers)
@@ -872,17 +873,23 @@ def build_filler_arc_header(
         return None
 
     for r_start, r_end in ranges:
-        if r_start <= watched_progress <= r_end:
-            r_label = f"Ep {r_start}" if r_start == r_end else f"Episodes {r_start}–{r_end}"
-            return f"[Current Filler Arc: {r_label}]"
+        if r_start <= watched_progress <= r_end and watched_progress > 0:
+            if r_start == r_end:
+                return f"[Current Filler Episode: Ep {r_start}]"
+            return f"[Current Filler Arc: Episodes {r_start}–{r_end}]"
+
+    if watched_progress == 0:
+        if len(range_strs) <= 3:
+            if len(filler_eps) == 1:
+                return f"[Filler Guide: {range_strs[0]} is non-canon filler]"
+            return f"[Filler Guide: {', '.join(range_strs)} are non-canon fillers]"
+        return None
 
     for r_start, r_end in ranges:
         if watched_progress < r_start and (r_start - watched_progress) <= 10:
-            r_label = f"Ep {r_start}" if r_start == r_end else f"Episodes {r_start}–{r_end}"
-            return f"[Upcoming Filler Arc: {r_label}]"
-
-    if watched_progress == 0 and len(range_strs) <= 3:
-        return f"[Filler Guide: {', '.join(range_strs)} are non-canon fillers]"
+            if r_start == r_end:
+                return f"[Upcoming Filler Episode: Ep {r_start}]"
+            return f"[Upcoming Filler Arc: Episodes {r_start}–{r_end}]"
 
     return None
 

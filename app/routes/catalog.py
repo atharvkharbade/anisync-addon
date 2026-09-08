@@ -3324,7 +3324,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                             "anilist_id": anilist_id,
                             "simkl_id": simkl_id,
                             "description": (
-                                f"Watchlist - {comb_status.replace('_', ' ').title()} (Combined).\n"
+                                f"Watchlist - {comb_status.replace('_', ' ').title()}.\n"
                                 f"Progress: {progress} / {total_eps}."
                             ),
                             "score": meta_fields["score"],

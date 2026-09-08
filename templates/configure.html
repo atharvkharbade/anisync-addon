@@ -1054,6 +1054,7 @@
         align-items: center;
         justify-content: center;
         user-select: none;
+        white-space: nowrap;
     }
     .modal-segmented-btn:hover {
         color: #f1f5f9;
@@ -2997,7 +2998,12 @@
 
                         <!-- 2. Placement -->
                         <div>
-                            <label class="form-label small fw-semibold text-light mb-1 d-block">Placement</label>
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label small fw-semibold text-light mb-0">Placement</label>
+                                <button type="button" class="btn-modal-reset-field" onclick="setModalPlacement('all')" title="Reset placement">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </div>
                             <div class="modal-segmented-group" id="modalPlacementGroup">
                                 <button type="button" class="modal-segmented-btn active" data-placement="all" onclick="setModalPlacement('all')">
                                     Home + Discover
@@ -3270,11 +3276,21 @@
         }
         switchTab('appearance');
         setTimeout(() => {
-            const target = document.getElementById('poster-provider-section') || document.getElementById('tab-appearance');
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                target.classList.add('glow-highlight');
-                setTimeout(() => target.classList.remove('glow-highlight'), 1800);
+            const wrapper = document.getElementById('poster_provider_wrapper');
+            if (wrapper) {
+                wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const selectEl = wrapper.querySelector('.custom-select');
+                const menuEl = wrapper.querySelector('.custom-options-menu');
+                if (selectEl && menuEl && !menuEl.classList.contains('show')) {
+                    document.querySelectorAll('.custom-options-menu').forEach(m => {
+                        if (m !== menuEl) m.classList.remove('show');
+                    });
+                    document.querySelectorAll('.custom-select').forEach(s => {
+                        if (s !== selectEl) s.classList.remove('active');
+                    });
+                    menuEl.classList.add('show');
+                    selectEl.classList.add('active');
+                }
             }
         }, 350);
     };
@@ -3893,26 +3909,29 @@
             });
         }
 
-        const SORT_ORDER_LABELS = {
-            'default': { desc: 'Desc', asc: 'Asc' },
-            'score': { desc: 'Desc (High)', asc: 'Asc (Low)' },
-            'release_date': { desc: 'Desc (Newest)', asc: 'Asc (Oldest)' },
-            'airing_date': { desc: 'Desc (Latest)', asc: 'Asc (Soonest)' },
-            'episodes': { desc: 'Desc (Most)', asc: 'Asc (Fewest)' },
-            'title': { desc: 'Desc (Z-A)', asc: 'Asc (A-Z)' },
-            'last_updated': { desc: 'Desc (Newest)', asc: 'Asc (Oldest)' }
+        const SORT_ORDER_TOOLTIPS = {
+            'default': { desc: 'Descending (Default order)', asc: 'Ascending' },
+            'score': { desc: 'Highest rating first', asc: 'Lowest rating first' },
+            'release_date': { desc: 'Newest release first', asc: 'Oldest release first' },
+            'airing_date': { desc: 'Latest airing first', asc: 'Soonest airing first' },
+            'episodes': { desc: 'Most episodes first', asc: 'Fewest episodes first' },
+            'title': { desc: 'Alphabetical (Z-A)', asc: 'Alphabetical (A-Z)' },
+            'last_updated': { desc: 'Recently updated first', asc: 'Oldest updated first' }
         };
 
         function updateSortOrderUI(order, sortByVal) {
             const currentSort = sortByVal || document.getElementById('modal_sort_by')?.value || 'default';
-            const labels = SORT_ORDER_LABELS[currentSort] || SORT_ORDER_LABELS['default'];
+            const tooltips = SORT_ORDER_TOOLTIPS[currentSort] || SORT_ORDER_TOOLTIPS['default'];
 
             document.querySelectorAll('#modalSortOrderGroup .modal-segmented-btn').forEach(btn => {
                 const btnOrder = btn.getAttribute('data-order');
                 btn.classList.toggle('active', btnOrder === order);
                 const textSpan = btn.querySelector('.modal-sort-order-text');
-                if (textSpan && labels[btnOrder]) {
-                    textSpan.textContent = labels[btnOrder];
+                if (textSpan) {
+                    textSpan.textContent = (btnOrder === 'desc') ? 'Desc' : 'Asc';
+                }
+                if (tooltips && tooltips[btnOrder]) {
+                    btn.setAttribute('title', tooltips[btnOrder]);
                 }
             });
         }
@@ -4428,7 +4447,11 @@
         window.setModalPlacement = function (placement) {
             if (!activeModalCatalogId) return;
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
-            catalogConfigs[activeModalCatalogId].placement = placement;
+            if (placement === 'all') {
+                delete catalogConfigs[activeModalCatalogId].placement;
+            } else {
+                catalogConfigs[activeModalCatalogId].placement = placement;
+            }
             updatePlacementUI(placement);
             updateModalLivePreview();
             updateCatalogRowBadge(activeModalCatalogId);
