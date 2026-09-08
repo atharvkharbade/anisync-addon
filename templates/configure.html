@@ -2034,7 +2034,7 @@
                     <div id="posterLivePreviewContainer" class="artwork-preview-panel">
                         <!-- Top Header: Single Line (Title + Shape Toggle) -->
                         <div class="d-flex align-items-center justify-content-between w-100 mb-2">
-                            <span class="preview-panel-title d-flex align-items-center gap-1.5">
+                            <span class="preview-panel-title d-flex align-items-center" style="gap: 6px;">
                                 <i class="fa-regular fa-image text-warning" style="font-size: 0.85rem;"></i>
                                 <span>Preview</span>
                             </span>
@@ -2063,7 +2063,7 @@
 
                         <!-- Bottom Footer Toolbar -->
                         <div class="d-flex align-items-center {% if user.get('is_guest') %}justify-content-center{% else %}justify-content-between{% endif %} w-100 mt-2 pt-2 border-top border-secondary border-opacity-10">
-                            <button type="button" class="btn-cycle-sample d-inline-flex align-items-center gap-1.5" onclick="cycleArtworkSample()" title="Cycle Anime Preview">
+                            <button type="button" class="btn-cycle-sample d-inline-flex align-items-center" style="gap: 6px;" onclick="cycleArtworkSample()" title="Cycle Anime Preview">
                                 <i class="fa-solid fa-arrows-rotate"></i>
                                 <span>Next Anime</span>
                             </button>
