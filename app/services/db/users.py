@@ -1,0 +1,99 @@
+import logging
+from datetime import UTC, datetime
+
+from .connection import users_collection
+
+
+def get_user(user_id: str) -> dict | None:
+    if not user_id:
+        return None
+    # 1. Try exact match first
+    user = users_collection.find_one({"uid": user_id})
+    if user:
+        return user
+
+    # 2. Support stripping prefixes (e.g., al_6613976 -> 6613976)
+    if user_id.startswith("al_"):
+        stripped = user_id[3:]
+        user = users_collection.find_one({"uid": stripped})
+        if user:
+            return user
+    elif user_id.startswith("simkl_"):
+        stripped = user_id[6:]
+        user = users_collection.find_one({"uid": stripped})
+        if user:
+            return user
+
+    # 3. Support adding prefixes (e.g., 6613976 -> al_6613976)
+    if user_id.isdigit():
+        for prefix in ["al_", "simkl_"]:
+            user = users_collection.find_one({"uid": f"{prefix}{user_id}"})
+            if user:
+                return user
+
+    # 4. Support guest user auto-provisioning
+    if user_id.startswith("guest_"):
+        guest_user = {
+            "uid": user_id,
+            "username": "Guest User",
+            "is_guest": True,
+            "enable_discovery_catalogs": True,
+            "enable_catalogs": False,
+            "enable_recommendations": False,
+            "enable_search": True,
+            "hide_nsfw": True,
+            "title_language": "english",
+            "metadata_provider": "kitsu",
+            "meta_synopsis_provider": "kitsu",
+            "meta_episodes_provider": "anizp",
+            "meta_poster_provider": "anilist",
+            "meta_backdrop_provider": "fanart",
+            "meta_airing_provider": "anilist",
+            "catalogs": [
+                "anisync_trending",
+                "anisync_airing",
+                "anisync_popular",
+                "anisync_top",
+                "anisync_movies",
+                "anisync_upcoming",
+                "anisync_schedule",
+            ],
+            "created_at": datetime.now(UTC).replace(tzinfo=None),
+        }
+        try:
+            users_collection.update_one({"uid": user_id}, {"$setOnInsert": guest_user}, upsert=True)
+            return users_collection.find_one({"uid": user_id}) or guest_user
+        except Exception as e:
+            logging.error("Failed to auto-provision guest user %s: %s", user_id, e)
+            return guest_user
+
+    return None
+
+
+def find_user_by_mal_id(mal_id: str) -> dict | None:
+    return users_collection.find_one({"$or": [{"uid": str(mal_id)}, {"mal_id": str(mal_id)}]})
+
+
+def find_user_by_anilist_id(anilist_id: str) -> dict | None:
+    return users_collection.find_one(
+        {"$or": [{"uid": f"al_{anilist_id}"}, {"uid": str(anilist_id)}, {"anilist_id": str(anilist_id)}]}
+    )
+
+
+def find_user_by_simkl_id(simkl_id: str) -> dict | None:
+    return users_collection.find_one(
+        {"$or": [{"uid": f"simkl_{simkl_id}"}, {"uid": str(simkl_id)}, {"simkl_id": str(simkl_id)}]}
+    )
+
+
+def store_user(user_details: dict) -> bool:
+    uid = user_details.get("uid") or user_details.get("id")
+    if not uid:
+        return False
+    user_details["uid"] = str(uid)
+    existing = users_collection.find_one({"uid": str(uid)})
+    if existing:
+        if "_id" in existing and "_id" not in user_details:
+            user_details["_id"] = existing["_id"]
+        return users_collection.replace_one({"uid": str(uid)}, user_details).acknowledged
+    return users_collection.insert_one(user_details).acknowledged
