@@ -56,6 +56,11 @@ def create_app() -> App:
 
         trigger_discovery_catalogs_prefetch()
 
+        # Start background task to initialize dub database
+        from app.services.dub_service import trigger_dub_sync_background
+
+        trigger_dub_sync_background()
+
     @app_.after_serving
     async def shutdown():
         await close_client()

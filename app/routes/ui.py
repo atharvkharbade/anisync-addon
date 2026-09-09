@@ -167,6 +167,9 @@ async def guest_login():
             "anisync_highest_rated",
             "anisync_most_popular",
         ],
+        "enable_dubbed_catalogs": False,
+        "dubbed_language": "english",
+        "dubbed_only_discovery": False,
         "created_at": datetime.datetime.utcnow(),
     }
     store_user(guest_user)
@@ -325,6 +328,10 @@ async def configure(user_id: str = ""):
                 "anisync_top_airing",
                 "anisync_highest_rated",
                 "anisync_most_popular",
+                "anisync_dubbed_trending",
+                "anisync_dubbed_seasonal",
+                "anisync_dubbed_popular",
+                "anisync_dubbed_movies",
             ]
 
             # Add enabled ones in custom sorted order
@@ -425,6 +432,13 @@ async def configure(user_id: str = ""):
             user["enable_discovery_catalogs"] = form.get("enable_discovery_catalogs") == "true"
         if "shuffle_discovery_catalogs" in form:
             user["shuffle_discovery_catalogs"] = form.get("shuffle_discovery_catalogs") == "true"
+        if "enable_dubbed_catalogs" in form:
+            user["enable_dubbed_catalogs"] = form.get("enable_dubbed_catalogs") == "true"
+        if "dubbed_language" in form:
+            from app.services.dub_service import normalize_dub_language
+            user["dubbed_language"] = normalize_dub_language(form.get("dubbed_language"))
+        if "dubbed_only_discovery" in form:
+            user["dubbed_only_discovery"] = form.get("dubbed_only_discovery") == "true"
 
         if "poster_provider" in form:
             user["poster_provider"] = form.get("poster_provider", "none").strip()
@@ -546,6 +560,8 @@ async def configure(user_id: str = ""):
                 }
             await flash("Preferences saved.", "success")
 
+    from app.services.dub_service import SUPPORTED_DUB_LANGUAGES
+
     resp = await make_response(
         await _render(
             "configure.html",
@@ -553,6 +569,7 @@ async def configure(user_id: str = ""):
             manifest_url=manifest_url,
             manifest_magnet=manifest_magnet,
             anime_genres=ANIME_GENRES,
+            supported_dub_languages=SUPPORTED_DUB_LANGUAGES,
         )
     )
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"

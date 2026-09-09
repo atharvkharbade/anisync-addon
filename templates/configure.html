@@ -66,6 +66,11 @@
         color: #fff !important;
     }
 
+    .bg-dubbed {
+        background: linear-gradient(135deg, #8b5cf6, #ec4899) !important;
+        color: #fff !important;
+    }
+
     .bg-simkl {
         background-color: #e27d00 !important;
         color: #fff !important;
@@ -1701,6 +1706,10 @@
                     value="{{ 'true' if user.get('enable_discovery_catalogs', True) else 'false' }}">
                 <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
                     value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
+                <input type="hidden" id="enable_dubbed_catalogs_val" name="enable_dubbed_catalogs"
+                    value="{{ 'true' if user.get('enable_dubbed_catalogs', False) else 'false' }}">
+                <input type="hidden" id="dubbed_only_discovery_val" name="dubbed_only_discovery"
+                    value="{{ 'true' if user.get('dubbed_only_discovery', False) else 'false' }}">
                 <input type="hidden" id="catalog_configs_val" name="catalog_configs" value="">
 
                 <!-- TAB 1: Trackers & Account -->
@@ -2346,7 +2355,7 @@
             </div>
             {% endif %}
 
-        <!-- Discovery Catalogs Card -->
+                <!-- Discovery Catalogs Card -->
                 <div class="card-dark p-3 p-sm-4 mb-3">
                     <h6 class="fw-semibold mb-3"><i class="fa-solid fa-compass me-2" style="color: #38bdf8;"></i>Anime Discovery Catalogs</h6>
                     <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
@@ -2364,13 +2373,73 @@
                     </div>
                 </div>
 
-        <!-- Catalogs Management Card -->
+                <!-- Dubbed Anime Catalogs Card -->
+                <div class="card-dark p-3 p-sm-4 mb-3" style="border-left: 3px solid #8b5cf6;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-semibold mb-0">
+                            <i class="fa-solid fa-microphone-lines me-2" style="color: #a855f7;"></i>Dubbed Anime Catalogs
+                        </h6>
+                        <span class="badge rounded-pill" style="background: linear-gradient(135deg, #8b5cf6, #ec4899); color: #fff; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.5px;">NEW</span>
+                    </div>
+                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                        Browse verified dubbed anime in your preferred language powered by the MyDubList database.
+                    </p>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="enable_dubbed_catalogs" {% if user.get('enable_dubbed_catalogs', False) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="enable_dubbed_catalogs">
+                            <span class="fw-medium d-block">Enable Dubbed Catalogs</span>
+                            <span class="text-secondary small d-block">
+                                Adds dedicated dubbed catalogs (Trending, Seasonal, Popular, Movies) to Stremio.
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Dubbed sub-options (conditionally shown) -->
+                    <div id="dubbed_options_container" style="{% if not user.get('enable_dubbed_catalogs', False) %}display: none;{% endif %} padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.07);">
+                        <div class="row g-3 align-items-center mb-3">
+                            <div class="col-12 col-sm-7">
+                                <label class="form-label small text-secondary mb-1" for="dubbed_language">
+                                    <i class="fa-solid fa-language me-1 text-info"></i>Preferred Dub Language
+                                </label>
+                                <select class="form-select form-select-sm bg-dark text-light border-secondary" id="dubbed_language" name="dubbed_language" style="border-color: rgba(255, 255, 255, 0.15) !important;">
+                                    {% set cur_dub_lang = user.get('dubbed_language', 'english') %}
+                                    {% if supported_dub_languages %}
+                                        {% for code, lang_name in supported_dub_languages.items() %}
+                                        <option value="{{ code }}" {% if cur_dub_lang == code %}selected{% endif %}>{{ lang_name }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="english" {% if cur_dub_lang == 'english' %}selected{% endif %}>English</option>
+                                        <option value="spanish" {% if cur_dub_lang == 'spanish' %}selected{% endif %}>Spanish</option>
+                                        <option value="german" {% if cur_dub_lang == 'german' %}selected{% endif %}>German</option>
+                                        <option value="french" {% if cur_dub_lang == 'french' %}selected{% endif %}>French</option>
+                                        <option value="italian" {% if cur_dub_lang == 'italian' %}selected{% endif %}>Italian</option>
+                                        <option value="portuguese" {% if cur_dub_lang == 'portuguese' %}selected{% endif %}>Portuguese</option>
+                                        <option value="hindi" {% if cur_dub_lang == 'hindi' %}selected{% endif %}>Hindi</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="dubbed_only_discovery" {% if user.get('dubbed_only_discovery', False) %}checked{% endif %}>
+                            <label class="form-check-label ms-1" for="dubbed_only_discovery">
+                                <span class="fw-medium d-block">Filter All Discovery Catalogs to Dubbed Only</span>
+                                <span class="text-secondary small d-block">
+                                    When enabled, regular discovery catalogs (Seasonal Showcase, Trending, Spotlight, etc.) only show anime with an available dub in your chosen language.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Catalogs Management Card -->
                 {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or
-                user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True) %}
+                user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True) or user.get('enable_dubbed_catalogs', False) %}
                 <div class="card-dark p-3 p-sm-4 mb-3" id="catalog-management-card" {% if not
                     user.get('mal_access_token') and not user.get('anilist_token') and not
                     user.get('simkl_access_token') and not user.get('enable_recommendations', True) and not
-                    user.get('enable_discovery_catalogs', True) %}style="display: none;" {% endif %}>
+                    user.get('enable_discovery_catalogs', True) and not user.get('enable_dubbed_catalogs', False) %}style="display: none;" {% endif %}>
                     <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
                         Management</h6>
                     <div class="mb-3">
@@ -2410,10 +2479,13 @@
                         ('anisync_spotlight', 'Spotlight', 'discovery'),
                         ('anisync_schedule', 'Weekly Release Calendar', 'discovery'),
                         ('anisync_seasonal', 'Seasonal Showcase', 'discovery'),
-                        ('anisync_trending', 'Trending', 'discovery'),
                         ('anisync_top_airing', 'Top Airing', 'discovery'),
                         ('anisync_highest_rated', 'Highest Rated', 'discovery'),
-                        ('anisync_most_popular', 'Most Popular', 'discovery')
+                        ('anisync_most_popular', 'Most Popular', 'discovery'),
+                        ('anisync_dubbed_trending', 'Dubbed: Trending', 'dubbed'),
+                        ('anisync_dubbed_seasonal', 'Dubbed: Current Season', 'dubbed'),
+                        ('anisync_dubbed_popular', 'Dubbed: Most Popular', 'dubbed'),
+                        ('anisync_dubbed_movies', 'Dubbed: Movies', 'dubbed')
                         ]
                         %}
 
@@ -2430,7 +2502,8 @@
                         (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or
                         user.get('simkl_access_token'))) or
                         item_source == 'rec' or
-                        item_source == 'discovery' %}
+                        item_source == 'discovery' or
+                        item_source == 'dubbed' %}
                         {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
                         {% endif %}
                         {% endif %}
@@ -2446,7 +2519,8 @@
                         (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or
                         user.get('simkl_access_token'))) or
                         item_source == 'rec' or
-                        item_source == 'discovery' %}
+                        item_source == 'discovery' or
+                        item_source == 'dubbed' %}
                         {% if item_id not in user.get('catalogs', []) %}
                         {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
                         {% endif %}
@@ -2457,7 +2531,7 @@
                         {% for item_id, item_name, item_source in active_user_order %}
                         {% set cur_cfg = user.get('catalog_configs', {}).get(item_id, {}) %}
                         {% set cur_title = cur_cfg.get('title', user.get('catalog_titles', {}).get(item_id, '')) %}
-                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
+                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'dubbed' and not user.get('enable_dubbed_catalogs', False) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
                             draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}" data-default-name="{{ item_name }}"
                             style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
                             <div class="d-flex align-items-center flex-grow-1 overflow-hidden min-w-0 me-3">
@@ -2465,16 +2539,16 @@
                                 <input class="form-check-input catalog-checkbox flex-shrink-0" type="checkbox"
                                     id="cat_{{ item_id }}" name="cat_{{ item_id }}"
                                     style="margin: 0 12px 0 0; cursor: pointer; float: none;"
-                                    {% if user.get('catalogs') is none or item_id in user.get('catalogs', []) or (item_source=='discovery' and 'enable_discovery_catalogs' not in user) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
+                                    {% if (item_source == 'dubbed' and (item_id in user.get('catalogs', []) or (user.get('catalogs') is none and user.get('enable_dubbed_catalogs', False)))) or (item_source != 'dubbed' and (user.get('catalogs') is none or item_id in user.get('catalogs', []) or (item_source=='discovery' and 'enable_discovery_catalogs' not in user) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)))) %}checked{% endif %}>
                                 <div class="catalog-content-col d-flex flex-grow-1 overflow-hidden min-w-0">
                                     <label class="catalog-item-title small fw-medium text-light text-truncate mb-0" for="cat_{{ item_id }}"
                                         style="user-select: none; cursor: pointer;">
                                         <span id="label_text_{{ item_id }}">{{ cur_title if cur_title else item_name }}</span>
                                     </label>
                                     <span
-                                        class="badge rounded-pill catalog-source-badge {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}">
+                                        class="badge rounded-pill catalog-source-badge {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% elif item_source == 'dubbed' %}bg-dubbed text-white{% else %}bg-warning text-dark{% endif %}">
                                         {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery'
-                                        else item_source | upper) }}
+                                        else ('DUBBED' if item_source == 'dubbed' else item_source | upper)) }}
                                     </span>
                                 </div>
                             </div>
@@ -4730,6 +4804,8 @@
         const catalogManagementCard = document.getElementById("catalog-management-card");
         const enableRecsCheckbox = document.getElementById("enable_recommendations");
         const enableDiscoveryCheckbox = document.getElementById("enable_discovery_catalogs");
+        const enableDubbedCheckbox = document.getElementById("enable_dubbed_catalogs");
+        const dubbedOptionsContainer = document.getElementById("dubbed_options_container");
         const combineCheckbox = document.getElementById("combine_watchlists");
 
         function syncCatalogManagement(isInitialLoad = false) {
@@ -4739,6 +4815,7 @@
             const enableCatalogs = enableCatalogsCheckbox && enableCatalogsCheckbox.checked;
             const enableRecs = enableRecsCheckbox && enableRecsCheckbox.checked;
             const enableDiscovery = enableDiscoveryCheckbox && enableDiscoveryCheckbox.checked;
+            const enableDubbed = enableDubbedCheckbox && enableDubbedCheckbox.checked;
             const combineEnabled = combineCheckbox && combineCheckbox.checked;
 
             if (watchlistOptionsContainer) {
@@ -4751,6 +4828,9 @@
             const discoveryOptionsDiv = document.getElementById("discovery-sub-options");
             if (discoveryOptionsDiv) {
                 discoveryOptionsDiv.style.display = enableDiscovery ? "block" : "none";
+            }
+            if (dubbedOptionsContainer) {
+                dubbedOptionsContainer.style.display = enableDubbed ? "block" : "none";
             }
 
             const malItems = document.querySelectorAll('.catalog-order-item[data-source="mal"]');
@@ -4829,13 +4909,25 @@
                 }
             });
 
+            const dubbedItems = document.querySelectorAll('.catalog-order-item[data-source="dubbed"]');
+            dubbedItems.forEach(item => {
+                const cb = item.querySelector('.catalog-checkbox');
+                if (!enableDubbed) {
+                    item.classList.add("d-none");
+                    if (cb) cb.checked = false;
+                } else {
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad && cb) cb.checked = true;
+                }
+            });
+
             updateSortedInput();
 
-            const shouldShowCard = malToken || alToken || simklToken || enableRecs || enableDiscovery;
+            const shouldShowCard = malToken || alToken || simklToken || enableRecs || enableDiscovery || enableDubbed;
             if (catalogManagementCard) {
                 if (shouldShowCard) {
                     catalogManagementCard.style.display = "block";
-                    if (!enableCatalogs && !enableRecs && !enableDiscovery) {
+                    if (!enableCatalogs && !enableRecs && !enableDiscovery && !enableDubbed) {
                         catalogManagementCard.style.opacity = "0.4";
                         catalogManagementCard.style.pointerEvents = "none";
                         catalogManagementCard.style.filter = "grayscale(1)";
@@ -4856,6 +4948,10 @@
 
         if (enableDiscoveryCheckbox) {
             enableDiscoveryCheckbox.addEventListener("change", () => syncCatalogManagement(false));
+        }
+
+        if (enableDubbedCheckbox) {
+            enableDubbedCheckbox.addEventListener("change", () => syncCatalogManagement(false));
         }
 
         const enableSearchCheckbox = document.getElementById("enable_search");
@@ -5257,6 +5353,14 @@
         const shuffleDiscoveryCheckbox = document.getElementById("shuffle_discovery_catalogs");
         const shuffleDiscoveryVal = document.getElementById('shuffle_discovery_catalogs_val');
         if (shuffleDiscoveryCheckbox && shuffleDiscoveryVal) shuffleDiscoveryVal.value = shuffleDiscoveryCheckbox.checked ? 'true' : 'false';
+
+        const enableDubbedCheckbox = document.getElementById("enable_dubbed_catalogs");
+        const enableDubbedVal = document.getElementById('enable_dubbed_catalogs_val');
+        if (enableDubbedCheckbox && enableDubbedVal) enableDubbedVal.value = enableDubbedCheckbox.checked ? 'true' : 'false';
+
+        const dubbedOnlyDiscoveryCheckbox = document.getElementById("dubbed_only_discovery");
+        const dubbedOnlyDiscoveryVal = document.getElementById('dubbed_only_discovery_val');
+        if (dubbedOnlyDiscoveryCheckbox && dubbedOnlyDiscoveryVal) dubbedOnlyDiscoveryVal.value = dubbedOnlyDiscoveryCheckbox.checked ? 'true' : 'false';
 
         const customSortCheckbox = document.getElementById("custom_sort_enabled");
         const customSortVal = document.getElementById('custom_sort_enabled_val');
