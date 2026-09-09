@@ -1262,9 +1262,9 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
 
         current_poster = m_copy.get("poster") or ""
         clean_poster = current_poster
-        is_badge = False
-        badge_query_params = {}
-        badge_base_url = ""
+        is_badge = bool(m_copy.get("is_badge"))
+        badge_query_params = dict(m_copy.get("badge_query_params") or {})
+        badge_base_url = m_copy.get("badge_base_url") or ""
 
         # Check if this is a badge redirect poster URL (from serve_modified_poster)
         if "/poster/" in current_poster and "url=" in current_poster:
@@ -1275,7 +1275,7 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                 badge_query_params = {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query).items()}
                 clean_poster = badge_query_params.get("url", current_poster)
             except Exception:
-                is_badge = False
+                pass
 
         m_copy["clean_poster"] = clean_poster
 

@@ -243,6 +243,7 @@ def get_rpdb_poster_url(
     provider_override: str | None = None,
     resolved_ids: dict | None = None,
     shape: str = "poster",
+    imdb_id: str | None = None,
 ) -> str | None:
     """
     Resolve and construct the poster URL for an item based on user's poster_provider setting:
@@ -309,17 +310,18 @@ def get_rpdb_poster_url(
             query.append({"simkl_id": int(simkl_id)})
             query.append({"simkl": int(simkl_id)})
 
-    imdb_id = None
-    tmdb_id = None
-    tvdb_id = None
+    tmdb_id = resolved_ids.get("tmdb_id") if resolved_ids else None
+    tvdb_id = resolved_ids.get("tvdb_id") if resolved_ids else None
+    if not imdb_id and resolved_ids:
+        imdb_id = resolved_ids.get("imdb_id")
 
-    if query:
+    if query and not (imdb_id and tmdb_id and tvdb_id):
         try:
             doc = id_cache_collection.find_one({"$or": query})
             if doc:
-                imdb_id = doc.get("imdb_id")
-                tmdb_id = doc.get("tmdb_id")
-                tvdb_id = doc.get("tvdb_id")
+                imdb_id = imdb_id or doc.get("imdb_id")
+                tmdb_id = tmdb_id or doc.get("tmdb_id")
+                tvdb_id = tvdb_id or doc.get("tvdb_id")
 
                 if isinstance(imdb_id, list):
                     imdb_id = imdb_id[0] if imdb_id else None

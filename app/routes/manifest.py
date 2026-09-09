@@ -493,11 +493,13 @@ async def user_manifest(user_id: str):
             c["posterShape"] = "poster"
 
         # Custom title override
-        if cat_id in catalog_titles and catalog_titles[cat_id].strip():
-            c["name"] = catalog_titles[cat_id].strip()
+        title = cat_cfg.get("title") or catalog_titles.get(cat_id)
+        if title and str(title).strip():
+            c["name"] = str(title).strip()
 
         # Placement: "discover_only" hides row from Home board while keeping in Discover (Nuvio)
-        if catalog_placements.get(cat_id) == "discover_only":
+        placement = cat_cfg.get("placement") or catalog_placements.get(cat_id)
+        if placement == "discover_only":
             c["showInHome"] = False
 
         return c
