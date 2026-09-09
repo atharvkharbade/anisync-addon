@@ -2372,9 +2372,15 @@
                         </label>
                     </div>
 
-                    <!-- Discovery sub-options (conditionally shown) -->
-                    <div id="discovery-sub-options" style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %} padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.07);">
-                        <div class="form-check form-switch mb-3">
+                    <!-- Discovery Sub-Options (only visible when enabled) -->
+                    <div id="discovery-sub-options" class="nested-subcard mb-0"
+                        style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %}">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fa-solid fa-microphone-lines me-2 text-info" style="font-size: 0.8rem;"></i>
+                            <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Dubbed Audio Filter</span>
+                        </div>
+
+                        <div class="form-check form-switch mb-0">
                             <input class="form-check-input" type="checkbox" role="switch" id="dubbed_only_discovery" {% if user.get('dubbed_only_discovery', False) or user.get('enable_dubbed_catalogs', False) %}checked{% endif %}>
                             <label class="form-check-label ms-1" for="dubbed_only_discovery">
                                 <span class="fw-medium d-block">Dubbed Only</span>
@@ -2385,7 +2391,7 @@
                         </div>
 
                         <!-- Preferred Dub Language (shown when Dubbed Only is enabled) -->
-                        <div id="dubbed_language_container" class="mb-0" style="{% if not (user.get('dubbed_only_discovery', False) or user.get('enable_dubbed_catalogs', False)) %}display: none;{% endif %} max-width: 400px; padding-left: 2rem;">
+                        <div id="dubbed_language_container" class="mt-3 pt-3" style="{% if not (user.get('dubbed_only_discovery', False) or user.get('enable_dubbed_catalogs', False)) %}display: none;{% endif %} max-width: 400px; padding-left: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.06);">
                             <label class="form-label small text-secondary mb-1">
                                 <i class="fa-solid fa-language me-1 text-info"></i>Preferred Dub Language
                             </label>
