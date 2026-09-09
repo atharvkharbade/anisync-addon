@@ -389,15 +389,24 @@
         max-height: 290px;
         overflow-y: auto;
         overscroll-behavior: contain;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
         animation: fadeInTab 0.15s ease;
     }
     .custom-options-menu::-webkit-scrollbar {
-        display: none;
-        width: 0;
-        height: 0;
+        display: block;
+        width: 6px;
+    }
+    .custom-options-menu::-webkit-scrollbar-track {
+        background: transparent;
+        margin: 4px 0;
+    }
+    .custom-options-menu::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 4px;
+    }
+    .custom-options-menu::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.45);
     }
 
     .custom-options-menu.show {
@@ -980,6 +989,10 @@
     }
 
     /* Catalog Customization Modal - AniSync Native Dark/Cyan Design System */
+    .catalog-modal-dialog {
+        max-width: 820px;
+        margin: 1.75rem auto;
+    }
     .catalog-modal-content {
         background: #141416;
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -987,6 +1000,97 @@
         box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(2, 132, 199, 0.12);
         color: #f1f5f9;
         backdrop-filter: blur(24px);
+    }
+    @media (min-width: 768px) {
+        .catalog-modal-dialog {
+            max-height: min(650px, calc(100vh - 48px));
+            height: min(650px, calc(100vh - 48px));
+            margin: auto;
+        }
+        .catalog-modal-content {
+            height: 100%;
+            max-height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .catalog-modal-content .modal-header {
+            flex-shrink: 0;
+            padding-bottom: 0.5rem !important;
+            padding-top: 1rem !important;
+        }
+        .catalog-modal-content .modal-footer {
+            flex-shrink: 0;
+            padding-top: 0.75rem !important;
+            padding-bottom: 0.75rem !important;
+        }
+        .catalog-modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+            padding-top: 0.25rem !important;
+            padding-bottom: 0.5rem !important;
+        }
+        .catalog-modal-row {
+            height: 100%;
+            min-height: 0;
+        }
+        .catalog-modal-form-col {
+            height: 100%;
+            max-height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 14px;
+            padding-bottom: 16px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        .catalog-modal-preview-col {
+            height: 100%;
+            max-height: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+    }
+    .catalog-modal-form-col::-webkit-scrollbar {
+        display: block;
+        width: 6px;
+    }
+    .catalog-modal-form-col::-webkit-scrollbar-track {
+        background: transparent;
+        margin: 4px 0;
+    }
+    .catalog-modal-form-col::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.22);
+        border-radius: 4px;
+    }
+    .catalog-modal-form-col::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.45);
+    }
+    @media (max-width: 767.98px) {
+        .catalog-modal-dialog {
+            max-height: calc(100vh - 20px);
+            margin: 10px auto;
+        }
+        .catalog-modal-content {
+            max-height: calc(100vh - 20px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .catalog-modal-content .modal-header,
+        .catalog-modal-content .modal-footer {
+            flex-shrink: 0;
+        }
+        .catalog-modal-body {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            overscroll-behavior: contain;
+        }
     }
     .catalog-header-badge {
         background: #0284c7;
@@ -1110,19 +1214,30 @@
     }
     .catalog-modal-content .custom-options-menu {
         z-index: 1065;
-        max-height: 280px;
+        max-height: 250px;
         background: #141416;
         border: 1px solid rgba(255, 255, 255, 0.14);
         border-radius: 12px;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
     }
     .catalog-modal-content .custom-options-menu::-webkit-scrollbar {
-        display: none;
-        width: 0;
-        height: 0;
+        display: block;
+        width: 6px;
+    }
+    .catalog-modal-content .custom-options-menu::-webkit-scrollbar-track {
+        background: transparent;
+        margin: 4px 0;
+    }
+    .catalog-modal-content .custom-options-menu::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.28);
+        border-radius: 4px;
+    }
+    .catalog-modal-content .custom-options-menu::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
     }
     .catalog-modal-content .custom-option-item {
         padding: 0.45rem 0.75rem;
@@ -1138,7 +1253,8 @@
         display: flex;
         flex-direction: column;
         height: 100%;
-        max-height: 512px;
+        max-height: 100%;
+        min-height: 0;
     }
     .preview-header {
         display: flex;
@@ -1154,20 +1270,32 @@
         letter-spacing: -0.01em;
     }
     .preview-gallery-container {
-        height: 456px;
-        max-height: 456px;
+        flex: 1 1 auto;
+        height: 100%;
+        max-height: 100%;
+        min-height: 0;
         overflow-y: auto;
         overflow-x: hidden;
-        padding-right: 2px;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
+        padding-right: 4px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
     }
     .preview-gallery-container::-webkit-scrollbar {
-        display: none;
-        width: 0;
-        height: 0;
+        display: block;
+        width: 5px;
+    }
+    .preview-gallery-container::-webkit-scrollbar-track {
+        background: transparent;
+        margin: 4px 0;
+    }
+    .preview-gallery-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.16);
+        border-radius: 4px;
+    }
+    .preview-gallery-container::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.35);
     }
     .preview-grid {
         display: grid;
@@ -2362,7 +2490,7 @@
                         Shows popular anime discovery catalogs (Spotlight, Trending, Top Airing, Seasonal Showcase, etc.) in your app.
                     </p>
 
-                    <div class="form-check form-switch mb-3">
+                    <div class="form-check form-switch mb-0">
                         <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if user.get('enable_discovery_catalogs', True) %}checked{% endif %}>
                         <label class="form-check-label ms-1" for="enable_discovery_catalogs">
                             <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
@@ -2370,75 +2498,6 @@
                                 Enable general public discovery catalogs in Stremio.
                             </span>
                         </label>
-                    </div>
-
-                    <!-- Discovery Sub-Options (only visible when enabled) -->
-                    <div id="discovery-sub-options" class="nested-subcard mb-0"
-                        style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %}">
-                        
-                        <div class="form-check form-switch mb-0">
-                            <input class="form-check-input" type="checkbox" role="switch" id="dubbed_only_discovery" {% if user.get('dubbed_only_discovery', False) or user.get('enable_dubbed_catalogs', False) %}checked{% endif %}>
-                            <label class="form-check-label ms-1" for="dubbed_only_discovery">
-                                <span class="fw-medium d-block">Filter Discovery Catalogs to Dubbed Only</span>
-                                <span class="text-secondary small d-block">
-                                    Only show anime with an available dub in your chosen language across discovery catalogs.
-                                </span>
-                            </label>
-                        </div>
-
-                        <!-- Preferred Dub Language (shown when Dubbed Only is enabled) -->
-                        <div id="dubbed_language_container" class="mt-3 pt-3" style="{% if not (user.get('dubbed_only_discovery', False) or user.get('enable_dubbed_catalogs', False)) %}display: none;{% endif %} max-width: 400px; padding-left: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.06);">
-                            <label class="form-label small text-secondary mb-1">
-                                <i class="fa-solid fa-language me-1 text-info"></i>Preferred Dub Language
-                            </label>
-                            <input type="hidden" id="dubbed_language" name="dubbed_language" value="{{ user.get('dubbed_language', 'english') }}">
-                            <div class="custom-select-wrapper mb-2" data-input-id="dubbed_language">
-                                <div class="custom-select">
-                                    <span class="custom-select-text d-flex align-items-center">
-                                        {% set cur_dub_lang = user.get('dubbed_language', 'english') %}
-                                        {% if cur_dub_lang == 'spanish' %}
-                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ea580c; border-radius:4px; font-size:10px;">ES</span>Spanish
-                                        {% elif cur_dub_lang == 'german' %}
-                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#b45309; border-radius:4px; font-size:10px;">DE</span>German
-                                        {% elif cur_dub_lang == 'french' %}
-                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#4f46e5; border-radius:4px; font-size:10px;">FR</span>French
-                                        {% elif cur_dub_lang == 'italian' %}
-                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#059669; border-radius:4px; font-size:10px;">IT</span>Italian
-                                        {% elif cur_dub_lang == 'portuguese' %}
-                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#0d9488; border-radius:4px; font-size:10px;">PT</span>Portuguese
-                                        {% elif cur_dub_lang == 'hindi' %}
-                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#e11d48; border-radius:4px; font-size:10px;">HI</span>Hindi
-                                        {% else %}
-                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English
-                                        {% endif %}
-                                    </span>
-                                    <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
-                                </div>
-                                <div class="custom-options-menu">
-                                    <div class="custom-option-item d-flex align-items-center" data-value="english">
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English
-                                    </div>
-                                    <div class="custom-option-item d-flex align-items-center" data-value="spanish">
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ea580c; border-radius:4px; font-size:10px;">ES</span>Spanish
-                                    </div>
-                                    <div class="custom-option-item d-flex align-items-center" data-value="german">
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#b45309; border-radius:4px; font-size:10px;">DE</span>German
-                                    </div>
-                                    <div class="custom-option-item d-flex align-items-center" data-value="french">
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#4f46e5; border-radius:4px; font-size:10px;">FR</span>French
-                                    </div>
-                                    <div class="custom-option-item d-flex align-items-center" data-value="italian">
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#059669; border-radius:4px; font-size:10px;">IT</span>Italian
-                                    </div>
-                                    <div class="custom-option-item d-flex align-items-center" data-value="portuguese">
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#0d9488; border-radius:4px; font-size:10px;">PT</span>Portuguese
-                                    </div>
-                                    <div class="custom-option-item d-flex align-items-center" data-value="hindi">
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#e11d48; border-radius:4px; font-size:10px;">HI</span>Hindi
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -2552,6 +2611,7 @@
                                         class="badge rounded-pill catalog-source-badge {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}">
                                         {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery' else item_source | upper) }}
                                     </span>
+                                    <span id="badge_dub_{{ item_id }}" class="badge rounded-pill bg-info text-dark ms-1 {% if not (cur_cfg.get('dubbed') or cur_cfg.get('audio') == 'dubbed') %}d-none{% endif %}" style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.3px;">DUBBED</span>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center flex-shrink-0">
@@ -3071,7 +3131,7 @@
 
 <!-- Catalog Customization Modal -->
 <div class="modal fade" id="catalogConfigModal" tabindex="-1" aria-labelledby="catalogConfigModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-lg catalog-modal-dialog">
         <div class="modal-content catalog-modal-content">
             <div class="modal-header border-0 pb-2 pt-3 px-4 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -3081,10 +3141,10 @@
                 </div>
                 <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body px-4 py-3">
-                <div class="row g-4 align-items-stretch">
+            <div class="modal-body catalog-modal-body px-4 py-3">
+                <div class="row g-4 align-items-stretch catalog-modal-row">
                     <!-- Left: Configuration Form -->
-                    <div class="col-12 col-md-7 d-flex flex-column gap-3">
+                    <div class="col-12 col-md-7 d-flex flex-column gap-3 catalog-modal-form-col">
                         <!-- 1. Custom Name -->
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-1">
@@ -3154,7 +3214,68 @@
                             </div>
                         </div>
 
-                        <!-- 5. Sorting -->
+                        <!-- 5. Audio (Sub / Dub) -->
+                        <div id="modalAudioSection">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label small fw-semibold text-light mb-0">Audio</label>
+                                <button type="button" class="btn-modal-reset-field" onclick="setModalAudio('all')" title="Reset audio">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </div>
+                            <div class="modal-segmented-group" id="modalAudioGroup">
+                                <button type="button" class="modal-segmented-btn active" data-audio="all" onclick="setModalAudio('all')">
+                                    All
+                                </button>
+                                <button type="button" class="modal-segmented-btn" data-audio="dubbed" onclick="setModalAudio('dubbed')">
+                                    <i class="fa-solid fa-microphone-lines me-1 text-info"></i>Dubbed Only
+                                </button>
+                            </div>
+
+                            <!-- Dub Language selector (shown dynamically when Dubbed Only is selected) -->
+                            <div id="modalDubLanguageSection" class="mt-2 pt-2" style="display: none; border-top: 1px dashed rgba(255, 255, 255, 0.08);">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <label class="form-label small fw-medium text-light mb-0" style="font-size: 0.78rem;">
+                                        <i class="fa-solid fa-language me-1 text-info"></i>Dub Language
+                                    </label>
+                                    <span class="text-secondary small" style="font-size: 0.7rem; opacity: 0.6;">Select audio track</span>
+                                </div>
+                                <input type="hidden" id="modal_dub_language" value="english">
+                                <div class="custom-select-wrapper" data-input-id="modal_dub_language">
+                                    <div class="custom-select">
+                                        <span class="custom-select-text d-flex align-items-center" id="modal_dub_language_text">
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English
+                                        </span>
+                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                    </div>
+                                    <div class="custom-options-menu">
+                                        <div class="custom-option-item selected d-flex align-items-center" data-value="english">
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="spanish">
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ea580c; border-radius:4px; font-size:10px;">ES</span>Spanish
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="german">
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#b45309; border-radius:4px; font-size:10px;">DE</span>German
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="french">
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#4f46e5; border-radius:4px; font-size:10px;">FR</span>French
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="italian">
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#059669; border-radius:4px; font-size:10px;">IT</span>Italian
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="portuguese">
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#0d9488; border-radius:4px; font-size:10px;">PT</span>Portuguese
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="hindi">
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#e11d48; border-radius:4px; font-size:10px;">HI</span>Hindi
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="text-secondary small d-block mt-1" id="modalAudioHint" style="font-size: 0.72rem; opacity: 0.55; line-height: 1.35;">Filters this catalog to only display anime with available dubs in your selected language.</span>
+                        </div>
+
+                        <!-- 6. Sorting -->
                         <div id="modalSortSection">
                             <div class="d-flex align-items-center justify-content-between mb-1">
                                 <label class="form-label small fw-semibold text-light mb-0">Sort</label>
@@ -3233,7 +3354,7 @@
                     </div>
 
                     <!-- Right: Live Preview (Matching Stremio & Nuvio) -->
-                    <div class="col-12 col-md-5 d-flex flex-column">
+                    <div class="col-12 col-md-5 d-flex flex-column catalog-modal-preview-col">
                         <div class="preview-stage-wrap">
                             <div class="preview-header d-flex align-items-center justify-content-between">
                                 <span class="preview-title">Live preview</span>
@@ -3538,37 +3659,56 @@
                 textEl.innerHTML = matchedOption.innerHTML;
             }
 
-            // Contain scrolling within menu to prevent scrolling the parent page or modal
+            // 1b. Robust scroll containment & smooth wheel scrolling within menu
             menuEl.addEventListener("wheel", function (e) {
-                const scrollTop = this.scrollTop;
-                const scrollHeight = this.scrollHeight;
-                const height = this.clientHeight;
-                const delta = e.deltaY;
-
-                if ((delta > 0 && scrollTop + height >= scrollHeight) || (delta < 0 && scrollTop <= 0)) {
-                    e.preventDefault();
-                }
+                e.stopPropagation();
+                e.preventDefault();
+                this.scrollTop += e.deltaY;
             }, { passive: false });
 
             let touchStartY = 0;
             menuEl.addEventListener("touchstart", function (e) {
+                e.stopPropagation();
                 if (e.touches && e.touches.length > 0) {
                     touchStartY = e.touches[0].clientY;
                 }
             }, { passive: true });
 
             menuEl.addEventListener("touchmove", function (e) {
+                e.stopPropagation();
                 if (!e.touches || e.touches.length === 0) return;
                 const touchCurrentY = e.touches[0].clientY;
                 const deltaY = touchStartY - touchCurrentY;
-                const scrollTop = this.scrollTop;
-                const scrollHeight = this.scrollHeight;
-                const height = this.clientHeight;
-
-                if ((deltaY > 0 && scrollTop + height >= scrollHeight) || (deltaY < 0 && scrollTop <= 0)) {
-                    e.preventDefault();
-                }
+                touchStartY = touchCurrentY;
+                this.scrollTop += deltaY;
+                e.preventDefault();
             }, { passive: false });
+
+            // 1c. Click-and-drag scrolling support for menu
+            let isMenuDragging = false;
+            let dragStartY = 0;
+            let startScrollTop = 0;
+            let didDragMenu = false;
+
+            menuEl.addEventListener("mousedown", function (e) {
+                isMenuDragging = true;
+                didDragMenu = false;
+                dragStartY = e.pageY;
+                startScrollTop = this.scrollTop;
+            });
+
+            window.addEventListener("mousemove", function (e) {
+                if (!isMenuDragging) return;
+                const dist = e.pageY - dragStartY;
+                if (Math.abs(dist) > 4) {
+                    didDragMenu = true;
+                    menuEl.scrollTop = startScrollTop - dist;
+                }
+            });
+
+            window.addEventListener("mouseup", function () {
+                isMenuDragging = false;
+            });
 
             // 2. Click to toggle open
             selectEl.addEventListener("click", function (e) {
@@ -3588,6 +3728,10 @@
             // 3. Option item click
             optionItems.forEach(opt => {
                 opt.addEventListener("click", function (e) {
+                    if (didDragMenu) {
+                        didDragMenu = false;
+                        return;
+                    }
                     e.stopPropagation();
                     const val = opt.getAttribute("data-value");
                     hiddenInput.value = val;
@@ -3611,6 +3755,11 @@
                     if (inputId === "modal_sort_by") {
                         if (typeof onModalSortByChange === "function") {
                             onModalSortByChange(val);
+                        }
+                    }
+                    if (inputId === "modal_dub_language") {
+                        if (typeof onModalDubLanguageChange === "function") {
+                            onModalDubLanguageChange(val);
                         }
                     }
                 });
@@ -3942,11 +4091,32 @@
             return count;
         }
 
+        const DUB_LANG_CODES = {
+            'english': 'EN',
+            'spanish': 'ES',
+            'german': 'DE',
+            'french': 'FR',
+            'italian': 'IT',
+            'portuguese': 'PT',
+            'hindi': 'HI'
+        };
+
         function updateCatalogRowBadge(catId) {
             const labelText = document.getElementById('label_text_' + catId);
             if (labelText) {
                 const customTitle = (catalogConfigs[catId] && catalogConfigs[catId].title) ? catalogConfigs[catId].title.trim() : '';
                 labelText.textContent = customTitle || defaultCatalogNames[catId] || catId;
+            }
+            const dubBadge = document.getElementById('badge_dub_' + catId);
+            if (dubBadge) {
+                const cfg = catalogConfigs[catId];
+                const isDub = Boolean(cfg && (cfg.dubbed || cfg.audio === 'dubbed'));
+                dubBadge.classList.toggle('d-none', !isDub);
+                if (isDub) {
+                    const lang = (cfg.dub_language || 'english').toLowerCase();
+                    const code = DUB_LANG_CODES[lang] || lang.substring(0, 2).toUpperCase();
+                    dubBadge.textContent = `DUBBED • ${code}`;
+                }
             }
         }
 
@@ -3979,6 +4149,11 @@
             // Poster Art Toggle & Section availability
             updatePosterArtSectionAvailability();
             updatePosterArtUI(cfg.poster_art !== false);
+
+            // Audio (Sub / Dub) & Dub Language
+            const isDubbed = Boolean(cfg.audio === 'dubbed' || cfg.dubbed);
+            const dubLang = cfg.dub_language || 'english';
+            updateAudioUI(isDubbed ? 'dubbed' : 'all', dubLang);
 
             // Sort Custom Dropdown & Order
             updateModalSortDropdown(cfg.sort_by || 'default');
@@ -4014,6 +4189,45 @@
             document.querySelectorAll('#modalPosterArtGroup .modal-segmented-btn').forEach(btn => {
                 btn.classList.toggle('active', (btn.getAttribute('data-art') === 'true') === Boolean(enabled));
             });
+        }
+
+        function updateAudioUI(audioMode, lang) {
+            const isDubbed = (audioMode === 'dubbed');
+            document.querySelectorAll('#modalAudioGroup .modal-segmented-btn').forEach(btn => {
+                btn.classList.toggle('active', (btn.getAttribute('data-audio') === 'dubbed') === isDubbed);
+            });
+            const dubLangSec = document.getElementById('modalDubLanguageSection');
+            if (dubLangSec) {
+                dubLangSec.style.display = isDubbed ? 'block' : 'none';
+            }
+            const curLang = lang || (activeModalCatalogId && catalogConfigs[activeModalCatalogId] ? catalogConfigs[activeModalCatalogId].dub_language : null) || 'english';
+            updateModalDubLanguageDropdown(curLang);
+        }
+
+        function updateModalDubLanguageDropdown(val) {
+            val = (val || 'english').toLowerCase();
+            const hiddenInput = document.getElementById('modal_dub_language');
+            if (hiddenInput) hiddenInput.value = val;
+            const wrapper = document.querySelector('.custom-select-wrapper[data-input-id="modal_dub_language"]');
+            if (!wrapper) return;
+            const textEl = wrapper.querySelector('.custom-select-text');
+            const optionItems = wrapper.querySelectorAll('.custom-option-item');
+            let matchedOption = wrapper.querySelector(`.custom-option-item[data-value="${val}"]`);
+            if (!matchedOption && optionItems.length > 0) {
+                matchedOption = optionItems[0];
+            }
+            if (matchedOption) {
+                optionItems.forEach(opt => opt.classList.remove('selected'));
+                matchedOption.classList.add('selected');
+                if (textEl) textEl.innerHTML = matchedOption.innerHTML;
+            }
+        }
+
+        function onModalDubLanguageChange(val) {
+            if (!activeModalCatalogId) return;
+            if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
+            catalogConfigs[activeModalCatalogId].dub_language = val;
+            updateCatalogRowBadge(activeModalCatalogId);
         }
 
         const SORT_ORDER_TOOLTIPS = {
@@ -4666,6 +4880,19 @@
             updateCatalogRowBadge(activeModalCatalogId);
         };
 
+        window.setModalAudio = function (mode) {
+            if (!activeModalCatalogId) return;
+            if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
+            catalogConfigs[activeModalCatalogId].audio = mode;
+            catalogConfigs[activeModalCatalogId].dubbed = (mode === 'dubbed');
+            if (mode === 'dubbed' && !catalogConfigs[activeModalCatalogId].dub_language) {
+                catalogConfigs[activeModalCatalogId].dub_language = 'english';
+            }
+            const curLang = catalogConfigs[activeModalCatalogId].dub_language || 'english';
+            updateAudioUI(mode, curLang);
+            updateCatalogRowBadge(activeModalCatalogId);
+        };
+
         window.resetCurrentCatalogConfig = function () {
             if (!activeModalCatalogId) return;
             const defName = defaultCatalogNames[activeModalCatalogId] || 'Catalog';
@@ -4675,7 +4902,10 @@
                 placement: 'all',
                 sort_by: 'default',
                 sort_order: 'desc',
-                shuffle: false
+                shuffle: false,
+                audio: 'all',
+                dubbed: false,
+                dub_language: 'english'
             };
             openCatalogConfigModal(activeModalCatalogId);
             updateCatalogRowBadge(activeModalCatalogId);
@@ -4685,7 +4915,7 @@
         window.duplicateCurrentCatalogConfig = function () {
             if (!activeModalCatalogId) return;
             const srcCfg = catalogConfigs[activeModalCatalogId] || {};
-            const keysToCopy = ['shape', 'placement', 'sort_by', 'sort_order', 'shuffle', 'poster_art'];
+            const keysToCopy = ['shape', 'placement', 'sort_by', 'sort_order', 'shuffle', 'poster_art', 'audio', 'dubbed', 'dub_language'];
             let copiedCount = 0;
             Object.keys(defaultCatalogNames).forEach(catId => {
                 if (catId !== activeModalCatalogId) {

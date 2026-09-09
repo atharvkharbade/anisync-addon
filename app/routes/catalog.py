@@ -1091,6 +1091,51 @@ def is_catalog_shuffle_enabled(user, catalog_id):
     return False
 
 
+def is_catalog_dubbed_enabled(user, catalog_id: str) -> bool:
+    """
+    Checks whether dub filtering is enabled for this catalog.
+    Checks per-catalog configuration (catalog_configs[catalog_id]['dubbed'] or audio == 'dubbed') first,
+    then falls back to legacy global discovery dubbed toggle (user.dubbed_only_discovery).
+    """
+    if not user or not catalog_id:
+        return False
+
+    cat_cfg = (user.get("catalog_configs", {}) or {}).get(catalog_id, {})
+    if isinstance(cat_cfg, dict):
+        if "dubbed" in cat_cfg:
+            return bool(cat_cfg["dubbed"])
+        audio_val = cat_cfg.get("audio")
+        if audio_val in ("dubbed", "dub"):
+            return True
+        if audio_val in ("all", "sub", "both"):
+            return False
+
+    # Legacy fallback: user.dubbed_only_discovery applies to general discovery catalogs
+    if user.get("dubbed_only_discovery") and catalog_id.startswith("anisync_") and catalog_id not in ["anisync_search", "anisync_rec", "anisync_loved", "anisync_liked"]:
+        return True
+
+    return False
+
+
+async def apply_catalog_dub_filter(metas, user, catalog_id: str):
+    """
+    Filters catalog metas to only dubbed anime if dubbed filtering is enabled for this catalog.
+    """
+    if not metas or not user:
+        return metas
+
+    if is_catalog_dubbed_enabled(user, catalog_id):
+        from app.services.dub_service import filter_dubbed
+        cat_cfg = (user.get("catalog_configs", {}) or {}).get(catalog_id, {})
+        user_dub_lang = (
+            (cat_cfg.get("dub_language") or cat_cfg.get("dubbed_language"))
+            if isinstance(cat_cfg, dict) else None
+        ) or user.get("dub_language") or user.get("dubbed_language", "english")
+        metas = await filter_dubbed(metas, language=user_dub_lang)
+
+    return metas
+
+
 currently_fetching_pairs = set()
 currently_fetching_pages = set()
 jikan_semaphore = None
@@ -2207,11 +2252,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 logging.error("Failed to update discovery catalogs from AniList: %s", e)
                 metas = []
 
-        # Filter to only dubbed anime if user has enabled dubbed_only_discovery
-        if user and user.get("dubbed_only_discovery"):
-            from app.services.dub_service import filter_dubbed
-            user_dub_lang = user.get("dubbed_language", "english")
-            metas = await filter_dubbed(metas, language=user_dub_lang)
+        # Filter to only dubbed anime if user has enabled dubbed for this catalog or globally
+        metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
         # Apply Custom Sorting for Discovery Catalogs if enabled
         is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, "watching", url_filters=filters)
@@ -2565,6 +2607,9 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 metas = cache.get("loved_items", [])
             else:
                 metas = cache.get("liked_items", [])
+
+        # Filter to only dubbed anime if user has enabled dubbed for this catalog
+        metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
         # Apply Custom Sorting for Recommendation Catalogs if enabled
         is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, None, url_filters=filters)
