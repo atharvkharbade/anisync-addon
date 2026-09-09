@@ -1,9 +1,7 @@
 import asyncio
 import datetime
-import io
 import logging
 import re
-import urllib.parse
 from app.services.http import get_client
 
 KITSU_API_BASE = "https://kitsu.io/api/edge"

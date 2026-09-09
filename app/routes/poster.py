@@ -74,13 +74,10 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
     try:
         font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
         font_size_classic = max(14, int(13 * scale)) if is_landscape else max(10, int(12 * scale))
-        font_size_small = max(8, int(10 * scale))
         try:
             font = ImageFont.truetype(font_path, font_size_classic)
-            font_small = ImageFont.truetype(font_path, font_size_small)
         except Exception:
             font = ImageFont.load_default()
-            font_small = font
 
         tracker_clean = tracker.replace(" ", "+").replace(",", "+")
         trackers = [t.strip() for t in tracker_clean.split("+") if t.strip()]

@@ -1,6 +1,6 @@
 import logging
 
-from quart import Blueprint, request
+from quart import Blueprint
 
 from app.routes.catalog.discovery import (
     DISCOVERY_CAT_IDS,

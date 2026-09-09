@@ -3,9 +3,6 @@ import datetime
 import logging
 import urllib.parse
 
-from app.services.http import get_client
-from config import Config
-
 
 def _parse_stremio_filters(extras: str) -> dict:
     if not extras:

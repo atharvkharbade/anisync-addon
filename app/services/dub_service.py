@@ -2,7 +2,6 @@ import asyncio
 import logging
 import time
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import httpx
 

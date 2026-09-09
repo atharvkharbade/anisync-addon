@@ -2,8 +2,6 @@ import datetime
 import logging
 import re
 
-from quart import request
-
 from app.routes.catalog.formatting import format_catalog_metas, get_anilist_title, get_kitsu_title
 from app.routes.utils import respond_with
 from app.services.http import get_client

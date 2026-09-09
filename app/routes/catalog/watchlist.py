@@ -1070,7 +1070,7 @@ async def handle_combined_catalog(user, user_id, catalog_type, catalog_id, filte
             except Exception as item_err:
                 logging.warning("Skipping malformed combined item in status %s: %s", comb_status, item_err)
                 continue
-    except Exception as e:
+    except Exception:
         logging.exception("Combined watchlist catalog load failed for status %s", comb_status)
 
     return await respond_with(

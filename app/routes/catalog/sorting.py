@@ -514,8 +514,6 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
 
         return 0
 
-    from functools import cmp_to_key
-
     def compare_items(a, b):
         if sort_by == "title":
             title_a = extract_title(a).lower()

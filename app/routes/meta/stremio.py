@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from .fetchers import clean_imdb_id
 
 
