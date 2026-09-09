@@ -2286,20 +2286,22 @@
                 <!-- Right Column: Poster Preview -->
                 <div class="col-12 col-lg-5">
                     <div id="posterLivePreviewContainer" class="artwork-preview-panel">
-                        <!-- Top Header Toolbar: Title on left, Shape & Cycle button on right -->
-                        <div class="d-flex align-items-center justify-content-between w-100 mb-3 flex-wrap gap-2">
+                        <!-- Top Header: Title on left, Cycle button on right -->
+                        <div class="d-flex align-items-center justify-content-between w-100 mb-2">
                             <span class="preview-panel-title mb-0">Preview</span>
-                            <div class="d-inline-flex align-items-center gap-1.5">
-                                <div class="preview-mode-switch" id="previewShapeToggle">
-                                    <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait">
-                                        Portrait
-                                    </button>
-                                    <button type="button" class="preview-mode-btn" id="btnPreviewLandscape" onclick="setArtworkPreviewShape('landscape')" title="Landscape">
-                                        Landscape
-                                    </button>
-                                </div>
-                                <button type="button" class="btn-sample-cycle" id="btnPreviewCycle" onclick="cycleArtworkSample()" title="Next Anime">
-                                    <i class="fa-solid fa-arrows-rotate"></i>
+                            <button type="button" class="btn-sample-cycle" id="btnPreviewCycle" onclick="cycleArtworkSample()" title="Next Anime">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
+                        </div>
+
+                        <!-- Centered Shape Switcher: Portrait vs Landscape (Directly above poster) -->
+                        <div class="d-flex justify-content-center w-100 mb-2">
+                            <div class="preview-mode-switch" id="previewShapeToggle">
+                                <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait">
+                                    Portrait
+                                </button>
+                                <button type="button" class="preview-mode-btn" id="btnPreviewLandscape" onclick="setArtworkPreviewShape('landscape')" title="Landscape">
+                                    Landscape
                                 </button>
                             </div>
                         </div>
