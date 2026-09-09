@@ -1090,6 +1090,29 @@
             flex: 1 1 auto;
             min-height: 0;
             overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+        .catalog-modal-preview-col {
+            margin-top: 0.5rem;
+        }
+        .preview-stage-wrap {
+            height: auto !important;
+        }
+        .preview-gallery-container {
+            overflow-y: visible !important;
+            height: auto !important;
+            max-height: none !important;
+            overscroll-behavior: auto !important;
+            touch-action: pan-y;
+        }
+        .preview-grid,
+        .preview-card,
+        .preview-card img {
+            touch-action: pan-y;
+            pointer-events: none;
+            -webkit-user-drag: none;
+            user-select: none;
         }
     }
     .catalog-header-badge {
@@ -1252,9 +1275,6 @@
         padding: 12px 14px;
         display: flex;
         flex-direction: column;
-        height: 100%;
-        max-height: 100%;
-        min-height: 0;
     }
     .preview-header {
         display: flex;
@@ -1270,17 +1290,27 @@
         letter-spacing: -0.01em;
     }
     .preview-gallery-container {
-        flex: 1 1 auto;
-        height: 100%;
-        max-height: 100%;
-        min-height: 0;
-        overflow-y: auto;
-        overflow-x: hidden;
-        padding-right: 4px;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
-        overscroll-behavior: contain;
-        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+    @media (min-width: 768px) {
+        .preview-stage-wrap {
+            height: 100%;
+            max-height: 100%;
+            min-height: 0;
+        }
+        .preview-gallery-container {
+            flex: 1 1 auto;
+            height: 100%;
+            max-height: 100%;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 4px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
     }
     .preview-gallery-container::-webkit-scrollbar {
         display: block;
@@ -3766,36 +3796,18 @@
             });
         });
 
-        // Prevent scroll chaining from preview gallery container
+        // Prevent scroll chaining from preview gallery container on desktop
         const previewGalleryEl = document.querySelector('.preview-gallery-container');
         if (previewGalleryEl) {
             previewGalleryEl.addEventListener("wheel", function (e) {
+                if (window.innerWidth < 768) return;
+                if (this.scrollHeight <= this.clientHeight) return;
                 const scrollTop = this.scrollTop;
                 const scrollHeight = this.scrollHeight;
                 const height = this.clientHeight;
                 const delta = e.deltaY;
 
                 if ((delta > 0 && scrollTop + height >= scrollHeight) || (delta < 0 && scrollTop <= 0)) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-
-            let pTouchStartY = 0;
-            previewGalleryEl.addEventListener("touchstart", function (e) {
-                if (e.touches && e.touches.length > 0) {
-                    pTouchStartY = e.touches[0].clientY;
-                }
-            }, { passive: true });
-
-            previewGalleryEl.addEventListener("touchmove", function (e) {
-                if (!e.touches || e.touches.length === 0) return;
-                const touchCurrentY = e.touches[0].clientY;
-                const deltaY = pTouchStartY - touchCurrentY;
-                const scrollTop = this.scrollTop;
-                const scrollHeight = this.scrollHeight;
-                const height = this.clientHeight;
-
-                if ((deltaY > 0 && scrollTop + height >= scrollHeight) || (deltaY < 0 && scrollTop <= 0)) {
                     e.preventDefault();
                 }
             }, { passive: false });
