@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import json
 import logging
 import random
 
@@ -10,267 +9,40 @@ from app.api import simkl as simkl_api
 from app.lib.id_resolver import resolve, resolve_anilist_to_kitsu, resolve_mal_to_kitsu
 from app.services.db import db, get_user, store_user
 from app.services.http import get_client
-from config import Config
+from app.services.recommendations.ai_enhancer import enhance_recommendations_with_gemini
+from app.services.recommendations.cache import get_popular_fallbacks, recommendations_cache_collection
+from app.services.recommendations.fetchers import (
+    get_anilist_recommendations_bulk,
+    get_mal_recommendations_for_id,
+    get_top_anime_by_genre,
+)
+from app.services.recommendations.utils import clean_html, is_proper_anime, normalize_user_status
 
 logger = logging.getLogger(__name__)
-recommendations_cache_collection = db.get_collection("recommendations_cache")
-
-currently_updating_users = set()
-
-# Popular anime fallback collection
-POPULAR_FALLBACKS = []
 
 
-def clean_html(text: str) -> str:
-    if not text:
-        return ""
-    import re
-
-    # Strip HTML tags
-    clean = re.sub(r"<[^<]+?>", "", text)
-    # Decode common HTML entities if any
-    clean = (
-        clean.replace("&quot;", '"')
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&apos;", "'")
-    )
-    return clean.strip()
-
-
-def is_proper_anime(title: str, synopsis: str | None = None) -> bool:
-    if not title:
-        return True
-    t_lower = title.lower()
-
-    # Exclude obvious shorts, chibi series, recaps, side stories, and specials by keywords
-    excl_keywords = [
-        "break time",
-        "kyuukei jikan",
-        "chibi",
-        "petit",
-        "mini-anime",
-        "mini anime",
-        "character theater",
-        "chara gekijou",
-        "picture drama",
-        "recap",
-        "summary",
-        "special episode",
-        "pv",
-        "trailer",
-        "commercial",
-        "short anime",
-        "web short",
-        "spin-off",
-        "spinoff",
-        "bonus",
-        "audio commentary",
-        "side story",
-        "side stories",
-        "junior high",
-        "ple ple pleiades",
-        "chara-gekijou",
-        "chara gekijou",
-        "oitsukeru",
-        "de oitsukeru",
-        "soushuuhen",
-        "sou-shuuhen",
-        "soushuhen",
-        "digest",
-        "daijesuto",
-        "compilation",
-        "catch-up",
-        "catch up",
-        "re-cap",
-        "re-edit",
-        "omnibus",
-        "theatrical short",
-        "drama cd",
-        "audio drama",
-        "special edition",
-    ]
-
-    for kw in excl_keywords:
-        if kw == "ona":
-            import re
-
-            if re.search(r"\bona\b", t_lower):
-                return False
-        elif kw == "ova":
-            import re
-
-            if re.search(r"\bova\b", t_lower):
-                return False
-        elif kw in t_lower:
-            return False
-
-    if synopsis:
-        s_lower = synopsis.lower().strip()
-        recap_prefixes = (
-            "recap of",
-            "a recap of",
-            "summary of",
-            "a summary of",
-            "digest of",
-            "a digest of",
-            "compilation of",
-            "a compilation of",
-            "special episode summarizing",
-            "recap episode",
-        )
-        if any(s_lower.startswith(prefix) for prefix in recap_prefixes):
-            return False
-
-    return True
-
-
-async def get_mal_recommendations_for_id(token: str | None, mal_id: str) -> list[dict]:
-    items = []
-    if token:
-        client = get_client()
-        url = f"{Config.MAL_API_URL}/anime/{mal_id}"
-        params = {
-            "fields": "recommendations{node{id,title,main_picture,genres,start_season,media_type,popularity,mean,synopsis,average_episode_duration,status}}"
-        }
-        headers = {"Authorization": f"Bearer {token}"}
-        try:
-            resp = await client.get(url, params=params, headers=headers, timeout=10)
-            if resp.status_code == 200:
-                items = resp.json().get("recommendations", [])
-        except Exception as e:
-            logger.warning("Failed to fetch MAL recommendations for MAL ID %s: %s", mal_id, e)
-
-    if not items and mal_id:
-        try:
-            from app.api.jikan import get_anime_recommendations
-            jikan_recs = await get_anime_recommendations(mal_id)
-            if jikan_recs:
-                for rec in jikan_recs:
-                    entry = rec.get("entry", {})
-                    mid = entry.get("mal_id")
-                    title = entry.get("title") or entry.get("name")
-                    url = entry.get("url") or ""
-                    if not title and "/anime/" in url:
-                        parts = url.split("/anime/")[1].split("/")
-                        if len(parts) > 1:
-                            title = parts[1].replace("_", " ")
-                    if mid:
-                        items.append({
-                            "node": {
-                                "id": mid,
-                                "title": title or f"Anime #{mid}"
-                            }
-                        })
-        except Exception as ex:
-            logger.warning("Jikan recommendations fallback failed for MAL ID %s: %s", mal_id, ex)
-
-    return items
-
-
-async def get_anilist_recommendations_bulk(token: str, anilist_ids: list[int]) -> list[dict]:
-    if not anilist_ids:
-        return []
-    
-    # AniList Page recommendations doesn't support bulk mediaId_in, so we query using aliases.
-    # Limit to top 15 seeds to keep query size reasonable and avoid complexity limits.
-    anilist_ids = [int(aid) for aid in anilist_ids[:15]]
-    
-    rec_fields = """
-          rating
-          media {
-            id
-          }
-          mediaRecommendation {
-            id
-            idMal
-            status
-            title {
-              english
-              romaji
-              userPreferred
-            }
-            coverImage {
-              large
-              medium
-            }
-            bannerImage
-            startDate {
-              year
-            }
-            genres
-            format
-            duration
-            popularity
-            averageScore
-            description
-          }
-    """
-    
-    # Construct the query variables definition
-    var_defs = ", ".join([f"$mediaId{i}: Int" for i in range(len(anilist_ids))])
-    
-    # Construct the query fields (aliases)
-    alias_queries = []
-    for i in range(len(anilist_ids)):
-        alias_queries.append(f"""
-      page_{i}: Page(page: 1, perPage: 15) {{
-        recommendations(mediaId: $mediaId{i}, sort: RATING_DESC) {{
-          {rec_fields}
-        }}
-      }}
-        """)
-        
-    query = f"""
-    query ({var_defs}) {{
-      {"".join(alias_queries)}
-    }}
-    """
-    
-    variables = {f"mediaId{i}": aid for i, aid in enumerate(anilist_ids)}
-    
-    try:
-        res = await anilist_api._gql(token, query, variables)
-        all_recs = []
-        for key, page_data in res.get("data", {}).items():
-            if key.startswith("page_") and page_data:
-                recs = page_data.get("recommendations", [])
-                if recs:
-                    all_recs.extend(recs)
-        return all_recs
-    except Exception as e:
-        logger.warning("Failed bulk AniList recommendations query: %s", e)
-    return []
-
-
-async def update_recommendations_cache(user_id: str, force: bool = False):
-    if user_id in currently_updating_users:
-        return
-    currently_updating_users.add(user_id)
-    try:
-        await _update_recommendations_cache_impl(user_id, force)
-    except Exception as e:
-        logger.exception("Error updating recommendations for user %s: %s", user_id, e)
-    finally:
-        currently_updating_users.discard(user_id)
-
-
-def normalize_user_status(status: str | None) -> str:
-    if not status:
-        return "watching"
-    s = status.lower()
-    if s in ["watching", "current"]:
-        return "watching"
-    if s in ["completed"]:
-        return "completed"
-    if s in ["on_hold", "paused", "hold"]:
-        return "on_hold"
-    if s in ["dropped"]:
-        return "dropped"
-    if s in ["plan_to_watch", "planning", "plantowatch"]:
-        return "planning"
-    return s
+def select_weighted_seeds(pool, count):
+    if len(pool) <= count:
+        return pool
+    selected = []
+    pool_copy = list(pool)
+    while len(selected) < count and pool_copy:
+        weights = []
+        for x in pool_copy:
+            rating = x.get("rating") or 0
+            if rating >= 9:
+                w = 10
+            elif 7 <= rating <= 8:
+                w = 7
+            elif 1 <= rating <= 6:
+                w = 4
+            else:  # unrated
+                w = 5
+            weights.append(w)
+        choice = random.choices(pool_copy, weights=weights, k=1)[0]
+        selected.append(choice)
+        pool_copy.remove(choice)
+    return selected
 
 
 async def get_recommendations_for_seeds(
@@ -287,7 +59,6 @@ async def get_recommendations_for_seeds(
     if watched_kitsu_ids is None:
         watched_kitsu_ids = set()
 
-    rec_language = user.get("rec_language", "en")
     rec_popularity = user.get("rec_popularity", "balanced")
     rec_year_min = user.get("rec_year_min", 1980)
     rec_year_max = user.get("rec_year_max", datetime.datetime.now(datetime.timezone.utc).year + 1)
@@ -359,11 +130,26 @@ async def get_recommendations_for_seeds(
         # Choose title based on user language preference
         title_pref = media.get("title", {})
         if title_lang == "japanese":
-            title = title_pref.get("native") or title_pref.get("userPreferred") or title_pref.get("english") or "Unknown Title"
+            title = (
+                title_pref.get("native")
+                or title_pref.get("userPreferred")
+                or title_pref.get("english")
+                or "Unknown Title"
+            )
         elif title_lang == "romaji":
-            title = title_pref.get("romaji") or title_pref.get("userPreferred") or title_pref.get("english") or "Unknown Title"
+            title = (
+                title_pref.get("romaji")
+                or title_pref.get("userPreferred")
+                or title_pref.get("english")
+                or "Unknown Title"
+            )
         else:
-            title = title_pref.get("english") or title_pref.get("userPreferred") or title_pref.get("romaji") or "Unknown Title"
+            title = (
+                title_pref.get("english")
+                or title_pref.get("userPreferred")
+                or title_pref.get("romaji")
+                or "Unknown Title"
+            )
 
         if filter_watched and title.lower() in watched_titles:
             continue
@@ -408,7 +194,13 @@ async def get_recommendations_for_seeds(
         mal_recs_lists = await asyncio.gather(*tasks)
 
         from app.services.db import get_cached_ids_by_mal_bulk
-        all_mal_ids = [str(r.get("node", {}).get("id")) for sublist in mal_recs_lists for r in sublist if r.get("node", {}).get("id")]
+
+        all_mal_ids = [
+            str(r.get("node", {}).get("id"))
+            for sublist in mal_recs_lists
+            for r in sublist
+            if r.get("node", {}).get("id")
+        ]
         mal_id_cache_map = get_cached_ids_by_mal_bulk(all_mal_ids)
 
         for s, rec_list in zip(mal_seed_shows, mal_recs_lists):
@@ -428,7 +220,6 @@ async def get_recommendations_for_seeds(
                     continue
 
                 syn = clean_html(node.get("synopsis") or "")
-                # Exclude OVA, SPECIAL, MUSIC and short duration (<= 5 minutes / 300 seconds)
                 m_type = node.get("media_type")
                 duration = node.get("average_episode_duration")
                 if m_type in ["ova", "special", "music"] or not is_proper_anime(title, syn):
@@ -466,13 +257,18 @@ async def get_recommendations_for_seeds(
                     if (pop_rank and pop_rank <= 1200) or (mean_score and mean_score < 7.3):
                         continue
 
-                poster = (node.get("main_picture") or {}).get("large") or (node.get("main_picture") or {}).get("medium") or ""
+                poster = (
+                    (node.get("main_picture") or {}).get("large")
+                    or (node.get("main_picture") or {}).get("medium")
+                    or ""
+                )
                 syn = clean_html(node.get("synopsis") or "")
 
                 c_doc = mal_id_cache_map.get(str(mid))
                 aid = str(c_doc["anilist_id"]) if c_doc and c_doc.get("anilist_id") else None
 
                 from app.lib.meta_providers import get_al_cover, get_effective_meta_providers
+
                 al_poster = get_al_cover(aid)
                 rec_poster_pref = get_effective_meta_providers(user).get("poster", "kitsu")
                 chosen_poster = al_poster if (rec_poster_pref == "anilist" and al_poster) else poster
@@ -504,12 +300,11 @@ async def get_recommendations_for_seeds(
                         rec_candidates[key]["inspired_by_titles"].append(seed_title)
 
     # 3. Kitsu Media Relationships (fetch sequels, prequels, spin-offs for up to 15 seeds)
-    kitsu_seed_shows = [s for s in seeds[:15]]
+    kitsu_seed_shows = list(seeds[:15])
     if kitsu_seed_shows:
 
         async def fetch_kitsu_relationships_for_seed(s):
             try:
-                # 1. Resolve kitsu_id
                 kitsu_id = None
                 if s.get("mal_id"):
                     kitsu_id = await resolve_mal_to_kitsu(s["mal_id"])
@@ -518,7 +313,6 @@ async def get_recommendations_for_seeds(
                 if not kitsu_id:
                     return s, []
 
-                # 2. Fetch media-relationships from Kitsu
                 url = f"https://kitsu.io/api/edge/anime/{kitsu_id}/media-relationships?include=destination"
                 headers = {
                     "Accept": "application/vnd.api+json",
@@ -540,7 +334,6 @@ async def get_recommendations_for_seeds(
                         if not kid or not attrs:
                             continue
 
-                        # Exclude OVA, SPECIAL, MUSIC, and short duration (<= 5 minutes)
                         subtype = (attrs.get("subtype") or "tv").lower()
                         episode_length = attrs.get("episodeLength")
                         if subtype in ["ova", "special", "music"]:
@@ -575,16 +368,14 @@ async def get_recommendations_for_seeds(
                             poster = poster.split("?")[0]
                         synopsis = attrs.get("synopsis") or ""
 
-                        related_items.append(
-                            {
-                                "kitsu_id": kid,
-                                "name": title,
-                                "poster": poster,
-                                "type": item_type,
-                                "year": k_year,
-                                "description": synopsis[:200] + "..." if len(synopsis) > 200 else synopsis,
-                            }
-                        )
+                        related_items.append({
+                            "kitsu_id": kid,
+                            "name": title,
+                            "poster": poster,
+                            "type": item_type,
+                            "year": k_year,
+                            "description": synopsis[:200] + "..." if len(synopsis) > 200 else synopsis,
+                        })
                 return s, related_items
             except Exception as e:
                 logger.warning("Kitsu relationship lookup failed for seed %s: %s", s.get("title"), e)
@@ -596,11 +387,9 @@ async def get_recommendations_for_seeds(
         for s, related_items in kitsu_results:
             seed_title = s["title"]
             for r_item in related_items:
-                # Watched title filter first
                 if filter_watched and r_item["name"].lower() in watched_titles:
                     continue
 
-                # Resolve Kitsu ID to MAL/AniList IDs to do ID-based watched filtering
                 mid, aid = await resolve(r_item["kitsu_id"])
 
                 if filter_watched:
@@ -611,7 +400,6 @@ async def get_recommendations_for_seeds(
                     ):
                         continue
 
-                # Year filter
                 year = r_item.get("year")
                 if year and (year < rec_year_min or year > rec_year_max):
                     continue
@@ -620,11 +408,11 @@ async def get_recommendations_for_seeds(
                 syn = clean_html(r_item.get("description") or "")
 
                 from app.lib.meta_providers import get_al_cover, get_effective_meta_providers
+
                 al_poster = get_al_cover(aid)
                 rec_poster_pref = get_effective_meta_providers(user).get("poster", "kitsu")
                 chosen_poster = al_poster if (rec_poster_pref == "anilist" and al_poster) else r_item["poster"]
 
-                # Add to candidates
                 if key not in rec_candidates:
                     rec_candidates[key] = {
                         "id": key,
@@ -636,7 +424,7 @@ async def get_recommendations_for_seeds(
                         "kitsu_id": str(r_item["kitsu_id"]),
                         "mal_id": str(mid) if mid else None,
                         "anilist_id": str(aid) if aid else None,
-                        "score": 10,  # Score boost for franchise expansions
+                        "score": 10,
                         "description": r_item["description"] or "Franchise sequel, prequel, or spin-off.",
                         "synopsis": syn,
                         "inspired_by_titles": [seed_title],
@@ -654,45 +442,6 @@ async def get_recommendations_for_seeds(
     return sorted_recs
 
 
-async def get_top_anime_by_genre(token: str, genre: str, sort: str = "POPULARITY_DESC") -> list[dict]:
-    query = """
-    query ($genre: String, $sort: [MediaSort]) {
-      Page(page: 1, perPage: 50) {
-        media(genre: $genre, type: ANIME, sort: $sort) {
-          id
-          idMal
-          status
-          title {
-            english
-            romaji
-            userPreferred
-          }
-          coverImage {
-            large
-            medium
-          }
-          bannerImage
-          startDate {
-            year
-          }
-          genres
-          format
-          duration
-          popularity
-          averageScore
-          description
-        }
-      }
-    }
-    """
-    try:
-        res = await anilist_api._gql(token, query, {"genre": genre, "sort": [sort]})
-        return res.get("data", {}).get("Page", {}).get("media", [])
-    except Exception as e:
-        logger.warning("Failed to fetch top anime for genre %s: %s", genre, e)
-    return []
-
-
 async def generate_genre_recommendations(
     genre: str,
     user: dict,
@@ -703,7 +452,6 @@ async def generate_genre_recommendations(
 ) -> list[dict]:
     if watched_kitsu_ids is None:
         watched_kitsu_ids = set()
-    rec_language = user.get("rec_language", "en")
     rec_popularity = user.get("rec_popularity", "balanced")
     rec_year_min = user.get("rec_year_min", 1980)
     rec_year_max = user.get("rec_year_max", datetime.datetime.now(datetime.timezone.utc).year + 1)
@@ -726,7 +474,6 @@ async def generate_genre_recommendations(
         if media.get("status") == "NOT_YET_RELEASED":
             continue
 
-        # Exclude OVA, SPECIAL, MUSIC, TV_SHORT and short durations (<= 5 minutes)
         m_format = media.get("format")
         duration = media.get("duration")
         if m_format in ["OVA", "SPECIAL", "MUSIC", "TV_SHORT"]:
@@ -737,25 +484,21 @@ async def generate_genre_recommendations(
         aid = str(media.get("id"))
         mid = str(media.get("idMal")) if media.get("idMal") else None
 
-        # Watched filters
         if filter_watched:
             if aid in watched_anilist_ids or (mid and mid in watched_mal_ids):
                 continue
 
-        # Year filter
         year = (media.get("startDate") or {}).get("year")
         if year and (year < rec_year_min or year > rec_year_max):
             continue
 
         item_type = "movie" if m_format == "MOVIE" else "series"
 
-        # Excluded genres filter
         genres = media.get("genres", []) or []
         excluded_genres = rec_excluded_movie_genres if item_type == "movie" else rec_excluded_series_genres
         if any(g in excluded_genres for g in genres):
             continue
 
-        # Popularity filters
         pop_score = media.get("popularity") or 0
         avg_score = media.get("averageScore") or 0
         if rec_popularity == "mainstream":
@@ -765,15 +508,29 @@ async def generate_genre_recommendations(
             if pop_score >= 25000 or avg_score < 73:
                 continue
 
-        # Choose title based on language
         title_pref = media.get("title", {})
         title_lang = (user.get("title_language", "english") or "english").lower() if user else "english"
         if title_lang == "japanese":
-            title = title_pref.get("native") or title_pref.get("userPreferred") or title_pref.get("english") or "Unknown Title"
+            title = (
+                title_pref.get("native")
+                or title_pref.get("userPreferred")
+                or title_pref.get("english")
+                or "Unknown Title"
+            )
         elif title_lang == "romaji":
-            title = title_pref.get("romaji") or title_pref.get("userPreferred") or title_pref.get("english") or "Unknown Title"
+            title = (
+                title_pref.get("romaji")
+                or title_pref.get("userPreferred")
+                or title_pref.get("english")
+                or "Unknown Title"
+            )
         else:
-            title = title_pref.get("english") or title_pref.get("userPreferred") or title_pref.get("romaji") or "Unknown Title"
+            title = (
+                title_pref.get("english")
+                or title_pref.get("userPreferred")
+                or title_pref.get("romaji")
+                or "Unknown Title"
+            )
 
         if filter_watched and title.lower() in watched_titles:
             continue
@@ -803,32 +560,6 @@ async def generate_genre_recommendations(
     return recs
 
 
-def select_weighted_seeds(pool, count):
-    import random
-
-    if len(pool) <= count:
-        return pool
-    selected = []
-    pool_copy = list(pool)
-    while len(selected) < count and pool_copy:
-        weights = []
-        for x in pool_copy:
-            rating = x.get("rating") or 0
-            if rating >= 9:
-                w = 10
-            elif 7 <= rating <= 8:
-                w = 7
-            elif 1 <= rating <= 6:
-                w = 4
-            else:  # unrated
-                w = 5
-            weights.append(w)
-        choice = random.choices(pool_copy, weights=weights, k=1)[0]
-        selected.append(choice)
-        pool_copy.remove(choice)
-    return selected
-
-
 async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
     user = get_user(user_id)
     if not user or not user.get("enable_recommendations", True):
@@ -842,7 +573,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         if last_updated and (datetime.datetime.utcnow() - last_updated) < datetime.timedelta(hours=24):
             return
 
-    # Retrieve user preference filters
     rec_language = user.get("rec_language", "en")
     rec_popularity = user.get("rec_popularity", "balanced")
     rec_sorting_order = user.get("rec_sorting_order", "default")
@@ -862,7 +592,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         rec_excluded_series_genres,
     )
 
-    # 1. Fetch watched history from both track managers
+    # 1. Fetch watched history from track managers
     mal_items = []
     if user.get("mal_access_token") and user.get("mal_enabled", True):
         try:
@@ -888,6 +618,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         except anilist_api.AnilistTokenInvalidError as e:
             logger.warning("AniList token invalid during recommendations update for user %s: %s", user_id, e)
             from app.services.db import handle_invalid_anilist_token
+
             handle_invalid_anilist_token(user_id)
         except Exception as e:
             logger.warning("Failed to fetch AniList user list: %s", e)
@@ -964,14 +695,12 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
             merged_shows[key]["anilist_id"] = anilist_id
             merged_shows[key]["rating"] = max(merged_shows[key].get("rating") or 0, rating)
 
-            # Status merging: completed/watching/dropped/on_hold override planning
             old_status = merged_shows[key]["status"]
             if old_status == "planning" and status != "planning":
                 merged_shows[key]["status"] = status
             elif old_status != "completed" and status == "completed":
                 merged_shows[key]["status"] = "completed"
 
-            # Merge genres
             old_genres = merged_shows[key].get("genres", [])
             for g in genres:
                 if g not in old_genres:
@@ -1056,12 +785,11 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         if show.get("title"):
             watched_titles.add(show["title"].lower())
 
-    # Bulk-resolve IDs from fribb_mappings and id_cache to ensure complete cross-tracker filtering
+    # Bulk-resolve IDs from fribb_mappings and id_cache
     raw_mal_ids = list(watched_mal_ids)
     raw_al_ids = list(watched_anilist_ids)
     raw_kitsu_ids = list(watched_kitsu_ids)
     if raw_mal_ids or raw_al_ids or raw_kitsu_ids:
-        # Query fribb_mappings
         fribb_query = []
         if raw_mal_ids:
             fribb_query.append({"mal_id": {"$in": raw_mal_ids}})
@@ -1090,7 +818,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
             except Exception as e:
                 logger.warning("Failed to bulk query fribb_mappings for ID resolving: %s", e)
 
-        # Query id_cache
         cache_query = []
         if raw_mal_ids:
             cache_query.append({"mal_id": {"$in": raw_mal_ids}})
@@ -1155,7 +882,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         if media.get("status") == "NOT_YET_RELEASED":
             continue
 
-        # Exclude OVA, SPECIAL, MUSIC, TV_SHORT and short durations (<= 5 minutes)
         m_format = media.get("format")
         duration = media.get("duration")
         if m_format in ["OVA", "SPECIAL", "MUSIC", "TV_SHORT"]:
@@ -1170,25 +896,21 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         aid = str(media.get("id"))
         mid = str(media.get("idMal")) if media.get("idMal") else None
 
-        # Watched filters
         if filter_watched:
             if aid in watched_anilist_ids or (mid and mid in watched_mal_ids):
                 continue
 
-        # Year filter
         year = (media.get("startDate") or {}).get("year")
         if year and (year < rec_year_min or year > rec_year_max):
             continue
 
         item_type = "movie" if m_format == "MOVIE" else "series"
 
-        # Excluded genres filter
         genres = media.get("genres", []) or []
         excluded_genres = rec_excluded_movie_genres if item_type == "movie" else rec_excluded_series_genres
         if any(g in excluded_genres for g in genres):
             continue
 
-        # Popularity filters
         pop_score = media.get("popularity") or 0
         avg_score = media.get("averageScore") or 0
         if rec_popularity == "mainstream":
@@ -1198,7 +920,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
             if pop_score >= 25000 or avg_score < 73:
                 continue
 
-        # Choose title based on language
         title_pref = media.get("title", {})
         if rec_language == "ja":
             title = title_pref.get("romaji") or title_pref.get("userPreferred") or title_pref.get("english")
@@ -1243,7 +964,13 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         mal_recs_lists = await asyncio.gather(*tasks)
 
         from app.services.db import get_cached_ids_by_mal_bulk
-        genre_mal_ids = [str(r.get("node", {}).get("id")) for sublist in mal_recs_lists for r in sublist if r.get("node", {}).get("id")]
+
+        genre_mal_ids = [
+            str(r.get("node", {}).get("id"))
+            for sublist in mal_recs_lists
+            for r in sublist
+            if r.get("node", {}).get("id")
+        ]
         genre_id_cache_map = get_cached_ids_by_mal_bulk(genre_mal_ids)
 
         for s, rec_list in zip(mal_seed_shows, mal_recs_lists):
@@ -1262,7 +989,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 if node.get("status") == "not_yet_aired":
                     continue
 
-                # Exclude OVA, SPECIAL, MUSIC and short duration (<= 5 minutes / 300 seconds)
                 syn = clean_html(node.get("synopsis") or "")
                 m_type = node.get("media_type")
                 duration = node.get("average_episode_duration")
@@ -1271,27 +997,23 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 if duration is not None and duration <= 300:
                     continue
 
-                # Watched filters
                 if filter_watched:
                     if mid in watched_mal_ids:
                         continue
                     if title.lower() in watched_titles:
                         continue
 
-                # Year filter
                 year = (node.get("start_season") or {}).get("year")
                 if year and (year < rec_year_min or year > rec_year_max):
                     continue
 
                 item_type = "movie" if m_type == "movie" else "series"
 
-                # Excluded genres filter
                 genres = [g.get("name") for g in node.get("genres", []) if g.get("name")]
                 excluded_genres = rec_excluded_movie_genres if item_type == "movie" else rec_excluded_series_genres
                 if any(g in excluded_genres for g in genres):
                     continue
 
-                # Popularity filters
                 pop_rank = node.get("popularity")
                 mean_score = node.get("mean")
                 if rec_popularity == "mainstream":
@@ -1301,13 +1023,18 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                     if (pop_rank and pop_rank <= 1200) or (mean_score and mean_score < 7.3):
                         continue
 
-                poster = (node.get("main_picture") or {}).get("large") or (node.get("main_picture") or {}).get("medium") or ""
+                poster = (
+                    (node.get("main_picture") or {}).get("large")
+                    or (node.get("main_picture") or {}).get("medium")
+                    or ""
+                )
                 syn = clean_html(node.get("synopsis") or "")
 
                 c_doc = genre_id_cache_map.get(str(mid))
                 aid = str(c_doc["anilist_id"]) if c_doc and c_doc.get("anilist_id") else None
 
                 from app.lib.meta_providers import get_al_cover, get_effective_meta_providers
+
                 al_poster = get_al_cover(aid)
                 rec_poster_pref = get_effective_meta_providers(user).get("poster", "kitsu")
                 chosen_poster = al_poster if (rec_poster_pref == "anilist" and al_poster) else poster
@@ -1357,21 +1084,24 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
 
     if seed_show:
         item_recs = await get_recommendations_for_seeds(
-            [seed_show], user, watched_mal_ids, watched_anilist_ids, watched_titles, watched_kitsu_ids=watched_kitsu_ids
+            [seed_show],
+            user,
+            watched_mal_ids,
+            watched_anilist_ids,
+            watched_titles,
+            watched_kitsu_ids=watched_kitsu_ids,
         )
         for ir in item_recs:
             desc = f"Recommended because you watched {seed_show['title']}."
             syn = ir.get("synopsis") or ""
             ir["description"] = f"{desc}  \n\n{syn}" if syn else desc
 
-    # Fallback default seeds if empty
     if not item_recs:
         item_recs = []
         for fb in fallbacks:
             if len(item_recs) >= 5:
                 break
 
-            # Check if watched
             if filter_watched:
                 title = fb.get("name", "")
                 if title and title.lower() in watched_titles:
@@ -1393,7 +1123,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
             item_recs.append(item_copy)
         seed_show = {"title": "Fullmetal Alchemist: Brotherhood"}
 
-    # Filter item_recs for watched shows if filter_watched is True
     if filter_watched and item_recs:
         filtered_item_recs = []
         for ir in item_recs:
@@ -1483,10 +1212,20 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
     genre_2_name = fav_genres[1]
 
     genre_1_items = await generate_genre_recommendations(
-        genre_1_name, user, watched_mal_ids, watched_anilist_ids, watched_titles, watched_kitsu_ids=watched_kitsu_ids
+        genre_1_name,
+        user,
+        watched_mal_ids,
+        watched_anilist_ids,
+        watched_titles,
+        watched_kitsu_ids=watched_kitsu_ids,
     )
     genre_2_items = await generate_genre_recommendations(
-        genre_2_name, user, watched_mal_ids, watched_anilist_ids, watched_titles, watched_kitsu_ids=watched_kitsu_ids
+        genre_2_name,
+        user,
+        watched_mal_ids,
+        watched_anilist_ids,
+        watched_titles,
+        watched_kitsu_ids=watched_kitsu_ids,
     )
     if not genre_1_items:
         genre_1_items = []
@@ -1508,97 +1247,28 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
     # 8. Enhance recommendations using Gemini API if key is provided
     gemini_api_key = user.get("gemini_api_key", "").strip()
     if gemini_api_key:
-        candidates_by_name = {}
-        for item in (
-            top_picks[:8] + item_recs[:8] + loved_items[:8] + liked_items[:8] + genre_1_items[:8] + genre_2_items[:8]
-        ):
-            if item.get("name") and item["name"] not in candidates_by_name:
-                candidates_by_name[item["name"]] = item
-
-        if candidates_by_name:
-            history_lines = []
-            for show in sorted_user_history[:15]:
-                status = show["status"].lower() if show["status"] else "watched"
-                rating_str = f"rated {show['rating']}/10" if show["rating"] else "no rating"
-                history_lines.append(f"- {show['title']} ({status}, {rating_str})")
-            history_text = "\n".join(history_lines)
-            candidates_text = "\n".join([f"- {name}" for name in candidates_by_name.keys()])
-
-            prompt = f"""
-            You are an advanced anime recommendation assistant.
-            Based on the user's anime watch history:
-            {history_text}
-
-            And this list of candidate anime recommendations:
-            {candidates_text}
-
-            For each candidate that is relevant, write a personalized, engaging 1-sentence description explaining why the user would like it based on their history (referencing specific anime they watched when appropriate). Keep descriptions concise (under 150 characters).
-
-            Return your response as a JSON object mapping the exact candidate title to its personalized description:
-            {{
-              "Anime Title 1": "Description...",
-              "Anime Title 2": "Description...",
-              ...
-            }}
-            Return only the raw JSON.
-            """
-            try:
-                models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"]
-                payload = {
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"responseMimeType": "application/json"},
-                }
-                client = get_client()
-                resp = None
-                for model in models:
-                    try:
-                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_api_key}"
-                        r = await client.post(url, json=payload, timeout=15)
-                        if r.status_code == 200:
-                            resp = r
-                            logger.info("Successfully generated AI recommendations via %s", model)
-                            break
-                        else:
-                            logger.warning("Gemini model %s returned status %s, attempting next fallback model...", model, r.status_code)
-                    except Exception as model_err:
-                        logger.warning("Gemini model %s failed (%s), attempting next fallback model...", model, model_err)
-
-                if resp and resp.status_code == 200:
-                    res_json = resp.json()
-                    text = res_json["candidates"][0]["content"]["parts"][0]["text"]
-                    ai_explanations = json.loads(text)
-
-                    def enhance_list(items):
-                        enhanced = []
-                        others = []
-                        for item in items:
-                            name = item.get("name")
-                            if name in ai_explanations:
-                                item_copy = item.copy()
-                                ai_desc = ai_explanations[name]
-                                syn = item_copy.get("synopsis") or ""
-                                item_copy["description"] = f"{ai_desc}  \n\n{syn}" if syn else ai_desc
-                                enhanced.append(item_copy)
-                            else:
-                                others.append(item)
-                        return enhanced + others
-
-                    top_picks = enhance_list(top_picks)
-                    item_recs = enhance_list(item_recs)
-                    loved_items = enhance_list(loved_items)
-                    liked_items = enhance_list(liked_items)
-                    genre_1_items = enhance_list(genre_1_items)
-                    genre_2_items = enhance_list(genre_2_items)
-                else:
-                    logger.warning("Gemini API call failed with status %s: %s", resp.status_code, resp.text)
-            except Exception as e:
-                logger.warning("Failed to enhance recommendations with Gemini: %s", e)
+        candidate_groups = {
+            "top_picks": top_picks,
+            "item_recs": item_recs,
+            "loved_items": loved_items,
+            "liked_items": liked_items,
+            "genre_1_items": genre_1_items,
+            "genre_2_items": genre_2_items,
+        }
+        enhanced_groups = await enhance_recommendations_with_gemini(
+            gemini_api_key, sorted_user_history, candidate_groups
+        )
+        top_picks = enhanced_groups["top_picks"]
+        item_recs = enhanced_groups["item_recs"]
+        loved_items = enhanced_groups["loved_items"]
+        liked_items = enhanced_groups["liked_items"]
+        genre_1_items = enhanced_groups["genre_1_items"]
+        genre_2_items = enhanced_groups["genre_2_items"]
 
     # Deduplicate and pad lists to prevent identical listings across rows
     shown_ids = set()
     watched_titles_filter = watched_titles if filter_watched else set()
 
-    # Helper function to pad a list with popular unique/unwatched anime up to a minimum count
     def pad_catalog(items, fallback_list, shown_ids_set, watched_titles_set, min_count=15, default_desc=None):
         padded_items = []
         for item in items:
@@ -1648,12 +1318,10 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 item_copy["description"] = f"{default_desc}  \n\n{fb_desc}" if fb_desc else default_desc
             padded_items.append(item_copy)
 
-        # Second pass safety fallback (allow reuse of shown_ids across catalogs if we could not satisfy min_count)
         if len(padded_items) < min_count:
             for fb_item in fallback_list:
                 if len(padded_items) >= min_count:
                     break
-                # Avoid duplicate within the same row
                 if any(x["id"] == fb_item["id"] for x in padded_items):
                     continue
                 title = fb_item.get("name", "")
@@ -1675,7 +1343,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 padded_items.append(item_copy)
         return padded_items
 
-    # 1. Deduplicate & pad Top Picks
     top_picks = pad_catalog(
         top_picks,
         fallbacks,
@@ -1684,7 +1351,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         min_count=15,
         default_desc="Popular community recommendation.",
     )
-    # 2. Deduplicate & pad Loved Items
     loved_items = pad_catalog(
         loved_items,
         fallbacks,
@@ -1693,7 +1359,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         min_count=15,
         default_desc="Popular trending anime you might enjoy.",
     )
-    # 3. Deduplicate & pad Liked Items
     liked_items = pad_catalog(
         liked_items,
         fallbacks,
@@ -1702,7 +1367,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         min_count=15,
         default_desc="Popular trending anime you might enjoy.",
     )
-    # 4. Deduplicate & pad Genre Items
     genre_1_items = pad_catalog(
         genre_1_items,
         fallbacks,
@@ -1720,7 +1384,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         default_desc=f"Popular {genre_2_name} collection.",
     )
 
-    # Enforce sorting order preference (Default, Series First, Movies First)
     def apply_sorting_order(metas):
         if rec_sorting_order == "series_first":
             return sorted(metas, key=lambda x: 0 if x.get("type") == "series" else 1)
@@ -1735,7 +1398,6 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
     genre_1_items = apply_sorting_order(genre_1_items)[:30]
     genre_2_items = apply_sorting_order(genre_2_items)[:30]
 
-    # Save to database
     recommendations_cache_collection.update_one(
         {"uid": user_id},
         {
@@ -1757,162 +1419,3 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         upsert=True,
     )
     logger.info("Successfully updated recommendations cache for user %s", user_id)
-
-
-def get_cached_recommendations(user_id: str) -> dict | None:
-    return recommendations_cache_collection.find_one({"uid": user_id})
-
-
-def trigger_recommendation_update_background(user_id: str, force: bool = False):
-    user = get_user(user_id)
-    if not user or not user.get("enable_recommendations", True):
-        return
-    asyncio.create_task(update_recommendations_cache(user_id, force=force))
-
-
-popular_fallbacks_collection = db.get_collection("popular_fallbacks")
-
-
-def get_popular_fallbacks() -> list[dict]:
-    """Retrieve fallback list from database cache, or fallback to the static list if empty."""
-    try:
-        cached = list(popular_fallbacks_collection.find({}, {"_id": 0}))
-        if cached and len(cached) >= 15:
-            return cached
-    except Exception as e:
-        logger.error("Failed to read popular fallbacks from MongoDB: %s", e)
-    return POPULAR_FALLBACKS
-
-
-async def update_popular_fallbacks_cache():
-    """Fetch the top 80 most popular anime from AniList and cache them in MongoDB."""
-    query = """
-    query {
-      Page(page: 1, perPage: 80) {
-        media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
-          id
-          idMal
-          status
-          format
-          duration
-          title {
-            english
-            romaji
-            userPreferred
-          }
-          coverImage {
-            large
-          }
-          bannerImage
-          description
-        }
-      }
-    }
-    """
-    try:
-        logger.info("Updating popular fallbacks cache from AniList...")
-        res = await anilist_api._gql(None, query)
-        data = res.get("data", {}).get("Page", {}).get("media", [])
-        if data:
-                import re
-
-                new_items = []
-                for media in data:
-                    if media.get("status") == "NOT_YET_RELEASED":
-                        continue
-                    # Exclude OVA, SPECIAL, MUSIC, TV_SHORT from popular fallbacks and short durations (<= 5 minutes)
-                    m_format = media.get("format")
-                    duration = media.get("duration")
-                    if m_format in ["OVA", "SPECIAL", "MUSIC", "TV_SHORT"]:
-                        continue
-                    if duration is not None and duration <= 5:
-                        continue
-                    mal_id = media.get("idMal")
-                    item_id = f"mal:{mal_id}" if mal_id else f"anilist:{media.get('id')}"
-                    item_type = "movie" if m_format == "MOVIE" else "series"
-                    title_pref = media.get("title", {})
-                    name = title_pref.get("english") or title_pref.get("userPreferred") or title_pref.get("romaji")
-                    if not is_proper_anime(name):
-                        continue
-                    poster = (media.get("coverImage") or {}).get("large") or ""
-                    desc = media.get("description") or ""
-                    desc = re.sub("<[^<]+?>", "", desc)
-                    desc = desc[:150] + "..." if len(desc) > 150 else desc
-                    desc = desc.replace("\n", " ").replace("  ", " ").strip()
-                    new_items.append(
-                        {
-                            "id": item_id,
-                            "type": item_type,
-                            "name": name,
-                            "poster": poster,
-                            "poster_al": poster,
-                            "background": media.get("bannerImage"),
-                            "anilist_id": str(media.get("id")),
-                            "mal_id": str(mal_id) if mal_id else None,
-                            "description": desc,
-                        }
-                    )
-                if new_items:
-                    # Wipe and insert
-                    popular_fallbacks_collection.delete_many({})
-                    popular_fallbacks_collection.insert_many(new_items)
-                    logger.info("Successfully cached %d popular fallbacks from AniList.", len(new_items))
-                    return
-        logger.warning("AniList returned empty data for popular fallbacks, attempting Jikan fallback...")
-    except Exception as e:
-        logger.error("Failed to update popular fallbacks cache from AniList: %s, trying Jikan...", e)
-
-    try:
-        from app.api.jikan import get_top_anime
-        jikan_top = await get_top_anime(type_filter="tv", page=1)
-        if jikan_top:
-            import re
-            from app.services.db import get_cached_ids_by_mal_bulk
-            fallback_mids = [str(item.get("mal_id")) for item in jikan_top[:40] if item.get("mal_id")]
-            fallback_id_map = get_cached_ids_by_mal_bulk(fallback_mids)
-
-            new_items = []
-            for item in jikan_top[:40]:
-                mal_id = item.get("mal_id")
-                name = item.get("title_english") or item.get("title") or "Unknown Anime"
-                desc = item.get("synopsis") or ""
-                desc = re.sub("<[^<]+?>", "", desc)
-                desc = desc[:150] + "..." if len(desc) > 150 else desc
-                desc = desc.replace("\n", " ").replace("  ", " ").strip()
-                images = item.get("images", {}).get("jpg", {})
-                poster = images.get("large_image_url") or images.get("image_url") or ""
-                if mal_id:
-                    c_doc = fallback_id_map.get(str(mal_id))
-                    aid = str(c_doc["anilist_id"]) if c_doc and c_doc.get("anilist_id") else None
-                    new_items.append({
-                        "id": f"mal:{mal_id}",
-                        "type": "series",
-                        "name": name,
-                        "poster": poster,
-                        "poster_mal": poster,
-                        "mal_id": str(mal_id),
-                        "anilist_id": aid,
-                        "description": desc,
-                    })
-            if new_items:
-                popular_fallbacks_collection.delete_many({})
-                popular_fallbacks_collection.insert_many(new_items)
-                logger.info("Successfully cached %d popular fallbacks from Jikan API.", len(new_items))
-    except Exception as ex:
-        logger.error("Failed to update popular fallbacks from Jikan fallback: %s", ex)
-
-
-async def popular_fallbacks_loop():
-    """Background loop to update popular fallbacks once every 24 hours."""
-    await asyncio.sleep(5)  # Wait for app startup
-    while True:
-        try:
-            await update_popular_fallbacks_cache()
-        except Exception as e:
-            logger.error("Error in popular fallbacks loop: %s", e)
-        await asyncio.sleep(24 * 3600)
-
-
-def trigger_popular_fallbacks_update_background():
-    """Start the background popular fallbacks updater task."""
-    asyncio.create_task(popular_fallbacks_loop())
