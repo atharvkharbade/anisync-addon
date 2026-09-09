@@ -19,6 +19,8 @@ class Config:
         SECRET_KEY = "change-me-in-production"
 
     SESSION_TYPE = os.getenv("SESSION_TYPE", "filesystem")
+    SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() in ["1", "true"] or (not DEBUG and os.getenv("PROTOCOL", "https").lower() == "https")
     SEND_FILE_MAX_AGE_DEFAULT = timedelta(days=7)
     PERMANENT_SESSION_LIFETIME = timedelta(days=30)
 

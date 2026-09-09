@@ -404,6 +404,10 @@ async def get_recommendations_for_seeds(
         tasks = [get_mal_recommendations_for_id(user["mal_access_token"], s["mal_id"]) for s in mal_seed_shows]
         mal_recs_lists = await asyncio.gather(*tasks)
 
+        from app.services.db import get_cached_ids_by_mal_bulk
+        all_mal_ids = [str(r.get("node", {}).get("id")) for sublist in mal_recs_lists for r in sublist if r.get("node", {}).get("id")]
+        mal_id_cache_map = get_cached_ids_by_mal_bulk(all_mal_ids)
+
         for s, rec_list in zip(mal_seed_shows, mal_recs_lists):
             seed_title = s["title"]
             for rec in rec_list:
@@ -462,14 +466,8 @@ async def get_recommendations_for_seeds(
                 poster = (node.get("main_picture") or {}).get("large") or (node.get("main_picture") or {}).get("medium") or ""
                 syn = clean_html(node.get("synopsis") or "")
 
-                from app.services.db import get_cached_ids_by_mal
-                aid = None
-                try:
-                    c_doc = get_cached_ids_by_mal(str(mid))
-                    if c_doc and c_doc.get("anilist_id"):
-                        aid = str(c_doc["anilist_id"])
-                except Exception:
-                    pass
+                c_doc = mal_id_cache_map.get(str(mid))
+                aid = str(c_doc["anilist_id"]) if c_doc and c_doc.get("anilist_id") else None
 
                 from app.lib.meta_providers import get_al_cover, get_effective_meta_providers
                 al_poster = get_al_cover(aid)
@@ -1238,6 +1236,10 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         tasks = [get_mal_recommendations_for_id(user["mal_access_token"], s["mal_id"]) for s in mal_seed_shows]
         mal_recs_lists = await asyncio.gather(*tasks)
 
+        from app.services.db import get_cached_ids_by_mal_bulk
+        genre_mal_ids = [str(r.get("node", {}).get("id")) for sublist in mal_recs_lists for r in sublist if r.get("node", {}).get("id")]
+        genre_id_cache_map = get_cached_ids_by_mal_bulk(genre_mal_ids)
+
         for s, rec_list in zip(mal_seed_shows, mal_recs_lists):
             seed_title = s["title"]
             for rec in rec_list:
@@ -1296,14 +1298,8 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
                 poster = (node.get("main_picture") or {}).get("large") or (node.get("main_picture") or {}).get("medium") or ""
                 syn = clean_html(node.get("synopsis") or "")
 
-                from app.services.db import get_cached_ids_by_mal
-                aid = None
-                try:
-                    c_doc = get_cached_ids_by_mal(str(mid))
-                    if c_doc and c_doc.get("anilist_id"):
-                        aid = str(c_doc["anilist_id"])
-                except Exception:
-                    pass
+                c_doc = genre_id_cache_map.get(str(mid))
+                aid = str(c_doc["anilist_id"]) if c_doc and c_doc.get("anilist_id") else None
 
                 from app.lib.meta_providers import get_al_cover, get_effective_meta_providers
                 al_poster = get_al_cover(aid)
@@ -1864,6 +1860,10 @@ async def update_popular_fallbacks_cache():
         jikan_top = await get_top_anime(type_filter="tv", page=1)
         if jikan_top:
             import re
+            from app.services.db import get_cached_ids_by_mal_bulk
+            fallback_mids = [str(item.get("mal_id")) for item in jikan_top[:40] if item.get("mal_id")]
+            fallback_id_map = get_cached_ids_by_mal_bulk(fallback_mids)
+
             new_items = []
             for item in jikan_top[:40]:
                 mal_id = item.get("mal_id")
@@ -1875,15 +1875,8 @@ async def update_popular_fallbacks_cache():
                 images = item.get("images", {}).get("jpg", {})
                 poster = images.get("large_image_url") or images.get("image_url") or ""
                 if mal_id:
-                    aid = None
-                    try:
-                        from app.services.db import get_cached_ids_by_mal
-
-                        c_doc = get_cached_ids_by_mal(str(mal_id))
-                        if c_doc and c_doc.get("anilist_id"):
-                            aid = str(c_doc["anilist_id"])
-                    except Exception:
-                        pass
+                    c_doc = fallback_id_map.get(str(mal_id))
+                    aid = str(c_doc["anilist_id"]) if c_doc and c_doc.get("anilist_id") else None
                     new_items.append({
                         "id": f"mal:{mal_id}",
                         "type": "series",

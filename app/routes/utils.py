@@ -16,6 +16,8 @@ async def respond_with(data: dict, max_age: int | None = None, stale_while_reval
         if stale_while_revalidate is not None:
             cc += f", stale-while-revalidate={stale_while_revalidate}"
         resp.headers["Cache-Control"] = cc
+    elif data.get("metas") == [] or data.get("meta") == {} or data.get("subtitles") == []:
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return resp
 
 
@@ -33,14 +35,10 @@ def get_remote_ip() -> str:
 
 
 def is_valid_user_id(user_id: str) -> bool:
-    """Validate that the user ID follows standard numeric (MAL), AniList (al_digits), Simkl (simkl_digits), Guest (guest_...), or MongoDB Hex UID pattern."""
+    """Validate that the user ID follows standard numeric (MAL), AniList (al_digits), Simkl (simkl_digits), Guest (guest_...), MongoDB Hex UID, or alphanumeric username pattern."""
     if not user_id:
         return False
-    return bool(
-        re.match(r"^(?:al_|simkl_)?[0-9]+$", user_id)
-        or re.match(r"^[0-9a-fA-F]{24}$", user_id)
-        or re.match(r"^guest_[a-zA-Z0-9_]+$", user_id)
-    )
+    return bool(re.match(r"^[a-zA-Z0-9_-]{3,64}$", user_id))
 
 
 _rate_limit_lock = threading.Lock()

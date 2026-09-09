@@ -51,12 +51,14 @@
         }
 
         const token = match[1];
+        const stateMatch = hash.match(/state=([^&]+)/);
+        const state = stateMatch ? decodeURIComponent(stateMatch[1]) : '';
 
         try {
             const resp = await fetch('/anilist-save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'token=' + encodeURIComponent(token),
+                body: 'token=' + encodeURIComponent(token) + '&state=' + encodeURIComponent(state),
             });
             const data = await resp.json();
 

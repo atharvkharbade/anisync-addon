@@ -179,7 +179,14 @@ async def logout():
 @auth_bp.route("/authorize-anilist")
 @rate_limit(limit=10, period_seconds=60)
 async def authorize_anilist():
-    anilist_url = f"https://anilist.co/api/v2/oauth/authorize?client_id={Config.ANILIST_CLIENT_ID}&response_type=token"
+    state = secrets.token_urlsafe(16)
+    session["anilist_oauth_state"] = state
+    anilist_url = (
+        f"https://anilist.co/api/v2/oauth/authorize"
+        f"?client_id={Config.ANILIST_CLIENT_ID}"
+        f"&response_type=token"
+        f"&state={state}"
+    )
     return redirect(anilist_url)
 
 
@@ -194,6 +201,12 @@ async def anilist_callback():
 async def anilist_save():
     form = await request.form
     token = form.get("token", "").strip()
+    req_state = form.get("state", "").strip()
+    saved_state = session.pop("anilist_oauth_state", None)
+
+    if not saved_state or not req_state or req_state != saved_state:
+        return {"ok": False, "error": "Invalid OAuth state (CSRF check failed)"}, 403
+
     if not token:
         return {"ok": False, "error": "No token provided"}, 400
 

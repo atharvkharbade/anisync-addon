@@ -2103,7 +2103,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         user["anilist_enabled"] = False
 
     filters = _parse_stremio_filters(extras)
-    offset = int(filters.get("skip", 0))
+    try:
+        offset = max(0, int(filters.get("skip", 0)))
+    except (ValueError, TypeError):
+        offset = 0
     search_query = filters.get("search", "")
 
     metas = []
@@ -2177,8 +2180,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         if is_custom_sort:
             metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
 
-        # Shuffle if enabled
-        if is_catalog_shuffle_enabled(user, catalog_id):
+        # Shuffle if enabled and not explicitly custom sorted
+        if is_catalog_shuffle_enabled(user, catalog_id) and (not is_custom_sort or sort_by == "default"):
             import random
             metas = list(metas)
             random.shuffle(metas)
@@ -2196,13 +2199,15 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         if not search_query:
             return await respond_with({"metas": []})
 
+        norm_search_query = search_query.strip().lower()
+
         # Check search cache first (expires after 24 hours)
         from app.services.db import db
 
         now = datetime.datetime.utcnow()
         cache_col = db.get_collection("kitsu_search_cache")
         try:
-            cached = cache_col.find_one({"query": search_query, "offset": offset})
+            cached = cache_col.find_one({"query": norm_search_query, "offset": offset})
             if cached and cached.get("expires_at") > now:
                 return await respond_with(
                     {"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)},
@@ -2465,10 +2470,10 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
         if metas:
             try:
                 cache_col.update_one(
-                    {"query": search_query, "offset": offset},
+                    {"query": norm_search_query, "offset": offset},
                     {
                         "$set": {
-                            "query": search_query,
+                            "query": norm_search_query,
                             "offset": offset,
                             "metas": metas,
                             "expires_at": now + datetime.timedelta(hours=24),

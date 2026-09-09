@@ -235,6 +235,25 @@ def get_cached_ids_by_mal(mal_id: str) -> dict | None:
         return None
 
 
+def get_cached_ids_by_mal_bulk(mal_ids: list[str]) -> dict[str, dict]:
+    """Retrieve multiple cached ID mappings by MAL ID in a single MongoDB query."""
+    if not mal_ids:
+        return {}
+    try:
+        clean_ids = [str(m) for m in mal_ids if m]
+        query_vals = clean_ids + [int(m) for m in clean_ids if str(m).isdigit()]
+        docs = list(id_cache_collection.find({"mal_id": {"$in": query_vals}}))
+        result = {}
+        for d in docs:
+            mid = str(d.get("mal_id") or "")
+            if mid:
+                result[mid] = d
+        return result
+    except Exception as e:
+        logging.error("Failed bulk id_cache lookup by mal_id: %s", e)
+        return {}
+
+
 def get_cached_ids_by_anilist(anilist_id: str) -> dict | None:
     try:
         return id_cache_collection.find_one({"anilist_id": str(anilist_id)})

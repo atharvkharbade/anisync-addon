@@ -73,7 +73,20 @@ def create_app() -> App:
         corr_id = correlation_id_var.get()
         if corr_id:
             response.headers["X-Correlation-Id"] = corr_id
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         return response
+
+    @app_.errorhandler(Exception)
+    async def handle_unexpected_error(error):
+        corr_id = correlation_id_var.get() or "unknown"
+        logging.exception("Unhandled application error [corr_id=%s]: %s", corr_id, error)
+        path = request.path or ""
+        if path.endswith(".json") or "/catalog/" in path or "/meta/" in path or "/subtitles/" in path:
+            from app.routes.utils import respond_with
+            payload = {"subtitles": []} if "/subtitles/" in path else ({"metas": []} if "/catalog/" in path else {"meta": {}})
+            return await respond_with(payload, max_age=0)
+        return "Internal Server Error", 500
 
     app_.register_blueprint(auth_bp)
     app_.register_blueprint(manifest_bp)
