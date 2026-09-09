@@ -1582,49 +1582,56 @@
         font-weight: 600;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
     }
-    /* Cycle Sample Button in Header matching segmented control height */
-    .btn-sample-cycle {
+    /* Flanking Poster Carousel Navigation Arrows */
+    .btn-poster-nav {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 27px;
-        height: 27px;
-        border-radius: 6px;
+        width: 30px;
+        height: 30px;
+        flex-shrink: 0;
+        border-radius: 50%;
         background: rgba(0, 0, 0, 0.55);
         border: 1px solid rgba(255, 255, 255, 0.09);
         color: rgba(255, 255, 255, 0.45);
-        font-size: 0.75rem;
+        font-size: 0.76rem;
         cursor: pointer;
         transition: all 0.18s ease;
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
+        user-select: none;
     }
-    .btn-sample-cycle:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.18);
+    .btn-poster-nav:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
         color: #ffffff;
+        transform: scale(1.08);
     }
-    .btn-sample-cycle:active {
-        transform: scale(0.95);
+    .btn-poster-nav:active {
+        transform: scale(0.92);
+        background: rgba(255, 255, 255, 0.15);
     }
-    .btn-sample-cycle.cycling i {
-        animation: spinCycle 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes spinCycle {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-    .btn-sample-cycle i {
-        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+    @media (max-width: 400px) {
+        .btn-poster-nav {
+            width: 26px;
+            height: 26px;
+            font-size: 0.7rem;
+        }
     }
     /* Hardware-Accelerated Poster Stage */
     .artwork-poster-stage {
         display: flex;
         justify-content: center;
         align-items: center;
+        gap: 12px;
         width: 100%;
         min-height: 270px; /* Stable height prevents layout reflow of bottom toolbar & rest of page */
         padding: 0.5rem 0;
+    }
+    @media (max-width: 400px) {
+        .artwork-poster-stage {
+            gap: 6px;
+        }
     }
     .artwork-poster-card {
         position: relative;
@@ -2286,12 +2293,9 @@
                 <!-- Right Column: Poster Preview -->
                 <div class="col-12 col-lg-5">
                     <div id="posterLivePreviewContainer" class="artwork-preview-panel">
-                        <!-- Top Header: Title on left, Cycle button on right -->
+                        <!-- Top Header: Title on left -->
                         <div class="d-flex align-items-center justify-content-between w-100 mb-2">
                             <span class="preview-panel-title mb-0">Preview</span>
-                            <button type="button" class="btn-sample-cycle" id="btnPreviewCycle" onclick="cycleArtworkSample()" title="Next Anime">
-                                <i class="fa-solid fa-arrows-rotate"></i>
-                            </button>
                         </div>
 
                         <!-- Centered Shape Switcher: Portrait vs Landscape (Directly above poster) -->
@@ -2306,8 +2310,11 @@
                             </div>
                         </div>
 
-                        <!-- Dynamic Poster Showcase Card (Clean stage, zero clipping) -->
+                        <!-- Dynamic Poster Showcase Card Flanked by Previous / Next Navigation Arrows -->
                         <div class="artwork-poster-stage">
+                            <button type="button" class="btn-poster-nav btn-poster-prev" id="btnPreviewPrev" onclick="navigateArtworkSample(-1)" title="Previous Anime">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
                             <div class="artwork-poster-card" id="artworkPreviewCard">
                                 <div id="artworkPreviewSpinner" class="artwork-preview-spinner d-none">
                                     <div class="spinner-border spinner-border-sm text-warning" role="status">
@@ -2316,6 +2323,9 @@
                                 </div>
                                 <img id="artworkPreviewImg" src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg" alt="Preview Poster" class="artwork-poster-img">
                             </div>
+                            <button type="button" class="btn-poster-nav btn-poster-next" id="btnPreviewNext" onclick="navigateArtworkSample(1)" title="Next Anime">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
                         </div>
 
                         <!-- Bottom Footer Toolbar: Episode State Switch -->
@@ -5901,49 +5911,32 @@
             updateArtworkLivePreview();
         }
 
-        let cycleArtworkAnimTimeout = null;
-        function cycleArtworkSample() {
-            const btn = document.getElementById('btnPreviewCycle');
-            if (btn) {
-                if (cycleArtworkAnimTimeout) {
-                    clearTimeout(cycleArtworkAnimTimeout);
-                }
-                btn.classList.remove('cycling');
-                void btn.offsetWidth; // Force DOM reflow to restart CSS keyframe animation cleanly
-                btn.classList.add('cycling');
-                cycleArtworkAnimTimeout = setTimeout(() => {
-                    btn.classList.remove('cycling');
-                    cycleArtworkAnimTimeout = null;
-                }, 450);
-                btn.blur();
-            }
+        function navigateArtworkSample(direction = 1) {
             const activePool = (userWatchlistSamplePool && userWatchlistSamplePool.length > 0)
                 ? userWatchlistSamplePool
                 : CURATED_POSTER_SAMPLES;
 
             if (activePool.length > 1) {
-                const maxHistory = Math.min(6, activePool.length - 1);
-                const candidates = [];
-                for (let i = 0; i < activePool.length; i++) {
-                    if (!recentAnimeSampleIndices.includes(i)) {
-                        candidates.push(i);
-                    }
-                }
-                const chosen = (candidates.length > 0)
-                    ? candidates[Math.floor(Math.random() * candidates.length)]
-                    : Math.floor(Math.random() * activePool.length);
-
-                sampleAnimeIndex = chosen;
-                recentAnimeSampleIndices.push(chosen);
-                while (recentAnimeSampleIndices.length > maxHistory) {
-                    recentAnimeSampleIndices.shift();
-                }
+                sampleAnimeIndex = (sampleAnimeIndex + direction + activePool.length) % activePool.length;
             } else {
                 sampleAnimeIndex = 0;
             }
             const chosenSample = activePool[sampleAnimeIndex] || CURATED_POSTER_SAMPLES[0];
             preloadArtworkPair(chosenSample);
+
+            // Preload adjacent neighbors for instant response
+            if (activePool.length > 1) {
+                const nextSample = activePool[(sampleAnimeIndex + 1) % activePool.length];
+                const prevSample = activePool[(sampleAnimeIndex - 1 + activePool.length) % activePool.length];
+                preloadArtworkPair(nextSample);
+                preloadArtworkPair(prevSample);
+            }
+
             updateArtworkLivePreview(true);
+        }
+
+        function cycleArtworkSample() {
+            navigateArtworkSample(1);
         }
 
         async function initUserWatchlistPreview() {
@@ -6126,6 +6119,7 @@
 
         window.setArtworkPreviewShape = setArtworkPreviewShape;
         window.setArtworkPreviewState = setArtworkPreviewState;
+        window.navigateArtworkSample = navigateArtworkSample;
         window.cycleArtworkSample = cycleArtworkSample;
         window.updateArtworkLivePreview = updateArtworkLivePreview;
 
