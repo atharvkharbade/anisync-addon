@@ -1534,12 +1534,18 @@
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 14px;
-        padding: 1rem 1.15rem;
+        padding: 1.15rem 1.25rem;
         display: flex;
         flex-direction: column;
         align-items: center;
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
+        width: 100%;
+    }
+    @media (max-width: 576px) {
+        .artwork-preview-panel {
+            padding: 0.85rem 0.5rem;
+        }
     }
     .preview-panel-title {
         font-size: 0.82rem;
@@ -1611,7 +1617,7 @@
         transform: scale(0.92);
         background: rgba(255, 255, 255, 0.15);
     }
-    @media (max-width: 400px) {
+    @media (max-width: 576px) {
         .btn-poster-nav {
             width: 26px;
             height: 26px;
@@ -1628,7 +1634,12 @@
         min-height: 270px; /* Stable height prevents layout reflow of bottom toolbar & rest of page */
         padding: 0.5rem 0;
     }
-    @media (max-width: 400px) {
+    @media (max-width: 576px) {
+        .artwork-poster-stage {
+            gap: 8px;
+        }
+    }
+    @media (max-width: 380px) {
         .artwork-poster-stage {
             gap: 6px;
         }
@@ -1637,6 +1648,7 @@
         position: relative;
         width: 175px;
         height: 255px;
+        flex-shrink: 0;
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7);
@@ -1652,8 +1664,32 @@
                     box-shadow 0.2s ease;
     }
     .artwork-poster-card.landscape {
-        width: 270px;
-        height: 152px;
+        width: 310px;
+        height: 174px;
+        aspect-ratio: 16 / 9;
+        max-width: calc(100% - 76px);
+    }
+    @media (max-width: 576px) {
+        .artwork-poster-card {
+            width: 165px;
+            height: 240px;
+        }
+        .artwork-poster-card.landscape {
+            width: 245px;
+            height: 138px;
+            max-width: calc(100% - 68px);
+        }
+    }
+    @media (max-width: 380px) {
+        .artwork-poster-card {
+            width: 155px;
+            height: 225px;
+        }
+        .artwork-poster-card.landscape {
+            width: 225px;
+            height: 127px;
+            max-width: calc(100% - 62px);
+        }
     }
     .artwork-poster-card:hover {
         transform: translateZ(0) translateY(-2px);
@@ -1663,6 +1699,7 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        object-position: center center;
         display: block;
         transition: opacity 0.18s ease;
     }
@@ -2077,7 +2114,7 @@
         <div class="card-dark p-3 p-sm-4 mb-3">
             <div class="row g-4 align-items-start">
                 <!-- Left Column: Settings Controls -->
-                <div class="col-12 col-lg-7">
+                <div class="col-12 col-lg-5 col-xl-5">
                     <h6 class="fw-semibold mb-3"><i class="fa-solid fa-image text-warning me-2"></i>Poster Art Customization</h6>
                     <div id="poster-provider-section">
                         {% if not user.get('is_guest') %}
@@ -2291,7 +2328,7 @@
                 </div>
 
                 <!-- Right Column: Poster Preview -->
-                <div class="col-12 col-lg-5">
+                <div class="col-12 col-lg-7 col-xl-7">
                     <div id="posterLivePreviewContainer" class="artwork-preview-panel">
                         <!-- Top Header: Title on left -->
                         <div class="d-flex align-items-center justify-content-between w-100 mb-2">
