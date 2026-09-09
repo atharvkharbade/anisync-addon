@@ -5566,48 +5566,33 @@
             }
         }
 
-        function resolveGenuinePoster(sample, shape, provider, rpdbKey, topKey, customPattern) {
+        function resolveGenuinePoster(sample, shape, provider, rpdbKey, topKey, customPattern, fallbackUrl = '') {
             const isLandscape = (shape === 'landscape');
-            let defaultCover = sample.cover || sample.clean_poster;
-            if (isLandscape) {
-                if (sample.banner && sample.banner !== sample.cover && sample.banner !== sample.clean_poster) {
-                    defaultCover = sample.banner;
-                } else if (sample.imdb_id) {
-                    defaultCover = `https://images.metahub.space/background/medium/${sample.imdb_id}/img`;
-                } else if (sample.backdrop) {
-                    defaultCover = sample.backdrop;
-                } else {
-                    const safeCurated = CURATED_POSTER_SAMPLES[sampleAnimeIndex % CURATED_POSTER_SAMPLES.length];
-                    defaultCover = safeCurated ? safeCurated.banner : (sample.banner || sample.cover);
-                }
-            }
+            const safeCurated = CURATED_POSTER_SAMPLES[sampleAnimeIndex % CURATED_POSTER_SAMPLES.length];
+            const cleanFallback = fallbackUrl || (isLandscape
+                ? ((sample.banner && sample.banner !== sample.cover && sample.banner !== sample.clean_poster) ? sample.banner : (sample.imdb_id ? `https://images.metahub.space/background/medium/${sample.imdb_id}/img` : (sample.backdrop || safeCurated.banner)))
+                : (sample.cover || sample.clean_poster || safeCurated.cover));
 
-            if (provider === 'rpdb') {
-                if (rpdbKey && sample.imdb_id) {
-                    const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
-                    return `https://api.ratingposterdb.com/${encodeURIComponent(rpdbKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
-                }
-            } else if (provider === 'top_poster') {
-                if (topKey && sample.imdb_id) {
-                    const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
-                    return `https://api.top-posters.com/${encodeURIComponent(topKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
-                }
-            } else if (provider === 'custom') {
-                if (customPattern) {
-                    let res = customPattern
-                        .replace(/{imdb_id}/g, sample.imdb_id || '')
-                        .replace(/{mal_id}/g, sample.mal_id || '')
-                        .replace(/{kitsu_id}/g, sample.kitsu_id || '')
-                        .replace(/{anilist_id}/g, sample.anilist_id || '')
-                        .replace(/{tmdb_id}/g, sample.tmdb_id || '')
-                        .replace(/{tvdb_id}/g, sample.tvdb_id || '')
-                        .replace(/{title}/g, encodeURIComponent(sample.title || ''));
-                    if (res.startsWith('http://') || res.startsWith('https://')) {
-                        return res;
-                    }
+            if (provider === 'rpdb' && rpdbKey && sample.imdb_id) {
+                const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
+                return `https://api.ratingposterdb.com/${encodeURIComponent(rpdbKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
+            } else if ((provider === 'top_poster' || provider === 'topposters') && topKey && sample.imdb_id) {
+                const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
+                return `https://api.top-posters.com/${encodeURIComponent(topKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
+            } else if (provider === 'custom' && customPattern) {
+                let res = customPattern
+                    .replace(/{imdb_id}/g, sample.imdb_id || '')
+                    .replace(/{mal_id}/g, sample.mal_id || '')
+                    .replace(/{kitsu_id}/g, sample.kitsu_id || '')
+                    .replace(/{anilist_id}/g, sample.anilist_id || '')
+                    .replace(/{tmdb_id}/g, sample.tmdb_id || '')
+                    .replace(/{tvdb_id}/g, sample.tvdb_id || '')
+                    .replace(/{title}/g, encodeURIComponent(sample.title || ''));
+                if (res.startsWith('http://') || res.startsWith('https://')) {
+                    return res;
                 }
             }
-            return defaultCover;
+            return cleanFallback;
         }
 
         let lastArtworkPreviewStateKey = '';
@@ -5643,45 +5628,51 @@
             // Guests only preview Poster Art Cover Provider without new episode overlays
             const isAiring = (!window.isGuestUser && artworkPreviewState === 'airing');
 
-            // Check if selected provider requires an API key or custom pattern that is not entered yet
-            const providerRequiresKey = (provider === 'rpdb' && !rpdbKey) ||
-                                        ((provider === 'top_poster' || provider === 'topposters') && !topKey) ||
-                                        (provider === 'custom' && !customPattern);
+            const safeCurated = CURATED_POSTER_SAMPLES[sampleAnimeIndex % CURATED_POSTER_SAMPLES.length];
+            const cleanFallback = isLandscape
+                ? ((sample.banner && sample.banner !== sample.cover && sample.banner !== sample.clean_poster) ? sample.banner : (sample.imdb_id ? `https://images.metahub.space/background/medium/${sample.imdb_id}/img` : (sample.backdrop || safeCurated.banner)))
+                : (sample.cover || sample.clean_poster || safeCurated.cover);
 
-            const stateKey = `${sampleAnimeIndex}_${artworkPreviewShape}_${artworkPreviewState}_${badgeStyle}_${provider}_${rpdbKey}_${topKey}_${customPattern}_${userWatchlistSamplePool ? userWatchlistSamplePool.length : 0}`;
+            let targetImgUrl = '';
+            let stateKey = '';
 
-            if (!force && lastArtworkPreviewStateKey === stateKey && imgEl.getAttribute('src')) {
-                // If it already loaded with identical settings, keep existing image without flashing spinner
+            if (isAiring) {
+                // In New Episode mode, the clean fallback poster is ALWAYS used across all providers.
+                // Poster provider and API keys DO NOT affect this mode.
+                const trackerParam = (window.userTrackersList && window.userTrackersList.length > 0)
+                    ? window.userTrackersList.join('+')
+                    : 'mal+anilist';
+                const shapeParam = isLandscape ? 'landscape' : 'poster';
+                const userId = window.currentUserId || 'guest_preview';
+                targetImgUrl = `/${userId}/poster/preview_${sampleAnimeIndex}.jpg?url=${encodeURIComponent(cleanFallback)}&badge=new&tracker=${trackerParam}&style=${badgeStyle}&shape=${shapeParam}`;
+                if (force) {
+                    targetImgUrl += `&v=${Date.now()}`;
+                }
+                stateKey = `airing_${sampleAnimeIndex}_${artworkPreviewShape}_${badgeStyle}_${trackerParam}`;
+            } else {
+                // In Poster Art mode, show genuine provider artwork (or clean fallback if no key/provider configured)
+                targetImgUrl = resolveGenuinePoster(sample, artworkPreviewShape, provider, rpdbKey, topKey, customPattern, cleanFallback);
+                stateKey = `normal_${sampleAnimeIndex}_${artworkPreviewShape}_${targetImgUrl}`;
+            }
+
+            const currentSrc = imgEl.getAttribute('src');
+
+            // If it already loaded with identical settings, keep existing image without flashing spinner
+            if (!force && lastArtworkPreviewStateKey === stateKey && currentSrc) {
                 if (imgEl.complete && spinnerEl) {
                     spinnerEl.classList.add('d-none');
                 }
                 return;
             }
 
-            // Do not show spinner or initiate network re-fetch if provider changed to one requiring a missing key
-            if (!force && providerRequiresKey && provider !== 'none' && !isAiring && imgEl.getAttribute('src')) {
+            // If the target URL is already the exact image currently displayed, avoid re-fetching or flashing spinner
+            if (!force && currentSrc === targetImgUrl) {
                 lastArtworkPreviewStateKey = stateKey;
                 if (spinnerEl) spinnerEl.classList.add('d-none');
                 return;
             }
 
             lastArtworkPreviewStateKey = stateKey;
-
-            const safeCurated = CURATED_POSTER_SAMPLES[sampleAnimeIndex % CURATED_POSTER_SAMPLES.length];
-            const cleanFallback = isLandscape
-                ? ((sample.banner && sample.banner !== sample.cover) ? sample.banner : (sample.imdb_id ? `https://images.metahub.space/background/medium/${sample.imdb_id}/img` : safeCurated.banner))
-                : (sample.cover || sample.clean_poster || safeCurated.cover);
-            const genuineBaseUrl = resolveGenuinePoster(sample, artworkPreviewShape, provider, rpdbKey, topKey, customPattern);
-
-            let targetImgUrl = genuineBaseUrl;
-            if (isAiring) {
-                const trackerParam = (window.userTrackersList && window.userTrackersList.length > 0)
-                    ? window.userTrackersList.join('+')
-                    : 'mal+anilist';
-                const shapeParam = isLandscape ? 'landscape' : 'poster';
-                const userId = window.currentUserId || 'guest_preview';
-                targetImgUrl = `/${userId}/poster/preview_${sampleAnimeIndex}.jpg?url=${encodeURIComponent(cleanFallback)}&badge=new&tracker=${trackerParam}&style=${badgeStyle}&shape=${shapeParam}&v=${Date.now()}`;
-            }
 
             if (spinnerEl) spinnerEl.classList.remove('d-none');
 
@@ -5708,6 +5699,9 @@
             };
 
             imgEl.src = targetImgUrl;
+            if (imgEl.complete && spinnerEl) {
+                spinnerEl.classList.add('d-none');
+            }
         }
 
         window.setArtworkPreviewShape = setArtworkPreviewShape;
