@@ -4,7 +4,7 @@ import logging
 import time
 import urllib.parse
 
-from quart import Blueprint
+from quart import Blueprint, request
 
 from app.api import anilist as anilist_api
 from app.api import mal as mal_api
@@ -2122,6 +2122,11 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
     except (ValueError, TypeError):
         offset = 0
     search_query = filters.get("search", "")
+    try:
+        limit_val = request.args.get("limit") or filters.get("limit")
+        page_limit = max(1, min(100, int(limit_val))) if limit_val else 40
+    except (ValueError, TypeError):
+        page_limit = 40
 
     metas = []
 
@@ -2201,7 +2206,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             random.shuffle(metas)
 
         # Handle pagination skip
-        metas = metas[offset : offset + 40]
+        metas = metas[offset : offset + page_limit]
         return await respond_with(
             {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
             max_age=3600,
@@ -2554,7 +2559,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             random.shuffle(metas)
 
         # Handle pagination skip
-        metas = metas[offset : offset + 40]
+        metas = metas[offset : offset + page_limit]
         return await respond_with(
             {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
             max_age=3600,
@@ -3030,12 +3035,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 import random
                 combined_items = list(combined_items)
                 random.shuffle(combined_items)
-                paged_items = combined_items[offset : offset + 40]
+                paged_items = combined_items[offset : offset + page_limit]
             elif custom_sort_enabled and sort_by != "default":
                 sorted_items = sort_watchlist_items(
                     combined_items, sort_by, sort_order, "combined", bulk_details=bulk_details
                 )
-                paged_items = sorted_items[offset : offset + 40]
+                paged_items = sorted_items[offset : offset + page_limit]
             elif sort_by_new_ep and comb_status in ["watching", "plan_to_watch"]:
 
                 def get_comb_priority(item):
@@ -3130,7 +3135,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     return (group_idx, *secondary_sort)
 
                 sorted_items = sorted(combined_items, key=get_comb_priority)
-                paged_items = sorted_items[offset : offset + 40]
+                paged_items = sorted_items[offset : offset + page_limit]
             else:
 
                 def get_default_updated_ts(item):
@@ -3148,7 +3153,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     return -max(mal_updated_ts, al_updated_ts, simkl_updated_ts)
 
                 sorted_items = sorted(combined_items, key=get_default_updated_ts)
-                paged_items = sorted_items[offset : offset + 40]
+                paged_items = sorted_items[offset : offset + page_limit]
 
             # Resolve Kitsu IDs in bulk
             from app.lib.id_resolver import bulk_resolve_to_kitsu
@@ -3487,12 +3492,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 import random
                 data_items = list(data_items)
                 random.shuffle(data_items)
-                paged_items = data_items[offset : offset + 40]
+                paged_items = data_items[offset : offset + page_limit]
             elif custom_sort_enabled and sort_by != "default":
                 sorted_data_items = sort_watchlist_items(
                     data_items, sort_by, sort_order, "simkl", bulk_details=bulk_details
                 )
-                paged_data_items = sorted_data_items[offset : offset + 40]
+                paged_data_items = sorted_data_items[offset : offset + page_limit]
             elif sort_by_new_ep and simkl_status in ["watching", "plantowatch"]:
 
                 def get_simkl_priority(item):
@@ -3559,14 +3564,14 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     return (group_idx, *secondary_sort)
 
                 sorted_data_items = sorted(data_items, key=get_simkl_priority)
-                paged_data_items = sorted_data_items[offset : offset + 40]
+                paged_data_items = sorted_data_items[offset : offset + page_limit]
             else:
 
                 def get_simkl_updated_ts(item):
                     return parse_iso_timestamp(item.get("last_watched_at"))
 
                 sorted_data_items = sorted(data_items, key=get_simkl_updated_ts, reverse=True)
-                paged_data_items = sorted_data_items[offset : offset + 40]
+                paged_data_items = sorted_data_items[offset : offset + page_limit]
 
             # Resolve Kitsu IDs in bulk
             from app.lib.id_resolver import bulk_resolve_to_kitsu
@@ -3817,12 +3822,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 import random
                 data_items = list(data_items)
                 random.shuffle(data_items)
-                paged_data_items = data_items[offset : offset + 40]
+                paged_data_items = data_items[offset : offset + page_limit]
             elif custom_sort_enabled and sort_by != "default":
                 sorted_data_items = sort_watchlist_items(
                     data_items, sort_by, sort_order, "mal", bulk_details=bulk_details
                 )
-                paged_data_items = sorted_data_items[offset : offset + 40]
+                paged_data_items = sorted_data_items[offset : offset + page_limit]
             elif sort_by_new_ep and mal_status in ["watching", "plan_to_watch"]:
 
                 def get_mal_priority(item):
@@ -3863,7 +3868,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     return (group_idx, *secondary_sort)
 
                 sorted_data_items = sorted(data_items, key=get_mal_priority)
-                paged_data_items = sorted_data_items[offset : offset + 40]
+                paged_data_items = sorted_data_items[offset : offset + page_limit]
             else:
 
                 def get_mal_updated_ts(item):
@@ -3872,7 +3877,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                     return parse_iso_timestamp(status.get("updated_at", ""))
 
                 sorted_data_items = sorted(data_items, key=get_mal_updated_ts, reverse=True)
-                paged_data_items = sorted_data_items[offset : offset + 40]
+                paged_data_items = sorted_data_items[offset : offset + page_limit]
 
             # Resolve Kitsu IDs in bulk
             from app.lib.id_resolver import bulk_resolve_to_kitsu
@@ -4103,7 +4108,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 entries = sorted(entries, key=get_al_updated_ts, reverse=True)
 
             # Paginate the full sorted list
-            paged_entries = entries[offset : offset + 40]
+            paged_entries = entries[offset : offset + page_limit]
 
             # Resolve Kitsu IDs in bulk
             from app.lib.id_resolver import bulk_resolve_to_kitsu

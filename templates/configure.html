@@ -4131,7 +4131,7 @@
                 return Promise.resolve(PREVIEW_ANIME_ITEMS);
             }
 
-            const fetchUrl = `/${currentUserId}/catalog/anime/${catId}.json`;
+            const fetchUrl = `/${currentUserId}/catalog/anime/${catId}.json?limit=50`;
             catalogFetchPromises[catId] = fetch(fetchUrl)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -4267,7 +4267,10 @@
             if (catalogItemsCache[catId]) {
                 const items = catalogItemsCache[catId];
                 if (countEl) {
-                    countEl.textContent = `${items.length} title${items.length === 1 ? '' : 's'}`;
+                    const countText = items.length >= 50
+                        ? `Showing 50 titles`
+                        : `${items.length} title${items.length === 1 ? '' : 's'}`;
+                    countEl.textContent = countText;
                 }
                 currentPreviewAnimeList = applySortAndShuffle(items, cfg);
                 updateModalLivePreview();
@@ -4283,7 +4286,10 @@
             fetchCatalogItems(catId).then(items => {
                 if (activeModalCatalogId === catId) {
                     if (countEl) {
-                        countEl.textContent = `${items.length} title${items.length === 1 ? '' : 's'}`;
+                        const countText = items.length >= 50
+                            ? `Showing 50 titles`
+                            : `${items.length} title${items.length === 1 ? '' : 's'}`;
+                        countEl.textContent = countText;
                     }
                     const currentCfg = catalogConfigs[catId] || {};
                     currentPreviewAnimeList = applySortAndShuffle(items, currentCfg);
@@ -4387,7 +4393,7 @@
 
                 if (shape === 'landscape') {
                     previewGrid.className = 'preview-grid landscape';
-                    previewGrid.innerHTML = listToRender.slice(0, 16).map(item => {
+                    previewGrid.innerHTML = listToRender.slice(0, 50).map(item => {
                         const src = resolveItemPoster(item);
                         const cleanSrc = item.clean_poster || item.cover || fallbackCover;
                         const safeTitle = escapeAttr(item.title);
@@ -4401,7 +4407,7 @@
                     }).join('');
                 } else {
                     previewGrid.className = 'preview-grid portrait';
-                    previewGrid.innerHTML = listToRender.slice(0, 24).map(item => {
+                    previewGrid.innerHTML = listToRender.slice(0, 50).map(item => {
                         const src = resolveItemPoster(item);
                         const cleanSrc = item.clean_poster || item.cover || fallbackCover;
                         const safeTitle = escapeAttr(item.title);
