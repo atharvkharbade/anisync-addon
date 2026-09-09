@@ -20,6 +20,7 @@ from app.services.recommendations.cache import (
 )
 from app.services.recommendations.engine import (
     _update_recommendations_cache_impl,
+    fetch_user_watchlist_history,
     generate_genre_recommendations,
     get_recommendations_for_seeds,
     select_weighted_seeds,
@@ -42,6 +43,7 @@ __all__ = [
     "select_weighted_seeds",
     "get_recommendations_for_seeds",
     "generate_genre_recommendations",
+    "fetch_user_watchlist_history",
     "_update_recommendations_cache_impl",
     "update_recommendations_cache",
     "get_cached_recommendations",
