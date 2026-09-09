@@ -1283,12 +1283,17 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         elif not simkl_id and stremio_id.startswith("simkl:"):
             simkl_id = stremio_id.split(":")[1]
 
+        # Handle card shape (landscape vs poster)
+        catalog_shapes = (user.get("catalog_shapes") or {}) if user else {}
+        catalog_configs = (user.get("catalog_configs") or {}) if user else {}
+        cat_cfg = catalog_configs.get(catalog_id, {}) if isinstance(catalog_configs, dict) else {}
+        is_landscape = bool(catalog_id and (cat_cfg.get("shape") == "landscape" or catalog_shapes.get(catalog_id) == "landscape"))
+
         # Apply RPDB poster overlay if configured (supports per-catalog poster art on/off toggle)
         catalog_poster_arts = (user.get("catalog_poster_arts") or {}) if user else {}
         cat_art_override = catalog_poster_arts.get(catalog_id)
         if cat_art_override is None and user:
-            cat_configs = user.get("catalog_configs") or {}
-            cat_art_override = (cat_configs.get(catalog_id) or {}).get("poster_art")
+            cat_art_override = cat_cfg.get("poster_art")
 
         is_art_disabled = (cat_art_override is False or cat_art_override in ("false", "off", "clean", "none"))
 
@@ -1303,6 +1308,7 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
             fallback_poster=clean_poster,
             provider_override=None,
             resolved_ids=ids_dict,
+            shape="landscape" if is_landscape else "poster",
         )
 
         if ids_dict.get("imdb_id"):

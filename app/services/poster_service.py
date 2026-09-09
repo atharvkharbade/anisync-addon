@@ -242,6 +242,7 @@ def get_rpdb_poster_url(
     fallback_poster: str | None = None,
     provider_override: str | None = None,
     resolved_ids: dict | None = None,
+    shape: str = "poster",
 ) -> str | None:
     """
     Resolve and construct the poster URL for an item based on user's poster_provider setting:
@@ -418,9 +419,19 @@ def get_rpdb_poster_url(
     # Provider specific URL generation
     if provider == "custom":
         try:
+            is_landscape = (shape == "landscape")
+            is_btttr = "btttr.cc" in custom_pattern
+            has_landscape_placeholder = any(p in custom_pattern for p in ("{shape}", "{endpoint}", "backdrop"))
+            # Custom providers (like btttr.cc) or patterns without explicit landscape placeholders
+            # fall back to original cover/backdrop in landscape mode to prevent distorted cropping.
+            if is_landscape and (is_btttr or not has_landscape_placeholder):
+                return fallback_poster
+
             # Substitute placeholders
             url = custom_pattern
             replacements = {
+                "{shape}": "landscape" if is_landscape else "poster",
+                "{endpoint}": "backdrop-default" if is_landscape else "poster-default",
                 "{imdb_id}": imdb_id or "",
                 "{mal_id}": str(mal_id) if mal_id else "",
                 "{kitsu_id}": str(kitsu_id) if kitsu_id else "",
@@ -460,11 +471,13 @@ def get_rpdb_poster_url(
     if not id_type or not media_id:
         return fallback_poster
 
+    endpoint = "backdrop-default" if shape == "landscape" else "poster-default"
+
     if provider == "top_poster":
-        return f"https://top-posters.com/{top_key}/{id_type}/poster-default/{media_id}.jpg"
+        return f"https://top-posters.com/{top_key}/{id_type}/{endpoint}/{media_id}.jpg"
 
     # Default to RPDB
-    url = f"https://api.ratingposterdb.com/{rpdb_key}/{id_type}/poster-default/{media_id}.jpg"
+    url = f"https://api.ratingposterdb.com/{rpdb_key}/{id_type}/{endpoint}/{media_id}.jpg"
     tier = rpdb_key.split("-")[0].lower() if rpdb_key else "t0"
     lang = user.get("rec_language", "en").split("-")[0].lower()
 

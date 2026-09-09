@@ -2093,6 +2093,11 @@
                                 <code class="px-2 py-0.5 rounded" style="background: rgba(255, 255, 255, 0.04); color: #cbd5e1; font-size: 0.72rem; border: 1px solid rgba(255, 255, 255, 0.08); font-family: monospace;">{anilist_id}</code>
                                 <code class="px-2 py-0.5 rounded" style="background: rgba(255, 255, 255, 0.04); color: #cbd5e1; font-size: 0.72rem; border: 1px solid rgba(255, 255, 255, 0.08); font-family: monospace;">{tmdb_id}</code>
                                 <code class="px-2 py-0.5 rounded" style="background: rgba(255, 255, 255, 0.04); color: #cbd5e1; font-size: 0.72rem; border: 1px solid rgba(255, 255, 255, 0.08); font-family: monospace;">{tvdb_id}</code>
+                                <code class="px-2 py-0.5 rounded" style="background: rgba(255, 255, 255, 0.04); color: #cbd5e1; font-size: 0.72rem; border: 1px solid rgba(255, 255, 255, 0.08); font-family: monospace;">{shape}</code>
+                                <code class="px-2 py-0.5 rounded" style="background: rgba(255, 255, 255, 0.04); color: #cbd5e1; font-size: 0.72rem; border: 1px solid rgba(255, 255, 255, 0.08); font-family: monospace;">{endpoint}</code>
+                            </p>
+                            <p class="text-secondary small mt-2 mb-0" style="font-size: 0.72rem; color: rgba(255, 255, 255, 0.5); line-height: 1.5;">
+                                <i class="fa-solid fa-circle-info me-1 text-info opacity-75"></i>Custom providers (like btttr.cc) supply portrait posters. Landscape catalogs automatically use high-res backdrop banners.
                             </p>
                         </div>
                     </div>
@@ -5580,7 +5585,17 @@
                 const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
                 return `https://api.top-posters.com/${encodeURIComponent(topKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
             } else if (provider === 'custom' && customPattern) {
+                // Known portrait-only domains (like btttr.cc) or patterns without explicit landscape placeholders
+                // fall back to the genuine 16:9 backdrop banner in landscape mode to prevent distorted cropping.
+                const isBtttr = customPattern.includes('btttr.cc');
+                const hasLandscapePlaceholder = customPattern.includes('{shape}') || customPattern.includes('{endpoint}') || customPattern.includes('backdrop');
+                if (isLandscape && (isBtttr || !hasLandscapePlaceholder)) {
+                    return cleanFallback;
+                }
+
                 let res = customPattern
+                    .replace(/{shape}/g, isLandscape ? 'landscape' : 'poster')
+                    .replace(/{endpoint}/g, isLandscape ? 'backdrop-default' : 'poster-default')
                     .replace(/{imdb_id}/g, sample.imdb_id || '')
                     .replace(/{mal_id}/g, sample.mal_id || '')
                     .replace(/{kitsu_id}/g, sample.kitsu_id || '')
