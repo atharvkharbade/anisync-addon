@@ -20,7 +20,7 @@ auth_bp = Blueprint("auth", __name__)
 @rate_limit(limit=10, period_seconds=60)
 async def authorize_mal():
     code_verifier, code_challenge = mal_api.generate_pkce()
-    state = secrets.token_urlsafe(16)
+    state = secrets.token_urlsafe(32)
 
     session["code_verifier"] = code_verifier
     session["oauth_state"] = state
@@ -179,7 +179,7 @@ async def logout():
 @auth_bp.route("/authorize-anilist")
 @rate_limit(limit=10, period_seconds=60)
 async def authorize_anilist():
-    state = secrets.token_urlsafe(16)
+    state = secrets.token_urlsafe(32)
     session["anilist_oauth_state"] = state
     anilist_url = (
         f"https://anilist.co/api/v2/oauth/authorize"
@@ -364,7 +364,7 @@ async def disconnect_anilist():
 @auth_bp.route("/authorize-simkl")
 @rate_limit(limit=10, period_seconds=60)
 async def authorize_simkl():
-    state = secrets.token_urlsafe(16)
+    state = secrets.token_urlsafe(32)
     session["simkl_oauth_state"] = state
     redirect_uri = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/simkl-callback"
     simkl_url = (

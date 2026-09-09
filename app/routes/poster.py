@@ -7,6 +7,9 @@ import urllib.parse
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from quart import Blueprint, Response, abort, redirect, request
 
+# Guard against decompression bomb DoS attacks (cap max image dimension at 25MP)
+Image.MAX_IMAGE_PIXELS = 25_000_000
+
 from app.routes.utils import is_valid_user_id, rate_limit
 from app.services.http import get_client
 

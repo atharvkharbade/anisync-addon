@@ -356,14 +356,22 @@ async def logo_png():
 
 @manifest_bp.route("/assets/<filename>")
 async def serve_asset(filename: str):
+    # Sanitize filename: prevent path traversal attacks (BUG #64)
+    safe_filename = os.path.basename(filename)
+    if safe_filename != filename or ".." in filename or "/" in filename or "\\" in filename:
+        return "Asset not found", 404
+
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     candidates = [
-        os.path.join(curr_dir, "..", "assets", filename),
-        os.path.join(curr_dir, "..", "..", "assets", filename),
+        os.path.join(curr_dir, "..", "assets", safe_filename),
+        os.path.join(curr_dir, "..", "..", "assets", safe_filename),
     ]
     for asset_path in candidates:
-        if os.path.exists(asset_path):
-            response = await send_file(asset_path, mimetype="image/png" if filename.endswith(".png") else "image/jpeg")
+        abs_path = os.path.abspath(asset_path)
+        # Verify the resolved path stays within an assets directory
+        if os.path.exists(abs_path) and os.path.basename(os.path.dirname(abs_path)) == "assets":
+            mimetype = "image/svg+xml" if safe_filename.endswith(".svg") else ("image/png" if safe_filename.endswith(".png") else "image/jpeg")
+            response = await send_file(abs_path, mimetype=mimetype)
             response.headers["Cache-Control"] = "public, max-age=86400"
             return response
     return "Asset not found", 404
@@ -470,13 +478,15 @@ async def user_manifest(user_id: str):
         user_catalogs = [c if c != "anime_tracker_search" else "anisync_search" for c in user_catalogs]
 
     catalog_shapes = user.get("catalog_shapes", {}) or {}
+    catalog_configs = user.get("catalog_configs", {}) or {}
     catalog_titles = user.get("catalog_titles", {}) or {}
     catalog_placements = user.get("catalog_placements", {}) or {}
 
     def get_configured_catalog(cat):
         c = cat.copy()
         cat_id = c.get("id")
-        shape = catalog_shapes.get(cat_id, "poster")
+        cat_cfg = catalog_configs.get(cat_id, {}) if isinstance(catalog_configs, dict) else {}
+        shape = cat_cfg.get("shape") or catalog_shapes.get(cat_id, "poster")
         if shape == "landscape":
             c["posterShape"] = "landscape"
         else:

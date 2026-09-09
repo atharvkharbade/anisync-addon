@@ -71,6 +71,7 @@ try:
     db.get_collection("discovery_catalogs_cache").create_index("catalog_id", unique=True)
 
     db.get_collection("recommendations_cache").create_index("uid", unique=True)
+    db.get_collection("recommendations_cache").create_index("expires_at", expireAfterSeconds=0)
 
     db.get_collection("banner_ratios").create_index("url", unique=True)
 except Exception as e:

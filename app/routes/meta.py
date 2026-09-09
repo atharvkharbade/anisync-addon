@@ -948,6 +948,8 @@ async def get_banner_aspect_ratio(banner_url: str) -> float:
         from PIL import Image
         import io
 
+        Image.MAX_IMAGE_PIXELS = 25_000_000
+
         async with httpx.AsyncClient(timeout=4.0) as client:
             resp = await client.get(banner_url, headers={"User-Agent": "Mozilla/5.0"})
             if resp.status_code == 200 and len(resp.content) <= 10 * 1024 * 1024:

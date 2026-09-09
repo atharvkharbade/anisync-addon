@@ -1036,12 +1036,19 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
     return sorted(items, key=cmp_to_key(compare_items))
 
 
-def get_catalog_sorting(user, catalog_id, default_category_key=None):
+def get_catalog_sorting(user, catalog_id, default_category_key=None, url_filters=None):
     """
     Resolves custom sort settings for a catalog.
-    Checks per-catalog configuration (catalog_configs / catalog_sorts) first, then falls back to legacy category-wide sort.
+    Checks URL parameters first (e.g. sort_by, sort, sort_order from Stremio/Nuvio client query),
+    then per-catalog configuration (catalog_configs / catalog_sorts), then falls back to legacy category-wide sort.
     Returns: (is_custom, sort_by, sort_order)
     """
+    if isinstance(url_filters, dict):
+        url_sort = url_filters.get("sort_by") or url_filters.get("sort")
+        if url_sort and url_sort != "default":
+            url_order = url_filters.get("sort_order") or "desc"
+            return True, url_sort, url_order
+
     cat_cfg = (user.get("catalog_configs", {}) or {}).get(catalog_id, {})
     if isinstance(cat_cfg, dict):
         cfg_sort = cat_cfg.get("sort_by")
@@ -2195,7 +2202,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 metas = []
 
         # Apply Custom Sorting for Discovery Catalogs if enabled
-        is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, "watching")
+        is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, "watching", url_filters=filters)
         if is_custom_sort:
             metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
 
@@ -2548,12 +2555,12 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
                 metas = cache.get("liked_items", [])
 
         # Apply Custom Sorting for Recommendation Catalogs if enabled
-        is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, None)
+        is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, None, url_filters=filters)
         if is_custom_sort:
             metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
 
-        # Shuffle if enabled
-        if is_catalog_shuffle_enabled(user, catalog_id):
+        # Shuffle if enabled (only when not custom sorted)
+        if is_catalog_shuffle_enabled(user, catalog_id) and (not is_custom_sort or sort_by == "default"):
             import random
             metas = list(metas)
             random.shuffle(metas)
@@ -2840,7 +2847,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             }
             category_key = comb_map.get(comb_status, "watching")
 
-            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key)
+            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key, url_filters=filters)
 
             # Bulk fetch AniList next airing details ONLY for combined items that are airing (drastically reduces query volume)
             bulk_details = {}
@@ -3385,7 +3392,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             }
             category_key = simkl_map.get(simkl_status, "watching")
 
-            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key)
+            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key, url_filters=filters)
 
             # Fetch AniList next-airing-episode data in bulk ONLY for airing shows
             bulk_details = {}
@@ -3710,7 +3717,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             }
             category_key = mal_map.get(mal_status, "watching")
 
-            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key)
+            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key, url_filters=filters)
 
             # Fetch AniList next-airing-episode data in bulk ONLY for airing shows (drastically cuts latency for 500+ lists)
             bulk_details = {}
@@ -3985,7 +3992,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             else:
                 category_key = "watching"
 
-            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key)
+            custom_sort_enabled, sort_by, sort_order = get_catalog_sorting(user, catalog_id, category_key, url_filters=filters)
 
             collection = await get_cached_anilist_user_anime_list(
                 user_id, user["anilist_token"], anilist_uid=anilist_uid, status=anilist_status
