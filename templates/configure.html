@@ -1225,6 +1225,19 @@
         pointer-events: auto;
     }
 
+    #modalSortSection.disabled #modalSortControlsRow {
+        opacity: 0.42;
+        pointer-events: none;
+        user-select: none;
+        filter: grayscale(0.6);
+    }
+    #modalSortSection.disabled .btn-modal-reset-field {
+        display: none;
+    }
+    #modalSortDisabledNote {
+        pointer-events: auto;
+    }
+
     .preview-card.skeleton {
         background: linear-gradient(110deg, rgba(255, 255, 255, 0.03) 8%, rgba(255, 255, 255, 0.08) 18%, rgba(255, 255, 255, 0.03) 33%);
         background-size: 200% 100%;
@@ -3066,14 +3079,14 @@
                         </div>
 
                         <!-- 5. Sorting -->
-                        <div>
+                        <div id="modalSortSection">
                             <div class="d-flex align-items-center justify-content-between mb-1">
                                 <label class="form-label small fw-semibold text-light mb-0">Sort</label>
                                 <button type="button" class="btn-modal-reset-field" onclick="resetModalSort()" title="Reset sorting">
                                     <i class="fa-solid fa-rotate-left"></i>
                                 </button>
                             </div>
-                            <div class="row g-2">
+                            <div class="row g-2" id="modalSortControlsRow">
                                 <div class="col-12 col-sm-7">
                                     <input type="hidden" id="modal_sort_by" value="default">
                                     <div class="custom-select-wrapper dropup" data-input-id="modal_sort_by">
@@ -3118,6 +3131,9 @@
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                            <div id="modalSortDisabledNote" class="text-secondary small mt-1 d-none" style="font-size: 0.73rem; line-height: 1.35;">
+                                <i class="fa-solid fa-shuffle me-1 text-primary"></i>Sorting is disabled while <strong>Shuffle</strong> is on.
                             </div>
                         </div>
 
@@ -3844,7 +3860,7 @@
             if (cfg.shape && cfg.shape !== 'poster') count++;
             if (cfg.title && cfg.title.trim() !== '') count++;
             if (cfg.placement && cfg.placement !== 'all') count++;
-            if (cfg.sort_by && cfg.sort_by !== 'default') count++;
+            if (!cfg.shuffle && cfg.sort_by && cfg.sort_by !== 'default') count++;
             if (cfg.shuffle) count++;
             if (isPosterProviderConfigured() && cfg.poster_art === false) count++;
             return count;
@@ -3955,6 +3971,22 @@
             document.querySelectorAll('#modalShuffleGroup .modal-segmented-btn').forEach(btn => {
                 btn.classList.toggle('active', (btn.getAttribute('data-shuffle') === 'true') === shuffle);
             });
+            const sortSection = document.getElementById('modalSortSection');
+            const sortNote = document.getElementById('modalSortDisabledNote');
+            if (sortSection) {
+                if (shuffle) {
+                    sortSection.classList.add('disabled');
+                } else {
+                    sortSection.classList.remove('disabled');
+                }
+            }
+            if (sortNote) {
+                if (shuffle) {
+                    sortNote.classList.remove('d-none');
+                } else {
+                    sortNote.classList.add('d-none');
+                }
+            }
         }
 
         function updateModalSortDropdown(val) {
@@ -4185,6 +4217,10 @@
             if (!items || items.length === 0) return [];
             let list = [...items];
 
+            if (cfg && cfg.shuffle) {
+                return shuffleArray(list);
+            }
+
             const sortBy = (cfg && cfg.sort_by) || 'default';
             const sortOrder = (cfg && cfg.sort_order) || 'desc';
             const isAsc = sortOrder === 'asc';
@@ -4239,10 +4275,6 @@
                     // Deterministic tie-breaker by title
                     return (a.title || '').localeCompare(b.title || '');
                 });
-            }
-
-            if (cfg && cfg.shuffle) {
-                list = shuffleArray(list);
             }
 
             return list;

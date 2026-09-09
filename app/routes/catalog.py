@@ -1049,6 +1049,10 @@ def get_catalog_sorting(user, catalog_id, default_category_key=None, url_filters
             url_order = url_filters.get("sort_order") or "desc"
             return True, url_sort, url_order
 
+    # If shuffle is enabled for this catalog, saved custom sorting is suppressed
+    if is_catalog_shuffle_enabled(user, catalog_id):
+        return False, "default", "desc"
+
     cat_cfg = (user.get("catalog_configs", {}) or {}).get(catalog_id, {})
     if isinstance(cat_cfg, dict):
         cfg_sort = cat_cfg.get("sort_by")
