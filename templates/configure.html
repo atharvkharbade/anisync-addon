@@ -2373,17 +2373,23 @@
                     </div>
 
                     <!-- Discovery Sub-Options (only visible when enabled) -->
-                    <div id="discovery-sub-options" class="nested-subcard mb-0"
+                    <div id="discovery-sub-options" class="nested-subcard"
                         style="{% if not user.get('enable_discovery_catalogs', True) %}display: none;{% endif %}">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fa-solid fa-microphone-lines me-2 text-info" style="font-size: 0.8rem;"></i>
-                            <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Dubbed Audio Filter</span>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="shuffle_discovery_catalogs" {% if user.get('shuffle_discovery_catalogs', False) %}checked{% endif %}>
+                            <label class="form-check-label ms-1" for="shuffle_discovery_catalogs">
+                                <span class="fw-medium d-block">Shuffle Discovery Catalogs</span>
+                                <span class="text-secondary small d-block">
+                                    Randomize the order of titles in discovery catalogs on each refresh.
+                                </span>
+                            </label>
                         </div>
 
                         <div class="form-check form-switch mb-0">
                             <input class="form-check-input" type="checkbox" role="switch" id="dubbed_only_discovery" {% if user.get('dubbed_only_discovery', False) or user.get('enable_dubbed_catalogs', False) %}checked{% endif %}>
                             <label class="form-check-label ms-1" for="dubbed_only_discovery">
-                                <span class="fw-medium d-block">Dubbed Only</span>
+                                <span class="fw-medium d-block">Filter Discovery Catalogs to Dubbed Only</span>
                                 <span class="text-secondary small d-block">
                                     Only show anime with an available dub in your chosen language across discovery catalogs.
                                 </span>
