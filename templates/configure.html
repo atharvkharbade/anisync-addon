@@ -2374,7 +2374,7 @@
                 </div>
 
                 <!-- Dubbed Anime Catalogs Card -->
-                <div class="card-dark p-3 p-sm-4 mb-3" style="border-left: 3px solid #8b5cf6;">
+                <div class="card-dark p-3 p-sm-4 mb-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <h6 class="fw-semibold mb-0">
                             <i class="fa-solid fa-microphone-lines me-2" style="color: #a855f7;"></i>Dubbed Anime Catalogs
@@ -2382,7 +2382,7 @@
                         <span class="badge rounded-pill" style="background: linear-gradient(135deg, #8b5cf6, #ec4899); color: #fff; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.5px;">NEW</span>
                     </div>
                     <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                        Browse verified dubbed anime in your preferred language powered by the MyDubList database.
+                        Browse dubbed anime in your preferred language
                     </p>
 
                     <div class="form-check form-switch mb-3">
@@ -2390,34 +2390,63 @@
                         <label class="form-check-label ms-1" for="enable_dubbed_catalogs">
                             <span class="fw-medium d-block">Enable Dubbed Catalogs</span>
                             <span class="text-secondary small d-block">
-                                Adds dedicated dubbed catalogs (Trending, Seasonal, Popular, Movies) to Stremio.
+                                Adds dubbed catalogs (Trending, Seasonal, Popular, Movies)
                             </span>
                         </label>
                     </div>
 
                     <!-- Dubbed sub-options (conditionally shown) -->
                     <div id="dubbed_options_container" style="{% if not user.get('enable_dubbed_catalogs', False) %}display: none;{% endif %} padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.07);">
-                        <div class="row g-3 align-items-center mb-3">
-                            <div class="col-12 col-sm-7">
-                                <label class="form-label small text-secondary mb-1" for="dubbed_language">
-                                    <i class="fa-solid fa-language me-1 text-info"></i>Preferred Dub Language
-                                </label>
-                                <select class="form-select form-select-sm bg-dark text-light border-secondary" id="dubbed_language" name="dubbed_language" style="border-color: rgba(255, 255, 255, 0.15) !important;">
-                                    {% set cur_dub_lang = user.get('dubbed_language', 'english') %}
-                                    {% if supported_dub_languages %}
-                                        {% for code, lang_name in supported_dub_languages.items() %}
-                                        <option value="{{ code }}" {% if cur_dub_lang == code %}selected{% endif %}>{{ lang_name }}</option>
-                                        {% endfor %}
-                                    {% else %}
-                                        <option value="english" {% if cur_dub_lang == 'english' %}selected{% endif %}>English</option>
-                                        <option value="spanish" {% if cur_dub_lang == 'spanish' %}selected{% endif %}>Spanish</option>
-                                        <option value="german" {% if cur_dub_lang == 'german' %}selected{% endif %}>German</option>
-                                        <option value="french" {% if cur_dub_lang == 'french' %}selected{% endif %}>French</option>
-                                        <option value="italian" {% if cur_dub_lang == 'italian' %}selected{% endif %}>Italian</option>
-                                        <option value="portuguese" {% if cur_dub_lang == 'portuguese' %}selected{% endif %}>Portuguese</option>
-                                        <option value="hindi" {% if cur_dub_lang == 'hindi' %}selected{% endif %}>Hindi</option>
-                                    {% endif %}
-                                </select>
+                        <div class="mb-3" style="max-width: 400px;">
+                            <label class="form-label small text-secondary mb-1">
+                                <i class="fa-solid fa-language me-1 text-info"></i>Preferred Dub Language
+                            </label>
+                            <input type="hidden" id="dubbed_language" name="dubbed_language" value="{{ user.get('dubbed_language', 'english') }}">
+                            <div class="custom-select-wrapper mb-2" data-input-id="dubbed_language">
+                                <div class="custom-select">
+                                    <span class="custom-select-text d-flex align-items-center">
+                                        {% set cur_dub_lang = user.get('dubbed_language', 'english') %}
+                                        {% if cur_dub_lang == 'spanish' %}
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ea580c; border-radius:4px; font-size:10px;">ES</span>Spanish
+                                        {% elif cur_dub_lang == 'german' %}
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#b45309; border-radius:4px; font-size:10px;">DE</span>German
+                                        {% elif cur_dub_lang == 'french' %}
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#4f46e5; border-radius:4px; font-size:10px;">FR</span>French
+                                        {% elif cur_dub_lang == 'italian' %}
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#059669; border-radius:4px; font-size:10px;">IT</span>Italian
+                                        {% elif cur_dub_lang == 'portuguese' %}
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#0d9488; border-radius:4px; font-size:10px;">PT</span>Portuguese
+                                        {% elif cur_dub_lang == 'hindi' %}
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#e11d48; border-radius:4px; font-size:10px;">HI</span>Hindi
+                                        {% else %}
+                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English
+                                        {% endif %}
+                                    </span>
+                                    <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                </div>
+                                <div class="custom-options-menu">
+                                    <div class="custom-option-item d-flex align-items-center" data-value="english">
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="spanish">
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#ea580c; border-radius:4px; font-size:10px;">ES</span>Spanish
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="german">
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#b45309; border-radius:4px; font-size:10px;">DE</span>German
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="french">
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#4f46e5; border-radius:4px; font-size:10px;">FR</span>French
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="italian">
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#059669; border-radius:4px; font-size:10px;">IT</span>Italian
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="portuguese">
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#0d9488; border-radius:4px; font-size:10px;">PT</span>Portuguese
+                                    </div>
+                                    <div class="custom-option-item d-flex align-items-center" data-value="hindi">
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#e11d48; border-radius:4px; font-size:10px;">HI</span>Hindi
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
