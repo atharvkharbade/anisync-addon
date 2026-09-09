@@ -34,6 +34,7 @@ def is_trusted_url(url: str) -> bool:
             "ratingposterdb.com",
             "topposters.com",
             "top-posters.com",
+            "btttr.cc",
             "tmdb.org",
             "thetvdb.com",
         )

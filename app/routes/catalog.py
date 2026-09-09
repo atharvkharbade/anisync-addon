@@ -1310,8 +1310,8 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
 
         if rpdb_poster and rpdb_poster != clean_poster:
             if is_badge:
-                badge_query_params["url"] = rpdb_poster
-                art_poster = f"{badge_base_url}?{urllib.parse.urlencode(badge_query_params)}"
+                # Keep clean poster as the base for new episode badges to avoid overlapping badge clutter
+                art_poster = current_poster
             else:
                 art_poster = rpdb_poster
         else:

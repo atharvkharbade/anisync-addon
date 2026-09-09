@@ -1340,28 +1340,34 @@
     }
     .preview-mode-switch {
         display: inline-flex;
-        background: rgba(0, 0, 0, 0.45);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.09);
         border-radius: 8px;
-        padding: 2px;
-        gap: 2px;
+        padding: 3px;
+        gap: 3px;
     }
     .preview-mode-btn {
         background: transparent;
         border: none;
-        color: #94a3b8;
+        color: rgba(255, 255, 255, 0.42);
         font-size: 0.72rem;
         font-weight: 500;
-        padding: 3px 10px;
+        padding: 4px 10px;
         border-radius: 6px;
         cursor: pointer;
-        transition: all 0.16s ease;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    .preview-mode-btn:hover:not(.active) {
+        color: rgba(255, 255, 255, 0.82);
+        background: rgba(255, 255, 255, 0.05);
     }
     .preview-mode-btn.active {
-        background: rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.16);
         color: #ffffff;
         font-weight: 600;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
     }
     .btn-cycle-floating {
         position: absolute;
@@ -1920,7 +1926,7 @@
                         {% endif %}
 
                         <!-- Divider & Poster Provider Section -->
-                        <div class="{% if not user.get('is_guest') %}pt-3 border-top border-secondary border-opacity-10{% endif %}">
+                        <div class="{% if not user.get('is_guest') %}pt-3 border-top border-secondary border-opacity-10{% endif %}" style="max-width: 400px;">
                             <label class="rec-label mb-2 small text-secondary">POSTER ART COVER PROVIDER</label>
                             <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
                                 Enhance anime poster covers with Rating Poster DB (RPDB) overlays, TOP Posters, or a custom poster URL.
@@ -2136,8 +2142,8 @@
                                 <button type="button" class="preview-mode-btn active" id="btnPreviewAiring" onclick="setArtworkPreviewState('airing')" title="Preview with new episode badge">
                                     New Episode
                                 </button>
-                                <button type="button" class="preview-mode-btn" id="btnPreviewNormal" onclick="setArtworkPreviewState('normal')" title="Preview without badge">
-                                    Normal
+                                <button type="button" class="preview-mode-btn" id="btnPreviewNormal" onclick="setArtworkPreviewState('normal')" title="Preview clean poster art">
+                                    Poster Art
                                 </button>
                             </div>
                         </div>
@@ -3496,7 +3502,7 @@
                     menuEl.classList.remove("show");
                     selectEl.classList.remove("active");
 
-                    if (inputId === "poster_provider" || inputId === "badge_style") {
+                    if (inputId === "badge_style") {
                         if (typeof updateArtworkLivePreview === "function") updateArtworkLivePreview();
                     }
                     if (inputId === "poster_provider") {
@@ -3581,15 +3587,19 @@
         }
         syncPosterProviderFields();
 
+        let posterArtInputDebounceTimer = null;
         ['rpdb_api_key', 'top_poster_key', 'custom_poster_pattern'].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
                 el.addEventListener('input', () => {
                     if (typeof updatePosterArtSectionAvailability === "function") updatePosterArtSectionAvailability();
-                    if (typeof updateArtworkLivePreview === "function") updateArtworkLivePreview();
-                    if (typeof updateModalLivePreview === "function" && typeof activeModalCatalogId !== "undefined" && activeModalCatalogId) {
-                        updateModalLivePreview();
-                    }
+                    if (posterArtInputDebounceTimer) clearTimeout(posterArtInputDebounceTimer);
+                    posterArtInputDebounceTimer = setTimeout(() => {
+                        if (typeof updateArtworkLivePreview === "function") updateArtworkLivePreview();
+                        if (typeof updateModalLivePreview === "function" && typeof activeModalCatalogId !== "undefined" && activeModalCatalogId) {
+                            updateModalLivePreview();
+                        }
+                    }, 400);
                 });
             }
         });
@@ -5633,6 +5643,11 @@
             // Guests only preview Poster Art Cover Provider without new episode overlays
             const isAiring = (!window.isGuestUser && artworkPreviewState === 'airing');
 
+            // Check if selected provider requires an API key or custom pattern that is not entered yet
+            const providerRequiresKey = (provider === 'rpdb' && !rpdbKey) ||
+                                        ((provider === 'top_poster' || provider === 'topposters') && !topKey) ||
+                                        (provider === 'custom' && !customPattern);
+
             const stateKey = `${sampleAnimeIndex}_${artworkPreviewShape}_${artworkPreviewState}_${badgeStyle}_${provider}_${rpdbKey}_${topKey}_${customPattern}_${userWatchlistSamplePool ? userWatchlistSamplePool.length : 0}`;
 
             if (!force && lastArtworkPreviewStateKey === stateKey && imgEl.getAttribute('src')) {
@@ -5642,6 +5657,14 @@
                 }
                 return;
             }
+
+            // Do not show spinner or initiate network re-fetch if provider changed to one requiring a missing key
+            if (!force && providerRequiresKey && provider !== 'none' && !isAiring && imgEl.getAttribute('src')) {
+                lastArtworkPreviewStateKey = stateKey;
+                if (spinnerEl) spinnerEl.classList.add('d-none');
+                return;
+            }
+
             lastArtworkPreviewStateKey = stateKey;
 
             const safeCurated = CURATED_POSTER_SAMPLES[sampleAnimeIndex % CURATED_POSTER_SAMPLES.length];
@@ -5657,7 +5680,7 @@
                     : 'mal+anilist';
                 const shapeParam = isLandscape ? 'landscape' : 'poster';
                 const userId = window.currentUserId || 'guest_preview';
-                targetImgUrl = `/${userId}/poster/preview_${sampleAnimeIndex}.jpg?url=${encodeURIComponent(genuineBaseUrl)}&badge=new&tracker=${trackerParam}&style=${badgeStyle}&shape=${shapeParam}&v=${Date.now()}`;
+                targetImgUrl = `/${userId}/poster/preview_${sampleAnimeIndex}.jpg?url=${encodeURIComponent(cleanFallback)}&badge=new&tracker=${trackerParam}&style=${badgeStyle}&shape=${shapeParam}&v=${Date.now()}`;
             }
 
             if (spinnerEl) spinnerEl.classList.remove('d-none');
@@ -5665,12 +5688,22 @@
             imgEl.onerror = function() {
                 if (spinnerEl) spinnerEl.classList.add('d-none');
                 const safeUrl = isLandscape ? safeCurated.banner : safeCurated.cover;
-                if (imgEl.src !== safeUrl) {
+                if (isAiring && !imgEl.dataset.fallbackRetried) {
+                    imgEl.dataset.fallbackRetried = "1";
+                    const trackerParam = (window.userTrackersList && window.userTrackersList.length > 0)
+                        ? window.userTrackersList.join('+')
+                        : 'mal+anilist';
+                    const shapeParam = isLandscape ? 'landscape' : 'poster';
+                    const userId = window.currentUserId || 'guest_preview';
+                    imgEl.src = `/${userId}/poster/preview_${sampleAnimeIndex}.jpg?url=${encodeURIComponent(safeUrl)}&badge=new&tracker=${trackerParam}&style=${badgeStyle}&shape=${shapeParam}&v=${Date.now()}`;
+                } else if (imgEl.src !== safeUrl) {
+                    imgEl.dataset.fallbackRetried = "";
                     imgEl.onerror = null;
                     imgEl.src = safeUrl;
                 }
             };
             imgEl.onload = function() {
+                imgEl.dataset.fallbackRetried = "";
                 if (spinnerEl) spinnerEl.classList.add('d-none');
             };
 
