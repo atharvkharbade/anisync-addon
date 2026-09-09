@@ -1,37 +1,18 @@
 import asyncio
 import datetime
 import logging
-import random
-
-from quart import request
+import re
 
 from app.api import anilist as anilist_api
-from app.routes.catalog.formatting import format_catalog_metas
-from app.routes.catalog.sorting import (
-    apply_catalog_dub_filter,
-    get_catalog_sorting,
-    is_catalog_shuffle_enabled,
-    sort_watchlist_items,
-)
-from app.routes.utils import respond_with
+from app.lib.id_resolver import bulk_resolve_to_kitsu
+from app.services.db import db
 
-DISCOVERY_CAT_IDS = [
-    "anisync_trending",
-    "anisync_highest_rated",
-    "anisync_most_popular",
-    "anisync_top_airing",
-    "anisync_seasonal",
-    "anisync_schedule",
-    "anisync_spotlight",
-]
+from .constants import build_anilist_discovery_query
+from .fetchers import fetch_supplemental_discovery_data
 
 
 async def update_discovery_catalogs_cache() -> dict:
-    import re
-    from app.services.db import db
-    from app.lib.id_resolver import bulk_resolve_to_kitsu
-
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
     month = now.month
     year = now.year
     if month in [1, 2, 3]:
@@ -51,225 +32,29 @@ async def update_discovery_catalogs_cache() -> dict:
         next_season = "WINTER"
         next_year = year + 1
 
-    query = f"""
-    fragment MediaFields on Media {{
-      id
-      idMal
-      genres
-      format
-      duration
-      averageScore
-      popularity
-      episodes
-      startDate {{ year }}
-      seasonYear
-      title {{
-        english
-        userPreferred
-        romaji
-      }}
-      coverImage {{
-        large
-      }}
-      bannerImage
-      description
-      nextAiringEpisode {{
-        airingAt
-        episode
-        timeUntilAiring
-      }}
-    }}
-    query {{
-      trending: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, sort: TRENDING_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      highestRated: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, sort: SCORE_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      mostPopular: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      topAiring: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, status: RELEASING, sort: SCORE_DESC, popularity_greater: 2000, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      seasonal: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, season: {cur_season}, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      seasonalNext: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, season: {next_season}, seasonYear: {next_year}, sort: POPULARITY_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      seasonalUpcoming: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, status: NOT_YET_RELEASED, sort: POPULARITY_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      seasonalWinter: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, season: WINTER, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      seasonalSpring: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, season: SPRING, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      seasonalSummer: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, season: SUMMER, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      seasonalFall: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, season: FALL, seasonYear: {year}, sort: POPULARITY_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      schedule: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      spotlightMovies: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, format: MOVIE, sort: SCORE_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      spotlightNewMovies: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, format: MOVIE, sort: START_DATE_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      spotlightOva: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, format_in: [OVA, SPECIAL], sort: SCORE_DESC, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-      spotlightClassics: Page(page: 1, perPage: 50) {{
-        media(type: ANIME, startDate_lesser: 20120101, sort: SCORE_DESC, popularity_greater: 10000, isAdult: false) {{
-          ...MediaFields
-        }}
-      }}
-    }}
-    """
+    query = build_anilist_discovery_query(cur_season, next_season, year, next_year)
 
     data = {}
     try:
         res = await anilist_api._gql(None, query)
         data = res.get("data") or {}
     except Exception as e:
-        logging.warning("AniList GraphQL discovery fetch failed (%s), relying on Jikan data...", e)
+        logging.warning("AniList GraphQL discovery fetch failed (%s), relying on supplemental data...", e)
 
     # Fetch Jikan and Kitsu discovery lists in parallel
-    from app.api.jikan import get_airing_schedule, get_season_now, get_top_anime
-
-    def _fetch_kitsu_sync(query_str: str) -> list:
-        import json as _json
-        import urllib.request
-        try:
-            url = f"https://kitsu.io/api/edge/anime?{query_str}"
-            req = urllib.request.Request(
-                url,
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                    "Accept": "application/vnd.api+json",
-                },
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                data = _json.loads(resp.read())
-                if isinstance(data, dict):
-                    return data.get("data") or []
-        except Exception as ex:
-            logging.warning("Kitsu discovery fetch error (%s): %s", query_str, ex)
-        return []
-
-    async def fetch_kitsu_discovery(query_str: str) -> list:
-        return await asyncio.to_thread(_fetch_kitsu_sync, query_str)
-
-    try:
-        jikan_pop_task = asyncio.create_task(get_top_anime(filter_by="bypopularity", page=1))
-        jikan_airing_task = asyncio.create_task(get_top_anime(filter_by="airing", page=1))
-        jikan_top_task = asyncio.create_task(get_top_anime(page=1))
-        jikan_movie_task = asyncio.create_task(get_top_anime(type_filter="movie", page=1))
-        jikan_season_task = asyncio.create_task(get_season_now(page=1))
-        jikan_schedule_task = asyncio.create_task(get_airing_schedule(page=1))
-        jikan_fav_task = asyncio.create_task(get_top_anime(filter_by="favorite", page=1))
-
-        kitsu_pop_task = asyncio.create_task(fetch_kitsu_discovery("sort=-userCount&page%5Blimit%5D=25"))
-        kitsu_rating_task = asyncio.create_task(fetch_kitsu_discovery("sort=-averageRating&page%5Blimit%5D=25"))
-        kitsu_airing_task = asyncio.create_task(fetch_kitsu_discovery("filter%5Bstatus%5D=current&sort=-userCount&page%5Blimit%5D=25"))
-        kitsu_season_task = asyncio.create_task(fetch_kitsu_discovery("filter%5Bstatus%5D=current&sort=-createdAt&page%5Blimit%5D=25"))
-        kitsu_movie_task = asyncio.create_task(fetch_kitsu_discovery("filter%5Bsubtype%5D=movie&sort=-averageRating&page%5Blimit%5D=25"))
-
-        (
-            jikan_pop,
-            jikan_airing,
-            jikan_top,
-            jikan_movies,
-            jikan_season_now,
-            jikan_schedule,
-            jikan_fav,
-            kitsu_pop,
-            kitsu_rating,
-            kitsu_airing,
-            kitsu_season,
-            kitsu_movie,
-        ) = await asyncio.gather(
-            jikan_pop_task,
-            jikan_airing_task,
-            jikan_top_task,
-            jikan_movie_task,
-            jikan_season_task,
-            jikan_schedule_task,
-            jikan_fav_task,
-            kitsu_pop_task,
-            kitsu_rating_task,
-            kitsu_airing_task,
-            kitsu_season_task,
-            kitsu_movie_task,
-            return_exceptions=True,
-        )
-    except Exception as ex:
-        logging.warning("Error fetching supplemental discovery data: %s", ex)
-        jikan_pop = []
-        jikan_airing = []
-        jikan_top = []
-        jikan_movies = []
-        jikan_season_now = []
-        jikan_schedule = []
-        jikan_fav = []
-        kitsu_pop = []
-        kitsu_rating = []
-        kitsu_airing = []
-        kitsu_season = []
-        kitsu_movie = []
-
-    # Safe unwrapping of exceptions from return_exceptions=True
-    def _safe_list(val):
-        return val if isinstance(val, list) else []
-
-    jikan_pop = _safe_list(jikan_pop)
-    jikan_airing = _safe_list(jikan_airing)
-    jikan_top = _safe_list(jikan_top)
-    jikan_movies = _safe_list(jikan_movies)
-    jikan_season_now = _safe_list(jikan_season_now)
-    jikan_schedule = _safe_list(jikan_schedule)
-    jikan_fav = _safe_list(jikan_fav)
-    kitsu_pop = _safe_list(kitsu_pop)
-    kitsu_rating = _safe_list(kitsu_rating)
-    kitsu_airing = _safe_list(kitsu_airing)
-    kitsu_season = _safe_list(kitsu_season)
-    kitsu_movie = _safe_list(kitsu_movie)
+    supp = await fetch_supplemental_discovery_data()
+    jikan_pop = supp["jikan_pop"]
+    jikan_airing = supp["jikan_airing"]
+    jikan_top = supp["jikan_top"]
+    jikan_movies = supp["jikan_movies"]
+    jikan_season_now = supp["jikan_season_now"]
+    jikan_schedule = supp["jikan_schedule"]
+    jikan_fav = supp["jikan_fav"]
+    kitsu_pop = supp["kitsu_pop"]
+    kitsu_rating = supp["kitsu_rating"]
+    kitsu_airing = supp["kitsu_airing"]
+    kitsu_season = supp["kitsu_season"]
+    kitsu_movie = supp["kitsu_movie"]
 
     discovery_col = db.get_collection("discovery_catalogs_cache")
     expires_at = now + datetime.timedelta(hours=12)
@@ -514,8 +299,6 @@ async def update_discovery_catalogs_cache() -> dict:
     for cat_key, cat_metas in result_metas.items():
         try:
             if not cat_metas:
-                # If newly fetched metas is empty (e.g. upstream AniList 403), preserve existing healthy cached documents!
-                # Only bump expires_at so we don't spam upstream APIs while continuing to serve cached data.
                 res = discovery_col.update_one(
                     {"catalog_id": cat_key, "metas.0": {"$exists": True}},
                     {"$set": {"expires_at": expires_at}},
@@ -541,6 +324,7 @@ async def update_discovery_catalogs_cache() -> dict:
     # Pre-warm AniZip clearlogo and fanart cache for top discovery items
     try:
         from app.lib.meta_providers import bg_warm_anizip
+
         unique_discovery = {}
         for m in (
             result_metas.get("anisync_trending", [])
@@ -558,109 +342,3 @@ async def update_discovery_catalogs_cache() -> dict:
         logging.warning("Failed to dispatch AniZip prewarm for discovery catalogs: %s", e)
 
     return result_metas
-
-
-async def discovery_catalogs_loop():
-    """Background loop to periodically pre-fetch and update discovery catalogs cache."""
-    # Wait a short bit after startup to avoid overloading AniList API during other startup tasks
-    await asyncio.sleep(5)
-    while True:
-        try:
-            logging.info("Pre-fetching discovery catalogs cache...")
-            await update_discovery_catalogs_cache()
-            logging.info("Discovery catalogs cache successfully updated.")
-        except Exception as e:
-            logging.error("Error in discovery catalogs pre-fetch loop: %s", e)
-        # Sleep for 12 hours (matching 12h cache TTL) minus a 5-minute buffer
-        await asyncio.sleep(12 * 3600 - 300)
-
-
-def trigger_discovery_catalogs_prefetch():
-    """Start the background discovery catalogs prefetch loop."""
-    asyncio.create_task(discovery_catalogs_loop())
-
-
-async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filters, extras=""):
-    if not user.get("enable_discovery_catalogs", True):
-        return await respond_with({"metas": []})
-
-    from app.services.db import db
-    discovery_col = db.get_collection("discovery_catalogs_cache")
-    now = datetime.datetime.utcnow()
-
-    genre = filters.get("genre")
-    cache_key = f"{catalog_id}:{genre}" if genre else catalog_id
-
-    cached = None
-    base_cached = None
-    try:
-        base_cached = discovery_col.find_one({"catalog_id": catalog_id})
-        if genre:
-            cached = discovery_col.find_one({"catalog_id": cache_key})
-            if (not cached or not cached.get("metas")) and base_cached:
-                base_metas = base_cached.get("metas", [])
-                if catalog_id == "anisync_schedule":
-                    if genre == "Airing Today":
-                        sub_metas = [m for m in base_metas if m.get("is_today")]
-                    else:
-                        sub_metas = [m for m in base_metas if m.get("airing_day") == genre]
-                    cached = {"metas": sub_metas, "expires_at": base_cached.get("expires_at", now)}
-                elif catalog_id == "anisync_seasonal":
-                    if genre in ["Winter", "Spring", "Summer", "Fall"]:
-                        sub_metas = [m for m in base_metas if m.get("season") == genre.upper()]
-                        cached = {"metas": sub_metas or base_metas, "expires_at": base_cached.get("expires_at", now)}
-                    else:
-                        cached = base_cached
-                else:
-                    cached = base_cached
-        else:
-            cached = base_cached
-    except Exception as e:
-        logging.error("Failed to query discovery_catalogs_cache: %s", e)
-
-    metas = []
-    if cached and cached.get("metas") and cached.get("expires_at", now) > now:
-        metas = cached["metas"]
-    elif base_cached and base_cached.get("metas"):
-        # Serve parent base catalog immediately — zero latency stall for invalid/missing genres!
-        metas = base_cached["metas"]
-        if base_cached.get("expires_at", now) <= now:
-            trigger_discovery_catalogs_prefetch()
-    else:
-        try:
-            all_metas = await update_discovery_catalogs_cache()
-            metas = all_metas.get(cache_key) or all_metas.get(catalog_id, [])
-        except Exception as e:
-            logging.error("Failed to update discovery catalogs from AniList: %s", e)
-            metas = []
-
-    # Filter to only dubbed anime if user has enabled dubbed for this catalog or globally
-    metas = await apply_catalog_dub_filter(metas, user, catalog_id)
-
-    # Apply Custom Sorting for Discovery Catalogs if enabled
-    is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, "watching", url_filters=filters)
-    if is_custom_sort:
-        metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
-
-    # Shuffle if enabled and not explicitly custom sorted
-    if is_catalog_shuffle_enabled(user, catalog_id) and (not is_custom_sort or sort_by == "default"):
-        metas = list(metas)
-        random.shuffle(metas)
-
-    # Handle pagination skip
-    try:
-        offset = max(0, int(filters.get("skip", 0)))
-    except (ValueError, TypeError):
-        offset = 0
-    try:
-        limit_val = request.args.get("limit") or filters.get("limit")
-        page_limit = max(1, min(100, int(limit_val))) if limit_val else 40
-    except (ValueError, TypeError):
-        page_limit = 40
-
-    metas = metas[offset : offset + page_limit]
-    return await respond_with(
-        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
-        max_age=3600,
-        stale_while_revalidate=7200,
-    )
