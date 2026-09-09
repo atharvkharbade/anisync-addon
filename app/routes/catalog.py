@@ -1224,7 +1224,7 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
 
     import urllib.parse
 
-    from app.services.poster_service import get_rpdb_poster_url
+    from app.services.poster import get_poster_url
 
     title_lang = user.get("title_language", "english") if user else "english"
     is_watchlist_catalog = bool(
@@ -1354,7 +1354,7 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         is_art_disabled = (cat_art_override is False or cat_art_override in ("false", "off", "clean", "none"))
 
         ids_dict = {}
-        rpdb_poster = get_rpdb_poster_url(
+        resolved_art = get_poster_url(
             user=user,
             media_type=item_type,
             kitsu_id=kitsu_id,
@@ -1370,12 +1370,12 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         if ids_dict.get("imdb_id"):
             m_copy["imdb_id"] = ids_dict["imdb_id"]
 
-        if rpdb_poster and rpdb_poster != clean_poster:
+        if resolved_art and resolved_art != clean_poster:
             if is_badge:
                 # Keep clean poster as the base for new episode badges to avoid overlapping badge clutter
                 art_poster = current_poster
             else:
-                art_poster = rpdb_poster
+                art_poster = resolved_art
         else:
             art_poster = current_poster if is_badge else clean_poster
 

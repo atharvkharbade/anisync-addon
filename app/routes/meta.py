@@ -673,9 +673,9 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
         # Apply custom poster provider if configured
         if (user.get("poster_provider") and user.get("poster_provider") != "none") or user.get("rpdb_api_key"):
-            from app.services.poster_service import get_rpdb_poster_url
+            from app.services.poster import get_poster_url
 
-            meta["poster"] = get_rpdb_poster_url(
+            meta["poster"] = get_poster_url(
                 user=user,
                 media_type=meta.get("type", "series"),
                 kitsu_id=kitsu_id,

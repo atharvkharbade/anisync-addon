@@ -467,7 +467,7 @@ async def configure(user_id: str = ""):
             rpdb_key = form.get("rpdb_api_key", "").strip()
             user["rpdb_api_key"] = rpdb_key
             if rpdb_key:
-                from app.services.poster_service import validate_rpdb_api_key
+                from app.services.poster import validate_rpdb_api_key
                 rpdb_task = validate_rpdb_api_key(rpdb_key)
             else:
                 user["rpdb_key_valid"] = False
@@ -477,7 +477,7 @@ async def configure(user_id: str = ""):
             top_key = form.get("top_poster_key", "").strip()
             user["top_poster_key"] = top_key
             if top_key:
-                from app.services.poster_service import validate_top_poster_api_key
+                from app.services.poster import validate_top_poster_api_key
                 top_poster_task = validate_top_poster_api_key(top_key)
             else:
                 user["top_key_valid"] = False
@@ -631,7 +631,7 @@ async def validate_rpdb_key():
     if not api_key:
         return {"status": "error", "message": "Key cannot be empty"}, 400
     try:
-        from app.services.poster_service import validate_rpdb_api_key
+        from app.services.poster import validate_rpdb_api_key
 
         is_valid = await validate_rpdb_api_key(api_key)
         if is_valid:
@@ -650,7 +650,7 @@ async def validate_top_poster_key():
     if not api_key:
         return {"status": "error", "message": "Key cannot be empty"}, 400
     try:
-        from app.services.poster_service import validate_top_poster_api_key
+        from app.services.poster import validate_top_poster_api_key
 
         is_valid = await validate_top_poster_api_key(api_key)
         if is_valid:
