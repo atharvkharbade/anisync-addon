@@ -219,69 +219,10 @@ CATALOGS = [
     },
     {
         "type": "anime",
-        "id": "anisync_dubbed_trending",
-        "name": "Dubbed: Trending",
-        "extra": [
-            {
-                "name": "genre",
-                "options": ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Slice of Life", "Supernatural", "Thriller"],
-                "isRequired": False,
-            },
-            {"name": "skip"},
-        ],
-    },
-    {
-        "type": "anime",
-        "id": "anisync_dubbed_seasonal",
-        "name": "Dubbed: Current Season",
-        "extra": [
-            {
-                "name": "genre",
-                "options": ["Current Season", "Next Season", "Upcoming", "Winter", "Spring", "Summer", "Fall"],
-                "isRequired": False,
-            },
-            {"name": "skip"},
-        ],
-    },
-    {
-        "type": "anime",
-        "id": "anisync_dubbed_popular",
-        "name": "Dubbed: Most Popular",
-        "extra": [
-            {
-                "name": "genre",
-                "options": ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance", "Sci-Fi", "Supernatural"],
-                "isRequired": False,
-            },
-            {"name": "skip"},
-        ],
-    },
-    {
-        "type": "anime",
-        "id": "anisync_dubbed_movies",
-        "name": "Dubbed: Movies",
-        "extra": [
-            {
-                "name": "genre",
-                "options": ["Feature Films", "New Movies", "OVAs & Specials", "Classic Masterpieces"],
-                "isRequired": False,
-            },
-            {"name": "skip"},
-        ],
-    },
-    {
-        "type": "anime",
         "id": "anisync_search",
         "name": "Search",
         "extra": [{"name": "search", "isRequired": True}, {"name": "skip"}],
     },
-]
-
-DUBBED_CATALOGS = [
-    "anisync_dubbed_trending",
-    "anisync_dubbed_seasonal",
-    "anisync_dubbed_popular",
-    "anisync_dubbed_movies",
 ]
 
 MANIFEST = {
@@ -574,13 +515,6 @@ async def user_manifest(user_id: str):
         "anisync_highest_rated",
         "anisync_most_popular",
     ]
-    dubbed_catalog_ids = [
-        "anisync_dubbed_trending",
-        "anisync_dubbed_seasonal",
-        "anisync_dubbed_popular",
-        "anisync_dubbed_movies",
-    ]
-    enable_dubbed_catalogs = user.get("enable_dubbed_catalogs", False) if user else False
 
     # 1. Add custom sorted catalogs first (if user has saved preferences)
     if user_catalogs is not None:
@@ -596,9 +530,6 @@ async def user_manifest(user_id: str):
                             continue
                     elif cat_id in discovery_catalog_ids:
                         if not enable_discovery_catalogs:
-                            continue
-                    elif cat_id in dubbed_catalog_ids:
-                        if not enable_dubbed_catalogs:
                             continue
                     else:
                         if not enable_catalogs:
@@ -634,11 +565,6 @@ async def user_manifest(user_id: str):
                     continue
             elif cat_id in discovery_catalog_ids:
                 if not enable_discovery_catalogs:
-                    continue
-                if cat_id not in user_catalogs:
-                    continue
-            elif cat_id in dubbed_catalog_ids:
-                if not enable_dubbed_catalogs:
                     continue
                 if cat_id not in user_catalogs:
                     continue
@@ -679,9 +605,6 @@ async def user_manifest(user_id: str):
                     continue
             elif cat_id in discovery_catalog_ids:
                 if not enable_discovery_catalogs:
-                    continue
-            elif cat_id in dubbed_catalog_ids:
-                if not enable_dubbed_catalogs:
                     continue
             else:
                 if not enable_catalogs:
