@@ -923,16 +923,35 @@
         min-width: 0;
         line-height: 1.4;
     }
+    .catalog-badges-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        flex-wrap: nowrap;
+    }
     .catalog-source-badge {
         font-size: 0.68rem;
         letter-spacing: 0.03em;
-        width: 105px;
+        width: auto;
+        min-width: 86px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 4px 6px;
+        padding: 3px 8px;
         text-align: center;
         flex-shrink: 0;
+    }
+    .catalog-dub-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        padding: 3px 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        white-space: nowrap;
     }
     .catalog-config-btn {
         width: 32px;
@@ -969,14 +988,29 @@
             flex-direction: column !important;
             align-items: flex-start !important;
             justify-content: center !important;
-            gap: 3px !important;
+            gap: 4px !important;
         }
         .catalog-content-col .catalog-item-title {
             width: 100% !important;
             line-height: 1.25 !important;
         }
+        .catalog-badges-wrap {
+            display: inline-flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 6px !important;
+            flex-wrap: nowrap !important;
+            margin-top: 2px !important;
+        }
         .catalog-source-badge {
             width: auto !important;
+            min-width: 0 !important;
+            font-size: 0.62rem !important;
+            padding: 2px 7px !important;
+            letter-spacing: 0.02em !important;
+            border-radius: 20px !important;
+        }
+        .catalog-dub-badge {
             font-size: 0.62rem !important;
             padding: 2px 7px !important;
             letter-spacing: 0.02em !important;
@@ -2637,11 +2671,16 @@
                                         style="user-select: none; cursor: pointer;">
                                         <span id="label_text_{{ item_id }}">{{ cur_title if cur_title else item_name }}</span>
                                     </label>
-                                    <span
-                                        class="badge rounded-pill catalog-source-badge {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}">
-                                        {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery' else item_source | upper) }}
-                                    </span>
-                                    <span id="badge_dub_{{ item_id }}" class="badge rounded-pill bg-info text-dark ms-1 {% if not (cur_cfg.get('dubbed') or cur_cfg.get('audio') == 'dubbed') %}d-none{% endif %}" style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.3px;">DUBBED</span>
+                                    <div class="catalog-badges-wrap d-inline-flex align-items-center flex-shrink-0">
+                                        <span
+                                            class="badge rounded-pill catalog-source-badge {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}">
+                                            {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery' else item_source | upper) }}
+                                        </span>
+                                        {% set is_item_dubbed = (cur_cfg.get('dubbed') or cur_cfg.get('audio') == 'dubbed') %}
+                                        {% set cur_dub_lang = (cur_cfg.get('dub_language') or user.get('dub_language', 'en'))|lower %}
+                                        {% set cur_dub_code = 'EN' if cur_dub_lang in ['en', 'english'] else ('JA' if cur_dub_lang in ['ja', 'japanese'] else ('ES' if cur_dub_lang in ['es', 'spanish'] else ('DE' if cur_dub_lang in ['de', 'german'] else ('FR' if cur_dub_lang in ['fr', 'french'] else ('IT' if cur_dub_lang in ['it', 'italian'] else ('PT' if cur_dub_lang in ['pt', 'portuguese'] else ('HI' if cur_dub_lang in ['hi', 'hindi'] else cur_dub_lang[:2]|upper))))))) %}
+                                        <span id="badge_dub_{{ item_id }}" class="badge rounded-pill bg-info text-dark catalog-dub-badge {% if not is_item_dubbed %}d-none{% endif %}">DUBBED • {{ cur_dub_code }}</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center flex-shrink-0">
