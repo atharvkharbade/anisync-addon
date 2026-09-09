@@ -1547,106 +1547,102 @@
         color: #f1f5f9;
         letter-spacing: 0.02em;
     }
+    /* Refined Liquid-Glass Segmented Controls */
     .preview-mode-switch {
         display: inline-flex;
-        background: rgba(0, 0, 0, 0.55);
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        border-radius: 8px;
+        align-items: center;
+        background: rgba(15, 23, 42, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 9999px;
         padding: 3px;
-        gap: 3px;
+        gap: 2px;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
     }
     .preview-mode-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         background: transparent;
-        border: none;
-        color: rgba(255, 255, 255, 0.42);
-        font-size: 0.72rem;
+        border: 1px solid transparent;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 0.73rem;
         font-weight: 500;
-        padding: 4px 10px;
-        border-radius: 6px;
+        padding: 5px 12px;
+        border-radius: 9999px;
         cursor: pointer;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         -webkit-user-select: none;
         user-select: none;
+        line-height: 1;
+        white-space: nowrap;
+    }
+    .preview-mode-btn i {
+        font-size: 0.72rem;
+        transition: transform 0.2s ease, color 0.2s ease;
     }
     .preview-mode-btn:hover:not(.active) {
-        color: rgba(255, 255, 255, 0.82);
-        background: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.06);
+    }
+    .preview-mode-btn:hover:not(.active) i {
+        transform: scale(1.1);
     }
     .preview-mode-btn.active {
-        background: rgba(255, 255, 255, 0.16);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.22);
         color: #ffffff;
         font-weight: 600;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
-    .btn-cycle-floating {
-        position: absolute;
-        right: -18px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: rgba(18, 24, 38, 0.92);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        color: #f1f5f9;
-        display: flex;
+    .preview-mode-btn.active i {
+        filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
+    }
+    /* Cycle Sample Button in Header */
+    .btn-sample-cycle {
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.85rem;
+        width: 32px;
+        height: 32px;
+        border-radius: 9999px;
+        background: rgba(15, 23, 42, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.65);
+        font-size: 0.78rem;
         cursor: pointer;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), 0 0 10px rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-        z-index: 10;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
         -webkit-tap-highlight-color: transparent;
-        user-select: none;
-        -webkit-user-select: none;
         touch-action: manipulation;
     }
-    .btn-cycle-floating:focus,
-    .btn-cycle-floating:focus-visible {
-        outline: none;
-        border-color: rgba(255, 255, 255, 0.18);
-        color: #f1f5f9;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), 0 0 10px rgba(0, 0, 0, 0.5);
-    }
-    .btn-cycle-floating:active {
-        transform: translateY(-50%) scale(0.92);
-    }
-    @media (hover: hover) and (pointer: fine) {
-        .btn-cycle-floating:hover {
-            background: rgba(28, 38, 58, 0.98);
-            border-color: rgba(251, 191, 36, 0.6);
-            color: #fbbf24;
-            transform: translateY(-50%) scale(1.08);
-            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.85), 0 0 14px rgba(251, 191, 36, 0.3);
-        }
-        .btn-cycle-floating:hover i {
-            transform: rotate(45deg);
-        }
-    }
-    .btn-cycle-floating.cycling,
-    .btn-cycle-floating.cycling:focus {
-        border-color: rgba(251, 191, 36, 0.7);
+    .btn-sample-cycle:hover {
+        background: rgba(30, 41, 59, 0.9);
+        border-color: rgba(251, 191, 36, 0.6);
         color: #fbbf24;
+        transform: scale(1.06);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 10px rgba(251, 191, 36, 0.25);
     }
-    .btn-cycle-floating.cycling i {
+    .btn-sample-cycle:active {
+        transform: scale(0.94);
+    }
+    .btn-sample-cycle.cycling i {
         animation: spinCycle 0.45s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes spinCycle {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
     }
-    .btn-cycle-floating i {
+    .btn-sample-cycle i {
         transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
     }
+    /* Hardware-Accelerated Poster Stage */
     .artwork-poster-stage {
         display: flex;
         justify-content: center;
         align-items: center;
         width: 100%;
-        padding: 0.75rem 0 0.5rem 0;
+        min-height: 270px; /* Stable height prevents layout reflow of bottom toolbar & rest of page */
+        padding: 0.5rem 0;
     }
     .artwork-poster-card {
         position: relative;
@@ -1654,26 +1650,32 @@
         height: 255px;
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7);
         border: 1px solid rgba(255, 255, 255, 0.12);
         background: #18181b;
         user-select: none;
-        transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+        transform: translateZ(0); /* Promotes to dedicated GPU compositing layer */
+        will-change: width, height; /* Prepares mobile GPU rasterizer */
+        contain: layout paint; /* Restricts layout recalculation boundary to this element only */
+        transition: width 0.24s cubic-bezier(0.2, 0, 0, 1), 
+                    height 0.24s cubic-bezier(0.2, 0, 0, 1), 
+                    transform 0.2s cubic-bezier(0.2, 0, 0, 1), 
+                    box-shadow 0.2s ease;
     }
     .artwork-poster-card.landscape {
         width: 270px;
         height: 152px;
     }
     .artwork-poster-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.9), 0 0 30px rgba(251, 191, 36, 0.15);
+        transform: translateZ(0) translateY(-2px);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 20px rgba(251, 191, 36, 0.15);
     }
     .artwork-poster-img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         display: block;
-        transition: opacity 0.25s ease;
+        transition: opacity 0.18s ease;
     }
     .artwork-preview-spinner {
         position: absolute;
@@ -1681,26 +1683,9 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(15, 23, 42, 0.65);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+        background: rgba(15, 23, 42, 0.75); /* Clean alpha background instead of expensive backdrop-filter blur during resize */
         z-index: 5;
-        transition: opacity 0.2s ease;
-    }
-    .btn-cycle-sample {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #94a3b8;
-        border-radius: 6px;
-        padding: 3px 9px;
-        font-size: 0.72rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.15s ease;
-    }
-    .btn-cycle-sample:hover {
-        background: rgba(255, 255, 255, 0.12);
-        color: #ffffff;
+        transition: opacity 0.15s ease;
     }
 </style>
 <div class="container-fluid px-2 px-md-3 px-xl-4 mt-1 mt-sm-2 pb-5">
@@ -2319,37 +2304,33 @@
                 <!-- Right Column: Poster Preview -->
                 <div class="col-12 col-lg-5">
                     <div id="posterLivePreviewContainer" class="artwork-preview-panel">
-                        <!-- Top Header: Preview on Top-Left, Shape Toggle Centered Below -->
-                        <div class="d-flex align-items-center justify-content-between w-100 mb-2">
-                            <span class="preview-panel-title">Preview</span>
-                        </div>
-                        <!-- Shape Switcher: Portrait vs Landscape (Centered in Middle) -->
-                        <div class="d-flex justify-content-center w-100 mb-2">
-                            <div class="preview-mode-switch" id="previewShapeToggle">
-                                <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait">
-                                    Portrait
-                                </button>
-                                <button type="button" class="preview-mode-btn" id="btnPreviewLandscape" onclick="setArtworkPreviewShape('landscape')" title="Landscape">
-                                    Landscape
+                        <!-- Top Header Toolbar: Title on left, Shape & Cycle button on right -->
+                        <div class="d-flex align-items-center justify-content-between w-100 mb-3 flex-wrap gap-2">
+                            <span class="preview-panel-title mb-0">Preview</span>
+                            <div class="d-inline-flex align-items-center gap-2">
+                                <div class="preview-mode-switch" id="previewShapeToggle">
+                                    <button type="button" class="preview-mode-btn active" id="btnPreviewPortrait" onclick="setArtworkPreviewShape('portrait')" title="Portrait poster">
+                                        <i class="fa-solid fa-mobile-screen-button"></i>Portrait
+                                    </button>
+                                    <button type="button" class="preview-mode-btn" id="btnPreviewLandscape" onclick="setArtworkPreviewShape('landscape')" title="Landscape banner">
+                                        <i class="fa-solid fa-film"></i>Landscape
+                                    </button>
+                                </div>
+                                <button type="button" class="btn-sample-cycle" id="btnPreviewCycle" onclick="cycleArtworkSample()" title="Shuffle sample anime">
+                                    <i class="fa-solid fa-arrows-rotate"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Dynamic Poster Showcase Card with Floating Next Anime Cycle Button -->
+                        <!-- Dynamic Poster Showcase Card (Clean stage, zero clipping) -->
                         <div class="artwork-poster-stage">
-                            <div class="position-relative d-inline-flex justify-content-center align-items-center">
-                                <div class="artwork-poster-card" id="artworkPreviewCard">
-                                    <div id="artworkPreviewSpinner" class="artwork-preview-spinner d-none">
-                                        <div class="spinner-border spinner-border-sm text-warning" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
+                            <div class="artwork-poster-card" id="artworkPreviewCard">
+                                <div id="artworkPreviewSpinner" class="artwork-preview-spinner d-none">
+                                    <div class="spinner-border spinner-border-sm text-warning" role="status">
+                                        <span class="visually-hidden">Loading...</span>
                                     </div>
-                                    <img id="artworkPreviewImg" src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg" alt="Preview Poster" class="artwork-poster-img">
                                 </div>
-                                <!-- Floating Next Anime button on the right side of the poster -->
-                                <button type="button" class="btn-cycle-floating" id="btnPreviewCycle" onclick="cycleArtworkSample()" title="Next Anime">
-                                    <i class="fa-solid fa-arrows-rotate"></i>
-                                </button>
+                                <img id="artworkPreviewImg" src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg" alt="Preview Poster" class="artwork-poster-img">
                             </div>
                         </div>
 
@@ -2358,10 +2339,10 @@
                         <div class="d-flex align-items-center justify-content-center w-100 mt-2 pt-2 border-top border-secondary border-opacity-10">
                             <div class="preview-mode-switch" id="previewEpisodeToggle">
                                 <button type="button" class="preview-mode-btn active" id="btnPreviewAiring" onclick="setArtworkPreviewState('airing')" title="Preview with new episode badge">
-                                    New Episode
+                                    <i class="fa-solid fa-bell text-warning"></i>New Episode
                                 </button>
                                 <button type="button" class="preview-mode-btn" id="btnPreviewNormal" onclick="setArtworkPreviewState('normal')" title="Preview clean poster art">
-                                    Poster Art
+                                    <i class="fa-solid fa-image text-info"></i>Clean Artwork
                                 </button>
                             </div>
                         </div>
@@ -5890,7 +5871,30 @@
         sampleAnimeIndex = Math.floor(Math.random() * CURATED_POSTER_SAMPLES.length);
         recentAnimeSampleIndices = [sampleAnimeIndex];
 
+        // Eagerly preload artwork pairs (portrait & landscape) into browser image cache
+        // to prevent main-thread decoding jank when toggling shapes on mobile devices.
+        function preloadArtworkPair(sample) {
+            if (!sample) return;
+            const safeCurated = CURATED_POSTER_SAMPLES[sampleAnimeIndex % CURATED_POSTER_SAMPLES.length];
+            const pUrl = sample.cover || sample.clean_poster || safeCurated.cover;
+            const lUrl = (sample.banner && sample.banner !== sample.cover && sample.banner !== sample.clean_poster)
+                ? sample.banner
+                : (sample.imdb_id ? `https://images.metahub.space/background/medium/${sample.imdb_id}/img` : (sample.backdrop || safeCurated.banner));
+            if (pUrl) {
+                const img1 = new Image();
+                img1.src = pUrl;
+            }
+            if (lUrl) {
+                const img2 = new Image();
+                img2.src = lUrl;
+            }
+        }
+
+        // Preload initial anime sample pair immediately
+        preloadArtworkPair(CURATED_POSTER_SAMPLES[sampleAnimeIndex]);
+
         function setArtworkPreviewShape(shape) {
+            if (artworkPreviewShape === shape) return;
             artworkPreviewShape = shape;
             const btnPortrait = document.getElementById('btnPreviewPortrait');
             const btnLandscape = document.getElementById('btnPreviewLandscape');
@@ -5902,6 +5906,7 @@
         }
 
         function setArtworkPreviewState(state) {
+            if (artworkPreviewState === state) return;
             artworkPreviewState = state;
             const btnAiring = document.getElementById('btnPreviewAiring');
             const btnNormal = document.getElementById('btnPreviewNormal');
@@ -5952,6 +5957,8 @@
             } else {
                 sampleAnimeIndex = 0;
             }
+            const chosenSample = activePool[sampleAnimeIndex] || CURATED_POSTER_SAMPLES[0];
+            preloadArtworkPair(chosenSample);
             updateArtworkLivePreview(true);
         }
 
@@ -5973,6 +5980,7 @@
                                 userWatchlistSamplePool = validItems;
                                 sampleAnimeIndex = Math.floor(Math.random() * userWatchlistSamplePool.length);
                                 recentAnimeSampleIndices = [sampleAnimeIndex];
+                                preloadArtworkPair(userWatchlistSamplePool[sampleAnimeIndex]);
                                 updateArtworkLivePreview();
                                 break;
                             }
