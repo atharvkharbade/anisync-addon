@@ -17,7 +17,6 @@ SUPPORTED_DUB_LANGUAGES = {
     "french": "French",
     "italian": "Italian",
     "portuguese": "Portuguese",
-    "hindi": "Hindi",
 }
 
 # MyDubList GitHub endpoint for normal confidence tier (>= 2 sources or curated)
@@ -64,8 +63,6 @@ def normalize_dub_language(language: str | None) -> str:
         "ita": "italian",
         "pt": "portuguese",
         "por": "portuguese",
-        "hi": "hindi",
-        "hin": "hindi",
     }
     return aliases.get(lang, "english")
 

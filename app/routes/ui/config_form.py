@@ -215,7 +215,7 @@ async def handle_configure_form(user: dict, form) -> dict | None:
                             catalog_configs[cat_id]["audio"] = "dubbed" if cfg.get("audio") == "dubbed" else "all"
                         if "dub_language" in cfg:
                             lang_val = str(cfg.get("dub_language", "")).strip().lower()
-                            if lang_val in ["english", "spanish", "german", "french", "italian", "portuguese", "hindi"]:
+                            if lang_val in ["english", "spanish", "german", "french", "italian", "portuguese"]:
                                 catalog_configs[cat_id]["dub_language"] = lang_val
             except Exception as e:
                 logging.error("Failed to parse catalog_configs: %s", e)

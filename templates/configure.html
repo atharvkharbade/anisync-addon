@@ -2693,7 +2693,7 @@
                                         </span>
                                         {% set is_item_dubbed = (cur_cfg.get('dubbed') or cur_cfg.get('audio') == 'dubbed') %}
                                         {% set cur_dub_lang = (cur_cfg.get('dub_language') or user.get('dub_language', 'en'))|lower %}
-                                        {% set cur_dub_code = 'EN' if cur_dub_lang in ['en', 'english'] else ('JA' if cur_dub_lang in ['ja', 'japanese'] else ('ES' if cur_dub_lang in ['es', 'spanish'] else ('DE' if cur_dub_lang in ['de', 'german'] else ('FR' if cur_dub_lang in ['fr', 'french'] else ('IT' if cur_dub_lang in ['it', 'italian'] else ('PT' if cur_dub_lang in ['pt', 'portuguese'] else ('HI' if cur_dub_lang in ['hi', 'hindi'] else cur_dub_lang[:2]|upper))))))) %}
+                                        {% set cur_dub_code = 'EN' if cur_dub_lang in ['en', 'english'] else ('JA' if cur_dub_lang in ['ja', 'japanese'] else ('ES' if cur_dub_lang in ['es', 'spanish'] else ('DE' if cur_dub_lang in ['de', 'german'] else ('FR' if cur_dub_lang in ['fr', 'french'] else ('IT' if cur_dub_lang in ['it', 'italian'] else ('PT' if cur_dub_lang in ['pt', 'portuguese'] else cur_dub_lang[:2]|upper)))))) %}
                                         <span id="badge_dub_{{ item_id }}" class="badge rounded-pill bg-info text-dark catalog-dub-badge {% if not is_item_dubbed %}d-none{% endif %}">DUBBED • {{ cur_dub_code }}</span>
                                     </div>
                                 </div>
@@ -3349,9 +3349,6 @@
                                         </div>
                                         <div class="custom-option-item d-flex align-items-center" data-value="portuguese">
                                             <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#0d9488; border-radius:4px; font-size:10px;">PT</span>Portuguese
-                                        </div>
-                                        <div class="custom-option-item d-flex align-items-center" data-value="hindi">
-                                            <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#e11d48; border-radius:4px; font-size:10px;">HI</span>Hindi
                                         </div>
                                     </div>
                                 </div>
@@ -4185,8 +4182,7 @@
             'german': 'DE',
             'french': 'FR',
             'italian': 'IT',
-            'portuguese': 'PT',
-            'hindi': 'HI'
+            'portuguese': 'PT'
         };
 
         function updateCatalogRowBadge(catId) {
