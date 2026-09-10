@@ -310,7 +310,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function showToast(message, type = 'info') {
+        function showToast(message, type = 'info', duration = 3500) {
             let container = document.getElementById('toast-container');
             if (!container) {
                 container = document.createElement('div');
@@ -337,11 +337,11 @@
             // Trigger animation
             setTimeout(() => toast.classList.add('show'), 50);
 
-            // Auto-dismiss after 3.5 seconds
+            // Auto-dismiss after duration
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 400);
-            }, 3500);
+            }, duration);
         }
 
         function copyToClipboard(id) {
@@ -550,7 +550,7 @@
                         if (cat === 'success') type = 'success';
                         else if (cat === 'danger') type = 'error';
                         else if (cat === 'warning') type = 'warning';
-                        showToast("{{ message }}", type);
+                        showToast({{ message | tojson }}, type);
                     })();
                 {% endfor %}
             {% endwith %}

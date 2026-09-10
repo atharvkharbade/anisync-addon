@@ -53,7 +53,7 @@ async def user_manifest(user_id: str):
         unconfigured = build_base_manifest()
         return await respond_with(unconfigured, max_age=86400, stale_while_revalidate=86400)
 
-    user = get_user(user_id)
+    user = get_user(user_id, for_manifest=True)
     if not user:
         unconfigured = build_base_manifest()
         return await respond_with(unconfigured, max_age=86400, stale_while_revalidate=86400)

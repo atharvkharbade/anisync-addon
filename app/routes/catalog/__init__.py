@@ -84,7 +84,7 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
     if catalog_type not in allowed_types:
         return await respond_with({"metas": []})
 
-    user = get_user(user_id)
+    user = get_user(user_id, for_manifest=True)
     if not user:
         logging.warning("Catalog request: Unknown user_id=%s", user_id)
         return await respond_with({"metas": []})

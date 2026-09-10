@@ -44,7 +44,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     if not is_valid_user_id(user_id):
         return await respond_with({"meta": {}})
 
-    user = get_user(user_id)
+    user = get_user(user_id, for_manifest=True)
     if not user:
         logging.warning("Meta request: Unknown user_id=%s", user_id)
         return await respond_with({"meta": {}})

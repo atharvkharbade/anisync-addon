@@ -103,15 +103,22 @@ async def guest_login():
 @ui_bp.route("/<user_id>/configure", methods=["GET", "POST"])
 @rate_limit(limit=30, period_seconds=60)
 async def configure(user_id: str = ""):
-    user_session = session.get("user")
-    if not user_session:
-        if user_id and user_id.startswith("guest_"):
-            existing_guest = get_user(user_id)
-            if existing_guest:
-                session["user"] = {"uid": user_id, "username": "Guest User", "is_guest": True}
-                user_session = session["user"]
-        if not user_session:
+    if user_id:
+        existing_user = get_user(user_id)
+        if existing_user:
+            session["user"] = {
+                "uid": existing_user["uid"],
+                "username": existing_user.get("username") or existing_user.get("mal_username") or "User",
+                "is_guest": existing_user.get("is_guest", False),
+            }
+            user_session = session["user"]
+        else:
             return redirect(url_for("ui.index"))
+    else:
+        user_session = session.get("user")
+
+    if not user_session:
+        return redirect(url_for("ui.index"))
 
     user = get_user(user_session.get("uid", ""))
     if not user:
@@ -128,8 +135,9 @@ async def configure(user_id: str = ""):
         asyncio.create_task(_get_sync_task()(uid))
 
     base = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}"
-    manifest_url = f"{base}/{uid}/manifest.json"
-    manifest_magnet = f"stremio://{Config.REDIRECT_URL}/{uid}/manifest.json"
+    token_or_uid = user.get("manifest_token") or uid
+    manifest_url = f"{base}/{token_or_uid}/manifest.json"
+    manifest_magnet = f"stremio://{Config.REDIRECT_URL}/{token_or_uid}/manifest.json"
 
     if request.method == "POST":
         form = await request.form

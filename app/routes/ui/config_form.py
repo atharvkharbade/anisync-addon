@@ -329,8 +329,21 @@ async def handle_configure_form(user: dict, form) -> dict | None:
     if "rec_excluded_series_genres" in form:
         user["rec_excluded_series_genres"] = form.getlist("rec_excluded_series_genres")
 
+    migrated = False
+    if not user.get("manifest_token") or user.get("allow_legacy_uid", True):
+        import secrets
+        user["manifest_token"] = user.get("manifest_token") or secrets.token_urlsafe(16)
+        user["allow_legacy_uid"] = False
+        migrated = True
+
     store_user(user)
     invalidate_user_watchlist_cache(uid)
+
+    from config import Config
+    base = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}"
+    token_or_uid = user.get("manifest_token") or uid
+    manifest_url = f"{base}/{token_or_uid}/manifest.json"
+    manifest_magnet = f"stremio://{Config.REDIRECT_URL}/{token_or_uid}/manifest.json"
 
     if "enable_recommendations" in form and user["enable_recommendations"]:
         from app.services.recommendations import trigger_recommendation_update_background
@@ -351,12 +364,21 @@ async def handle_configure_form(user: dict, form) -> dict | None:
     if has_request_context():
         is_json = request.headers.get("Accept") == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
+    success_msg = (
+        "Your addon URL has changed for security. Click <strong class=\"text-white fw-bold\">Direct Install</strong> to re-add it in your app!"
+        if migrated
+        else "Preferences saved successfully!"
+    )
+
     if validation_failed_msg:
         msg_str = " & ".join(validation_failed_msg)
         if is_json:
             return {
                 "status": "warning",
                 "message": f"Preferences saved, but: {msg_str}",
+                "migrated": migrated,
+                "manifest_url": manifest_url,
+                "manifest_magnet": manifest_magnet,
                 "rpdb_valid": user.get("rpdb_key_valid", False),
                 "top_valid": user.get("top_key_valid", False),
                 "gemini_valid": user.get("gemini_key_valid", False),
@@ -367,12 +389,15 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         if is_json:
             return {
                 "status": "success",
-                "message": "Preferences saved successfully!",
+                "message": success_msg,
+                "migrated": migrated,
+                "manifest_url": manifest_url,
+                "manifest_magnet": manifest_magnet,
                 "rpdb_valid": user.get("rpdb_key_valid", False),
                 "top_valid": user.get("top_key_valid", False),
                 "gemini_valid": user.get("gemini_key_valid", False),
             }
         if has_request_context():
-            await flash("Preferences saved.", "success")
+            await flash(success_msg, "success")
 
     return None

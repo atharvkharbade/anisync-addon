@@ -48,7 +48,7 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
 
     logging.info("Subtitles hook: kitsu_id=%s episode=%d user=%s", kitsu_id, episode, user_id)
 
-    user = get_user(user_id)
+    user = get_user(user_id, for_manifest=True)
     if not user:
         logging.warning("Unknown user_id=%s", user_id)
         return await respond_with({"subtitles": []})

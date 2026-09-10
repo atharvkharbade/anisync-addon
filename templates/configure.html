@@ -3178,7 +3178,7 @@
                             </button>
                         </div>
                         <div class="col-6">
-                            <a href="{{ manifest_magnet }}" class="btn btn-success w-100 py-2 fw-semibold d-inline-flex align-items-center justify-content-center" style="gap: 8px; font-size: 0.82rem; border-radius: 8px;">
+                            <a id="direct_install_btn" href="{{ manifest_magnet }}" class="btn btn-success w-100 py-2 fw-semibold d-inline-flex align-items-center justify-content-center" style="gap: 8px; font-size: 0.82rem; border-radius: 8px;">
                                 <i class="fa-solid fa-arrow-up-right-from-square flex-shrink-0"></i><span class="text-truncate">Direct Install</span>
                             </a>
                         </div>
@@ -3941,8 +3941,30 @@
                     });
                     const result = await response.json();
                     if (result.status === 'success' || result.status === 'warning') {
-                        if (result.status === 'success') {
-                            showToast("Preferences saved successfully!", "success");
+                        // Dismiss existing "Saving preferences..." toast cleanly so toasts don't stack
+                        document.querySelectorAll('.custom-toast').forEach(t => t.remove());
+
+                        // Live update manifest URLs on the spot
+                        if (result.manifest_url) {
+                            const manifestInput = document.getElementById("manifest_url");
+                            if (manifestInput) manifestInput.value = result.manifest_url;
+                        }
+                        if (result.manifest_magnet) {
+                            const directInstallBtn = document.getElementById("direct_install_btn");
+                            if (directInstallBtn) directInstallBtn.href = result.manifest_magnet;
+                        }
+
+                        if (result.migrated) {
+                            showToast(result.message, "info", 7000);
+                            if (typeof switchTab === 'function') {
+                                switchTab('install');
+                            }
+                            const installCard = document.querySelector('.manifest-wrap');
+                            if (installCard) {
+                                installCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        } else if (result.status === 'success') {
+                            showToast(result.message || "Preferences saved successfully!", "success");
                         } else {
                             showToast(result.message || "Saved with validation warnings", "warning");
                         }
