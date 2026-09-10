@@ -1,40 +1,57 @@
 import logging
+import secrets
 from datetime import UTC, datetime
 
 from .connection import users_collection
 
 
-def get_user(user_id: str) -> dict | None:
+def get_user(user_id: str, for_manifest: bool = False) -> dict | None:
     if not user_id:
         return None
-    # 1. Try exact match first
-    user = users_collection.find_one({"uid": user_id})
+
+    # 1. Try secure manifest_token match first (O(1) index lookup)
+    user = users_collection.find_one({"manifest_token": user_id})
     if user:
         return user
 
-    # 2. Support stripping prefixes (e.g., al_6613976 -> 6613976)
+    # 2. Try exact match on uid for legacy users
+    user = users_collection.find_one({"uid": user_id})
+    if user:
+        if for_manifest and user.get("manifest_token") and not user.get("allow_legacy_uid", False):
+            return None
+        return user
+
+    # 3. Support stripping prefixes (e.g., al_6613976 -> 6613976)
     if user_id.startswith("al_"):
         stripped = user_id[3:]
         user = users_collection.find_one({"uid": stripped})
         if user:
+            if for_manifest and user.get("manifest_token") and not user.get("allow_legacy_uid", False):
+                return None
             return user
     elif user_id.startswith("simkl_"):
         stripped = user_id[6:]
         user = users_collection.find_one({"uid": stripped})
         if user:
+            if for_manifest and user.get("manifest_token") and not user.get("allow_legacy_uid", False):
+                return None
             return user
 
-    # 3. Support adding prefixes (e.g., 6613976 -> al_6613976)
+    # 4. Support adding prefixes (e.g., 6613976 -> al_6613976)
     if user_id.isdigit():
         for prefix in ["al_", "simkl_"]:
             user = users_collection.find_one({"uid": f"{prefix}{user_id}"})
             if user:
+                if for_manifest and user.get("manifest_token") and not user.get("allow_legacy_uid", False):
+                    return None
                 return user
 
-    # 4. Support guest user auto-provisioning
+    # 5. Support guest user auto-provisioning
     if user_id.startswith("guest_"):
         guest_user = {
             "uid": user_id,
+            "manifest_token": secrets.token_urlsafe(16),
+            "allow_legacy_uid": False,
             "username": "Guest User",
             "is_guest": True,
             "enable_discovery_catalogs": True,
@@ -95,5 +112,13 @@ def store_user(user_details: dict) -> bool:
     if existing:
         if "_id" in existing and "_id" not in user_details:
             user_details["_id"] = existing["_id"]
+        if "manifest_token" in existing and "manifest_token" not in user_details:
+            user_details["manifest_token"] = existing["manifest_token"]
+        if "allow_legacy_uid" in existing and "allow_legacy_uid" not in user_details:
+            user_details["allow_legacy_uid"] = existing["allow_legacy_uid"]
         return users_collection.replace_one({"uid": str(uid)}, user_details).acknowledged
+
+    if "manifest_token" not in user_details:
+        user_details["manifest_token"] = secrets.token_urlsafe(16)
+        user_details["allow_legacy_uid"] = False
     return users_collection.insert_one(user_details).acknowledged

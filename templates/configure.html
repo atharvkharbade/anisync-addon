@@ -840,33 +840,25 @@
         background: #101012;
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 14px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         position: relative;
         overflow: hidden;
-    }
-    .welcome-hero-bar::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(2, 169, 255, 0.35), transparent);
     }
     .welcome-avatar-wrap {
         position: relative;
     }
     .welcome-avatar {
-        border: 2px solid rgba(2, 169, 255, 0.45);
-        box-shadow: 0 0 14px rgba(2, 169, 255, 0.25);
+        border: 2px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        background: #141416;
     }
     .guest-avatar-box {
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        background: rgba(2, 169, 255, 0.1);
-        border: 1.5px solid rgba(2, 169, 255, 0.3);
-        box-shadow: 0 0 12px rgba(2, 169, 255, 0.15);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1.5px solid rgba(255, 255, 255, 0.08);
+        color: #94a3b8;
     }
     .welcome-username {
         color: #ffffff;
@@ -941,6 +933,7 @@
         padding: 3px 8px;
         text-align: center;
         flex-shrink: 0;
+        order: 2;
     }
     .catalog-dub-badge {
         font-size: 0.65rem;
@@ -952,6 +945,7 @@
         justify-content: center;
         flex-shrink: 0;
         white-space: nowrap;
+        order: 1;
     }
     .catalog-config-btn {
         width: 32px;
@@ -1009,12 +1003,14 @@
             padding: 2px 7px !important;
             letter-spacing: 0.02em !important;
             border-radius: 20px !important;
+            order: 1 !important;
         }
         .catalog-dub-badge {
             font-size: 0.62rem !important;
             padding: 2px 7px !important;
             letter-spacing: 0.02em !important;
             border-radius: 20px !important;
+            order: 2 !important;
         }
         .catalog-config-btn {
             width: 34px !important;
@@ -1300,7 +1296,7 @@
         font-size: 0.82rem;
     }
 
-    /* Modal Live Preview Gallery (Matching Stremio & Nuvio) */
+    /* Modal Live Preview Gallery */
     .preview-stage-wrap {
         background: #0d0d0f;
         border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1534,17 +1530,19 @@
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 14px;
-        padding: 1.15rem 1.25rem;
+        padding: 0.80rem 0.90rem;
         display: flex;
         flex-direction: column;
         align-items: center;
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         width: 100%;
+        max-width: 430px;
+        margin: 0 auto;
     }
     @media (max-width: 576px) {
         .artwork-preview-panel {
-            padding: 0.85rem 0.5rem;
+            padding: 0.75rem 0.5rem;
         }
     }
     .preview-panel-title {
@@ -1629,10 +1627,10 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         width: 100%;
-        min-height: 270px; /* Stable height prevents layout reflow of bottom toolbar & rest of page */
-        padding: 0.5rem 0;
+        min-height: 255px; /* Stable height prevents layout reflow of bottom toolbar & rest of page */
+        padding: 0.15rem 0;
     }
     @media (max-width: 576px) {
         .artwork-poster-stage {
@@ -1726,11 +1724,11 @@
             </div>
             {% elif user.get('is_guest') %}
             <div class="guest-avatar-box flex-shrink-0 d-flex align-items-center justify-content-center">
-                <i class="fa-solid fa-user-secret text-info" style="font-size: 1.1rem;"></i>
+                <i class="fa-solid fa-user-secret text-secondary" style="font-size: 1.1rem;"></i>
             </div>
             {% else %}
             <div class="guest-avatar-box flex-shrink-0 d-flex align-items-center justify-content-center">
-                <i class="fa-solid fa-user text-info" style="font-size: 1.05rem;"></i>
+                <i class="fa-solid fa-user text-secondary" style="font-size: 1.05rem;"></i>
             </div>
             {% endif %}
 
@@ -2122,7 +2120,7 @@
                         <div style="max-width: 400px;" class="mb-4">
                             <label class="rec-label mb-2 small text-secondary">NEW EPISODE OVERLAY STYLE</label>
                             <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                                Choose your poster style for portrait and landscape cards. Classic adds a solid bar at the bottom, while Modern uses sleek liquid-glass badges.
+                                Choose your poster style for portrait and landscape cards. You can use the preview to compare them.
                             </p>
                             <div class="custom-select-wrapper" id="badge_style_wrapper" data-input-id="badge_style">
                                 {% set current_badge_style = user.get('badge_style', 'modern') %}
@@ -2132,14 +2130,14 @@
                                         {% if current_badge_style == 'classic' %}
                                         <i class="fa-solid fa-square text-warning me-2"></i>Classic
                                         {% else %}
-                                        <i class="fa-solid fa-square text-info me-2"></i>Modern (Default)
+                                        <i class="fa-solid fa-square text-info me-2"></i>Modern
                                         {% endif %}
                                     </span>
                                     <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
                                 </div>
                                 <div class="custom-options-menu">
                                     <div class="custom-option-item d-flex align-items-center" data-value="modern">
-                                        <i class="fa-solid fa-square text-info me-2"></i>Modern (Default)
+                                        <i class="fa-solid fa-square text-info me-2"></i>Modern
                                     </div>
                                     <div class="custom-option-item d-flex align-items-center" data-value="classic">
                                         <i class="fa-solid fa-square text-warning me-2"></i>Classic
@@ -2153,7 +2151,7 @@
                         <div class="{% if not user.get('is_guest') %}pt-3 border-top border-secondary border-opacity-10{% endif %}" style="max-width: 400px;">
                             <label class="rec-label mb-2 small text-secondary">POSTER ART COVER PROVIDER</label>
                             <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                                Enhance anime poster covers with Rating Poster DB (RPDB) overlays, TOP Posters, or a custom poster URL.
+                                Select a provider for custom poster art and ratings. You can use the preview to compare them.
                             </p>
 
                             <div class="custom-select-wrapper mb-3" id="poster_provider_wrapper"
@@ -2175,13 +2173,13 @@
                                         {% elif current_provider == 'custom' %}
                                         <span
                                             class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
-                                            style="width:18px; height:18px; background: linear-gradient(135deg, #0ea5e9, #0284c7); border-radius:4px; font-size:10px;"><i
-                                                class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
+                                            style="width:18px; height:18px; background: linear-gradient(135deg, #0ea5e9, #0284c7); border-radius:4px;"><i
+                                                class="fa-solid fa-globe" style="font-size:9px;"></i></span>Custom
                                         {% else %}
                                         <span
-                                            class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
-                                            style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i
-                                                class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
+                                            class="d-inline-flex align-items-center justify-content-center me-2 text-white flex-shrink-0"
+                                            style="width:18px; height:18px; background: linear-gradient(135deg, #334155, #1e293b); border: 1px solid rgba(255,255,255,0.14); border-radius:4px;"><i
+                                                class="fa-solid fa-image" style="font-size:9px; color: #cbd5e1;"></i></span>Default
                                         {% endif %}
                                     </span>
                                     <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
@@ -2189,9 +2187,9 @@
                                 <div class="custom-options-menu">
                                     <div class="custom-option-item d-flex align-items-center" data-value="none">
                                         <span
-                                            class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
-                                            style="width:18px; height:18px; background:#475569; border-radius:4px; font-size:10px;"><i
-                                                class="fa-solid fa-image" style="font-size:9px;"></i></span>Default
+                                            class="d-inline-flex align-items-center justify-content-center me-2 text-white flex-shrink-0"
+                                            style="width:18px; height:18px; background: linear-gradient(135deg, #334155, #1e293b); border: 1px solid rgba(255,255,255,0.14); border-radius:4px;"><i
+                                                class="fa-solid fa-image" style="font-size:9px; color: #cbd5e1;"></i></span>Default
                                     </div>
                                     <div class="custom-option-item d-flex align-items-center" data-value="rpdb">
                                         <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0"
@@ -2207,8 +2205,8 @@
                                     <div class="custom-option-item d-flex align-items-center" data-value="custom">
                                         <span
                                             class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0"
-                                            style="width:18px; height:18px; background: linear-gradient(135deg, #0ea5e9, #0284c7); border-radius:4px; font-size:10px;"><i
-                                                class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
+                                            style="width:18px; height:18px; background: linear-gradient(135deg, #0ea5e9, #0284c7); border-radius:4px;"><i
+                                                class="fa-solid fa-globe" style="font-size:9px;"></i></span>Custom
                                     </div>
                                 </div>
                             </div>
@@ -2444,7 +2442,7 @@
                 <label class="form-check-label ms-1" for="show_filler_tags">
                     <span class="fw-medium d-block">Show filler tags on episodes</span>
                     <span class="text-secondary small d-block">
-                        Prepends a [Filler] tag to episode titles in the Stremio episode list.
+                        Prepends a [Filler] tag to episode titles in the episode list.
                     </span>
                 </label>
             </div>
@@ -2455,7 +2453,10 @@
                 <label class="form-check-label ms-1" for="show_airing_in_synopsis">
                     <span class="fw-medium d-block">Show next airing countdown in synopsis</span>
                     <span class="text-secondary small d-block">
-                        Prepends releasing anime countdowns (e.g. <code style="font-size: 0.75rem; color: #38bdf8;">[Next Airing: Episode 10 releases in 23h]</code>) to currently airing anime descriptions.
+                        Adds next episode release countdowns to airing anime descriptions.
+                        <span class="d-block text-secondary opacity-75 mt-0.5" style="font-size: 0.72rem;">
+                            (e.g. <span style="color: #94a3b8; font-family: monospace; white-space: nowrap;">[Next Airing: Ep 10 in 23h]</span>)
+                        </span>
                     </span>
                 </label>
             </div>
@@ -2464,9 +2465,9 @@
                 <input class="form-check-input" type="checkbox" role="switch" id="hide_nsfw" {% if
                     user.get('hide_nsfw', True) %}checked{% endif %}>
                 <label class="form-check-label ms-1" for="hide_nsfw">
-                    <span class="fw-medium d-block">Hide Explicit Adult Content (NSFW)</span>
+                    <span class="fw-medium d-block">Hide NSFW Content</span>
                     <span class="text-secondary small d-block">
-                        Filters out 18+ adult content from search, discovery catalogs, and recommendations.
+                        Filters out adult content from search, discovery catalogs, and recommendations.
                     </span>
                 </label>
             </div>
@@ -2524,7 +2525,7 @@
                         <label class="form-check-label ms-1" for="show_watched_tags">
                             <span class="fw-medium d-block">Show watched tags on episodes</span>
                             <span class="text-secondary small d-block">
-                                Prepends a [Watched] tag to episode titles in the Stremio episode list.
+                                Prepends a [Watched] tag to episode titles in the episode list.
                             </span>
                         </label>
                     </div>
@@ -2535,7 +2536,10 @@
                         <label class="form-check-label ms-1" for="show_tracking_in_synopsis">
                             <span class="fw-medium d-block">Show tracking status in synopsis</span>
                             <span class="text-secondary small d-block">
-                                Prepends your live watch status, episode progress, and rating (e.g. <code style="font-size: 0.75rem; color: #38bdf8;">[Status: Watching • Progress: 9/12 Ep]</code>) to the synopsis.
+                                Adds your live watch progress and rating to the anime synopsis.
+                                <span class="d-block text-secondary opacity-75 mt-0.5" style="font-size: 0.72rem;">
+                                    (e.g. <span style="color: #94a3b8; font-family: monospace; white-space: nowrap;">[Watching &bull; Progress: 9/12 Ep]</span>)
+                                </span>
                             </span>
                         </label>
                     </div>
@@ -2545,8 +2549,8 @@
                         <label class="form-check-label ms-1" for="combine_watchlists">
                             <span class="fw-medium d-block">Combine Watchlist Catalogs</span>
                             <span class="text-secondary small d-block">
-                                Merges MyAnimeList, AniList, and Simkl watchlists into unified, deduplicated catalogs in
-                                Stremio. (AniList's Repeating entries are automatically merged into Watching).
+                                Merges all connected tracker watchlists into unified, deduplicated catalogs in your app.
+                                (AniList's Repeating entries are automatically merged into Watching).
                             </span>
                             <span id="combine-warning-text" class="text-warning small d-block mt-1 fw-medium d-none">
                                 <i class="fa-solid fa-circle-info me-1"></i>Connect at least two of MyAnimeList,
@@ -2570,7 +2574,7 @@
                         <label class="form-check-label ms-1" for="enable_discovery_catalogs">
                             <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
                             <span class="text-secondary small d-block">
-                                Enable general public discovery catalogs in Stremio.
+                                Enable general public discovery catalogs in your app.
                             </span>
                         </label>
                     </div>
@@ -2745,16 +2749,16 @@
                                     {% elif user.get('metadata_provider', 'kitsu') == 'anilist' %}
                                         <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">AniList
                                     {% elif user.get('metadata_provider', 'kitsu') == 'custom' %}
-                                        <i class="fa-solid fa-sliders text-info" style="font-size: 14px; width: 18px; text-align: center; margin-right: 10px;"></i>Custom
+                                        <span class="d-inline-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius:4px; margin-right: 10px;"><i class="fa-solid fa-shuffle" style="font-size:9px;"></i></span>Custom
                                     {% else %}
-                                        <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">Kitsu (Default)
+                                        <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">Kitsu
                                     {% endif %}
                                 </span>
                                 <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
                             </div>
                             <div class="custom-options-menu">
                                 <div class="custom-option-item d-flex align-items-center" data-value="kitsu">
-                                    <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">Kitsu (Default)
+                                    <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">Kitsu
                                 </div>
                                 <div class="custom-option-item d-flex align-items-center" data-value="mal">
                                     <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">MyAnimeList
@@ -2763,7 +2767,7 @@
                                     <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">AniList
                                 </div>
                                 <div class="custom-option-item d-flex align-items-center" data-value="custom">
-                                    <i class="fa-solid fa-sliders text-info" style="font-size: 14px; width: 18px; text-align: center; margin-right: 10px;"></i>Custom
+                                    <span class="d-inline-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius:4px; margin-right: 10px;"><i class="fa-solid fa-shuffle" style="font-size:9px;"></i></span>Custom
                                 </div>
                             </div>
                         </div>
@@ -2979,14 +2983,14 @@
                                     {% elif user.get('title_language', 'english') == 'japanese' %}
                                         <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#dc2626; border-radius:4px; font-size:11px;">あ</span>Japanese
                                     {% else %}
-                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
+                                        <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English
                                     {% endif %}
                                 </span>
                                 <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
                             </div>
                             <div class="custom-options-menu">
                                 <div class="custom-option-item d-flex align-items-center" data-value="english">
-                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English (Default)
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#2563eb; border-radius:4px; font-size:10px;">EN</span>English
                                 </div>
                                 <div class="custom-option-item d-flex align-items-center" data-value="romaji">
                                     <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:#d97706; border-radius:4px; font-size:10px;">RO</span>Romaji
@@ -3433,7 +3437,7 @@
                         </div>
                     </div>
 
-                    <!-- Right: Live Preview (Matching Stremio & Nuvio) -->
+                    <!-- Right: Live Preview -->
                     <div class="col-12 col-md-5 d-flex flex-column catalog-modal-preview-col">
                         <div class="preview-stage-wrap">
                             <div class="preview-header d-flex align-items-center justify-content-between">
@@ -4537,6 +4541,7 @@
                         const defaultLandscape = hasRealBanner
                             ? m.background
                             : (m.imdb_id ? `https://images.metahub.space/background/medium/${m.imdb_id}/img` : (m.background || m.poster || m.cover || ''));
+                        const isBadge = !!m.is_badge || (typeof m.poster === 'string' && m.poster.includes('/poster/') && m.poster.includes('badge=new'));
                         return {
                             title: m.name || m.title || '',
                             cover: m.poster || m.cover || '',
@@ -4544,6 +4549,7 @@
                             art_poster: m.art_poster || '',
                             imdb_id: m.imdb_id || '',
                             banner: defaultLandscape,
+                            is_badge: isBadge,
                             score: scoreStr,
                             airing_date: parseInt(m.airing_at) || 0,
                             next_episode: parseInt(m.next_episode) || 0,
@@ -4732,6 +4738,12 @@
                 const escapeAttr = (str) => (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
                 const resolveItemPoster = (item) => {
+                    if (item.is_badge) {
+                        if (shape === 'landscape') {
+                            return item.banner || item.cover || fallbackCover;
+                        }
+                        return item.cover || item.clean_poster || fallbackCover;
+                    }
                     if (shape === 'landscape') {
                         return item.banner || item.cover || fallbackCover;
                     }

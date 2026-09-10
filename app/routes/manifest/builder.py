@@ -6,6 +6,7 @@ MANIFEST = {
     "version": "1.4.3",
     "name": "AniSync",
     "logo": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png?v=7",
+    "icon": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png?v=7",
     "description": "Sync and update your anime watchlists on MyAnimeList, AniList, and Simkl in real-time. Easily track episodes, combine watchlists, skip fillers, and get personalized recommendations.",
     "types": ["anime", "series", "movie"],
     "resources": ["subtitles", "catalog", "meta"],

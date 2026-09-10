@@ -13,7 +13,17 @@ async def check_gemini_api_key_valid(api_key: str) -> tuple[bool, str]:
     if not api_key:
         return False, "Key cannot be empty"
 
-    models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"]
+    models = [
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
+        "gemini-3-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+    ]
     payload = {"contents": [{"parts": [{"text": "Hello, respond with OK if you read this."}]}]}
     last_error = "Invalid API key"
 

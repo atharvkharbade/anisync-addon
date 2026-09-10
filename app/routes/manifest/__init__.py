@@ -21,6 +21,13 @@ async def logo_png():
     return await handle_logo_png()
 
 
+@manifest_bp.route("/favicon.ico")
+@manifest_bp.route("/<user_id>/favicon.ico")
+@rate_limit(limit=60, period_seconds=60)
+async def favicon_ico(user_id: str | None = None):
+    return await handle_logo_png()
+
+
 @manifest_bp.route("/assets/<filename>")
 async def serve_asset(filename: str):
     return await handle_serve_asset(filename)
@@ -62,6 +69,7 @@ __all__ = [
     "MANIFEST",
     "save_logo_to_path",
     "logo_png",
+    "favicon_ico",
     "serve_asset",
     "logo_svg",
     "base_manifest",
