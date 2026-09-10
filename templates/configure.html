@@ -2413,8 +2413,7 @@
             </div>
 
             <!-- Search Sub-Options (only visible when search is enabled) -->
-            <div id="search-options-container" class="nested-subcard mb-3"
-                style="{% if not user.get('enable_search', True) %}display: none;{% endif %}">
+            <div id="search-options-container" class="nested-subcard mb-3" {% if not user.get('enable_search', True) %}style="display: none;"{% endif %}>
                 <div class="form-check form-switch mb-0">
                     {% set p_prov = user.get('poster_provider', 'none') %}
                     {% set is_p_valid = ((p_prov == 'rpdb' and user.get('rpdb_api_key')) or
@@ -2491,8 +2490,7 @@
                 </div>
 
                 <!-- Watchlist Sub-Options (only visible when enabled) -->
-                <div id="watchlist-options-container" class="nested-subcard"
-                    style="{% if not user.get('enable_catalogs', True) %}display: none;{% endif %}">
+                <div id="watchlist-options-container" class="nested-subcard" {% if not user.get('enable_catalogs', True) %}style="display: none;"{% endif %}>
 
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="enable_new_episodes_badge" {% if
@@ -3032,8 +3030,7 @@
                     </div>
 
                     <!-- Recommendations Sub-Options (only visible when enabled) -->
-                    <div id="recommendations-options" class="nested-subcard"
-                        style="{% if not user.get('enable_recommendations', True) %}display: none;{% endif %}">
+                    <div id="recommendations-options" class="nested-subcard" {% if not user.get('enable_recommendations', True) %}style="display: none;"{% endif %}>
 
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" role="switch"
