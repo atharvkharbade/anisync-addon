@@ -2692,7 +2692,7 @@
                                             {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery' else item_source | upper) }}
                                         </span>
                                         {% set is_item_dubbed = (cur_cfg.get('dubbed') or cur_cfg.get('audio') == 'dubbed') %}
-                                        {% set cur_dub_lang = (cur_cfg.get('dub_language') or user.get('dub_language', 'en'))|lower %}
+                                        {% set cur_dub_lang = (cur_cfg.get('dub_language') or cur_cfg.get('dubbed_language') or user.get('dubbed_language') or user.get('dub_language', 'en'))|lower %}
                                         {% set cur_dub_code = 'EN' if cur_dub_lang in ['en', 'english'] else ('JA' if cur_dub_lang in ['ja', 'japanese'] else ('ES' if cur_dub_lang in ['es', 'spanish'] else ('DE' if cur_dub_lang in ['de', 'german'] else ('FR' if cur_dub_lang in ['fr', 'french'] else ('IT' if cur_dub_lang in ['it', 'italian'] else ('PT' if cur_dub_lang in ['pt', 'portuguese'] else cur_dub_lang[:2]|upper)))))) %}
                                         <span id="badge_dub_{{ item_id }}" class="badge rounded-pill bg-info text-dark catalog-dub-badge {% if not is_item_dubbed %}d-none{% endif %}">DUBBED • {{ cur_dub_code }}</span>
                                     </div>

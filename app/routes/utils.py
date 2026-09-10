@@ -11,7 +11,6 @@ async def respond_with(data: dict, max_age: int | None = None, stale_while_reval
     resp = jsonify(data)
     resp.headers["Access-Control-Allow-Origin"] = "*"
     resp.headers["Access-Control-Allow-Headers"] = "*"
-    resp.headers["Link"] = '</logo.png?v=7>; rel="icon"'
     if max_age is not None:
         cc = f"public, max-age={max_age}"
         if stale_while_revalidate is not None:

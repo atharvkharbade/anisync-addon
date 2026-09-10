@@ -50,10 +50,6 @@ POSSIBLE_CATS = [
     "anisync_top_airing",
     "anisync_highest_rated",
     "anisync_most_popular",
-    "anisync_dubbed_trending",
-    "anisync_dubbed_seasonal",
-    "anisync_dubbed_popular",
-    "anisync_dubbed_movies",
 ]
 
 
@@ -217,6 +213,8 @@ async def handle_configure_form(user: dict, form) -> dict | None:
                             lang_val = str(cfg.get("dub_language", "")).strip().lower()
                             if lang_val in ["english", "spanish", "german", "french", "italian", "portuguese"]:
                                 catalog_configs[cat_id]["dub_language"] = lang_val
+                            else:
+                                catalog_configs[cat_id].pop("dub_language", None)
             except Exception as e:
                 logging.error("Failed to parse catalog_configs: %s", e)
 
