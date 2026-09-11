@@ -3,94 +3,20 @@ from quart import Response, send_file
 
 
 def save_logo_to_path(path: str):
-    """Pillow-based logo drawing logic. Executed on startup to generate static asset."""
-    from PIL import Image, ImageDraw
+    """Ensure logo asset exists at path by copying master asset if available."""
+    import shutil
 
-    scale = 256.0 / 24.0
-
-    def transform(x, y):
-        tx = 12.0 + (x - 12.0) * 1.375
-        ty = 12.0 + (y - 10.0) * 1.375
-        return tx * scale, ty * scale
-
-    # 1. Generate grad-left (vertical gradient)
-    gradient_left_1d = Image.new("RGBA", (1, 256))
-    for y in range(256):
-        r = int(0 + (2 - 0) * (y / 255.0))
-        g = int(242 + (169 - 242) * (y / 255.0))
-        b = int(254 + (255 - 254) * (y / 255.0))
-        gradient_left_1d.putpixel((0, y), (r, g, b, 255))
-    grad_left_img = gradient_left_1d.resize((256, 256))
-
-    # 2. Generate grad-right (vertical gradient with 0.85 opacity)
-    gradient_right_1d = Image.new("RGBA", (1, 256))
-    for y in range(256):
-        r = int(46 + (0 - 46) * (y / 255.0))
-        g = int(196 + (242 - 196) * (y / 255.0))
-        b = int(182 + (254 - 182) * (y / 255.0))
-        gradient_right_1d.putpixel((0, y), (r, g, b, 216))
-    grad_right_img = gradient_right_1d.resize((256, 256))
-
-    # 3. Generate grad-sync (horizontal gradient)
-    gradient_sync_1d = Image.new("RGBA", (256, 1))
-    for x in range(256):
-        r = int(2 + (46 - 2) * (x / 255.0))
-        g = int(169 + (196 - 169) * (x / 255.0))
-        b = int(255 + (182 - 255) * (x / 255.0))
-        gradient_sync_1d.putpixel((x, 0), (r, g, b, 255))
-    grad_sync_img = gradient_sync_1d.resize((256, 256))
-
-    # 4. Draw Left Polygon Mask (A-frame)
-    left_polygon = [
-        transform(12, 2),
-        transform(4, 18),
-        transform(8, 18),
-        transform(12, 10),
-        transform(16, 18),
-        transform(20, 18),
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(curr_dir, "..", "..", "docs", "images", "logo.png"),
+        os.path.join(curr_dir, "..", "assets", "logo.png"),
     ]
-    mask_left = Image.new("L", (256, 256), 0)
-    draw_left = ImageDraw.Draw(mask_left)
-    draw_left.polygon(left_polygon, fill=255)
+    for cand in candidates:
+        cand_abs = os.path.abspath(cand)
+        if os.path.exists(cand_abs) and cand_abs != os.path.abspath(path):
+            shutil.copyfile(cand_abs, path)
+            return
 
-    # 5. Draw Right Polygon Mask
-    right_polygon = [transform(12, 2), transform(16, 10), transform(8, 10)]
-    mask_right = Image.new("L", (256, 256), 0)
-    draw_right = ImageDraw.Draw(mask_right)
-    draw_right.polygon(right_polygon, fill=255)
-
-    # 6. Draw Sync Bridge Mask (Bezier Curve + Arrows)
-    mask_sync = Image.new("L", (256, 256), 0)
-    draw_sync = ImageDraw.Draw(mask_sync)
-
-    curve_points = []
-    for i in range(101):
-        t = i / 100.0
-        x_val = (1 - t) ** 3 * 6 + 3 * (1 - t) ** 2 * t * 8 + 3 * (1 - t) * t**2 * 16 + t**3 * 18
-        y_val = (1 - t) ** 3 * 15 + 3 * (1 - t) ** 2 * t * 12.5 + 3 * (1 - t) * t**2 * 12.5 + t**3 * 15
-        curve_points.append(transform(x_val, y_val))
-
-    draw_sync.line(curve_points, fill=255, width=29, joint="curve")
-
-    draw_sync.line([transform(18, 15), transform(16.2, 13.5)], fill=255, width=26)
-    draw_sync.line([transform(18, 15), transform(16.2, 16.5)], fill=255, width=26)
-
-    draw_sync.line([transform(6, 15), transform(7.8, 16.5)], fill=255, width=26)
-    draw_sync.line([transform(6, 15), transform(7.8, 13.5)], fill=255, width=26)
-
-    r_cap = 13.0
-    endpoints = [transform(16.2, 13.5), transform(16.2, 16.5), transform(7.8, 16.5), transform(7.8, 13.5)]
-    for pt in endpoints:
-        draw_sync.ellipse([pt[0] - r_cap, pt[1] - r_cap, pt[0] + r_cap, pt[1] + r_cap], fill=255)
-
-    # 7. Assemble final image with transparency
-    img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
-    img.paste(grad_left_img, (0, 0), mask_left)
-    img.paste(grad_right_img, (0, 0), mask_right)
-    img.paste(grad_sync_img, (0, 0), mask_sync)
-
-    # Save the file
-    img.save(path, format="PNG")
 
 
 async def handle_logo_png():
@@ -113,6 +39,17 @@ async def handle_logo_png():
         return response
     except Exception:
         return "Logo not found", 404
+
+
+async def handle_favicon_ico():
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.dirname(os.path.dirname(curr_dir))
+    ico_path = os.path.join(base_dir, "assets", "favicon.ico")
+    if os.path.exists(ico_path):
+        response = await send_file(ico_path, mimetype="image/x-icon")
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        return response
+    return await handle_logo_png()
 
 
 async def handle_serve_asset(filename: str):
@@ -143,25 +80,34 @@ async def handle_serve_asset(filename: str):
 
 
 async def handle_logo_svg():
-    svg_content = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-    <defs>
-        <linearGradient id="grad-left" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#00f2fe" />
-            <stop offset="100%" stop-color="#02a9ff" />
-        </linearGradient>
-        <linearGradient id="grad-right" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#2ec4b6" />
-            <stop offset="100%" stop-color="#00f2fe" />
-        </linearGradient>
-        <linearGradient id="grad-sync" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#02a9ff" />
-            <stop offset="100%" stop-color="#2ec4b6" />
-        </linearGradient>
-    </defs>
-    <path d="M12 2L4 18H8L12 10L16 18H20L12 2Z" fill="url(#grad-left)" />
-    <path d="M12 2L16 10H8L12 2Z" fill="url(#grad-right)" opacity="0.85" />
-    <path d="M6 15C8 12.5 16 12.5 18 15" stroke="url(#grad-sync)" stroke-width="2" stroke-linecap="round" />
-    <path d="M18 15L16.2 13.5M18 15L16.2 16.5" stroke="url(#grad-sync)" stroke-width="1.8" stroke-linecap="round" />
-    <path d="M6 15L7.8 16.5M6 15L7.8 13.5" stroke="url(#grad-sync)" stroke-width="1.8" stroke-linecap="round" />
+    svg_content = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <!-- Cyan to Electric Blue Brand Gradient -->
+    <linearGradient id="brand-grad-transparent" x1="256" y1="36" x2="256" y2="476" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00f5ff"/>
+      <stop offset="30%" stop-color="#22d3ee"/>
+      <stop offset="65%" stop-color="#02a9ff"/>
+      <stop offset="100%" stop-color="#0055ff"/>
+    </linearGradient>
+
+    <!--
+      Scaled cut mask matching the exact -64° diagonal slice trajectory from IMAGE_3
+      Transparent background: no container rect, only pure transparent negative-space cut
+    -->
+    <mask id="cut-transparent-mask">
+      <rect width="512" height="512" fill="#ffffff"/>
+      <g transform="translate(242, 274) rotate(-64)">
+        <rect x="-400" y="-10" width="800" height="20" fill="#000000"/>
+      </g>
+    </mask>
+  </defs>
+
+  <!-- Big 'A' Mark with Transparent Background (identical geometry and scale to IMAGE_3) -->
+  <g transform="translate(256, 264) scale(1.25) translate(-256, -264)" mask="url(#cut-transparent-mask)">
+    <path d="M256 84 L424 424 H336 L298 338 H214 L176 424 H88 L256 84 Z M256 206 L224 278 H288 L256 206 Z"
+          fill="url(#brand-grad-transparent)"
+          fill-rule="evenodd"/>
+  </g>
 </svg>"""
     return Response(svg_content, mimetype="image/svg+xml")
+

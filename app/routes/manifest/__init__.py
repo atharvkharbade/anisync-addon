@@ -4,6 +4,7 @@ from app.routes.utils import is_valid_user_id, rate_limit, respond_with
 from app.services.db import get_user
 
 from .assets import (
+    handle_favicon_ico,
     handle_logo_png,
     handle_logo_svg,
     handle_serve_asset,
@@ -25,7 +26,7 @@ async def logo_png():
 @manifest_bp.route("/<user_id>/favicon.ico")
 @rate_limit(limit=60, period_seconds=60)
 async def favicon_ico(user_id: str | None = None):
-    return await handle_logo_png()
+    return await handle_favicon_ico()
 
 
 @manifest_bp.route("/assets/<filename>")
