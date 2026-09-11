@@ -64,7 +64,10 @@ def normalize_dub_language(language: str | None) -> str:
         "pt": "portuguese",
         "por": "portuguese",
     }
-    return aliases.get(lang, "english")
+    result = aliases.get(lang, "english")
+    if result == "english" and lang not in ("english", "en", "eng"):
+        logger.warning("Unknown dub language '%s', defaulting to english", language)
+    return result
 
 
 async def get_dubbed_mal_ids(language: str = "english") -> set[int]:
