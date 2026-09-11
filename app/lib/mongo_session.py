@@ -101,6 +101,15 @@ class MongoSessionInterface(SessionInterface):
         except Exception:
             pass
 
+        cookie_secure = self.get_cookie_secure(app)
+        try:
+            from quart import has_request_context, request
+            if has_request_context():
+                is_https = request.scheme == "https" or request.headers.get("X-Forwarded-Proto") == "https"
+                cookie_secure = cookie_secure and is_https
+        except Exception:
+            pass
+
         response.set_cookie(
             cookie_name,
             session.sid,
@@ -108,6 +117,6 @@ class MongoSessionInterface(SessionInterface):
             httponly=self.get_cookie_httponly(app),
             domain=domain,
             path=path,
-            secure=self.get_cookie_secure(app),
+            secure=cookie_secure,
             samesite=self.get_cookie_samesite(app),
         )

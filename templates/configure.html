@@ -1843,6 +1843,8 @@
             <form method="POST" action="{{ url_for('ui.configure') }}" id="prefs-form">
 
                 <!-- Global Hidden Configuration Inputs -->
+                <input type="hidden" name="user_id" value="{{ user.get('uid', '') }}">
+                <input type="hidden" name="manifest_token" value="{{ user.get('manifest_token', '') }}">
                 <input type="hidden" id="mal_enabled_val" name="mal_enabled"
                     value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
                 <input type="hidden" id="anilist_enabled_val" name="anilist_enabled"
@@ -3489,6 +3491,8 @@
                     Cancel
                 </button>
                 <form action="{{ url_for('ui.delete_account') }}" method="POST" class="d-inline mb-0">
+                    <input type="hidden" name="user_id" value="{{ user.get('uid', '') }}">
+                    <input type="hidden" name="manifest_token" value="{{ user.get('manifest_token', '') }}">
                     <button type="submit" class="btn btn-danger btn-sm px-4 py-2" style="background: #dc2626; border: 1px solid #ef4444; border-radius: 8px; font-weight: 600; font-size: 0.85rem; box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45);">
                         <i class="fa-solid fa-trash-can me-2"></i>Delete Records
                     </button>
@@ -3962,77 +3966,81 @@
                             showToast(result.message || "Saved with validation warnings", "warning");
                         }
 
-                        // Update RPDB status dynamically
-                        const rpdbKeyEl = document.getElementById("rpdb_api_key");
-                        const rpdbKeyVal = rpdbKeyEl ? rpdbKeyEl.value.trim() : "";
-                        const rpdbCheckIcon = document.getElementById("rpdb-check-icon");
-                        const rpdbStatusSpan = document.getElementById("rpdb-validation-status");
-                        if (rpdbCheckIcon && rpdbStatusSpan) {
-                            if (rpdbKeyVal) {
-                                if (result.rpdb_valid) {
-                                    rpdbCheckIcon.className = "fa-solid fa-circle-check text-success";
-                                    rpdbStatusSpan.className = "small text-success fw-medium";
-                                    rpdbStatusSpan.textContent = "API key verified ✓";
-                                    isRpdbKeyValid = true;
+                        try {
+                            // Update RPDB status dynamically
+                            const rpdbKeyEl = document.getElementById("rpdb_api_key");
+                            const rpdbKeyVal = rpdbKeyEl ? rpdbKeyEl.value.trim() : "";
+                            const rpdbCheckIcon = document.getElementById("rpdb-check-icon");
+                            const rpdbStatusSpan = document.getElementById("rpdb-validation-status");
+                            if (rpdbCheckIcon && rpdbStatusSpan) {
+                                if (rpdbKeyVal) {
+                                    if (result.rpdb_valid) {
+                                        rpdbCheckIcon.className = "fa-solid fa-circle-check text-success";
+                                        rpdbStatusSpan.className = "small text-success fw-medium";
+                                        rpdbStatusSpan.textContent = "API key verified ✓";
+                                        isRpdbKeyValid = true;
+                                    } else {
+                                        rpdbCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                                        rpdbStatusSpan.className = "small text-danger";
+                                        rpdbStatusSpan.textContent = "Invalid or Expired API Key";
+                                        isRpdbKeyValid = false;
+                                    }
                                 } else {
-                                    rpdbCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
-                                    rpdbStatusSpan.className = "small text-danger";
-                                    rpdbStatusSpan.textContent = "Invalid or Expired API Key";
+                                    rpdbCheckIcon.className = "fa-solid fa-circle-check text-secondary";
+                                    rpdbStatusSpan.className = "small text-secondary";
+                                    rpdbStatusSpan.textContent = "Not verified";
                                     isRpdbKeyValid = false;
                                 }
-                            } else {
-                                rpdbCheckIcon.className = "fa-solid fa-circle-check text-secondary";
-                                rpdbStatusSpan.className = "small text-secondary";
-                                rpdbStatusSpan.textContent = "Not verified";
-                                isRpdbKeyValid = false;
+                                if (typeof syncRpdbSearchState === "function") syncRpdbSearchState();
                             }
-                            syncRpdbSearchState();
-                        }
 
-                        // Update TOP Posters status dynamically
-                        const topKeyEl = document.getElementById("top_poster_key");
-                        const topKeyVal = topKeyEl ? topKeyEl.value.trim() : "";
-                        const topCheckIcon = document.getElementById("top-check-icon");
-                        const topStatusSpan = document.getElementById("top-validation-status");
-                        if (topCheckIcon && topStatusSpan) {
-                            if (topKeyVal) {
-                                if (result.top_valid) {
-                                    topCheckIcon.className = "fa-solid fa-circle-check text-success";
-                                    topStatusSpan.className = "small text-success fw-medium";
-                                    topStatusSpan.textContent = "API key verified ✓";
+                            // Update TOP Posters status dynamically
+                            const topKeyEl = document.getElementById("top_poster_key");
+                            const topKeyVal = topKeyEl ? topKeyEl.value.trim() : "";
+                            const topCheckIcon = document.getElementById("top-check-icon");
+                            const topStatusSpan = document.getElementById("top-validation-status");
+                            if (topCheckIcon && topStatusSpan) {
+                                if (topKeyVal) {
+                                    if (result.top_valid) {
+                                        topCheckIcon.className = "fa-solid fa-circle-check text-success";
+                                        topStatusSpan.className = "small text-success fw-medium";
+                                        topStatusSpan.textContent = "API key verified ✓";
+                                    } else {
+                                        topCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                                        topStatusSpan.className = "small text-danger";
+                                        topStatusSpan.textContent = "Invalid or Expired API Key";
+                                    }
                                 } else {
-                                    topCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
-                                    topStatusSpan.className = "small text-danger";
-                                    topStatusSpan.textContent = "Invalid or Expired API Key";
+                                    topCheckIcon.className = "fa-solid fa-circle-check text-secondary";
+                                    topStatusSpan.className = "small text-secondary";
+                                    topStatusSpan.textContent = "Not verified";
                                 }
-                            } else {
-                                topCheckIcon.className = "fa-solid fa-circle-check text-secondary";
-                                topStatusSpan.className = "small text-secondary";
-                                topStatusSpan.textContent = "Not verified";
                             }
-                        }
 
-                        // Update Gemini status dynamically
-                        const geminiKeyEl = document.getElementById("gemini_api_key");
-                        const geminiKeyVal = geminiKeyEl ? geminiKeyEl.value.trim() : "";
-                        const geminiCheckIcon = document.getElementById("gemini-check-icon");
-                        const geminiStatusSpan = document.getElementById("gemini-validation-status");
-                        if (geminiCheckIcon && geminiStatusSpan) {
-                            if (geminiKeyVal) {
-                                if (result.gemini_valid) {
-                                    geminiCheckIcon.className = "fa-solid fa-circle-check text-success";
-                                    geminiStatusSpan.className = "small text-success fw-medium ms-3";
-                                    geminiStatusSpan.textContent = "API key verified";
+                            // Update Gemini status dynamically
+                            const geminiKeyEl = document.getElementById("gemini_api_key");
+                            const geminiKeyVal = geminiKeyEl ? geminiKeyEl.value.trim() : "";
+                            const geminiCheckIcon = document.getElementById("gemini-check-icon");
+                            const geminiStatusSpan = document.getElementById("gemini-validation-status");
+                            if (geminiCheckIcon && geminiStatusSpan) {
+                                if (geminiKeyVal) {
+                                    if (result.gemini_valid) {
+                                        geminiCheckIcon.className = "fa-solid fa-circle-check text-success";
+                                        geminiStatusSpan.className = "small text-success fw-medium ms-3";
+                                        geminiStatusSpan.textContent = "API key verified";
+                                    } else {
+                                        geminiCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                                        geminiStatusSpan.className = "small text-danger ms-3";
+                                        geminiStatusSpan.textContent = "Invalid Gemini API key";
+                                    }
                                 } else {
-                                    geminiCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
-                                    geminiStatusSpan.className = "small text-danger ms-3";
-                                    geminiStatusSpan.textContent = "Invalid Gemini API key";
+                                    geminiCheckIcon.className = "fa-solid fa-circle-check text-secondary";
+                                    geminiStatusSpan.className = "small text-secondary ms-3";
+                                    geminiStatusSpan.textContent = "Not verified";
                                 }
-                            } else {
-                                geminiCheckIcon.className = "fa-solid fa-circle-check text-secondary";
-                                geminiStatusSpan.className = "small text-secondary ms-3";
-                                geminiStatusSpan.textContent = "Not verified";
                             }
+                        } catch (statusUpdateErr) {
+                            console.warn("Could not update key validation badges post-save:", statusUpdateErr);
                         }
                     } else {
                         showToast(result.message || "Failed to save preferences", "error");
@@ -5857,7 +5865,7 @@
                     isRpdbKeyValid = false;
                 } finally {
                     validateRpdbBtn.disabled = false;
-                    syncRpdbSearchState();
+                    if (typeof syncRpdbSearchState === "function") syncRpdbSearchState();
                 }
             });
         }
