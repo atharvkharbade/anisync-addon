@@ -100,6 +100,32 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
     filters = _parse_stremio_filters(extras)
 
+    # Support live preview overrides (audio & dub_language) without mutating DB
+    from quart import request
+    audio_param = request.args.get("audio") or filters.get("audio")
+    dubbed_param = request.args.get("dubbed") or filters.get("dubbed")
+    dub_lang_param = (
+        request.args.get("dub_language")
+        or request.args.get("dub_lang")
+        or filters.get("dub_language")
+        or filters.get("dub_lang")
+    )
+    if audio_param is not None or dubbed_param is not None or dub_lang_param is not None:
+        user = dict(user)
+        cat_configs = dict(user.get("catalog_configs", {}) or {})
+        cat_cfg = dict(cat_configs.get(catalog_id, {}) or {})
+        if audio_param is not None:
+            cat_cfg["audio"] = audio_param
+            cat_cfg["dubbed"] = (audio_param == "dubbed")
+        elif dubbed_param is not None:
+            is_dub = str(dubbed_param).lower() in ("true", "1", "yes")
+            cat_cfg["dubbed"] = is_dub
+            cat_cfg["audio"] = "dubbed" if is_dub else "all"
+        if dub_lang_param is not None:
+            cat_cfg["dub_language"] = str(dub_lang_param).lower()
+        cat_configs[catalog_id] = cat_cfg
+        user["catalog_configs"] = cat_configs
+
     # 1. Discovery Catalogs
     if catalog_id in DISCOVERY_CAT_IDS:
         return await handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filters, extras)

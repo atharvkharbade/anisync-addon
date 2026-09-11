@@ -11,6 +11,7 @@ from app.routes.catalog.formatting import (
     parse_iso_timestamp,
 )
 from app.routes.catalog.sorting import (
+    apply_catalog_dub_filter,
     extract_item_metadata_fields,
     get_catalog_sorting,
     is_catalog_shuffle_enabled,
@@ -375,6 +376,8 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
                 continue
     except Exception as e:
         logging.error("Simkl catalog load failed for status %s: %s", simkl_status, e)
+
+    metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
     return await respond_with(
         {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},

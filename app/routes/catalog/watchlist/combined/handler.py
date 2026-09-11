@@ -3,7 +3,7 @@ from quart import request
 
 from app.lib.id_resolver import bulk_resolve_to_kitsu
 from app.routes.catalog.formatting import format_catalog_metas
-from app.routes.catalog.sorting import get_catalog_sorting
+from app.routes.catalog.sorting import apply_catalog_dub_filter, get_catalog_sorting
 from app.routes.utils import respond_with
 
 from ..common import fetch_anilist_details_in_bulk
@@ -149,6 +149,8 @@ async def handle_combined_catalog(user, user_id, catalog_type, catalog_id, filte
 
     except Exception:
         logging.exception("Combined watchlist catalog load failed for status %s", comb_status)
+
+    metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
     return await respond_with(
         {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},

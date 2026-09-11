@@ -4370,7 +4370,13 @@
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
             catalogConfigs[activeModalCatalogId].dub_language = val;
             updateCatalogRowBadge(activeModalCatalogId);
+            const cfg = catalogConfigs[activeModalCatalogId];
+            if (cfg && (cfg.dubbed || cfg.audio === 'dubbed')) {
+                loadCatalogPreviewItems(activeModalCatalogId);
+            }
         }
+        window.onModalDubLanguageChange = onModalDubLanguageChange;
+        window.updateModalDubLanguageDropdown = updateModalDubLanguageDropdown;
 
         const SORT_ORDER_TOOLTIPS = {
             'default': { desc: 'Descending (Default order)', asc: 'Ascending' },
@@ -4584,24 +4590,31 @@
         const catalogItemsCache = {};
         const catalogFetchPromises = {};
 
-        function fetchCatalogItems(catId) {
+        function fetchCatalogItems(catId, isDubbed = false, dubLang = 'english') {
             if (catId === 'anisync_search') {
                 const searchInput = document.getElementById('modalSearchPreviewInput');
                 const query = (searchInput ? searchInput.value.trim() : '') || 'Haikyu!!';
-                return fetchSearchCatalogItems(query);
+                return fetchSearchCatalogItems(query, isDubbed, dubLang);
             }
-            if (catalogItemsCache[catId]) {
-                return Promise.resolve(catalogItemsCache[catId]);
+            const normLang = (dubLang || 'english').toLowerCase();
+            const cacheKey = `${catId}_${isDubbed ? 'dub_' + normLang : 'all'}`;
+            if (catalogItemsCache[cacheKey]) {
+                return Promise.resolve(catalogItemsCache[cacheKey]);
             }
-            if (catalogFetchPromises[catId]) {
-                return catalogFetchPromises[catId];
+            if (catalogFetchPromises[cacheKey]) {
+                return catalogFetchPromises[cacheKey];
             }
             if (!currentUserId) {
                 return Promise.resolve(PREVIEW_ANIME_ITEMS);
             }
 
-            const fetchUrl = `/${currentUserId}/catalog/anime/${catId}.json?limit=50`;
-            catalogFetchPromises[catId] = fetch(fetchUrl)
+            let fetchUrl = `/${currentUserId}/catalog/anime/${catId}.json?limit=50&_ts=${Date.now()}`;
+            if (isDubbed) {
+                fetchUrl += `&audio=dubbed&dub_language=${encodeURIComponent(normLang)}`;
+            } else {
+                fetchUrl += `&audio=all`;
+            }
+            catalogFetchPromises[cacheKey] = fetch(fetchUrl)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     return res.json();
@@ -4609,9 +4622,15 @@
                 .then(data => {
                     const metas = (data && data.metas) || [];
                     if (metas.length === 0) {
+                        if (isDubbed) {
+                            catalogItemsCache[cacheKey] = [];
+                            delete catalogFetchPromises[cacheKey];
+                            return [];
+                        }
                         const sampleFallback = PREVIEW_ANIME_ITEMS.map(i => ({ ...i, is_sample_fallback: true }));
+                        catalogItemsCache[cacheKey] = sampleFallback;
                         catalogItemsCache[catId] = sampleFallback;
-                        delete catalogFetchPromises[catId];
+                        delete catalogFetchPromises[cacheKey];
                         return sampleFallback;
                     }
                     const items = metas.map(m => {
@@ -4645,33 +4664,42 @@
                             updated_at: parseInt(m.updated_at) || 0
                         };
                     });
-                    catalogItemsCache[catId] = items;
-                    delete catalogFetchPromises[catId];
+                    catalogItemsCache[cacheKey] = items;
+                    if (!isDubbed) {
+                        catalogItemsCache[catId] = items;
+                    }
+                    delete catalogFetchPromises[cacheKey];
                     return items;
                 })
                 .catch(err => {
                     console.warn(`Could not load preview items for ${catId}:`, err);
-                    delete catalogFetchPromises[catId];
-                    return PREVIEW_ANIME_ITEMS;
+                    delete catalogFetchPromises[cacheKey];
+                    return isDubbed ? [] : PREVIEW_ANIME_ITEMS;
                 });
 
-            return catalogFetchPromises[catId];
+            return catalogFetchPromises[cacheKey];
         }
 
-        function fetchSearchCatalogItems(query) {
+        function fetchSearchCatalogItems(query, isDubbed = false, dubLang = 'english') {
             query = (query !== null && query !== undefined ? query : '').trim();
             if (!query) query = 'Haikyu!!';
-            const cacheKey = 'search_' + query.toLowerCase();
+            const normLang = (dubLang || 'english').toLowerCase();
+            const cacheKey = 'search_' + query.toLowerCase() + '_' + (isDubbed ? 'dub_' + normLang : 'all');
             if (catalogItemsCache[cacheKey]) {
                 const cachedItems = catalogItemsCache[cacheKey];
-                if (Array.isArray(cachedItems) && cachedItems.length > 0 && (cachedItems[0].date_val || cachedItems[0].year || (cachedItems[0].score && cachedItems[0].score !== '0.0'))) {
+                if (Array.isArray(cachedItems)) {
                     return Promise.resolve(cachedItems);
                 }
             }
             if (!currentUserId) {
                 return Promise.resolve(PREVIEW_ANIME_ITEMS);
             }
-            const fetchUrl = `/${currentUserId}/catalog/anime/anisync_search/search=${encodeURIComponent(query)}.json?_ts=${Date.now()}`;
+            let fetchUrl = `/${currentUserId}/catalog/anime/anisync_search/search=${encodeURIComponent(query)}.json?_ts=${Date.now()}`;
+            if (isDubbed) {
+                fetchUrl += `&audio=dubbed&dub_language=${encodeURIComponent(normLang)}`;
+            } else {
+                fetchUrl += `&audio=all`;
+            }
             return fetch(fetchUrl, { cache: 'no-store' })
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -4679,11 +4707,19 @@
                 })
                 .then(data => {
                     const metas = (data && data.metas) || [];
-                    if (metas.length === 0 && (!query || query.toLowerCase() === 'haikyu!!' || query.toLowerCase() === 'haikyuu!!' || query.toLowerCase() === 'frieren')) {
-                        const sampleFallback = PREVIEW_ANIME_ITEMS.map(i => ({ ...i, is_sample_fallback: true }));
-                        catalogItemsCache[cacheKey] = sampleFallback;
-                        catalogItemsCache['anisync_search'] = sampleFallback;
-                        return sampleFallback;
+                    if (metas.length === 0) {
+                        if (isDubbed) {
+                            catalogItemsCache[cacheKey] = [];
+                            return [];
+                        }
+                        if (!query || query.toLowerCase() === 'haikyu!!' || query.toLowerCase() === 'haikyuu!!' || query.toLowerCase() === 'frieren') {
+                            const sampleFallback = PREVIEW_ANIME_ITEMS.map(i => ({ ...i, is_sample_fallback: true }));
+                            catalogItemsCache[cacheKey] = sampleFallback;
+                            catalogItemsCache['anisync_search'] = sampleFallback;
+                            return sampleFallback;
+                        }
+                        catalogItemsCache[cacheKey] = [];
+                        return [];
                     }
                     const items = metas.filter(m => {
                         const sub = (m.subtype || '').toLowerCase();
@@ -4749,12 +4785,14 @@
                         };
                     });
                     catalogItemsCache[cacheKey] = items;
-                    catalogItemsCache['anisync_search'] = items;
+                    if (!isDubbed) {
+                        catalogItemsCache['search_' + query.toLowerCase()] = items;
+                    }
                     return items;
                 })
                 .catch(err => {
                     console.warn(`Could not load search preview for "${query}":`, err);
-                    return PREVIEW_ANIME_ITEMS;
+                    return isDubbed ? [] : PREVIEW_ANIME_ITEMS;
                 });
         }
 
@@ -4858,6 +4896,9 @@
 
         function loadCatalogPreviewItems(catId, searchQuery = null) {
             const cfg = catalogConfigs[catId] || {};
+            const isDubbed = Boolean(cfg.audio === 'dubbed' || cfg.dubbed);
+            const dubLang = (cfg.dub_language || 'english').toLowerCase();
+            const dubLangTitle = dubLang.charAt(0).toUpperCase() + dubLang.slice(1);
             const countEl = document.getElementById('modalPreviewCount');
             const searchBar = document.getElementById('modalSearchPreviewBar');
             const isSearch = (catId === 'anisync_search');
@@ -4869,12 +4910,16 @@
             if (isSearch) {
                 const searchInput = document.getElementById('modalSearchPreviewInput');
                 const query = (searchQuery !== null ? searchQuery : (searchInput ? searchInput.value.trim() : 'Haikyu!!')) || 'Haikyu!!';
-                const cacheKey = 'search_' + query.toLowerCase();
+                const cacheKey = 'search_' + query.toLowerCase() + '_' + (isDubbed ? 'dub_' + dubLang : 'all');
 
                 if (catalogItemsCache[cacheKey]) {
                     const items = catalogItemsCache[cacheKey];
                     if (countEl) {
-                        countEl.textContent = `${items.length} result${items.length === 1 ? '' : 's'}`;
+                        if (isDubbed) {
+                            countEl.textContent = `${items.length} ${dubLangTitle} dubbed result${items.length === 1 ? '' : 's'}`;
+                        } else {
+                            countEl.textContent = `${items.length} result${items.length === 1 ? '' : 's'}`;
+                        }
                     }
                     currentPreviewAnimeList = applySortAndShuffle(items, cfg);
                     updateModalLivePreview();
@@ -4886,29 +4931,33 @@
                     countEl.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin me-1"></i>Searching...`;
                 }
 
-                fetchSearchCatalogItems(query).then(items => {
-                    if (activeModalCatalogId === catId) {
-                        if (countEl) {
+                fetchSearchCatalogItems(query, isDubbed, dubLang).then(items => {
+                    if (activeModalCatalogId !== catId) return;
+                    if (countEl) {
+                        if (isDubbed) {
+                            countEl.textContent = `${items.length} ${dubLangTitle} dubbed result${items.length === 1 ? '' : 's'}`;
+                        } else {
                             countEl.textContent = `${items.length} result${items.length === 1 ? '' : 's'}`;
                         }
-                        const currentCfg = catalogConfigs[catId] || {};
-                        currentPreviewAnimeList = applySortAndShuffle(items, currentCfg);
-                        updateModalLivePreview(true);
                     }
+                    const currentCfg = catalogConfigs[catId] || {};
+                    currentPreviewAnimeList = applySortAndShuffle(items, currentCfg);
+                    updateModalLivePreview(true);
                 });
                 return;
             }
 
             // Normal catalog
-            if (catalogItemsCache[catId]) {
-                const items = catalogItemsCache[catId];
+            const cacheKey = `${catId}_${isDubbed ? 'dub_' + dubLang : 'all'}`;
+            if (catalogItemsCache[cacheKey]) {
+                const items = catalogItemsCache[cacheKey];
                 if (countEl) {
                     if (items.length > 0 && items[0].is_sample_fallback) {
                         countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>Sample preview (0 titles in list)</span>`;
                     } else {
                         const countText = items.length >= 50
-                            ? `Showing 50 titles`
-                            : `${items.length} title${items.length === 1 ? '' : 's'}`;
+                            ? (isDubbed ? `Showing 50 ${dubLangTitle} dubbed titles` : `Showing 50 titles`)
+                            : `${items.length} ${isDubbed ? dubLangTitle + ' dubbed ' : ''}title${items.length === 1 ? '' : 's'}`;
                         countEl.textContent = countText;
                     }
                 }
@@ -4923,22 +4972,21 @@
                 countEl.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin me-1"></i>Loading...`;
             }
 
-            fetchCatalogItems(catId).then(items => {
-                if (activeModalCatalogId === catId) {
-                    if (countEl) {
-                        if (items.length > 0 && items[0].is_sample_fallback) {
-                            countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>Sample preview (0 titles in list)</span>`;
-                        } else {
-                            const countText = items.length >= 50
-                                ? `Showing 50 titles`
-                                : `${items.length} title${items.length === 1 ? '' : 's'}`;
-                            countEl.textContent = countText;
-                        }
+            fetchCatalogItems(catId, isDubbed, dubLang).then(items => {
+                if (activeModalCatalogId !== catId) return;
+                if (countEl) {
+                    if (items.length > 0 && items[0].is_sample_fallback) {
+                        countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>Sample preview (0 titles in list)</span>`;
+                    } else {
+                        const countText = items.length >= 50
+                            ? (isDubbed ? `Showing 50 ${dubLangTitle} dubbed titles` : `Showing 50 titles`)
+                            : `${items.length} ${isDubbed ? dubLangTitle + ' dubbed ' : ''}title${items.length === 1 ? '' : 's'}`;
+                        countEl.textContent = countText;
                     }
-                    const currentCfg = catalogConfigs[catId] || {};
-                    currentPreviewAnimeList = applySortAndShuffle(items, currentCfg);
-                    updateModalLivePreview(true);
                 }
+                const currentCfg = catalogConfigs[catId] || {};
+                currentPreviewAnimeList = applySortAndShuffle(items, currentCfg);
+                updateModalLivePreview(true);
             });
         }
 
@@ -4992,23 +5040,44 @@
             if (previewGrid) {
                 const listToRender = currentPreviewAnimeList;
                 const countEl = document.getElementById('modalPreviewCount');
+                const isDubbed = Boolean(cfg.audio === 'dubbed' || cfg.dubbed);
+                const dubLang = (cfg.dub_language || 'english').toLowerCase();
+                const dubLangTitle = dubLang.charAt(0).toUpperCase() + dubLang.slice(1);
+
                 if (countEl && activeModalCatalogId === 'anisync_search') {
                     if (!listToRender || listToRender.length === 0) {
-                        countEl.textContent = '0 results';
+                        countEl.textContent = isDubbed ? `0 results (${dubLangTitle} dub)` : '0 results';
                     } else if (listToRender[0].is_sample_fallback) {
                         countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>Sample preview (0 results)</span>`;
                     } else {
-                        countEl.textContent = `${listToRender.length} result${listToRender.length === 1 ? '' : 's'}`;
+                        countEl.textContent = `${listToRender.length} ${isDubbed ? dubLangTitle + ' dubbed ' : ''}result${listToRender.length === 1 ? '' : 's'}`;
+                    }
+                } else if (countEl && isDubbed) {
+                    if (!listToRender || listToRender.length === 0) {
+                        countEl.textContent = `0 titles (${dubLangTitle} dub)`;
+                    } else if (!listToRender[0].is_sample_fallback) {
+                        const countText = listToRender.length >= 50
+                            ? `Showing 50 ${dubLangTitle} dubbed titles`
+                            : `${listToRender.length} ${dubLangTitle} dubbed title${listToRender.length === 1 ? '' : 's'}`;
+                        countEl.textContent = countText;
                     }
                 }
+
                 if (!listToRender || listToRender.length === 0) {
                     previewGrid.className = 'preview-grid empty';
                     const isSearch = activeModalCatalogId === 'anisync_search';
+                    const emptyIcon = isDubbed ? 'fa-microphone-slash' : (isSearch ? 'fa-magnifying-glass' : 'fa-folder-open');
+                    const emptyTitle = isDubbed
+                        ? `No ${dubLangTitle} dubs found`
+                        : (isSearch ? 'No matches found' : 'Catalog is empty');
+                    const emptyDesc = isDubbed
+                        ? `No anime in this catalog have a verified ${dubLangTitle} dub`
+                        : (isSearch ? 'Try searching for another anime title above' : 'No anime in this catalog yet');
                     previewGrid.innerHTML = `
                         <div class="preview-empty-state">
-                            <i class="fa-regular ${isSearch ? 'fa-magnifying-glass' : 'fa-folder-open'}"></i>
-                            <span class="preview-empty-title">${isSearch ? 'No matches found' : 'Catalog is empty'}</span>
-                            <span class="preview-empty-desc">${isSearch ? 'Try searching for another anime title above' : 'No anime in this catalog yet'}</span>
+                            <i class="fa-solid ${emptyIcon}"></i>
+                            <span class="preview-empty-title">${emptyTitle}</span>
+                            <span class="preview-empty-desc">${emptyDesc}</span>
                         </div>
                     `;
                     return;
@@ -5181,17 +5250,28 @@
 
         function getActiveModalBaseItems() {
             if (!activeModalCatalogId) return PREVIEW_ANIME_ITEMS;
+            const cfg = catalogConfigs[activeModalCatalogId] || {};
+            const isDubbed = Boolean(cfg.audio === 'dubbed' || cfg.dubbed);
+            const dubLang = (cfg.dub_language || 'english').toLowerCase();
             if (activeModalCatalogId === 'anisync_search') {
                 const searchInput = document.getElementById('modalSearchPreviewInput');
                 const query = (searchInput ? searchInput.value.trim() : '') || 'Haikyu!!';
-                const cacheKey = 'search_' + query.toLowerCase();
+                const cacheKey = 'search_' + query.toLowerCase() + '_' + (isDubbed ? 'dub_' + dubLang : 'all');
                 if (catalogItemsCache[cacheKey] !== undefined) {
                     return catalogItemsCache[cacheKey];
+                }
+                const baseKey = 'search_' + query.toLowerCase();
+                if (catalogItemsCache[baseKey] !== undefined) {
+                    return catalogItemsCache[baseKey];
                 }
                 if (catalogItemsCache['anisync_search'] !== undefined) {
                     return catalogItemsCache['anisync_search'];
                 }
                 return PREVIEW_ANIME_ITEMS;
+            }
+            const cacheKey = `${activeModalCatalogId}_${isDubbed ? 'dub_' + dubLang : 'all'}`;
+            if (catalogItemsCache[cacheKey] !== undefined) {
+                return catalogItemsCache[cacheKey];
             }
             return catalogItemsCache[activeModalCatalogId] !== undefined ? catalogItemsCache[activeModalCatalogId] : PREVIEW_ANIME_ITEMS;
         }
@@ -5265,6 +5345,7 @@
             const curLang = catalogConfigs[activeModalCatalogId].dub_language || 'english';
             updateAudioUI(mode, curLang);
             updateCatalogRowBadge(activeModalCatalogId);
+            loadCatalogPreviewItems(activeModalCatalogId);
         };
 
         window.resetCurrentCatalogConfig = function () {

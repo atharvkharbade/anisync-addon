@@ -10,6 +10,7 @@ from app.services.db import store_user, handle_invalid_anilist_token
 from app.routes.catalog.formatting import format_catalog_metas, get_anilist_title
 from app.routes.utils import respond_with
 from app.routes.catalog.sorting import (
+    apply_catalog_dub_filter,
     get_catalog_sorting,
     is_catalog_shuffle_enabled,
     sort_watchlist_items,
@@ -256,6 +257,8 @@ async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filter
                 continue
     except Exception as e:
         logging.error("AniList catalog load failed for status %s: %s", anilist_status, e)
+
+    metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
     return await respond_with(
         {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
