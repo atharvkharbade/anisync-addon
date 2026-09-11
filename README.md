@@ -123,7 +123,6 @@ Shows your watch progress and upcoming release countdowns directly in the anime 
 ---
 
 ### 🎨 Custom Poster Art, Rating Overlays & Poster Shapes (16:9 Landscape & 3:4 Portrait)
-* **Portrait & Landscape Shapes (NEW!)**: Choose between standard portrait (3:4) posters and widescreen landscape (16:9) artwork, tailored for Nuvio, desktop screens, and TV interfaces.
 * **High-Res Artwork**: Crisp posters from AniList, MAL, and Kitsu.
 * **RPDB Support**: Add your Rating Poster DB API key to overlay rating badges on posters.
 * **Custom Poster Endpoints**: Works with external poster proxies (like BetterPosters) with dynamic `{shape}` and `{endpoint}` placeholder support.
