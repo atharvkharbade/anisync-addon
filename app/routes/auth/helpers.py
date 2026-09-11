@@ -53,6 +53,11 @@ def resolve_or_create_user(session_obj, tracker_id: str, find_by_tracker_func) -
         session_obj["user"] = {"uid": uid}
         if is_new_account:
             session_obj["is_new_user"] = True
+            user.setdefault("sync_unlisted", True)
+            user.setdefault("show_filler_tags", False)
+            user.setdefault("show_airing_in_synopsis", False)
+            user.setdefault("show_tracking_in_synopsis", False)
+            user.setdefault("enable_discovery_catalogs", False)
         if hasattr(session_obj, "permanent"):
             session_obj.permanent = True
 

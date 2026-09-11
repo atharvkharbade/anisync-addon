@@ -59,6 +59,11 @@ async def mal_callback():
         existing.pop("is_guest", None)
         existing["enable_catalogs"] = True
         existing["enable_recommendations"] = True
+        existing.setdefault("enable_discovery_catalogs", False)
+        existing.setdefault("sync_unlisted", True)
+        existing.setdefault("show_filler_tags", False)
+        existing.setdefault("show_airing_in_synopsis", False)
+        existing.setdefault("show_tracking_in_synopsis", False)
         existing.update(
             {
                 "uid": uid,

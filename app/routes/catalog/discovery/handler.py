@@ -39,7 +39,7 @@ def trigger_discovery_catalogs_prefetch():
 
 
 async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filters, extras=""):
-    if not user.get("enable_discovery_catalogs", True):
+    if not user.get("enable_discovery_catalogs", True if user.get("is_guest") else False):
         return await respond_with({"metas": []})
 
     discovery_col = db.get_collection("discovery_catalogs_cache")

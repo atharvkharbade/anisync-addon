@@ -56,7 +56,7 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
     mal_enabled = user.get("mal_enabled", False)
     anilist_enabled = user.get("anilist_enabled", False)
     simkl_enabled = user.get("simkl_enabled", True) and bool(user.get("simkl_access_token"))
-    sync_unlisted = user.get("sync_unlisted", False)
+    sync_unlisted = user.get("sync_unlisted", True)
 
     if not mal_enabled and not anilist_enabled and not simkl_enabled:
         return await respond_with({"subtitles": []})

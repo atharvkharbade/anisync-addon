@@ -7,7 +7,7 @@ def map_kitsu_to_stremio(
     meta_id: str,
     anizp_data: dict = None,
     mal_id: str = None,
-    show_filler_tags: bool = True,
+    show_filler_tags: bool = False,
     loop=None,
     cinemeta_data: dict = None,
     show_watched_tags: bool = False,

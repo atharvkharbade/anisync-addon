@@ -1852,7 +1852,7 @@
                 <input type="hidden" id="simkl_enabled_val" name="simkl_enabled"
                     value="{{ 'true' if user.get('simkl_enabled', True) else 'false' }}">
                 <input type="hidden" id="sync_unlisted_val" name="sync_unlisted"
-                    value="{{ 'true' if user.get('sync_unlisted', False) else 'false' }}">
+                    value="{{ 'true' if user.get('sync_unlisted', True) else 'false' }}">
                 <input type="hidden" id="enable_new_episodes_badge_val" name="enable_new_episodes_badge"
                     value="{{ 'true' if user.get('enable_new_episodes_badge', user.get('sort_by_new_episodes', True)) else 'false' }}">
                 <input type="hidden" id="sort_by_new_episodes_val" name="sort_by_new_episodes"
@@ -1864,15 +1864,15 @@
                 <input type="hidden" id="rpdb_in_search_val" name="rpdb_in_search"
                     value="{{ 'true' if user.get('rpdb_in_search', True) else 'false' }}">
                 <input type="hidden" id="show_filler_tags_val" name="show_filler_tags"
-                    value="{{ 'true' if user.get('show_filler_tags', True) else 'false' }}">
+                    value="{{ 'true' if user.get('show_filler_tags', False) else 'false' }}">
                 <input type="hidden" id="hide_nsfw_val" name="hide_nsfw"
                     value="{{ 'true' if user.get('hide_nsfw', True) else 'false' }}">
                 <input type="hidden" id="show_watched_tags_val" name="show_watched_tags"
                     value="{{ 'true' if user.get('show_watched_tags', False) else 'false' }}">
                 <input type="hidden" id="show_tracking_in_synopsis_val" name="show_tracking_in_synopsis"
-                    value="{{ 'true' if user.get('show_tracking_in_synopsis', True) else 'false' }}">
+                    value="{{ 'true' if user.get('show_tracking_in_synopsis', False) else 'false' }}">
                 <input type="hidden" id="show_airing_in_synopsis_val" name="show_airing_in_synopsis"
-                    value="{{ 'true' if user.get('show_airing_in_synopsis', True) else 'false' }}">
+                    value="{{ 'true' if user.get('show_airing_in_synopsis', False) else 'false' }}">
                 <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
                     value="{{ 'true' if user.get('combine_watchlists', False) else 'false' }}">
                 <input type="hidden" id="custom_sort_enabled_val" name="custom_sort_enabled"
@@ -1898,7 +1898,7 @@
                 <input type="hidden" id="custom_sort_dropped_order_val" name="custom_sort_dropped_order"
                     value="{{ user.get('custom_sort_dropped_order', 'desc') }}">
                 <input type="hidden" id="enable_discovery_catalogs_val" name="enable_discovery_catalogs"
-                    value="{{ 'true' if user.get('enable_discovery_catalogs', True) else 'false' }}">
+                    value="{{ 'true' if user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) else 'false' }}">
                 <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
                     value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
                 <input type="hidden" id="enable_dubbed_catalogs_val" name="enable_dubbed_catalogs"
@@ -2079,7 +2079,7 @@
                     Manage how your watch progress automatically updates across your connected services.
                 </p>
                 <div class="form-check form-switch mb-0">
-                    <input class="form-check-input" type="checkbox" role="switch" id="sync_unlisted" {% if user.get('sync_unlisted', False) %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" role="switch" id="sync_unlisted" {% if user.get('sync_unlisted', True) %}checked{% endif %}>
                     <label class="form-check-label ms-1" for="sync_unlisted">
                         <span class="fw-medium d-block">Sync unlisted anime</span>
                         <span class="text-secondary small d-block">
@@ -2409,7 +2409,7 @@
 
             <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="show_filler_tags" {% if
-                    user.get('show_filler_tags', True) %}checked{% endif %}>
+                    user.get('show_filler_tags', False) %}checked{% endif %}>
                 <label class="form-check-label ms-1" for="show_filler_tags">
                     <span class="fw-medium d-block">Show filler tags on episodes</span>
                     <span class="text-secondary small d-block">
@@ -2420,7 +2420,7 @@
 
             <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="show_airing_in_synopsis" {% if
-                    user.get('show_airing_in_synopsis', True) %}checked{% endif %}>
+                    user.get('show_airing_in_synopsis', False) %}checked{% endif %}>
                 <label class="form-check-label ms-1" for="show_airing_in_synopsis">
                     <span class="fw-medium d-block">Show next airing countdown in synopsis</span>
                     <span class="text-secondary small d-block">
@@ -2502,7 +2502,7 @@
 
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="show_tracking_in_synopsis" {% if
-                            user.get('show_tracking_in_synopsis', True) %}checked{% endif %}>
+                            user.get('show_tracking_in_synopsis', False) %}checked{% endif %}>
                         <label class="form-check-label ms-1" for="show_tracking_in_synopsis">
                             <span class="fw-medium d-block">Show tracking status in synopsis</span>
                             <span class="text-secondary small d-block">
@@ -2540,7 +2540,7 @@
                     </p>
 
                     <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if user.get('enable_discovery_catalogs', True) %}checked{% endif %}>
+                        <input class="form-check-input" type="checkbox" role="switch" id="enable_discovery_catalogs" {% if user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) %}checked{% endif %}>
                         <label class="form-check-label ms-1" for="enable_discovery_catalogs">
                             <span class="fw-medium d-block">Enable Anime Discovery Catalogs</span>
                             <span class="text-secondary small d-block">
@@ -2552,11 +2552,11 @@
 
                 <!-- Catalogs Management Card -->
                 {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or
-                user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True) %}
+                user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) %}
                 <div class="card-dark p-3 p-sm-4 mb-3" id="catalog-management-card" {% if not
                     user.get('mal_access_token') and not user.get('anilist_token') and not
                     user.get('simkl_access_token') and not user.get('enable_recommendations', True) and not
-                    user.get('enable_discovery_catalogs', True) %}style="display: none;" {% endif %}>
+                    user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) %}style="display: none;" {% endif %}>
                     <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
                         Management</h6>
                     <div class="mb-3">
@@ -2650,7 +2650,7 @@
                         {% for item_id, item_name, item_source in active_user_order %}
                         {% set cur_cfg = user.get('catalog_configs', {}).get(item_id, {}) %}
                         {% set cur_title = cur_cfg.get('title', user.get('catalog_titles', {}).get(item_id, '')) %}
-                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% elif item_source == 'search' and not user.get('enable_search', True) %}d-none{% endif %}"
+                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% elif item_source == 'search' and not user.get('enable_search', True) %}d-none{% endif %}"
                             draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}" data-default-name="{{ item_name }}"
                             style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
                             <div class="d-flex align-items-center flex-grow-1 overflow-hidden min-w-0 me-3">
@@ -2658,7 +2658,7 @@
                                 <input class="form-check-input catalog-checkbox flex-shrink-0" type="checkbox"
                                     id="cat_{{ item_id }}" name="cat_{{ item_id }}"
                                     style="margin: 0 12px 0 0; cursor: pointer; float: none;"
-                                    {% if user.get('catalogs') is none or item_id in (user.get('catalogs') or []) or (item_source=='discovery' and 'enable_discovery_catalogs' not in user) or (item_source=='search' and user.get('enable_search', True)) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
+                                    {% if user.get('catalogs') is none or item_id in (user.get('catalogs') or []) or (item_source=='discovery' and user.get('enable_discovery_catalogs', True if user.get('is_guest') else False)) or (item_source=='search' and user.get('enable_search', True)) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
                                 <div class="catalog-content-col d-flex flex-grow-1 overflow-hidden min-w-0">
                                     <label class="catalog-item-title small fw-medium text-light text-truncate mb-0" for="cat_{{ item_id }}"
                                         style="user-select: none; cursor: pointer;">

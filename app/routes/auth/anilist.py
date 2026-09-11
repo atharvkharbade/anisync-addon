@@ -56,6 +56,11 @@ async def anilist_save():
         user.pop("is_guest", None)
         user["enable_catalogs"] = True
         user["enable_recommendations"] = True
+        user.setdefault("enable_discovery_catalogs", False)
+        user.setdefault("sync_unlisted", True)
+        user.setdefault("show_filler_tags", False)
+        user.setdefault("show_airing_in_synopsis", False)
+        user.setdefault("show_tracking_in_synopsis", False)
 
         user.update(
             {

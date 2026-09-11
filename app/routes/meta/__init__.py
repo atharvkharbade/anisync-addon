@@ -141,7 +141,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
                             pass
                 except Exception as e:
                     logging.warning("Failed to query fribb_mappings for simkl_id: %s", e)
-        show_filler = user.get("show_filler_tags", True) if user else True
+        show_filler = user.get("show_filler_tags", False) if user else False
         show_watched = user.get("show_watched_tags", False) if user else False
         watched_progress = 0
         if show_watched:
@@ -195,8 +195,8 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         # Collect dynamic metadata headers
         dynamic_headers = []
 
-        show_tracking = user.get("show_tracking_in_synopsis", True) if user else True
-        show_airing = user.get("show_airing_in_synopsis", True) if user else True
+        show_tracking = user.get("show_tracking_in_synopsis", False) if user else False
+        show_airing = user.get("show_airing_in_synopsis", False) if user else False
 
         if show_tracking:
             user_status_hdr = build_user_status_header(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)

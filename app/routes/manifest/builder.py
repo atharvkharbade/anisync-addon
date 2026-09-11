@@ -43,7 +43,7 @@ def build_user_manifest(user_id: str, user: dict | None) -> dict:
         enable_recommendations = user.get("enable_recommendations", True)
 
     enable_search = user.get("enable_search", True)
-    enable_discovery_catalogs = user.get("enable_discovery_catalogs", True)
+    enable_discovery_catalogs = user.get("enable_discovery_catalogs", True if user.get("is_guest") else False)
 
     user_manifest_data = MANIFEST.copy()
     if not enable_catalogs and not enable_search and not enable_recommendations and not enable_discovery_catalogs:
