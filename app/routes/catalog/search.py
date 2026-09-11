@@ -99,6 +99,21 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                     or None
                 )
                 synopsis = attrs.get("synopsis") or ""
+                avg_rating = attrs.get("averageRating")
+                score_val = 0.0
+                if avg_rating:
+                    try:
+                        score_val = round(float(avg_rating) / 10.0, 1)
+                    except (ValueError, TypeError):
+                        score_val = 0.0
+
+                start_date = attrs.get("startDate") or ""
+                year_val = 0
+                if start_date and len(start_date) >= 4 and start_date[:4].isdigit():
+                    year_val = int(start_date[:4])
+
+                ep_count = int(attrs.get("episodeCount") or 0)
+
                 metas.append(
                     {
                         "id": f"kitsu:{item['id']}",
@@ -111,6 +126,9 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                         "description": synopsis[:200] + "..." if len(synopsis) > 200 else synopsis,
                         "ageRating": attrs.get("ageRating"),
                         "nsfw": attrs.get("nsfw"),
+                        "score": score_val,
+                        "year": year_val,
+                        "episodes": ep_count,
                     }
                 )
     except Exception as e:
@@ -130,6 +148,12 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                   status
                   description
                   isAdult
+                  averageScore
+                  seasonYear
+                  startDate {
+                    year
+                  }
+                  episodes
                   title {
                     romaji
                     english
@@ -296,6 +320,9 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                             "description": clean_desc,
                             "ageRating": "R18" if m.get("isAdult") else None,
                             "nsfw": bool(m.get("isAdult")),
+                            "score": round((m.get("averageScore") or 0) / 10.0, 1),
+                            "year": m.get("seasonYear") or (m.get("startDate") or {}).get("year") or 0,
+                            "episodes": m.get("episodes") or 0,
                         }
                     )
                     existing_ids.add(stremio_id)

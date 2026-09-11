@@ -4628,6 +4628,7 @@
                     if (metas.length === 0 && (!query || query.toLowerCase() === 'frieren')) {
                         const sampleFallback = PREVIEW_ANIME_ITEMS.map(i => ({ ...i, is_sample_fallback: true }));
                         catalogItemsCache[cacheKey] = sampleFallback;
+                        catalogItemsCache['anisync_search'] = sampleFallback;
                         return sampleFallback;
                     }
                     const items = metas.map(m => {
@@ -4662,6 +4663,7 @@
                         };
                     });
                     catalogItemsCache[cacheKey] = items;
+                    catalogItemsCache['anisync_search'] = items;
                     return items;
                 })
                 .catch(err => {
@@ -4887,6 +4889,16 @@
             const previewGrid = document.getElementById('modalPreviewGrid');
             if (previewGrid) {
                 const listToRender = currentPreviewAnimeList;
+                const countEl = document.getElementById('modalPreviewCount');
+                if (countEl && activeModalCatalogId === 'anisync_search') {
+                    if (!listToRender || listToRender.length === 0) {
+                        countEl.textContent = '0 results';
+                    } else if (listToRender[0].is_sample_fallback) {
+                        countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>Sample preview (0 results)</span>`;
+                    } else {
+                        countEl.textContent = `${listToRender.length} result${listToRender.length === 1 ? '' : 's'}`;
+                    }
+                }
                 if (!listToRender || listToRender.length === 0) {
                     previewGrid.className = 'preview-grid empty';
                     const isSearch = activeModalCatalogId === 'anisync_search';
@@ -5067,6 +5079,23 @@
             updateCatalogRowBadge(activeModalCatalogId);
         };
 
+        function getActiveModalBaseItems() {
+            if (!activeModalCatalogId) return PREVIEW_ANIME_ITEMS;
+            if (activeModalCatalogId === 'anisync_search') {
+                const searchInput = document.getElementById('modalSearchPreviewInput');
+                const query = (searchInput ? searchInput.value.trim() : '') || 'Frieren';
+                const cacheKey = 'search_' + query.toLowerCase();
+                if (catalogItemsCache[cacheKey] && catalogItemsCache[cacheKey].length > 0) {
+                    return catalogItemsCache[cacheKey];
+                }
+                if (catalogItemsCache['anisync_search'] && catalogItemsCache['anisync_search'].length > 0) {
+                    return catalogItemsCache['anisync_search'];
+                }
+                return PREVIEW_ANIME_ITEMS;
+            }
+            return catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
+        }
+
         window.onModalSortByChange = function (val) {
             if (!activeModalCatalogId) return;
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
@@ -5078,7 +5107,7 @@
             updateModalSortDropdown(val);
             const curOrder = catalogConfigs[activeModalCatalogId].sort_order || 'desc';
             updateSortOrderUI(curOrder, val);
-            const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
+            const baseItems = getActiveModalBaseItems();
             currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId]);
             updateModalLivePreview(true);
             updateCatalogRowBadge(activeModalCatalogId);
@@ -5090,7 +5119,7 @@
             catalogConfigs[activeModalCatalogId].sort_order = order;
             const curSort = catalogConfigs[activeModalCatalogId].sort_by || 'default';
             updateSortOrderUI(order, curSort);
-            const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
+            const baseItems = getActiveModalBaseItems();
             currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId]);
             updateModalLivePreview(true);
             updateCatalogRowBadge(activeModalCatalogId);
@@ -5104,7 +5133,7 @@
             }
             updateModalSortDropdown('default');
             updateSortOrderUI('desc', 'default');
-            const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
+            const baseItems = getActiveModalBaseItems();
             currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId] || {});
             updateModalLivePreview(true);
             updateCatalogRowBadge(activeModalCatalogId);
@@ -5115,7 +5144,7 @@
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
             catalogConfigs[activeModalCatalogId].shuffle = Boolean(shuffle);
             updateShuffleUI(Boolean(shuffle));
-            const baseItems = catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
+            const baseItems = getActiveModalBaseItems();
             currentPreviewAnimeList = applySortAndShuffle(baseItems, catalogConfigs[activeModalCatalogId]);
             updateModalLivePreview(true);
             updateCatalogRowBadge(activeModalCatalogId);
