@@ -12,7 +12,9 @@
 [![Nuvio Addon](https://img.shields.io/badge/nuvio-addon-ff4500.svg)](https://nuvio.tv)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b.svg?logo=ko-fi&logoColor=white)](https://ko-fi.com/atharvkharbade)
 
-**AniSync** is an anime addon built for Stremio and Nuvio that connects your tracking accounts (**MyAnimeList**, **AniList**, and **Simkl**) in one place. It syncs your watchlists, overlays new episode indicators on posters, shows filler warnings and watched tags, and gives you personalized recommendations and discovery catalogs.
+> An anime addon for Stremio and Nuvio offering tracking, rich metadata, recommendations, and much more!
+
+**AniSync** is an anime addon built for Stremio and Nuvio that connects your tracking accounts (**MyAnimeList**, **AniList**, and **Simkl**) in one place. It syncs your watchlists in real-time, overlays new episode indicators on posters, shows filler warnings and watched tags, and gives you personalized recommendations and discovery catalogs.
 
 ---
 

@@ -3,11 +3,11 @@ from .catalogs import CATALOGS, filter_user_catalogs
 
 MANIFEST = {
     "id": "com.anisync.stremio",
-    "version": "1.4.3",
+    "version": "1.5.0",
     "name": "AniSync",
     "logo": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png",
     "icon": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png",
-    "description": "Sync and update your anime watchlists on MyAnimeList, AniList, and Simkl in real-time. Easily track episodes, combine watchlists, skip fillers, and get personalized recommendations.",
+    "description": "An anime addon for Stremio and Nuvio offering tracking, rich metadata, recommendations, and much more!",
     "types": ["anime", "series", "movie"],
     "resources": ["subtitles", "catalog", "meta"],
     "idPrefixes": ["kitsu", "mal", "anilist", "simkl"],
