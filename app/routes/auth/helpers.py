@@ -58,6 +58,7 @@ def resolve_or_create_user(session_obj, tracker_id: str, find_by_tracker_func) -
             user.setdefault("show_airing_in_synopsis", False)
             user.setdefault("show_tracking_in_synopsis", False)
             user.setdefault("enable_discovery_catalogs", False)
+            user.setdefault("enable_recommendations", False)
         if hasattr(session_obj, "permanent"):
             session_obj.permanent = True
 

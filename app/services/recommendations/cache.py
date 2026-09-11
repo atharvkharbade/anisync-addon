@@ -175,6 +175,6 @@ async def update_recommendations_cache(user_id: str, force: bool = False):
 
 def trigger_recommendation_update_background(user_id: str, force: bool = False):
     user = get_user(user_id)
-    if not user or not user.get("enable_recommendations", True):
+    if not user or not user.get("enable_recommendations", False):
         return
     asyncio.create_task(update_recommendations_cache(user_id, force=force))

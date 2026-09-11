@@ -1859,6 +1859,10 @@
                     value="{{ 'true' if user.get('sort_by_new_episodes', False) else 'false' }}">
                 <input type="hidden" id="enable_catalogs_val" name="enable_catalogs"
                     value="{{ 'true' if user.get('enable_catalogs', True) else 'false' }}">
+                <input type="hidden" id="enable_recommendations_val" name="enable_recommendations"
+                    value="{{ 'true' if user.get('enable_recommendations', False) else 'false' }}">
+                <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
+                    value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
                 <input type="hidden" id="enable_search_val" name="enable_search"
                     value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
                 <input type="hidden" id="rpdb_in_search_val" name="rpdb_in_search"
@@ -2532,6 +2536,119 @@
             </div>
             {% endif %}
 
+            <!-- Recommendations Card (Hidden for Guest Users) -->
+            {% if not user.get('is_guest') %}
+            <div class="card-dark p-3 p-sm-4 mb-3">
+                <h6 class="fw-semibold mb-3"><i
+                        class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>Recommendations</h6>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="enable_recommendations" {% if
+                        user.get('enable_recommendations', False) %}checked{% endif %}>
+                    <label class="form-check-label ms-1" for="enable_recommendations">
+                        <span class="fw-medium d-block">Enable Recommendations Catalogs</span>
+                        <span class="text-secondary small d-block">
+                            Enable personalized anime recommendations based on your tracking history.
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Recommendations Sub-Options (only visible when enabled) -->
+                <div id="recommendations-options" class="nested-subcard" {% if not user.get('enable_recommendations', False) %}style="display: none;"{% endif %}>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                            id="recommendations_filter_watched" {% if user.get('recommendations_filter_watched',
+                            True) %}checked{% endif %}>
+                        <label class="form-check-label ms-1" for="recommendations_filter_watched">
+                            <span class="fw-medium d-block">Filter Watched Shows</span>
+                            <span class="text-secondary small d-block">
+                                Exclude shows already in your completed, watching, paused, or dropped lists from
+                                recommendations.
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Genre Exclusions -->
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Movie
+                                Genres</label>
+                            <div class="genre-scroll-container">
+                                {% for genre in anime_genres %}
+                                <label class="genre-checkbox-label">
+                                    <input type="checkbox" name="rec_excluded_movie_genres" value="{{ genre }}"
+                                        class="genre-checkbox" {% if genre in user.get('rec_excluded_movie_genres',
+                                        []) %}checked{% endif %}>
+                                    {{ genre }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Series
+                                Genres</label>
+                            <div class="genre-scroll-container">
+                                {% for genre in anime_genres %}
+                                <label class="genre-checkbox-label">
+                                    <input type="checkbox" name="rec_excluded_series_genres" value="{{ genre }}"
+                                        class="genre-checkbox" {% if genre in user.get('rec_excluded_series_genres',
+                                        []) %}checked{% endif %}>
+                                    {{ genre }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gemini AI Section Replica -->
+                    <div id="gemini-key-section" style="margin-top: 1.5rem;">
+                        <label class="rec-label mb-2">GEMINI AI (OPTIONAL)</label>
+                        <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                            Used to generate personalized, AI-powered explanations for recommended anime based on
+                            your unique watch history.
+                        </p>
+
+                        <div class="gemini-input-wrapper position-relative">
+                            <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
+                                value="{{ user.get('gemini_api_key', '') }}"
+                                placeholder="Gemini API key here" autocomplete="new-password">
+                            <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
+                                style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                <i class="fa-regular fa-eye" id="gemini-eye-icon"></i>
+                            </button>
+                            <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
+                                title="Validate Key">
+                                <i id="gemini-check-icon"
+                                    class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                    style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                            </button>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2.5">
+                            <span id="gemini-validation-status"
+                                class="small ms-3 {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                {% if user.get('gemini_api_key') %}
+                                {% if user.get('gemini_key_valid') == False %}
+                                Invalid Gemini API key
+                                {% else %}
+                                API key verified
+                                {% endif %}
+                                {% else %}
+                                Not verified
+                                {% endif %}
+                            </span>
+                            <a href="https://aistudio.google.com/" target="_blank"
+                                class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
+                                Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
+                                    style="font-size: 0.65rem;"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
                 <!-- Discovery Catalogs Card -->
                 <div class="card-dark p-3 p-sm-4 mb-3">
                     <h6 class="fw-semibold mb-3"><i class="fa-solid fa-compass me-2" style="color: #38bdf8;"></i>Anime Discovery Catalogs</h6>
@@ -2552,11 +2669,13 @@
 
                 <!-- Catalogs Management Card -->
                 {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') or
-                user.get('enable_recommendations', True) or user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) %}
+                user.get('enable_recommendations', False) or user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) or
+                user.get('enable_search', True) %}
                 <div class="card-dark p-3 p-sm-4 mb-3" id="catalog-management-card" {% if not
                     user.get('mal_access_token') and not user.get('anilist_token') and not
-                    user.get('simkl_access_token') and not user.get('enable_recommendations', True) and not
-                    user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) %}style="display: none;" {% endif %}>
+                    user.get('simkl_access_token') and not user.get('enable_recommendations', False) and not
+                    user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) and not
+                    user.get('enable_search', True) %}style="display: none;" {% endif %}>
                     <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rectangle-list me-2 text-info"></i>Catalogs
                         Management</h6>
                     <div class="mb-3">
@@ -2650,7 +2769,7 @@
                         {% for item_id, item_name, item_source in active_user_order %}
                         {% set cur_cfg = user.get('catalog_configs', {}).get(item_id, {}) %}
                         {% set cur_title = cur_cfg.get('title', user.get('catalog_titles', {}).get(item_id, '')) %}
-                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% elif item_source == 'search' and not user.get('enable_search', True) %}d-none{% endif %}"
+                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', False) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% elif item_source == 'search' and not user.get('enable_search', True) %}d-none{% endif %}"
                             draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}" data-default-name="{{ item_name }}"
                             style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
                             <div class="d-flex align-items-center flex-grow-1 overflow-hidden min-w-0 me-3">
@@ -2658,7 +2777,7 @@
                                 <input class="form-check-input catalog-checkbox flex-shrink-0" type="checkbox"
                                     id="cat_{{ item_id }}" name="cat_{{ item_id }}"
                                     style="margin: 0 12px 0 0; cursor: pointer; float: none;"
-                                    {% if user.get('catalogs') is none or item_id in (user.get('catalogs') or []) or (item_source=='discovery' and user.get('enable_discovery_catalogs', True if user.get('is_guest') else False)) or (item_source=='search' and user.get('enable_search', True)) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
+                                    {% if user.get('catalogs') is none or item_id in (user.get('catalogs') or []) or (item_source=='discovery' and user.get('enable_discovery_catalogs', True if user.get('is_guest') else False)) or (item_source=='rec' and user.get('enable_recommendations', False)) or (item_source=='search' and user.get('enable_search', True)) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
                                 <div class="catalog-content-col d-flex flex-grow-1 overflow-hidden min-w-0">
                                     <label class="catalog-item-title small fw-medium text-light text-truncate mb-0" for="cat_{{ item_id }}"
                                         style="user-select: none; cursor: pointer;">
@@ -2704,7 +2823,7 @@
     </div>
 
 
-    <!-- TAB 4: Metadata and Recommendations -->
+    <!-- TAB 4: Metadata -->
     <div class="anisync-tab-pane" id="tab-metadata" role="tabpanel" aria-labelledby="tab-btn-metadata">
         
             <!-- Metadata Preferences Card -->
@@ -2985,125 +3104,6 @@
 
 
             </div>
-
-
-        <!-- Recommendations Card (Hidden for Guest Users) -->
-                {% if not user.get('is_guest') %}
-                <div class="card-dark p-3 p-sm-4 mb-3">
-                    <h6 class="fw-semibold mb-3"><i
-                            class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>Recommendations</h6>
-
-                    <input type="hidden" id="enable_recommendations_val" name="enable_recommendations"
-                        value="{{ 'true' if user.get('enable_recommendations', True) else 'false' }}">
-                    <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
-                        value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
-
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" role="switch" id="enable_recommendations" {% if
-                            user.get('enable_recommendations', True) %}checked{% endif %}>
-                        <label class="form-check-label ms-1" for="enable_recommendations">
-                            <span class="fw-medium d-block">Enable Recommendations Catalogs</span>
-                            <span class="text-secondary small d-block">
-                                Enable personalized anime recommendations based on your tracking history.
-                            </span>
-                        </label>
-                    </div>
-
-                    <!-- Recommendations Sub-Options (only visible when enabled) -->
-                    <div id="recommendations-options" class="nested-subcard" {% if not user.get('enable_recommendations', True) %}style="display: none;"{% endif %}>
-
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" role="switch"
-                                id="recommendations_filter_watched" {% if user.get('recommendations_filter_watched',
-                                True) %}checked{% endif %}>
-                            <label class="form-check-label ms-1" for="recommendations_filter_watched">
-                                <span class="fw-medium d-block">Filter Watched Shows</span>
-                                <span class="text-secondary small d-block">
-                                    Exclude shows already in your completed, watching, paused, or dropped lists from
-                                    recommendations.
-                                </span>
-                            </label>
-                        </div>
-
-                        <!-- Genre Exclusions -->
-                        <div class="row mb-3">
-                            <div class="col-md-6 mb-3 mb-md-0">
-                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Movie
-                                    Genres</label>
-                                <div class="genre-scroll-container">
-                                    {% for genre in anime_genres %}
-                                    <label class="genre-checkbox-label">
-                                        <input type="checkbox" name="rec_excluded_movie_genres" value="{{ genre }}"
-                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_movie_genres',
-                                            []) %}checked{% endif %}>
-                                        {{ genre }}
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-medium small text-secondary d-block mb-2">Exclude Series
-                                    Genres</label>
-                                <div class="genre-scroll-container">
-                                    {% for genre in anime_genres %}
-                                    <label class="genre-checkbox-label">
-                                        <input type="checkbox" name="rec_excluded_series_genres" value="{{ genre }}"
-                                            class="genre-checkbox" {% if genre in user.get('rec_excluded_series_genres',
-                                            []) %}checked{% endif %}>
-                                        {{ genre }}
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Gemini AI Section Replica -->
-                        <div id="gemini-key-section" style="margin-top: 1.5rem;">
-                            <label class="rec-label mb-2">GEMINI AI (OPTIONAL)</label>
-                            <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                                Used to generate personalized, AI-powered explanations for recommended anime based on
-                                your unique watch history.
-                            </p>
-
-                            <div class="gemini-input-wrapper position-relative">
-                                <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
-                                    value="{{ user.get('gemini_api_key', '') }}"
-                                    placeholder="Gemini API key here" autocomplete="new-password">
-                                <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
-                                    style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
-                                    <i class="fa-regular fa-eye" id="gemini-eye-icon"></i>
-                                </button>
-                                <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
-                                    title="Validate Key">
-                                    <i id="gemini-check-icon"
-                                        class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
-                                        style="font-size: 1.1rem; transition: color 0.2s;"></i>
-                                </button>
-                            </div>
-
-                            <div class="d-flex justify-content-between align-items-center mt-2.5">
-                                <span id="gemini-validation-status"
-                                    class="small ms-3 {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
-                                    {% if user.get('gemini_api_key') %}
-                                    {% if user.get('gemini_key_valid') == False %}
-                                    Invalid Gemini API key
-                                    {% else %}
-                                    API key verified
-                                    {% endif %}
-                                    {% else %}
-                                    Not verified
-                                    {% endif %}
-                                </span>
-                                <a href="https://aistudio.google.com/" target="_blank"
-                                    class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
-                                    Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
-                                        style="font-size: 0.65rem;"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
 
         <!-- Step Navigation (Previous: Catalogs, Next: Install) -->
         <div class="step-nav-bar mt-4 pt-3 step-nav-2col">

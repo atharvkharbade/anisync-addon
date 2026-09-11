@@ -20,7 +20,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
     import app.services.recommendations.pipeline as pipeline_pkg
 
     user = pipeline_pkg.get_user(user_id)
-    if not user or not user.get("enable_recommendations", True):
+    if not user or not user.get("enable_recommendations", False):
         return
     fallbacks = pipeline_pkg.get_popular_fallbacks()
 
