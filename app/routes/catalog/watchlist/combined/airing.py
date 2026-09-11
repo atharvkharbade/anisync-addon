@@ -187,6 +187,81 @@ def compute_comb_flags(
                 except Exception:
                     pass
 
+    # Detect newly released movie (release date in startDate / start_date)
+    al_format = al_media.get("format") if isinstance(al_media, dict) else ""
+    is_movie = (al_format == "MOVIE") or (total == 1)
+    if not is_movie and item.get("mal_item"):
+        mal_node = (item["mal_item"].get("node") or {}) if isinstance(item["mal_item"], dict) else {}
+        if (mal_node.get("media_type") or "").lower() == "movie" or mal_node.get("num_episodes") == 1:
+            is_movie = True
+    if not is_movie and item.get("simkl_item"):
+        s_item = item["simkl_item"]
+        show_obj = (s_item.get("show") or s_item.get("anime") or s_item) if isinstance(s_item, dict) else {}
+        if (show_obj.get("anime_type") or show_obj.get("type") or "").lower() == "movie" or show_obj.get("episodes_count") == 1:
+            is_movie = True
+
+    if is_movie and not recently_finished and progress == 0:
+        # Check AniList startDate or endDate
+        start_date = al_media.get("startDate") if isinstance(al_media, dict) else None
+        if not start_date and item.get("anilist_item"):
+            al_m = (item["anilist_item"].get("media") or {}) if isinstance(item["anilist_item"], dict) else {}
+            start_date = al_m.get("startDate") or al_m.get("endDate")
+        if isinstance(start_date, dict):
+            y = start_date.get("year")
+            m = start_date.get("month") or 1
+            d = start_date.get("day") or 1
+            if y:
+                try:
+                    dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                    rel_ts = int(dt.timestamp())
+                    if 0 <= (current_time - rel_ts) <= (604800 + 86400):
+                        recently_finished = True
+                        latest_aired_num = 1
+                        latest_aired_at = rel_ts
+                except Exception:
+                    pass
+
+        # Check MAL start_date or end_date
+        if not recently_finished and item.get("mal_item"):
+            mal_node = (item["mal_item"].get("node") or {}) if isinstance(item["mal_item"], dict) else {}
+            mal_date_str = mal_node.get("start_date") or mal_node.get("end_date")
+            if mal_date_str:
+                try:
+                    parts = [int(p) for p in mal_date_str.split("-")]
+                    if len(parts) >= 1:
+                        y = parts[0]
+                        m = parts[1] if len(parts) > 1 else 1
+                        d = parts[2] if len(parts) > 2 else 1
+                        dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                        rel_ts = int(dt.timestamp())
+                        if 0 <= (current_time - rel_ts) <= (604800 + 86400):
+                            recently_finished = True
+                            latest_aired_num = 1
+                            latest_aired_at = rel_ts
+                except Exception:
+                    pass
+
+        # Check Simkl release_date
+        if not recently_finished and item.get("simkl_item"):
+            s_item = item["simkl_item"]
+            show_obj = (s_item.get("show") or s_item.get("anime") or s_item) if isinstance(s_item, dict) else {}
+            simkl_rel = show_obj.get("release_date")
+            if simkl_rel:
+                try:
+                    parts = [int(p) for p in simkl_rel.split("-")]
+                    if len(parts) >= 1:
+                        y = parts[0]
+                        m = parts[1] if len(parts) > 1 else 1
+                        d = parts[2] if len(parts) > 2 else 1
+                        dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                        rel_ts = int(dt.timestamp())
+                        if 0 <= (current_time - rel_ts) <= (604800 + 86400):
+                            recently_finished = True
+                            latest_aired_num = 1
+                            latest_aired_at = rel_ts
+                except Exception:
+                    pass
+
     if (
         (is_airing or recently_finished)
         and (enable_new_ep_badge or sort_by_new_ep)
@@ -196,5 +271,7 @@ def compute_comb_flags(
         time_since_air = current_time - latest_aired_at
         if time_since_air <= 604800 or recently_finished:
             is_new_ep = True
+            if recently_finished and next_airing_at == 2**31 - 1:
+                next_airing_at = latest_aired_at
 
     return is_new_ep, latest_aired_at, next_airing_at

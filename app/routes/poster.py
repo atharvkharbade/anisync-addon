@@ -49,7 +49,9 @@ def is_trusted_url(url: str) -> bool:
         return False
 
 
-def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: str, shape: str = "poster") -> bytes:
+def _render_modified_poster_sync(
+    img_bytes: bytes, tracker: str, badge_style: str, shape: str = "poster", badge_type: str = "episode"
+) -> bytes:
     """CPU-bound Pillow image rendering executed in background worker thread.
     Supports both 2:3 portrait posters and 16:9 landscape posters for Classic & Modern designs.
     """
@@ -120,8 +122,8 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
                 font_top = font
                 font_bottom = font
 
-            # 1. Draw top rounded liquid glass badge ("NEW EPISODE")
-            text_top = "NEW EPISODE"
+            # 1. Draw top rounded liquid glass badge ("NEW EPISODE" or "NEWLY RELEASED")
+            text_top = "NEWLY RELEASED" if badge_type == "movie" else "NEW EPISODE"
             try:
                 left_t, top_t, right_t, bottom_t = font_top.getbbox(text_top)
                 tw = right_t - left_t
@@ -170,7 +172,7 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
             if draw_simkl:
                 tracker_names.append("Simkl")
 
-            bot_text = " • ".join(tracker_names) if tracker_names else "NEW EPISODE"
+            bot_text = " • ".join(tracker_names) if tracker_names else ("NEWLY RELEASED" if badge_type == "movie" else "NEW EPISODE")
 
             try:
                 left_b, top_b, right_b, bottom_b = font_bottom.getbbox(bot_text)
@@ -225,7 +227,7 @@ def _render_modified_poster_sync(img_bytes: bytes, tracker: str, badge_style: st
             bar_y = h - bar_h
             draw.rectangle([(0, bar_y), (w, h)], fill=(0, 0, 0, 255))
 
-            text = "NEW EPISODE"
+            text = "NEWLY RELEASED" if badge_type == "movie" else "NEW EPISODE"
             try:
                 left, top, right, bottom = font.getbbox(text)
                 text_w = right - left
@@ -321,9 +323,11 @@ async def serve_modified_poster(user_id: str, media_id: str):
         return abort(400)
 
     badge = request.args.get("badge")
-    if badge != "new":
-        # Redirect directly if not flagging a new episode to bypass processing completely
+    if badge not in ("new", "new_movie"):
+        # Redirect directly if not flagging a new episode or movie to bypass processing completely
         return redirect(original_url)
+
+    badge_type = request.args.get("badge_type", "movie" if badge == "new_movie" else "episode").lower()
 
     try:
         # Fetch original poster image using pooled client
@@ -347,7 +351,7 @@ async def serve_modified_poster(user_id: str, media_id: str):
         shape = request.args.get("shape", "poster").lower()
 
         # Offload CPU-bound Pillow transformation to worker thread
-        jpeg_bytes = await asyncio.to_thread(_render_modified_poster_sync, resp.content, tracker, badge_style, shape)
+        jpeg_bytes = await asyncio.to_thread(_render_modified_poster_sync, resp.content, tracker, badge_style, shape, badge_type)
 
         response = Response(jpeg_bytes, mimetype="image/jpeg")
         # Aggressive caching to minimize server workload (1 week cache)

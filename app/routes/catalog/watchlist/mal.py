@@ -144,6 +144,48 @@ async def handle_mal_catalog(user, user_id, catalog_type, catalog_id, filters, e
                     except Exception:
                         pass
 
+            # Detect newly released movie (release date in startDate / start_date)
+            al_format = al_media.get("format") if al_media else ""
+            mal_media_type = (node.get("media_type") or "").lower()
+            is_movie = (al_format == "MOVIE") or (mal_media_type == "movie") or (total == 1)
+
+            if is_movie and not recently_finished and progress == 0:
+                # Check AniList startDate or endDate
+                start_date = al_media.get("startDate") if al_media else None
+                if isinstance(start_date, dict):
+                    y = start_date.get("year")
+                    m = start_date.get("month") or 1
+                    d = start_date.get("day") or 1
+                    if y:
+                        try:
+                            dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                            rel_ts = int(dt.timestamp())
+                            if 0 <= (current_time - rel_ts) <= (604800 + 86400):
+                                recently_finished = True
+                                latest_aired_num = 1
+                                latest_aired_at = rel_ts
+                        except Exception:
+                            pass
+
+                # Check MAL start_date or end_date
+                if not recently_finished:
+                    mal_date_str = node.get("start_date") or node.get("end_date")
+                    if mal_date_str:
+                        try:
+                            parts = [int(p) for p in mal_date_str.split("-")]
+                            if len(parts) >= 1:
+                                y = parts[0]
+                                m = parts[1] if len(parts) > 1 else 1
+                                d = parts[2] if len(parts) > 2 else 1
+                                dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                                rel_ts = int(dt.timestamp())
+                                if 0 <= (current_time - rel_ts) <= (604800 + 86400):
+                                    recently_finished = True
+                                    latest_aired_num = 1
+                                    latest_aired_at = rel_ts
+                        except Exception:
+                            pass
+
             has_unwatched = False
             if latest_aired_num > 0:
                 has_unwatched = progress < latest_aired_num
@@ -262,16 +304,20 @@ async def handle_mal_catalog(user, user_id, catalog_type, catalog_id, filters, e
                 main_pic = node.get("main_picture") or {}
                 poster = main_pic.get("large") or main_pic.get("medium") or ""
 
+                al_media = bulk_details.get(mal_id) or {}
+                mal_media_type = (node.get("media_type") or "tv").lower()
+                is_movie = (mal_media_type == "movie") or ((al_media.get("format") if al_media else "") == "MOVIE") or ((node.get("num_episodes") or 0) == 1)
+
                 if is_new_ep and enable_new_ep_badge and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
                     badge_style = user.get("badge_style", "modern")
-                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{mal_id}_m_22.jpg?url={encoded_url}&badge=new&tracker=mal&style={badge_style}&v=hd_poster_v1"
+                    badge_type = "movie" if is_movie else "episode"
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{mal_id}_m_22.jpg?url={encoded_url}&badge=new&badge_type={badge_type}&tracker=mal&style={badge_style}&v=hd_poster_v1"
 
                 kitsu_id = kitsu_mappings.get(f"mal:{mal_id}")
                 stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"mal:{mal_id}"
 
-                mal_media_type = (node.get("media_type") or "tv").lower()
-                stremio_type = "movie" if mal_media_type == "movie" else "series"
+                stremio_type = "movie" if is_movie else "series"
 
                 meta_fields = extract_item_metadata_fields(item, "mal", bulk_details=bulk_details)
                 metas.append(

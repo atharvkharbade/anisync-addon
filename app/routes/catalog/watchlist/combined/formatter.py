@@ -99,12 +99,20 @@ def format_combined_page_metas(
                     sort_by_new_ep=sort_by_new_ep,
                 )
 
+            if not is_movie:
+                al_media_bulk = bulk_details.get(item.get("mal_id")) or bulk_details.get(item.get("anilist_id")) or {}
+                if isinstance(al_media_bulk, dict) and al_media_bulk.get("format") == "MOVIE":
+                    is_movie = True
+                elif total_eps == 1:
+                    is_movie = True
+
             if is_new_ep and enable_new_ep_badge and poster:
                 badge_id = item.get("mal_id") or item.get("anilist_id") or item.get("simkl_id") or "new"
                 badge_tracker = "mal" if item.get("mal_id") else ("anilist" if item.get("anilist_id") else "simkl")
                 encoded_url = urllib.parse.quote_plus(poster)
                 badge_style = user.get("badge_style", "modern")
-                poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/comb_{badge_id}_c_22.jpg?url={encoded_url}&badge=new&tracker={badge_tracker}&style={badge_style}&v=hd_poster_v1"
+                badge_type = "movie" if is_movie else "episode"
+                poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/comb_{badge_id}_c_22.jpg?url={encoded_url}&badge=new&badge_type={badge_type}&tracker={badge_tracker}&style={badge_style}&v=hd_poster_v1"
 
             mal_id = item.get("mal_id")
             anilist_id = item.get("anilist_id")

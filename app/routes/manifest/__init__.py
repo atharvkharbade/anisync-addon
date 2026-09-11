@@ -4,6 +4,7 @@ from app.routes.utils import is_valid_user_id, rate_limit, respond_with
 from app.services.db import get_user
 
 from .assets import (
+    handle_apple_touch_icon,
     handle_favicon_ico,
     handle_logo_png,
     handle_logo_svg,
@@ -27,6 +28,16 @@ async def logo_png():
 @rate_limit(limit=60, period_seconds=60)
 async def favicon_ico(user_id: str | None = None):
     return await handle_favicon_ico()
+
+
+@manifest_bp.route("/apple-touch-icon.png")
+@manifest_bp.route("/apple-touch-icon-precomposed.png")
+@manifest_bp.route("/apple-icon.png")
+@manifest_bp.route("/favicon-32x32.png")
+@manifest_bp.route("/favicon-16x16.png")
+@rate_limit(limit=60, period_seconds=60)
+async def apple_touch_icon():
+    return await handle_apple_touch_icon()
 
 
 @manifest_bp.route("/assets/<filename>")

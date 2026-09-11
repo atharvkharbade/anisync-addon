@@ -52,6 +52,17 @@ async def handle_favicon_ico():
     return await handle_logo_png()
 
 
+async def handle_apple_touch_icon():
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.dirname(os.path.dirname(curr_dir))
+    icon_path = os.path.join(base_dir, "assets", "apple-touch-icon.png")
+    if os.path.exists(icon_path):
+        response = await send_file(icon_path, mimetype="image/png")
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        return response
+    return await handle_favicon_ico()
+
+
 async def handle_serve_asset(filename: str):
     # Sanitize filename: prevent path traversal attacks (BUG #64)
     safe_filename = os.path.basename(filename)

@@ -2,19 +2,17 @@
   <img src="docs/images/logo.png" width="120" alt="AniSync Logo" />
 </p>
 
-# AniSync - MyAnimeList, AniList & Simkl Tracker for Stremio & Nuvio
+# AniSync - MyAnimeList, AniList & Simkl Tracker
 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white)](https://python.org)
 [![Quart Version](https://img.shields.io/badge/quart-0.20.0+-00b4d8.svg)](https://pgjones.gitlab.io/quart/)
 [![Docker Support](https://img.shields.io/badge/docker-ready-2496ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
-[![Stremio Addon](https://img.shields.io/badge/stremio-addon-8a2be2.svg)](https://stremio.com)
-[![Nuvio Addon](https://img.shields.io/badge/nuvio-addon-ff4500.svg)](https://nuvio.tv)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b.svg?logo=ko-fi&logoColor=white)](https://ko-fi.com/atharvkharbade)
 
-> An anime addon for Stremio and Nuvio offering tracking, rich metadata, recommendations, and much more!
+> An anime addon offering tracking, rich metadata, recommendations, and much more!
 
-**AniSync** is an anime addon built for Stremio and Nuvio that connects your tracking accounts (**MyAnimeList**, **AniList**, and **Simkl**) in one place. It syncs your watchlists in real-time, overlays new episode indicators on posters, shows filler warnings and watched tags, and gives you personalized recommendations and discovery catalogs.
+**AniSync** is an anime addon that connects your tracking accounts (**MyAnimeList**, **AniList**, and **Simkl**) in one place. It syncs your watchlists in real-time, overlays new episode indicators on posters, shows filler warnings and watched tags, and gives you personalized recommendations and discovery catalogs.
 
 ---
 
@@ -44,18 +42,18 @@ Connect MyAnimeList, AniList, and Simkl at the same time. AniSync organizes your
 * **Combined Watchlists**: Merges your *Watching*, *Plan to Watch*, *Completed*, *On Hold*, and *Dropped* lists across all connected accounts.
 * **Multi-Account Auto-Merge**: Automatically merges progress across trackers so everything stays up to date.
 
-![Stremio Combined Catalogs](docs/images/Combined_Tracker_Watchlist.png)
+![Combined Catalogs](docs/images/Combined_Tracker_Watchlist.png)
 
 ---
 
 ### 🔍 Universal Anime Search
-Search for any anime directly inside Stremio or Nuvio:
+Search for any anime directly inside your media app:
 * **Rich Metadata & Localized Titles**: Instant results with your selected language (English, Romaji, or Japanese).
 * **Full Stream Compatibility**: Outputs native Kitsu IDs to ensure seamless stream matching across scraper addons.
 * **Custom Placement & Sorting**: Reorder the Search catalog or sort results chronologically by Release Date.
 * **Works for Guest Users**: Search works without connecting a tracking account.
 
-![Stremio Anime Search](docs/images/AniSync_Search.png)
+![Anime Search](docs/images/AniSync_Search.png)
 
 ---
 
@@ -65,7 +63,7 @@ Discover new anime right on your home screen based on what you enjoy:
 * **Gemini AI Insights**: You can optionally add a free Google Gemini API key to get natural language recommendation notes.
 * **3 Dedicated Rows**: *Top Picks for You*, *Inspired by your Favorites*, and *More from your Watchlist*.
 
-![Stremio Recommendations](docs/images/Anime_Recommendations.png)
+![Recommendations](docs/images/Anime_Recommendations.png)
 
 ---
 
@@ -154,7 +152,7 @@ You can install and use AniSync even without logging into any tracking account:
 1. Visit the **[AniSync Configuration Dashboard](https://anisync.qzz.io)**
 2. (Optional) Log in with **MyAnimeList**, **AniList**, or **Simkl** (or continue as Guest).
 3. Choose your preferred title language, metadata provider, poster overlay style, and catalogs.
-4. Click **Install Addon** or copy the **Manifest URL** into Stremio or Nuvio.
+4. Click **Install Addon** or copy the **Manifest URL** into your media app.
 
 ---
 

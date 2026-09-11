@@ -225,9 +225,11 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
             cached_details[str(doc["anilist_id"])] = {
                 "id": doc["anilist_id"],
                 "status": doc.get("status"),
+                "format": doc.get("format"),
                 "nextAiringEpisode": doc.get("nextAiringEpisode"),
                 "averageScore": doc.get("averageScore"),
                 "episodes": doc.get("episodes"),
+                "startDate": doc.get("startDate"),
                 "endDate": doc.get("endDate"),
                 "title": doc.get("title"),
                 "coverImage": doc.get("coverImage") or "",
@@ -246,8 +248,14 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
             media(id_in: $ids, type: ANIME) {
               id
               status
+              format
               averageScore
               episodes
+              startDate {
+                year
+                month
+                day
+              }
               endDate {
                 year
                 month
@@ -294,6 +302,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
                 if not aid:
                     continue
                 status = media.get("status", "")
+                m_format = media.get("format")
                 next_ep = media.get("nextAiringEpisode")
                 avg_score = media.get("averageScore")
                 m_title = media.get("title")
@@ -321,9 +330,11 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
                             "$set": {
                                 "anilist_id": int(aid),
                                 "status": status,
+                                "format": m_format,
                                 "nextAiringEpisode": next_ep,
                                 "averageScore": avg_score,
                                 "episodes": media.get("episodes"),
+                                "startDate": media.get("startDate"),
                                 "endDate": media.get("endDate"),
                                 "title": m_title,
                                 "coverImage": cover_img,

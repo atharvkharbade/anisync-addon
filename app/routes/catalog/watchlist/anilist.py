@@ -123,6 +123,27 @@ async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filter
                         except Exception:
                             pass
 
+            # Detect newly released movie (release date in startDate / endDate)
+            al_format = (media.get("format") or "").upper()
+            is_movie = (al_format == "MOVIE") or (total == 1)
+
+            if is_movie and not recently_finished and progress == 0:
+                start_date = media.get("startDate") or media.get("endDate")
+                if isinstance(start_date, dict):
+                    y = start_date.get("year")
+                    m = start_date.get("month") or 1
+                    d = start_date.get("day") or 1
+                    if y:
+                        try:
+                            dt = datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc)
+                            rel_ts = int(dt.timestamp())
+                            if 0 <= (current_time - rel_ts) <= (604800 + 86400):
+                                recently_finished = True
+                                latest_aired_num = 1
+                                latest_aired_at = rel_ts
+                        except Exception:
+                            pass
+
             has_unwatched = False
             if latest_aired_num > 0:
                 has_unwatched = progress < latest_aired_num
@@ -220,16 +241,19 @@ async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filter
                     or ""
                 )
 
+                al_media_format = (media.get("format") or "tv").lower()
+                is_movie = (al_media_format == "movie") or ((media.get("episodes") or 0) == 1)
+
                 if is_new_ep and enable_new_ep_badge and poster:
                     encoded_url = urllib.parse.quote_plus(poster)
                     badge_style = user.get("badge_style", "modern")
-                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{al_id}_a_22.jpg?url={encoded_url}&badge=new&tracker=anilist&style={badge_style}&v=hd_poster_v1"
+                    badge_type = "movie" if is_movie else "episode"
+                    poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/{al_id}_a_22.jpg?url={encoded_url}&badge=new&badge_type={badge_type}&tracker=anilist&style={badge_style}&v=hd_poster_v1"
 
                 kitsu_id = kitsu_mappings.get(f"anilist:{al_id}")
                 stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"anilist:{al_id}"
 
-                al_media_format = (media.get("format") or "tv").lower()
-                stremio_type = "movie" if al_media_format == "movie" else "series"
+                stremio_type = "movie" if is_movie else "series"
 
                 meta_fields = extract_item_metadata_fields(entry, "anilist", bulk_details=None)
                 metas.append(
