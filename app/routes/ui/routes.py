@@ -97,6 +97,7 @@ async def guest_login():
     }
     store_user(guest_user)
     session["user"] = {"uid": guest_uid, "username": "Guest User", "is_guest": True}
+    session["is_new_user"] = True
     return redirect(url_for("ui.configure"))
 
 
@@ -253,6 +254,7 @@ async def delete_account():
             db.get_collection("sessions").delete_many({"data.user.uid": str(del_uid)})
 
         session.clear()
+        session["account_deleted"] = True
         await flash("User records deleted successfully.", "success")
     except Exception as e:
         logging.error("Failed to delete account for uid=%s: %s", uid, e)

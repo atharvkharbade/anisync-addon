@@ -35,6 +35,7 @@ def resolve_or_create_user(session_obj, tracker_id: str, find_by_tracker_func) -
                 uid = stripped_uid
                 user["uid"] = uid
 
+        is_new_account = not bool(uid)
         if not uid:
             if tracker_id.isdigit() and not db.get_collection("users").find_one({"uid": tracker_id}):
                 uid = tracker_id
@@ -50,6 +51,8 @@ def resolve_or_create_user(session_obj, tracker_id: str, find_by_tracker_func) -
             db.get_collection("users").delete_one({"uid": old_guest_uid})
 
         session_obj["user"] = {"uid": uid}
+        if is_new_account:
+            session_obj["is_new_user"] = True
         if hasattr(session_obj, "permanent"):
             session_obj.permanent = True
 

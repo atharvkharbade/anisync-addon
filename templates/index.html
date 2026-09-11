@@ -200,4 +200,16 @@
         </div>
     </div>
 </div>
+{% if session.pop('account_deleted', False) %}
+<script>
+    try {
+        localStorage.removeItem('anisync_active_tab');
+        Object.keys(localStorage).forEach(function (k) {
+            if (k.startsWith('anisync_active_tab')) {
+                localStorage.removeItem(k);
+            }
+        });
+    } catch (e) {}
+</script>
+{% endif %}
 {% endblock %}

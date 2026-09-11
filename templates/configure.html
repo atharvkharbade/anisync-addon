@@ -3490,7 +3490,7 @@
                 <button type="button" class="btn btn-secondary btn-sm px-3.5 py-2" data-bs-dismiss="modal" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; font-weight: 500; color: #cbd5e1; font-size: 0.85rem;">
                     Cancel
                 </button>
-                <form action="{{ url_for('ui.delete_account') }}" method="POST" class="d-inline mb-0">
+                <form action="{{ url_for('ui.delete_account') }}" method="POST" class="d-inline mb-0" id="deleteAccountForm" onsubmit="try { localStorage.removeItem('anisync_active_tab'); Object.keys(localStorage).forEach(function(k){ if(k.startsWith('anisync_active_tab')) localStorage.removeItem(k); }); } catch(e){}">
                     <input type="hidden" name="user_id" value="{{ user.get('uid', '') }}">
                     <input type="hidden" name="manifest_token" value="{{ user.get('manifest_token', '') }}">
                     <button type="submit" class="btn btn-danger btn-sm px-4 py-2" style="background: #dc2626; border: 1px solid #ef4444; border-radius: 8px; font-weight: 600; font-size: 0.85rem; box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45);">
@@ -3508,6 +3508,7 @@
 {
   "userId": {{ (user.get('manifest_token') or user.get('uid') or '') | tojson }},
   "isGuest": {{ (user.get('is_guest') or False) | tojson }},
+  "isNewUser": {{ (session.pop('is_new_user', False) or False) | tojson }},
   "hasTrackers": {{ ((user.get('mal_access_token') or user.get('mal_token') or user.get('mal_username') or user.get('name') or user.get('anilist_token') or user.get('anilist_username') or user.get('simkl_access_token') or user.get('simkl_token') or user.get('simkl_username')) is not none and (user.get('mal_access_token') or user.get('mal_token') or user.get('mal_username') or user.get('name') or user.get('anilist_token') or user.get('anilist_username') or user.get('simkl_access_token') or user.get('simkl_token') or user.get('simkl_username')) != '') | tojson }},
   "userTrackers": [
     {% set trackers_list = [] %}
@@ -3534,6 +3535,7 @@
     // Global user & catalog state
     window.currentUserId = '';
     window.isGuestUser = false;
+    window.isNewUser = false;
     window.hasTrackersConnected = false;
     window.userTrackersList = [];
     window.catalogConfigs = {};
@@ -3544,6 +3546,7 @@
             const initData = JSON.parse(rawInitEl.textContent || "{}");
             window.currentUserId = initData.userId || '';
             window.isGuestUser = !!initData.isGuest;
+            window.isNewUser = !!initData.isNewUser;
             window.hasTrackersConnected = !!initData.hasTrackers;
             window.userTrackersList = Array.isArray(initData.userTrackers) ? initData.userTrackers : [];
             window.catalogConfigs = initData.catalogConfigs || {};
@@ -3635,6 +3638,10 @@
 
         try {
             localStorage.setItem('anisync_active_tab', tabId);
+            const uid = window.currentUserId || '';
+            if (uid) {
+                localStorage.setItem('anisync_active_tab_' + uid, tabId);
+            }
         } catch (e) {}
 
         if (tabId === 'catalogs' && typeof window.prefetchVisibleCatalogs === 'function') {
@@ -3652,7 +3659,18 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-        const savedTab = localStorage.getItem('anisync_active_tab');
+        const isNewUser = !!window.isNewUser;
+        const uid = window.currentUserId || '';
+        if (isNewUser) {
+            try {
+                localStorage.removeItem('anisync_active_tab');
+                if (uid) {
+                    localStorage.removeItem('anisync_active_tab_' + uid);
+                }
+            } catch (e) {}
+        }
+        const userScopedTab = uid ? localStorage.getItem('anisync_active_tab_' + uid) : null;
+        const savedTab = isNewUser ? null : (userScopedTab || localStorage.getItem('anisync_active_tab'));
         const validTabs = ['trackers', 'appearance', 'catalogs', 'metadata', 'install'];
         const initialTab = (savedTab && validTabs.includes(savedTab)) ? savedTab : 'trackers';
         switchTab(initialTab);
