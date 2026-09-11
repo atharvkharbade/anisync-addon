@@ -17,6 +17,7 @@ def store_user(user):
     return _db_store_user(user)
 
 from .validation import check_gemini_api_key_valid
+from app.routes.catalog.sorting import get_allowed_sorts_for_catalog
 
 POSSIBLE_CATS = [
     "anisync_search",
@@ -202,10 +203,15 @@ async def handle_configure_form(user: dict, form) -> dict | None:
                         if "sort_by" in cfg:
                             sort_by = cfg.get("sort_by", "default")
                             sort_order = cfg.get("sort_order", "desc")
-                            if sort_by != "default":
+                            allowed = get_allowed_sorts_for_catalog(cat_id)
+                            if sort_by != "default" and sort_by in allowed:
                                 catalog_sorts[cat_id] = {"by": sort_by, "order": sort_order}
-                            elif cat_id in catalog_sorts:
-                                del catalog_sorts[cat_id]
+                                catalog_configs[cat_id]["sort_by"] = sort_by
+                                catalog_configs[cat_id]["sort_order"] = sort_order
+                            else:
+                                catalog_sorts.pop(cat_id, None)
+                                catalog_configs[cat_id].pop("sort_by", None)
+                                catalog_configs[cat_id].pop("sort_order", None)
                         if "shuffle" in cfg:
                             catalog_shuffles[cat_id] = bool(cfg["shuffle"])
                         if "dubbed" in cfg:

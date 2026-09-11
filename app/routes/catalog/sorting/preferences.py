@@ -43,6 +43,43 @@ def is_catalog_dubbed_enabled(user, catalog_id: str) -> bool:
     return False
 
 
+def get_allowed_sorts_for_catalog(catalog_id: str) -> list:
+    """
+    Returns the valid, supported sort fields for a specific catalog.
+    Prevents meaningless sorts where 0% metadata exists (which otherwise silently
+    falls back to alphabetical sorting due to tie-breaker rules).
+    """
+    if not catalog_id:
+        return ["default", "score", "release_date", "episodes", "title"]
+
+    # Search: Keep it simple and relevant (relevance default, score, release_date)
+    if catalog_id == "anisync_search":
+        return ["default", "score", "release_date"]
+
+    # Recommendations: Algorithm-ranked; airing_date and last_updated are irrelevant / unavailable
+    if catalog_id in ["anisync_rec", "anisync_loved", "anisync_liked"]:
+        return ["default", "score", "release_date", "episodes", "title"]
+
+    # Airing Discovery: Next airing episode is relevant; last_updated has 0% data on public catalogs
+    if catalog_id in ["anisync_top_airing", "anisync_seasonal", "anisync_schedule"]:
+        return ["default", "score", "release_date", "airing_date", "episodes", "title"]
+
+    # Other Discovery catalogs (Trending, Highest Rated, Most Popular, Spotlight, etc.)
+    # All are static/public catalogs with no user timestamps (0% last_updated) and mostly finished titles (no airing_date)
+    if catalog_id.startswith("anisync_"):
+        return ["default", "score", "release_date", "episodes", "title"]
+
+    # Finished & Dropped User Watchlists:
+    # last_updated is 100% available (user completion/drop date).
+    # airing_date is 0% available because finished/dropped shows do not have upcoming airing episodes.
+    if any(k in catalog_id for k in ["completed", "dropped"]):
+        return ["default", "score", "release_date", "episodes", "title", "last_updated"]
+
+    # Active User Watchlists (watching, plan_to_watch, planning, plantowatch, on_hold, paused, repeating):
+    # All 7 sorts are fully valid and supported with rich user & tracker metadata.
+    return ["default", "score", "release_date", "airing_date", "episodes", "title", "last_updated"]
+
+
 def get_catalog_sorting(user, catalog_id, default_category_key=None, url_filters=None):
     """
     Resolves custom sort settings for a catalog.
@@ -50,11 +87,15 @@ def get_catalog_sorting(user, catalog_id, default_category_key=None, url_filters
     then per-catalog configuration (catalog_configs / catalog_sorts), then falls back to legacy category-wide sort.
     Returns: (is_custom, sort_by, sort_order)
     """
+    allowed = get_allowed_sorts_for_catalog(catalog_id)
+
     if isinstance(url_filters, dict):
         url_sort = url_filters.get("sort_by") or url_filters.get("sort")
         if url_sort and url_sort != "default":
-            url_order = url_filters.get("sort_order") or "desc"
-            return True, url_sort, url_order
+            if url_sort in allowed:
+                url_order = url_filters.get("sort_order") or "desc"
+                return True, url_sort, url_order
+            return False, "default", "desc"
 
     # If shuffle is enabled for this catalog, saved custom sorting is suppressed
     if is_catalog_shuffle_enabled(user, catalog_id):
@@ -64,16 +105,21 @@ def get_catalog_sorting(user, catalog_id, default_category_key=None, url_filters
     if isinstance(cat_cfg, dict):
         cfg_sort = cat_cfg.get("sort_by")
         if cfg_sort and cfg_sort != "default":
-            return True, cfg_sort, cat_cfg.get("sort_order", "desc")
+            if cfg_sort in allowed:
+                return True, cfg_sort, cat_cfg.get("sort_order", "desc")
+            return False, "default", "desc"
 
     cat_sort = (user.get("catalog_sorts") or {}).get(catalog_id)
     if cat_sort and isinstance(cat_sort, dict) and cat_sort.get("by", "default") != "default":
-        return True, cat_sort.get("by", "default"), cat_sort.get("order", "desc")
+        sort_by = cat_sort.get("by", "default")
+        if sort_by in allowed:
+            return True, sort_by, cat_sort.get("order", "desc")
+        return False, "default", "desc"
 
     if user.get("custom_sort_enabled", False) and default_category_key:
         sort_by = user.get(f"custom_sort_{default_category_key}_by", "default")
         sort_order = user.get(f"custom_sort_{default_category_key}_order", "desc")
-        if sort_by != "default":
+        if sort_by != "default" and sort_by in allowed:
             return True, sort_by, sort_order
 
     return False, "default", "desc"

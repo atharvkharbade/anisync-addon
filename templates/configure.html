@@ -4102,6 +4102,26 @@
             }
         });
 
+        function getAllowedSortsForCatalog(catId) {
+            if (!catId) return ['default', 'score', 'release_date', 'episodes', 'title'];
+            if (catId === 'anisync_search') {
+                return ['default', 'score', 'release_date'];
+            }
+            if (['anisync_rec', 'anisync_loved', 'anisync_liked'].includes(catId)) {
+                return ['default', 'score', 'release_date', 'episodes', 'title'];
+            }
+            if (['anisync_top_airing', 'anisync_seasonal', 'anisync_schedule'].includes(catId)) {
+                return ['default', 'score', 'release_date', 'airing_date', 'episodes', 'title'];
+            }
+            if (catId.startsWith('anisync_')) {
+                return ['default', 'score', 'release_date', 'episodes', 'title'];
+            }
+            if (catId.includes('completed') || catId.includes('dropped')) {
+                return ['default', 'score', 'release_date', 'episodes', 'title', 'last_updated'];
+            }
+            return ['default', 'score', 'release_date', 'airing_date', 'episodes', 'title', 'last_updated'];
+        }
+
         // Ensure all catalogs in defaultCatalogNames have valid config objects
         Object.keys(defaultCatalogNames).forEach(catId => {
             if (!catalogConfigs[catId]) {
@@ -4119,6 +4139,11 @@
             if (!catalogConfigs[catId].sort_by) {
                 catalogConfigs[catId].sort_by = (legacySorts[catId] && legacySorts[catId].by) || 'default';
                 catalogConfigs[catId].sort_order = (legacySorts[catId] && legacySorts[catId].order) || 'desc';
+            }
+            const allowed = getAllowedSortsForCatalog(catId);
+            if (!allowed.includes(catalogConfigs[catId].sort_by)) {
+                catalogConfigs[catId].sort_by = 'default';
+                delete catalogConfigs[catId].sort_order;
             }
             if (catalogConfigs[catId].shuffle === undefined) {
                 catalogConfigs[catId].shuffle = legacyShuffles[catId] !== undefined ? Boolean(legacyShuffles[catId]) : false;
@@ -4258,20 +4283,16 @@
             const dubLang = cfg.dub_language || 'english';
             updateAudioUI(isDubbed ? 'dubbed' : 'all', dubLang);
 
-            // Filter sort options for search vs regular catalogs
-            const SEARCH_ALLOWED_SORTS = ['default', 'score', 'release_date'];
+            // Filter sort options according to catalog type and metadata availability
+            const allowedSorts = getAllowedSortsForCatalog(catId);
             const sortWrapper = document.querySelector('.custom-select-wrapper[data-input-id="modal_sort_by"]');
             if (sortWrapper) {
                 sortWrapper.querySelectorAll('.custom-option-item').forEach(opt => {
                     const val = opt.getAttribute('data-value');
-                    if (catId === 'anisync_search') {
-                        opt.classList.toggle('d-none', !SEARCH_ALLOWED_SORTS.includes(val));
-                    } else {
-                        opt.classList.remove('d-none');
-                    }
+                    opt.classList.toggle('d-none', !allowedSorts.includes(val));
                 });
             }
-            if (catId === 'anisync_search' && cfg.sort_by && !SEARCH_ALLOWED_SORTS.includes(cfg.sort_by)) {
+            if (cfg.sort_by && !allowedSorts.includes(cfg.sort_by)) {
                 cfg.sort_by = 'default';
                 delete cfg.sort_order;
             }
@@ -4409,8 +4430,8 @@
             const textEl = wrapper.querySelector('.custom-select-text');
             const optionItems = wrapper.querySelectorAll('.custom-option-item');
             let matchedOption = wrapper.querySelector(`.custom-option-item[data-value="${val}"]`);
-            if (!matchedOption && optionItems.length > 0) {
-                matchedOption = optionItems[0];
+            if ((!matchedOption || matchedOption.classList.contains('d-none')) && optionItems.length > 0) {
+                matchedOption = wrapper.querySelector('.custom-option-item:not(.d-none)') || optionItems[0];
             }
             if (matchedOption) {
                 optionItems.forEach(opt => opt.classList.remove('selected'));
@@ -5177,6 +5198,10 @@
 
         window.onModalSortByChange = function (val) {
             if (!activeModalCatalogId) return;
+            const allowed = getAllowedSortsForCatalog(activeModalCatalogId);
+            if (val !== 'default' && !allowed.includes(val)) {
+                val = 'default';
+            }
             if (!catalogConfigs[activeModalCatalogId]) catalogConfigs[activeModalCatalogId] = {};
             if (val === 'default') {
                 delete catalogConfigs[activeModalCatalogId].sort_by;
