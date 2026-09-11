@@ -3435,7 +3435,7 @@
                                     <span class="input-group-text bg-transparent border-0 text-secondary ps-2 pe-1" style="font-size: 0.78rem;">
                                         <i class="fa-solid fa-magnifying-glass"></i>
                                     </span>
-                                    <input type="text" id="modalSearchPreviewInput" class="form-control bg-transparent border-0 text-light py-1 px-2 shadow-none" placeholder="Search anime (e.g. Frieren, Solo Leveling)..." style="font-size: 0.8rem;" value="Frieren" oninput="onModalSearchPreviewInput()">
+                                    <input type="text" id="modalSearchPreviewInput" class="form-control bg-transparent border-0 text-light py-1 px-2 shadow-none" placeholder="Search anime (e.g. Haikyu!!, Solo Leveling)..." style="font-size: 0.8rem;" value="Haikyu!!" oninput="onModalSearchPreviewInput()">
                                     <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none px-2 py-0 border-0" id="modalSearchPreviewClear" onclick="clearModalSearchPreview()" style="font-size: 0.75rem;">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
@@ -4267,7 +4267,7 @@
             if (catId === 'anisync_search') {
                 const searchInput = document.getElementById('modalSearchPreviewInput');
                 if (searchInput && !searchInput.value.trim()) {
-                    searchInput.value = 'Frieren';
+                    searchInput.value = 'Haikyu!!';
                 }
             }
 
@@ -4587,7 +4587,7 @@
         function fetchCatalogItems(catId) {
             if (catId === 'anisync_search') {
                 const searchInput = document.getElementById('modalSearchPreviewInput');
-                const query = (searchInput ? searchInput.value.trim() : '') || 'Frieren';
+                const query = (searchInput ? searchInput.value.trim() : '') || 'Haikyu!!';
                 return fetchSearchCatalogItems(query);
             }
             if (catalogItemsCache[catId]) {
@@ -4660,7 +4660,7 @@
 
         function fetchSearchCatalogItems(query) {
             query = (query !== null && query !== undefined ? query : '').trim();
-            if (!query) query = 'Frieren';
+            if (!query) query = 'Haikyu!!';
             const cacheKey = 'search_' + query.toLowerCase();
             if (catalogItemsCache[cacheKey]) {
                 const cachedItems = catalogItemsCache[cacheKey];
@@ -4679,7 +4679,7 @@
                 })
                 .then(data => {
                     const metas = (data && data.metas) || [];
-                    if (metas.length === 0 && (!query || query.toLowerCase() === 'frieren')) {
+                    if (metas.length === 0 && (!query || query.toLowerCase() === 'haikyu!!' || query.toLowerCase() === 'haikyuu!!' || query.toLowerCase() === 'frieren')) {
                         const sampleFallback = PREVIEW_ANIME_ITEMS.map(i => ({ ...i, is_sample_fallback: true }));
                         catalogItemsCache[cacheKey] = sampleFallback;
                         catalogItemsCache['anisync_search'] = sampleFallback;
@@ -4868,7 +4868,7 @@
 
             if (isSearch) {
                 const searchInput = document.getElementById('modalSearchPreviewInput');
-                const query = (searchQuery !== null ? searchQuery : (searchInput ? searchInput.value.trim() : 'Frieren')) || 'Frieren';
+                const query = (searchQuery !== null ? searchQuery : (searchInput ? searchInput.value.trim() : 'Haikyu!!')) || 'Haikyu!!';
                 const cacheKey = 'search_' + query.toLowerCase();
 
                 if (catalogItemsCache[cacheKey]) {
@@ -5183,7 +5183,7 @@
             if (!activeModalCatalogId) return PREVIEW_ANIME_ITEMS;
             if (activeModalCatalogId === 'anisync_search') {
                 const searchInput = document.getElementById('modalSearchPreviewInput');
-                const query = (searchInput ? searchInput.value.trim() : '') || 'Frieren';
+                const query = (searchInput ? searchInput.value.trim() : '') || 'Haikyu!!';
                 const cacheKey = 'search_' + query.toLowerCase();
                 if (catalogItemsCache[cacheKey] !== undefined) {
                     return catalogItemsCache[cacheKey];
