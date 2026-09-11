@@ -18,7 +18,8 @@ from app.services.recommendations import (
 
 
 async def handle_recommendations_catalog(user, user_id, catalog_type, catalog_id, filters, extras=""):
-    if not user.get("enable_recommendations", False):
+    is_preview = bool(request.args.get("preview") or request.args.get("limit"))
+    if not is_preview and not user.get("enable_recommendations", False):
         return await respond_with({"metas": []})
 
     cache = get_cached_recommendations(user_id)

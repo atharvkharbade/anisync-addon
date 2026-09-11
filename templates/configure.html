@@ -4622,7 +4622,7 @@
                 return Promise.resolve(PREVIEW_ANIME_ITEMS);
             }
 
-            let fetchUrl = `/${currentUserId}/catalog/anime/${catId}.json?limit=50&_ts=${Date.now()}`;
+            let fetchUrl = `/${currentUserId}/catalog/anime/${catId}.json?limit=50&preview=1&_ts=${Date.now()}`;
             if (isDubbed) {
                 fetchUrl += `&audio=dubbed&dub_language=${encodeURIComponent(normLang)}`;
             } else {
@@ -4967,7 +4967,9 @@
                 const items = catalogItemsCache[cacheKey];
                 if (countEl) {
                     if (items.length > 0 && items[0].is_sample_fallback) {
-                        countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>Sample preview (0 titles in list)</span>`;
+                        const isWatchlist = catId.startsWith('comb_') || catId.startsWith('mal_') || catId.startsWith('anilist_') || catId.startsWith('simkl_');
+                        const emptyDesc = isWatchlist ? 'Sample preview (0 in watchlist)' : 'Sample preview';
+                        countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>${emptyDesc}</span>`;
                     } else {
                         const countText = items.length >= 50
                             ? (isDubbed ? `Showing 50 ${dubLangTitle} dubbed titles` : `Showing 50 titles`)
@@ -4990,7 +4992,9 @@
                 if (activeModalCatalogId !== catId) return;
                 if (countEl) {
                     if (items.length > 0 && items[0].is_sample_fallback) {
-                        countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>Sample preview (0 titles in list)</span>`;
+                        const isWatchlist = catId.startsWith('comb_') || catId.startsWith('mal_') || catId.startsWith('anilist_') || catId.startsWith('simkl_');
+                        const emptyDesc = isWatchlist ? 'Sample preview (0 in watchlist)' : 'Sample preview';
+                        countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>${emptyDesc}</span>`;
                     } else {
                         const countText = items.length >= 50
                             ? (isDubbed ? `Showing 50 ${dubLangTitle} dubbed titles` : `Showing 50 titles`)
