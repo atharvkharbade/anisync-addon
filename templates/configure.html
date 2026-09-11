@@ -2361,7 +2361,7 @@
                                         <span class="visually-hidden">Loading...</span>
                                     </div>
                                 </div>
-                                <img id="artworkPreviewImg" src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg" alt="Preview Poster" class="artwork-poster-img">
+                                <img id="artworkPreviewImg" src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-LHBAeoZDIsnF.jpg" alt="Preview Poster" class="artwork-poster-img" referrerpolicy="no-referrer">
                             </div>
                             <button type="button" class="btn-poster-nav btn-poster-next" id="btnPreviewNext" onclick="navigateArtworkSample(1)" title="Next Anime">
                                 <i class="fa-solid fa-chevron-right"></i>
@@ -4935,6 +4935,22 @@
             return arr;
         }
 
+        const PREVIEW_FALLBACK_SVG_LANDSCAPE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 180' width='320' height='180'%3E%3Cdefs%3E%3ClinearGradient id='bgl' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231e1e2e'/%3E%3Cstop offset='100%25' stop-color='%2311111b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23bgl)'/%3E%3Cg fill='%236c7086' opacity='0.4'%3E%3Cpath d='M160 70c-11 0-20 9-20 20s9 20 20 20 20-9 20-20-9-20-20-20zm-35 60c-8 0-14 6-14 14v6h98v-6c0-8-6-14-14-14h-70z'/%3E%3C/g%3E%3C/svg%3E";
+        const PREVIEW_FALLBACK_SVG_PORTRAIT = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 450' width='300' height='450'%3E%3Cdefs%3E%3ClinearGradient id='bgp' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231e1e2e'/%3E%3Cstop offset='100%25' stop-color='%2311111b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23bgp)'/%3E%3Cg fill='%236c7086' opacity='0.4'%3E%3Cpath d='M150 180c-16.5 0-30 13.5-30 30s13.5 30 30 30 30-13.5 30-30-13.5-30-30-30zm-50 90c-11 0-20 9-20 20v10h140v-10c0-11-9-20-20-20H100z'/%3E%3C/g%3E%3C/svg%3E";
+
+        window.handlePreviewImgError = function (img) {
+            if (!img) return;
+            const cleanSrc = img.getAttribute('data-clean-src');
+            if (cleanSrc && !img.dataset.fallbackRetried && img.src !== cleanSrc) {
+                img.dataset.fallbackRetried = '1';
+                img.src = cleanSrc;
+            } else {
+                img.onerror = null;
+                const isLandscape = img.closest('.preview-grid')?.classList.contains('landscape');
+                img.src = isLandscape ? PREVIEW_FALLBACK_SVG_LANDSCAPE : PREVIEW_FALLBACK_SVG_PORTRAIT;
+            }
+        };
+
         function updateModalLivePreview(animate = false) {
             if (!activeModalCatalogId) return;
             const cfg = catalogConfigs[activeModalCatalogId] || {};
@@ -4977,7 +4993,7 @@
                     return;
                 }
 
-                const fallbackCover = 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/default.jpg';
+                const fallbackCover = shape === 'landscape' ? PREVIEW_FALLBACK_SVG_LANDSCAPE : PREVIEW_FALLBACK_SVG_PORTRAIT;
 
                 const escapeAttr = (str) => (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
@@ -5038,10 +5054,9 @@
                         const cleanSrc = item.clean_poster || item.cover || fallbackCover;
                         const safeTitle = escapeAttr(item.title);
                         const cardTooltip = getCardTooltip(item);
-                        const safeCleanSrc = cleanSrc.replace(/'/g, "\\'");
                         return `
                             <div class="preview-card" title="${cardTooltip}">
-                                <img src="${src}" alt="${safeTitle}" loading="lazy" onerror="if (this.src !== '${safeCleanSrc}') { this.src = '${safeCleanSrc}'; } else { this.onerror=null; this.src='${fallbackCover}'; }" />
+                                <img src="${src}" alt="${safeTitle}" loading="eager" referrerpolicy="no-referrer" data-clean-src="${escapeAttr(cleanSrc)}" onerror="handlePreviewImgError(this)" />
                             </div>
                         `;
                     }).join('');
@@ -5052,10 +5067,9 @@
                         const cleanSrc = item.clean_poster || item.cover || fallbackCover;
                         const safeTitle = escapeAttr(item.title);
                         const cardTooltip = getCardTooltip(item);
-                        const safeCleanSrc = cleanSrc.replace(/'/g, "\\'");
                         return `
                             <div class="preview-card" title="${cardTooltip}">
-                                <img src="${src}" alt="${safeTitle}" loading="lazy" onerror="if (this.src !== '${safeCleanSrc}') { this.src = '${safeCleanSrc}'; } else { this.onerror=null; this.src='${fallbackCover}'; }" />
+                                <img src="${src}" alt="${safeTitle}" loading="eager" referrerpolicy="no-referrer" data-clean-src="${escapeAttr(cleanSrc)}" onerror="handlePreviewImgError(this)" />
                             </div>
                         `;
                     }).join('');
