@@ -414,29 +414,40 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
     for m in formatted_metas:
         bg = m.get("background")
         current_poster = str(m.get("poster") or "")
+        clean_poster = str(m.get("clean_poster") or "")
         has_badge = bool(m.get("is_badge") or ("/poster/" in current_poster and "badge=new" in current_poster))
 
         landscape_badge_url = None
         clean_bg = None
         if bg and isinstance(bg, str) and bg.strip():
             clean_bg = bg.strip()
-            if has_badge:
-                try:
-                    base_u = m.get("badge_base_url")
-                    b_params = dict(m.get("badge_query_params") or {})
-                    if not base_u:
-                        parsed = urllib.parse.urlparse(current_poster)
-                        base_u = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-                        b_params = {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query).items()}
 
-                    b_params["url"] = clean_bg
-                    b_params["shape"] = "landscape"
-                    b_params["v"] = "hd_land_v2"
-                    if "_land" not in base_u and base_u.endswith(".jpg"):
-                        base_u = base_u[:-4] + "_land.jpg"
-                    landscape_badge_url = f"{base_u}?{urllib.parse.urlencode(b_params)}"
-                except Exception as e:
-                    logging.warning("Failed to construct landscape badge URL: %s", e)
+        base_bg = clean_bg or clean_poster or (current_poster if not has_badge else None)
+        if has_badge:
+            try:
+                base_u = m.get("badge_base_url")
+                b_params = dict(m.get("badge_query_params") or {})
+                if not base_u:
+                    parsed = urllib.parse.urlparse(current_poster)
+                    base_u = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+                    b_params = {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query).items()}
+
+                if base_bg:
+                    b_params["url"] = base_bg
+                b_params["shape"] = "landscape"
+                b_params["v"] = "hd_land_v2"
+                if "_land" not in base_u and base_u.endswith(".jpg"):
+                    base_u = base_u[:-4] + "_land.jpg"
+                landscape_badge_url = f"{base_u}?{urllib.parse.urlencode(b_params)}"
+            except Exception as e:
+                logging.warning("Failed to construct landscape badge URL: %s", e)
+
+        # Explicitly retain both portrait and landscape versions so preview modals and clients can toggle cleanly
+        portrait_poster = current_poster
+        landscape_poster = landscape_badge_url if has_badge else (clean_bg or clean_poster or current_poster)
+
+        m["portrait_poster"] = portrait_poster
+        m["landscape_poster"] = landscape_poster
 
         # Update background with landscape badge so clients (such as Nuvio) that force
         # landscape row views will display the new episode badge on the 16:9 backdrop card
@@ -445,9 +456,9 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
 
         if is_landscape:
             m["posterShape"] = "landscape"
-            if clean_bg:
-                m["poster"] = landscape_badge_url if landscape_badge_url else clean_bg
+            m["poster"] = landscape_poster
         else:
             m["posterShape"] = "poster"
+            m["poster"] = portrait_poster
 
     return formatted_metas

@@ -63,6 +63,27 @@ def _render_modified_poster_sync(
     aspect_ratio = w / float(h) if h > 0 else 1.0
     is_landscape = (shape == "landscape") or (aspect_ratio >= 1.25)
 
+    # When landscape is requested for a portrait poster (e.g. movies without wide fanart),
+    # frame the poster into a native 16:9 canvas with blurred cinematic background
+    if is_landscape and aspect_ratio < 1.25 and h > 0:
+        target_w = int(h * 16.0 / 9.0)
+        resample_filter = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
+        scale_bg = max(target_w / float(w), h / float(h))
+        scaled_w = max(target_w, int(w * scale_bg))
+        scaled_h = max(h, int(h * scale_bg))
+        bg_fill = img.resize((scaled_w, scaled_h), resample_filter)
+        crop_x = max(0, int((scaled_w - target_w) / 2))
+        crop_y = max(0, int((scaled_h - h) / 2))
+        bg_cropped = bg_fill.crop((crop_x, crop_y, crop_x + target_w, crop_y + h))
+        bg_blurred = bg_cropped.filter(ImageFilter.GaussianBlur(radius=max(15, int(20 * (h / 350.0)))))
+        dark_dim = Image.new("RGBA", (target_w, h), (0, 0, 0, 95))
+        bg_blurred.paste(dark_dim, (0, 0), dark_dim)
+        paste_x = int((target_w - w) / 2)
+        bg_blurred.paste(img, (paste_x, 0))
+        img = bg_blurred
+        w, h = target_w, h
+        aspect_ratio = 16.0 / 9.0
+
     if is_landscape:
         # Scale proportionally to height for 16:9 landscape banners (calibrated for widescreen card height in Stremio/Nuvio)
         scale = h / 195.0

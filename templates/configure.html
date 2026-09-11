@@ -4664,7 +4664,8 @@
                         const isBadge = !!m.is_badge || (typeof m.poster === 'string' && m.poster.includes('/poster/') && m.poster.includes('badge=new'));
                         return {
                             title: m.name || m.title || '',
-                            cover: m.poster || m.cover || '',
+                            cover: m.portrait_poster || (m.posterShape === 'landscape' ? (m.clean_poster || m.cover || m.poster) : m.poster) || m.cover || '',
+                            landscape_poster: m.landscape_poster || m.background || defaultLandscape,
                             clean_poster: m.clean_poster || m.cover || m.poster || '',
                             art_poster: m.art_poster || '',
                             imdb_id: m.imdb_id || '',
@@ -5111,14 +5112,16 @@
                 const escapeAttr = (str) => (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
                 const resolveItemPoster = (item) => {
-                    if (item.is_badge) {
-                        if (shape === 'landscape') {
-                            return item.banner || item.cover || fallbackCover;
-                        }
-                        return item.cover || item.clean_poster || fallbackCover;
-                    }
                     if (shape === 'landscape') {
-                        return item.banner || item.cover || fallbackCover;
+                        if (item.is_badge) {
+                            return item.landscape_poster || item.banner || item.cover || fallbackCover;
+                        }
+                        return item.landscape_poster || item.banner || item.clean_poster || item.cover || fallbackCover;
+                    }
+
+                    // Portrait shape
+                    if (item.is_badge) {
+                        return item.cover || item.clean_poster || fallbackCover;
                     }
                     if (!isArtEnabled) {
                         return item.clean_poster || item.cover || fallbackCover;
@@ -5164,7 +5167,7 @@
                     previewGrid.className = 'preview-grid landscape';
                     previewGrid.innerHTML = listToRender.slice(0, 50).map(item => {
                         const src = resolveItemPoster(item);
-                        const cleanSrc = item.clean_poster || item.cover || fallbackCover;
+                        const cleanSrc = item.banner || item.landscape_poster || item.clean_poster || fallbackCover;
                         const safeTitle = escapeAttr(item.title);
                         const cardTooltip = getCardTooltip(item);
                         return `

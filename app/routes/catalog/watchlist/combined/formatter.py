@@ -108,11 +108,30 @@ def format_combined_page_metas(
 
             if is_new_ep and enable_new_ep_badge and poster:
                 badge_id = item.get("mal_id") or item.get("anilist_id") or item.get("simkl_id") or "new"
-                badge_tracker = "mal" if item.get("mal_id") else ("anilist" if item.get("anilist_id") else "simkl")
+
+                # Identify all trackers that have this anime in the user's watchlist
+                matched_trackers = []
+                if item.get("mal_item"):
+                    matched_trackers.append("mal")
+                if item.get("anilist_item"):
+                    matched_trackers.append("anilist")
+                if item.get("simkl_item"):
+                    matched_trackers.append("simkl")
+
+                # Fallback if specific item dicts were not retained
+                if not matched_trackers:
+                    if item.get("mal_id"):
+                        matched_trackers.append("mal")
+                    if item.get("anilist_id"):
+                        matched_trackers.append("anilist")
+                    if item.get("simkl_id"):
+                        matched_trackers.append("simkl")
+
+                badge_tracker = "+".join(matched_trackers) if matched_trackers else "mal"
                 encoded_url = urllib.parse.quote_plus(poster)
                 badge_style = user.get("badge_style", "modern")
                 badge_type = "movie" if is_movie else "episode"
-                poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/comb_{badge_id}_c_22.jpg?url={encoded_url}&badge=new&badge_type={badge_type}&tracker={badge_tracker}&style={badge_style}&v=hd_poster_v1"
+                poster = f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/{user_id}/poster/comb_{badge_id}_c_22.jpg?url={encoded_url}&badge=new&badge_type={badge_type}&tracker={badge_tracker}&style={badge_style}&v=hd_poster_v2"
 
             mal_id = item.get("mal_id")
             anilist_id = item.get("anilist_id")
