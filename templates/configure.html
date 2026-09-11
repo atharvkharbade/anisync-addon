@@ -4258,6 +4258,24 @@
             const dubLang = cfg.dub_language || 'english';
             updateAudioUI(isDubbed ? 'dubbed' : 'all', dubLang);
 
+            // Filter sort options for search vs regular catalogs
+            const SEARCH_ALLOWED_SORTS = ['default', 'score', 'release_date'];
+            const sortWrapper = document.querySelector('.custom-select-wrapper[data-input-id="modal_sort_by"]');
+            if (sortWrapper) {
+                sortWrapper.querySelectorAll('.custom-option-item').forEach(opt => {
+                    const val = opt.getAttribute('data-value');
+                    if (catId === 'anisync_search') {
+                        opt.classList.toggle('d-none', !SEARCH_ALLOWED_SORTS.includes(val));
+                    } else {
+                        opt.classList.remove('d-none');
+                    }
+                });
+            }
+            if (catId === 'anisync_search' && cfg.sort_by && !SEARCH_ALLOWED_SORTS.includes(cfg.sort_by)) {
+                cfg.sort_by = 'default';
+                delete cfg.sort_order;
+            }
+
             // Sort Custom Dropdown & Order
             updateModalSortDropdown(cfg.sort_by || 'default');
             updateSortOrderUI(cfg.sort_order || 'desc', cfg.sort_by || 'default');
@@ -4658,6 +4676,23 @@
                             ? m.background
                             : (m.imdb_id ? `https://images.metahub.space/background/medium/${m.imdb_id}/img` : (m.background || m.poster || m.cover || ''));
                         const isBadge = !!m.is_badge || (typeof m.poster === 'string' && m.poster.includes('/poster/') && m.poster.includes('badge=new'));
+                        let yr = parseInt(m.year) || 0;
+                        let dateVal = parseInt(m.date_val) || 0;
+                        const relDate = m.release_date || (m.start_date ? String(m.start_date) : '');
+                        if (!dateVal && relDate) {
+                            const p = relDate.split('-');
+                            if (p.length >= 1 && !isNaN(parseInt(p[0]))) {
+                                const y = parseInt(p[0]);
+                                const mo = p.length >= 2 && !isNaN(parseInt(p[1])) ? parseInt(p[1]) : 0;
+                                const da = p.length >= 3 && !isNaN(parseInt(p[2])) ? parseInt(p[2]) : 0;
+                                dateVal = y * 10000 + mo * 100 + da;
+                                if (!yr) yr = y;
+                            }
+                        }
+                        if (!dateVal && yr) {
+                            dateVal = yr * 10000;
+                        }
+
                         return {
                             title: m.name || m.title || '',
                             cover: m.poster || m.cover || '',
@@ -4670,7 +4705,9 @@
                             airing_date: parseInt(m.airing_at) || 0,
                             next_episode: parseInt(m.next_episode) || 0,
                             episodes: eps,
-                            year: parseInt(m.year) || 0,
+                            year: yr,
+                            date_val: dateVal,
+                            release_date: relDate || (yr ? String(yr) : ''),
                             updated_at: parseInt(m.updated_at) || 0
                         };
                     });
@@ -4726,8 +4763,8 @@
                         aVal = parseFloat(a.score) || 0;
                         bVal = parseFloat(b.score) || 0;
                     } else if (sortBy === 'release_date' || sortBy === 'year') {
-                        aVal = parseInt(a.year) || 0;
-                        bVal = parseInt(b.year) || 0;
+                        aVal = parseInt(a.date_val || (a.year ? a.year * 10000 : 0)) || 0;
+                        bVal = parseInt(b.date_val || (b.year ? b.year * 10000 : 0)) || 0;
                     } else if (sortBy === 'airing_date') {
                         aVal = parseInt(a.airing_date) || 0;
                         bVal = parseInt(b.airing_date) || 0;
@@ -4965,7 +5002,7 @@
                     const curSort = cfg.sort_by || 'default';
                     let extra = '';
                     if (curSort === 'score') extra = `★ ${item.score}`;
-                    else if (curSort === 'release_date' || curSort === 'year') extra = `${item.year || 'N/A'}`;
+                    else if (curSort === 'release_date' || curSort === 'year') extra = `${item.release_date || item.year || 'N/A'}`;
                     else if (curSort === 'episodes') extra = `${item.episodes || 0} eps`;
                     else if (curSort === 'airing_date') {
                         if (item.airing_date) {

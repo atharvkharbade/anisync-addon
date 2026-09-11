@@ -234,11 +234,27 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     if not isinstance(show_obj, dict):
                         show_obj = {}
                     yr = int(show_obj.get("year", 0) or 0)
+            if isinstance(item, dict):
+                d_val = item.get("date_val")
+                if d_val:
+                    try:
+                        return int(d_val)
+                    except Exception:
+                        pass
+                rel_d = str(item.get("release_date") or item.get("start_date") or "")
+                if rel_d and len(rel_d) >= 4 and rel_d[:4].isdigit():
+                    parts = rel_d.split("-")
+                    y = int(parts[0])
+                    mo = int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else 0
+                    da = int(parts[2]) if len(parts) >= 3 and parts[2].isdigit() else 0
+                    return y * 10000 + mo * 100 + da
             if not yr and isinstance(item, dict):
                 try:
                     yr = int(item.get("year") or item.get("releaseInfo") or 0)
                 except Exception:
                     yr = 0
+            if yr > 0:
+                return yr * 10000
             return yr
 
         elif sort_by in ["episodes", "total_episodes"]:

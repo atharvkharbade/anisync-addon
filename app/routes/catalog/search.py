@@ -46,12 +46,16 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
     try:
         cached = cache_col.find_one({"query": norm_search_query, "offset": offset})
         if cached and cached.get("expires_at") > now:
-            processed_metas = await _process_search_metas(cached["metas"], user, catalog_id, filters)
-            return await respond_with(
-                {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
-                max_age=1800,
-                stale_while_revalidate=3600,
-            )
+            c_metas = cached.get("metas") or []
+            if c_metas and c_metas[0].get("year") is not None and c_metas[0].get("score") is not None and c_metas[0].get("date_val") is not None:
+                processed_metas = await _process_search_metas(c_metas, user, catalog_id, filters)
+                return await respond_with(
+                    {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
+                    max_age=1800,
+                    stale_while_revalidate=3600,
+                )
+            else:
+                cached = None
     except Exception as e:
         logging.error("Failed to query kitsu_search_cache: %s", e)
         cached = None
@@ -107,10 +111,16 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                     except (ValueError, TypeError):
                         score_val = 0.0
 
-                start_date = attrs.get("startDate") or ""
+                start_date = str(attrs.get("startDate") or "").strip()
                 year_val = 0
-                if start_date and len(start_date) >= 4 and start_date[:4].isdigit():
-                    year_val = int(start_date[:4])
+                date_val = 0
+                if start_date:
+                    parts = start_date.split("-")
+                    if len(parts) >= 1 and parts[0].isdigit():
+                        year_val = int(parts[0])
+                        m_num = int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else 0
+                        d_num = int(parts[2]) if len(parts) >= 3 and parts[2].isdigit() else 0
+                        date_val = year_val * 10000 + m_num * 100 + d_num
 
                 ep_count = int(attrs.get("episodeCount") or 0)
 
@@ -128,6 +138,9 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                         "nsfw": attrs.get("nsfw"),
                         "score": score_val,
                         "year": year_val,
+                        "date_val": date_val,
+                        "release_date": start_date,
+                        "releaseInfo": str(year_val) if year_val else None,
                         "episodes": ep_count,
                     }
                 )
@@ -321,7 +334,10 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                             "ageRating": "R18" if m.get("isAdult") else None,
                             "nsfw": bool(m.get("isAdult")),
                             "score": round((m.get("averageScore") or 0) / 10.0, 1),
-                            "year": m.get("seasonYear") or (m.get("startDate") or {}).get("year") or 0,
+                            "year": (m.get("seasonYear") or (m.get("startDate") or {}).get("year") or 0),
+                            "date_val": ((m.get("startDate") or {}).get("year", 0) * 10000 + (m.get("startDate") or {}).get("month", 0) * 100 + (m.get("startDate") or {}).get("day", 0)) if (m.get("startDate") or {}).get("year") else ((m.get("seasonYear") or 0) * 10000),
+                            "release_date": f"{(m.get('startDate') or {}).get('year', 0):04d}-{(m.get('startDate') or {}).get('month', 0):02d}-{(m.get('startDate') or {}).get('day', 0):02d}" if (m.get("startDate") or {}).get("year") else (str(m.get("seasonYear")) if m.get("seasonYear") else ""),
+                            "releaseInfo": str(m.get("seasonYear") or (m.get("startDate") or {}).get("year")) if (m.get("seasonYear") or (m.get("startDate") or {}).get("year")) else None,
                             "episodes": m.get("episodes") or 0,
                         }
                     )
