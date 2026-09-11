@@ -47,14 +47,18 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
         cached = cache_col.find_one({"query": norm_search_query, "offset": offset})
         if cached and cached.get("expires_at") > now:
             c_metas = cached.get("metas") or []
-            if c_metas and c_metas[0].get("year") is not None and c_metas[0].get("score") is not None and c_metas[0].get("date_val") is not None:
+            if c_metas and all(m.get("date_val") is not None and m.get("score") is not None and m.get("year") is not None for m in c_metas):
                 processed_metas = await _process_search_metas(c_metas, user, catalog_id, filters)
                 return await respond_with(
                     {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
-                    max_age=1800,
-                    stale_while_revalidate=3600,
+                    max_age=60,
+                    stale_while_revalidate=120,
                 )
             else:
+                try:
+                    cache_col.delete_one({"_id": cached["_id"]})
+                except Exception:
+                    pass
                 cached = None
     except Exception as e:
         logging.error("Failed to query kitsu_search_cache: %s", e)
@@ -77,6 +81,8 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
             for item in data:
                 attrs = item.get("attributes", {})
                 subtype = (attrs.get("subtype") or "tv").lower()
+                if subtype == "music":
+                    continue
                 item_type = "movie" if subtype == "movie" else "series"
 
                 titles = attrs.get("titles", {})
@@ -283,6 +289,8 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                 existing_ids = {m["id"] for m in metas}
                 fallback_metas = []
                 for m in al_data:
+                    if (m.get("format") or "").upper() == "MUSIC":
+                        continue
                     al_id = str(m.get("id"))
                     mal_id = str(m["idMal"]) if m.get("idMal") else None
 
@@ -370,13 +378,13 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
         processed_metas = await _process_search_metas(cached["metas"], user, catalog_id, filters)
         return await respond_with(
             {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
-            max_age=1800,
-            stale_while_revalidate=3600,
+            max_age=60,
+            stale_while_revalidate=120,
         )
 
     processed_metas = await _process_search_metas(metas, user, catalog_id, filters)
     return await respond_with(
         {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
-        max_age=1800,
-        stale_while_revalidate=3600,
+        max_age=60,
+        stale_while_revalidate=120,
     )

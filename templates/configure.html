@@ -4642,13 +4642,16 @@
             if (!query) query = 'Frieren';
             const cacheKey = 'search_' + query.toLowerCase();
             if (catalogItemsCache[cacheKey]) {
-                return Promise.resolve(catalogItemsCache[cacheKey]);
+                const cachedItems = catalogItemsCache[cacheKey];
+                if (Array.isArray(cachedItems) && cachedItems.length > 0 && (cachedItems[0].date_val || cachedItems[0].year || (cachedItems[0].score && cachedItems[0].score !== '0.0'))) {
+                    return Promise.resolve(cachedItems);
+                }
             }
             if (!currentUserId) {
                 return Promise.resolve(PREVIEW_ANIME_ITEMS);
             }
-            const fetchUrl = `/${currentUserId}/catalog/anime/anisync_search/search=${encodeURIComponent(query)}.json`;
-            return fetch(fetchUrl)
+            const fetchUrl = `/${currentUserId}/catalog/anime/anisync_search/search=${encodeURIComponent(query)}.json?_ts=${Date.now()}`;
+            return fetch(fetchUrl, { cache: 'no-store' })
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     return res.json();
@@ -4661,12 +4664,21 @@
                         catalogItemsCache['anisync_search'] = sampleFallback;
                         return sampleFallback;
                     }
-                    const items = metas.map(m => {
-                        let scoreStr = '8.5';
-                        if (m.score !== undefined && m.score !== null) {
-                            scoreStr = String(m.score);
-                            if (!scoreStr.includes('.')) scoreStr += '.0';
+                    const items = metas.filter(m => {
+                        const sub = (m.subtype || '').toLowerCase();
+                        const fmt = (m.format || '').toLowerCase();
+                        return sub !== 'music' && fmt !== 'music';
+                    }).map(m => {
+                        let scoreVal = 0;
+                        if (m.score !== undefined && m.score !== null && !isNaN(parseFloat(m.score))) {
+                            scoreVal = parseFloat(m.score);
+                        } else if (m.imdbRating !== undefined && m.imdbRating !== null && !isNaN(parseFloat(m.imdbRating))) {
+                            scoreVal = parseFloat(m.imdbRating);
+                        } else if (m.rating !== undefined && m.rating !== null && !isNaN(parseFloat(m.rating))) {
+                            scoreVal = parseFloat(m.rating);
                         }
+                        const scoreStr = scoreVal > 0 ? (Number.isInteger(scoreVal) ? scoreVal.toFixed(1) : String(scoreVal)) : '0.0';
+
                         let eps = parseInt(m.episodes) || 0;
                         if (!eps && m.next_episode) {
                             eps = Math.max(0, parseInt(m.next_episode) - 1);
@@ -4688,6 +4700,10 @@
                                 dateVal = y * 10000 + mo * 100 + da;
                                 if (!yr) yr = y;
                             }
+                        }
+                        if (!yr && m.releaseInfo) {
+                            const match = String(m.releaseInfo).match(/\b(19\d\d|20\d\d)\b/);
+                            if (match) yr = parseInt(match[1]);
                         }
                         if (!dateVal && yr) {
                             dateVal = yr * 10000;
