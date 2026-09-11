@@ -24,11 +24,11 @@
 When a new episode releases for a show you're watching, AniSync adds a `NEW EPISODE` indicator right on the poster. If you use multiple tracking services, it shows their logos side-by-side (MAL, AniList, Simkl) so you know where it's tracked.
 
 You can choose between two clean styles in your settings:
-* **Modern Design (NEW!)**: A top banner with floating badge boxes at the bottom.
+* **Modern Design**: A top banner with floating badge boxes at the bottom.
 * **Classic Design**: A solid black bar across the bottom with tracker logos and text.
 
 <p align="center">
-  <b>Modern Design (NEW!)</b><br>
+  <b>Modern Design</b><br>
   <img src="docs/images/New_Episode_Overlay_Modern.png" alt="Modern Poster Badges" width="95%" />
 </p>
 
@@ -48,12 +48,12 @@ Connect MyAnimeList, AniList, and Simkl at the same time. AniSync organizes your
 
 ---
 
-### 🔍 Universal Anime Search & Search Catalog Management
+### 🔍 Universal Anime Search
 Search for any anime directly inside Stremio or Nuvio:
 * **Rich Metadata & Localized Titles**: Instant results with your selected language (English, Romaji, or Japanese).
 * **Full Stream Compatibility**: Outputs native Kitsu IDs to ensure seamless stream matching across scraper addons.
-* **Customizable Placement & Sorting (NEW!)**: Reorder your Search catalog anywhere on your home screen and sort results chronologically by Release Date so the latest airing seasons appear first.
-* **Works for Guest Users**: Enjoy full search and rich anime metadata even without connecting a tracking account.
+* **Custom Placement & Sorting**: Reorder the Search catalog or sort results chronologically by Release Date.
+* **Works for Guest Users**: Search works without connecting a tracking account.
 
 ![Stremio Anime Search](docs/images/AniSync_Search.png)
 
@@ -102,10 +102,10 @@ Switch anime and episode titles across the whole addon with one click:
 
 ---
 
-### 🧭 Rich Discovery & Dubbed Anime Catalogs
+### 🧭 Rich Discovery Catalogs
 Explore curated anime rows updated directly from the community:
 * **Spotlight**: Featured highlights and top picks.
-* **Dubbed Anime by Language (NEW!)**: Discover dubbed anime filtered by your preferred audio language (English, Spanish, French, German, Portuguese, or Italian).
+* **Dubbed Anime**: Filter anime by available audio language (English, Spanish, French, German, Portuguese, or Italian).
 * **Airing Schedule**: Anime broadcasting today with release times.
 * **This Season**: Top anime currently airing this season.
 * **Trending Now**: Shows gaining popularity right now.
@@ -122,28 +122,19 @@ Shows your watch progress and upcoming release countdowns directly in the anime 
 
 ---
 
-### 🎨 Custom Poster Art, Rating Overlays & Poster Shapes (16:9 Landscape & 3:4 Portrait)
+### 🎨 Custom Poster Art & Shapes
+* **Poster Shapes**: Choose between standard portrait (3:4) and widescreen landscape (16:9) poster orientations.
 * **High-Res Artwork**: Crisp posters from AniList, MAL, and Kitsu.
 * **RPDB Support**: Add your Rating Poster DB API key to overlay rating badges on posters.
 * **Custom Poster Endpoints**: Works with external poster proxies (like BetterPosters) with dynamic `{shape}` and `{endpoint}` placeholder support.
-* **Interactive Live Preview**: Real-time side-by-side preview panel in the dashboard with carousel navigation to preview artwork styles before installing.
 
 ---
 
-### 🎛️ Per-Catalog Customization (Custom Names, Ordering & Tailored Sorting)
-Take complete control of every row on your home screen:
-* **Custom Catalog Names (NEW!)**: Rename any catalog (Watchlists, Tracker lists, Discovery charts, Search, or Recommendations) to whatever title you prefer.
-* **Tailored Per-Catalog Sorting (NEW!)**: Configure independent sort rules per catalog (e.g. sort Watchlist by *Last Updated*, Completed by *Score*, Discovery by *Popularity*, and Search by *Release Date*).
-* **Drag-and-Drop Reordering**: Organize your catalogs in any sequence on your home screen.
-* **Catalog Preview Gallery**: Preview up to 50 anime items directly from your dashboard before syncing to your player.
-* **Enable / Disable Any Row**: Toggle individual watchlists, single-tracker rows, recommendations, or discovery charts to keep your home screen clean.
-
----
-
-### 🔒 Privacy-Focused Secure Addon URLs
-AniSync protects your privacy and connected tracking credentials:
-* **Randomized UUID Endpoints**: Manifest URLs use secure randomized UUIDs (`/<uuid>/manifest.json`) instead of exposing user IDs, tracker tokens, or configuration parameters in plaintext.
-* **One-Click Re-generation**: Regenerate your secure manifest URL at any time directly from the settings.
+### 🎛️ Catalog Customization & Sorting
+* **Custom Catalog Names**: Rename any catalog to whatever title you prefer.
+* **Per-Catalog Sorting**: Configure sort rules independently for each catalog (Score, Release Date, Title, Progress, Date Added).
+* **Drag-and-Drop Reordering**: Organize your catalogs in any sequence.
+* **Enable or Disable Rows**: Toggle individual watchlists, single-tracker rows, recommendations, or discovery charts.
 
 ---
 
