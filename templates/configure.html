@@ -4239,6 +4239,13 @@
             }
             updatePlacementUI(cfg.placement || 'all');
 
+            if (catId === 'anisync_search') {
+                const searchInput = document.getElementById('modalSearchPreviewInput');
+                if (searchInput && !searchInput.value.trim()) {
+                    searchInput.value = 'Frieren';
+                }
+            }
+
             // Poster Shape
             updateShapeUI(cfg.shape || 'poster');
 
@@ -4539,6 +4546,11 @@
         const catalogFetchPromises = {};
 
         function fetchCatalogItems(catId) {
+            if (catId === 'anisync_search') {
+                const searchInput = document.getElementById('modalSearchPreviewInput');
+                const query = (searchInput ? searchInput.value.trim() : '') || 'Frieren';
+                return fetchSearchCatalogItems(query);
+            }
             if (catalogItemsCache[catId]) {
                 return Promise.resolve(catalogItemsCache[catId]);
             }
@@ -5085,15 +5097,15 @@
                 const searchInput = document.getElementById('modalSearchPreviewInput');
                 const query = (searchInput ? searchInput.value.trim() : '') || 'Frieren';
                 const cacheKey = 'search_' + query.toLowerCase();
-                if (catalogItemsCache[cacheKey] && catalogItemsCache[cacheKey].length > 0) {
+                if (catalogItemsCache[cacheKey] !== undefined) {
                     return catalogItemsCache[cacheKey];
                 }
-                if (catalogItemsCache['anisync_search'] && catalogItemsCache['anisync_search'].length > 0) {
+                if (catalogItemsCache['anisync_search'] !== undefined) {
                     return catalogItemsCache['anisync_search'];
                 }
                 return PREVIEW_ANIME_ITEMS;
             }
-            return catalogItemsCache[activeModalCatalogId] || PREVIEW_ANIME_ITEMS;
+            return catalogItemsCache[activeModalCatalogId] !== undefined ? catalogItemsCache[activeModalCatalogId] : PREVIEW_ANIME_ITEMS;
         }
 
         window.onModalSortByChange = function (val) {
