@@ -3514,7 +3514,7 @@
 {% block scripts %}
 <script id="catalog-init-data" type="application/json">
 {
-  "userId": {{ (user.get('uid') or '') | tojson }},
+  "userId": {{ (user.get('manifest_token') or user.get('uid') or '') | tojson }},
   "isGuest": {{ (user.get('is_guest') or False) | tojson }},
   "hasTrackers": {{ ((user.get('mal_access_token') or user.get('mal_token') or user.get('mal_username') or user.get('name') or user.get('anilist_token') or user.get('anilist_username') or user.get('simkl_access_token') or user.get('simkl_token') or user.get('simkl_username')) is not none and (user.get('mal_access_token') or user.get('mal_token') or user.get('mal_username') or user.get('name') or user.get('anilist_token') or user.get('anilist_username') or user.get('simkl_access_token') or user.get('simkl_token') or user.get('simkl_username')) != '') | tojson }},
   "userTrackers": [
@@ -3953,6 +3953,10 @@
                         if (result.manifest_magnet) {
                             const directInstallBtn = document.getElementById("direct_install_btn");
                             if (directInstallBtn) directInstallBtn.href = result.manifest_magnet;
+                        }
+
+                        if (result.manifest_token) {
+                            window.currentUserId = currentUserId = result.manifest_token;
                         }
 
                         if (result.migrated) {
@@ -4553,6 +4557,12 @@
                 })
                 .then(data => {
                     const metas = (data && data.metas) || [];
+                    if (metas.length === 0) {
+                        const sampleFallback = PREVIEW_ANIME_ITEMS.map(i => ({ ...i, is_sample_fallback: true }));
+                        catalogItemsCache[catId] = sampleFallback;
+                        delete catalogFetchPromises[catId];
+                        return sampleFallback;
+                    }
                     const items = metas.map(m => {
                         let scoreStr = '8.5';
                         if (m.score !== undefined && m.score !== null) {
@@ -4615,6 +4625,11 @@
                 })
                 .then(data => {
                     const metas = (data && data.metas) || [];
+                    if (metas.length === 0 && (!query || query.toLowerCase() === 'frieren')) {
+                        const sampleFallback = PREVIEW_ANIME_ITEMS.map(i => ({ ...i, is_sample_fallback: true }));
+                        catalogItemsCache[cacheKey] = sampleFallback;
+                        return sampleFallback;
+                    }
                     const items = metas.map(m => {
                         let scoreStr = '8.5';
                         if (m.score !== undefined && m.score !== null) {
@@ -4800,10 +4815,14 @@
             if (catalogItemsCache[catId]) {
                 const items = catalogItemsCache[catId];
                 if (countEl) {
-                    const countText = items.length >= 50
-                        ? `Showing 50 titles`
-                        : `${items.length} title${items.length === 1 ? '' : 's'}`;
-                    countEl.textContent = countText;
+                    if (items.length > 0 && items[0].is_sample_fallback) {
+                        countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>Sample preview (0 titles in list)</span>`;
+                    } else {
+                        const countText = items.length >= 50
+                            ? `Showing 50 titles`
+                            : `${items.length} title${items.length === 1 ? '' : 's'}`;
+                        countEl.textContent = countText;
+                    }
                 }
                 currentPreviewAnimeList = applySortAndShuffle(items, cfg);
                 updateModalLivePreview();
@@ -4819,10 +4838,14 @@
             fetchCatalogItems(catId).then(items => {
                 if (activeModalCatalogId === catId) {
                     if (countEl) {
-                        const countText = items.length >= 50
-                            ? `Showing 50 titles`
-                            : `${items.length} title${items.length === 1 ? '' : 's'}`;
-                        countEl.textContent = countText;
+                        if (items.length > 0 && items[0].is_sample_fallback) {
+                            countEl.innerHTML = `<span class="badge bg-secondary text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>Sample preview (0 titles in list)</span>`;
+                        } else {
+                            const countText = items.length >= 50
+                                ? `Showing 50 titles`
+                                : `${items.length} title${items.length === 1 ? '' : 's'}`;
+                            countEl.textContent = countText;
+                        }
                     }
                     const currentCfg = catalogConfigs[catId] || {};
                     currentPreviewAnimeList = applySortAndShuffle(items, currentCfg);
@@ -4866,11 +4889,12 @@
                 const listToRender = currentPreviewAnimeList;
                 if (!listToRender || listToRender.length === 0) {
                     previewGrid.className = 'preview-grid empty';
+                    const isSearch = activeModalCatalogId === 'anisync_search';
                     previewGrid.innerHTML = `
                         <div class="preview-empty-state">
-                            <i class="fa-regular fa-folder-open"></i>
-                            <span class="preview-empty-title">Catalog is empty</span>
-                            <span class="preview-empty-desc">No anime in this catalog yet</span>
+                            <i class="fa-regular ${isSearch ? 'fa-magnifying-glass' : 'fa-folder-open'}"></i>
+                            <span class="preview-empty-title">${isSearch ? 'No matches found' : 'Catalog is empty'}</span>
+                            <span class="preview-empty-desc">${isSearch ? 'Try searching for another anime title above' : 'No anime in this catalog yet'}</span>
                         </div>
                     `;
                     return;

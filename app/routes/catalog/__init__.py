@@ -86,8 +86,13 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
     user = get_user(user_id, for_manifest=True)
     if not user:
-        logging.warning("Catalog request: Unknown user_id=%s", user_id)
-        return await respond_with({"metas": []})
+        from quart import session
+        sess_user = session.get("user")
+        if sess_user and (sess_user.get("uid") == user_id or sess_user.get("manifest_token") == user_id):
+            user = get_user(user_id, for_manifest=False)
+        if not user:
+            logging.warning("Catalog request: Unknown user_id=%s", user_id)
+            return await respond_with({"metas": []})
 
     from app.services.db import is_anilist_in_cooldown
     if is_anilist_in_cooldown(user):
