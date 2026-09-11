@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 from .fetchers import clean_imdb_id
 
 
@@ -94,6 +95,7 @@ def map_kitsu_to_stremio(
     # Media Type
     subtype = (attributes.get("subtype") or "tv").lower()
     media_type = "movie" if subtype == "movie" else "series"
+    anime_status = (attributes.get("status") or "").lower()
 
     # Videos / Episodes List
     videos = []
@@ -148,16 +150,23 @@ def map_kitsu_to_stremio(
                 except (ValueError, TypeError):
                     pass
 
-        # Build Cinemeta episode thumbnail map: (season, episode) -> thumbnail
+        # Build Cinemeta episode thumbnail and release date maps: (season, episode) -> value
         cinemeta_ep_thumbs = {}
+        cinemeta_ep_released = {}
         if cinemeta_data and isinstance(cinemeta_data.get("videos"), list):
             for v in cinemeta_data["videos"]:
                 s = v.get("season")
                 e = v.get("episode")
                 thumb = v.get("thumbnail")
-                if s is not None and e is not None and thumb:
+                rel = v.get("released")
+                if s is not None and e is not None:
                     try:
-                        cinemeta_ep_thumbs[(int(s), int(e))] = thumb
+                        s_int = int(s)
+                        e_int = int(e)
+                        if thumb:
+                            cinemeta_ep_thumbs[(s_int, e_int)] = thumb
+                        if rel:
+                            cinemeta_ep_released[(s_int, e_int)] = rel
                     except (ValueError, TypeError):
                         pass
 
@@ -216,19 +225,39 @@ def map_kitsu_to_stremio(
                     or anizp_ep.get("title", {}).get("x-jat")
                     or f"Episode {ep_num}"
                 )
-            released = attrs.get("airdate") or anizp_ep.get("airdate")
-
-            # Match Cinemeta episode thumbnail safely
+            # Match Cinemeta episode thumbnail and release date safely
             cinemeta_thumb = None
-            if cinemeta_ep_thumbs:
+            cin_released = None
+            if cinemeta_ep_thumbs or cinemeta_ep_released:
                 s_num = anizp_ep.get("seasonNumber")
                 if s_num is not None:
                     try:
-                        cinemeta_thumb = cinemeta_ep_thumbs.get((int(s_num), ep_num))
+                        s_int = int(s_num)
+                        cinemeta_thumb = cinemeta_ep_thumbs.get((s_int, ep_num))
+                        cin_released = cinemeta_ep_released.get((s_int, ep_num))
                     except (ValueError, TypeError):
                         pass
                 elif not is_likely_sequel:
                     cinemeta_thumb = cinemeta_ep_thumbs.get((1, ep_num))
+                    cin_released = cinemeta_ep_released.get((1, ep_num))
+
+            released = attrs.get("airdate") or anizp_ep.get("airdate") or cin_released
+
+            # If the anime or episode is unreleased (air date in future), Cinemeta's Metahub
+            # thumbnail link is pre-computed and guaranteed to 404 on Metahub/TMDB.
+            # Suppress cinemeta_thumb so it falls back to backdrop (background) or real preview stills.
+            if cinemeta_thumb:
+                if anime_status in ["unreleased", "not_yet_released"]:
+                    cinemeta_thumb = None
+                elif released:
+                    try:
+                        date_str = str(released).strip()[:10].replace("/", "-")
+                        ep_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                        now_date = datetime.now(timezone.utc).date()
+                        if ep_date > now_date:
+                            cinemeta_thumb = None
+                    except (ValueError, TypeError):
+                        pass
 
             if episodes_provider == "kitsu":
                 overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
