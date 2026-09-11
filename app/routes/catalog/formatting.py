@@ -435,7 +435,7 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                 if base_bg:
                     b_params["url"] = base_bg
                 b_params["shape"] = "landscape"
-                b_params["v"] = "hd_land_v2"
+                b_params["v"] = "hd_land_v3"
                 if "_land" not in base_u and base_u.endswith(".jpg"):
                     base_u = base_u[:-4] + "_land.jpg"
                 landscape_badge_url = f"{base_u}?{urllib.parse.urlencode(b_params)}"
