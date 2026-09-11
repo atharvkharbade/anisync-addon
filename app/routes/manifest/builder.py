@@ -7,7 +7,7 @@ MANIFEST = {
     "name": "AniSync",
     "logo": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png",
     "icon": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png",
-    "description": "An anime addon for Stremio and Nuvio offering tracking, rich metadata, recommendations, and much more!",
+    "description": "An anime addon offering tracking, rich metadata, recommendations, and much more!",
     "types": ["anime", "series", "movie"],
     "resources": ["subtitles", "catalog", "meta"],
     "idPrefixes": ["kitsu", "mal", "anilist", "simkl"],
