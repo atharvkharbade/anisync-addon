@@ -63,7 +63,7 @@ Search for any anime directly inside Stremio or Nuvio:
 Discover new anime right on your home screen based on what you enjoy:
 * **Clear Reasons**: Every suggested anime explains why it's there (e.g. *"Inspired by your favorites: Hunter x Hunter"* or *"Popular Dark Fantasy based on your taste"*).
 * **Gemini AI Insights**: You can optionally add a free Google Gemini API key to get natural language recommendation notes.
-* **5 Dedicated Rows**: *Top Picks for You*, *Inspired by your Favorites*, *More from your Watchlist*, *Because you Watched [Anime]*, and *Curated Genre Collections*.
+* **3 Dedicated Rows**: *Top Picks for You*, *Inspired by your Favorites*, and *More from your Watchlist*.
 
 ![Stremio Recommendations](docs/images/Anime_Recommendations.png)
 
