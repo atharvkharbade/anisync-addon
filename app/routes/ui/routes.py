@@ -81,6 +81,7 @@ async def guest_login():
         "meta_artwork_provider": "anilist",
         "meta_airing_provider": "anilist",
         "catalogs": [
+            "anisync_search",
             "anisync_spotlight",
             "anisync_schedule",
             "anisync_seasonal",
@@ -88,7 +89,6 @@ async def guest_login():
             "anisync_top_airing",
             "anisync_highest_rated",
             "anisync_most_popular",
-            "anisync_search",
         ],
         "enable_dubbed_catalogs": False,
         "dubbed_language": "english",

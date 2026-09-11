@@ -1,6 +1,12 @@
 CATALOGS = [
     {
         "type": "anime",
+        "id": "anisync_search",
+        "name": "Search",
+        "extra": [{"name": "search", "isRequired": True}, {"name": "skip"}],
+    },
+    {
+        "type": "anime",
         "id": "mal_watching",
         "name": "MAL: Watching",
         "extra": [{"name": "skip"}],
@@ -205,12 +211,6 @@ CATALOGS = [
         "id": "anisync_most_popular",
         "name": "Most Popular",
         "extra": [{"name": "skip"}],
-    },
-    {
-        "type": "anime",
-        "id": "anisync_search",
-        "name": "Search",
-        "extra": [{"name": "search", "isRequired": True}, {"name": "skip"}],
     },
 ]
 

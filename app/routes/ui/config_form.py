@@ -19,6 +19,7 @@ def store_user(user):
 from .validation import check_gemini_api_key_valid
 
 POSSIBLE_CATS = [
+    "anisync_search",
     "mal_watching",
     "mal_plan_to_watch",
     "mal_completed",
@@ -50,7 +51,6 @@ POSSIBLE_CATS = [
     "anisync_top_airing",
     "anisync_highest_rated",
     "anisync_most_popular",
-    "anisync_search",
 ]
 
 
