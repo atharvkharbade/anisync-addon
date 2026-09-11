@@ -50,6 +50,7 @@ POSSIBLE_CATS = [
     "anisync_top_airing",
     "anisync_highest_rated",
     "anisync_most_popular",
+    "anisync_search",
 ]
 
 
@@ -150,6 +151,8 @@ async def handle_configure_form(user: dict, form) -> dict | None:
                 enabled_list.append(cat)
 
         user["catalogs"] = enabled_list
+        if "cat_anisync_search" in form:
+            user["enable_search"] = "anisync_search" in enabled_list
 
         # Save per-catalog custom configurations
         catalog_shapes = user.get("catalog_shapes", {}) or {}

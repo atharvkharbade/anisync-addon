@@ -2,9 +2,28 @@ import datetime
 import logging
 import re
 
+import random
+
 from app.routes.catalog.formatting import format_catalog_metas, get_anilist_title, get_kitsu_title
+from app.routes.catalog.sorting.dubs import apply_catalog_dub_filter
+from app.routes.catalog.sorting.preferences import get_catalog_sorting, is_catalog_shuffle_enabled
+from app.routes.catalog.sorting.sorter import sort_watchlist_items
 from app.routes.utils import respond_with
 from app.services.http import get_client
+
+
+async def _process_search_metas(raw_metas, user, catalog_id, filters):
+    if not raw_metas:
+        return []
+    metas = list(raw_metas)
+    metas = await apply_catalog_dub_filter(metas, user, catalog_id)
+    is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, "watching", url_filters=filters)
+    if is_custom_sort and sort_by != "default":
+        metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
+    if is_catalog_shuffle_enabled(user, catalog_id) and (not is_custom_sort or sort_by == "default"):
+        metas = list(metas)
+        random.shuffle(metas)
+    return metas
 
 
 async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters, extras=""):
@@ -27,8 +46,9 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
     try:
         cached = cache_col.find_one({"query": norm_search_query, "offset": offset})
         if cached and cached.get("expires_at") > now:
+            processed_metas = await _process_search_metas(cached["metas"], user, catalog_id, filters)
             return await respond_with(
-                {"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)},
+                {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
                 max_age=1800,
                 stale_while_revalidate=3600,
             )
@@ -304,14 +324,16 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
             logging.error("Failed to write kitsu_search_cache: %s", e)
     elif cached:
         logging.warning("Search returned 0 results, returning expired cache for query '%s'", search_query)
+        processed_metas = await _process_search_metas(cached["metas"], user, catalog_id, filters)
         return await respond_with(
-            {"metas": format_catalog_metas(cached["metas"], user, catalog_type, catalog_id)},
+            {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
             max_age=1800,
             stale_while_revalidate=3600,
         )
 
+    processed_metas = await _process_search_metas(metas, user, catalog_id, filters)
     return await respond_with(
-        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+        {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
         max_age=1800,
         stale_while_revalidate=3600,
     )

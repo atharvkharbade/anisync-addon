@@ -356,6 +356,9 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         cat_art_override = catalog_poster_arts.get(catalog_id)
         if cat_art_override is None and user:
             cat_art_override = cat_cfg.get("poster_art")
+        if cat_art_override is None and catalog_id == "anisync_search" and user:
+            if not user.get("rpdb_in_search", True):
+                cat_art_override = False
 
         is_art_disabled = (cat_art_override is False or cat_art_override in ("false", "off", "clean", "none"))
 
@@ -395,10 +398,6 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         if (not is_art_disabled) and art_poster:
             m_copy["poster"] = art_poster
         else:
-            m_copy["poster"] = current_poster if is_badge else clean_poster
-
-        if catalog_id == "anisync_search" and not user.get("rpdb_in_search", True):
-            # Skip RPDB poster overlay for search catalog if disabled
             m_copy["poster"] = current_poster if is_badge else clean_poster
 
         formatted_metas.append(m_copy)

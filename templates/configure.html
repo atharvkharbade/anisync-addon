@@ -66,6 +66,11 @@
         color: #fff !important;
     }
 
+    .bg-search {
+        background-color: #0284c7 !important;
+        color: #fff !important;
+    }
+
     .bg-dubbed {
         background: linear-gradient(135deg, #8b5cf6, #ec4899) !important;
         color: #fff !important;
@@ -2412,29 +2417,6 @@
                 </label>
             </div>
 
-            <!-- Search Sub-Options (only visible when search is enabled) -->
-            <div id="search-options-container" class="nested-subcard mb-3" {% if not user.get('enable_search', True) %}style="display: none;"{% endif %}>
-                <div class="form-check form-switch mb-0">
-                    {% set p_prov = user.get('poster_provider', 'none') %}
-                    {% set is_p_valid = ((p_prov == 'rpdb' and user.get('rpdb_api_key')) or
-                    ((p_prov == 'top_poster' or p_prov == 'topposters') and user.get('top_poster_key')) or (p_prov
-                    == 'custom' and user.get('custom_poster_pattern'))) %}
-                    <input class="form-check-input" type="checkbox" role="switch" id="rpdb_in_search" {% if
-                        user.get('rpdb_in_search', True) and is_p_valid %}checked{% endif %} {% if not is_p_valid
-                        %}disabled{% endif %}>
-                    <label class="form-check-label ms-1" for="rpdb_in_search">
-                        <span class="fw-medium d-block">Enable Poster Art in Search Catalog</span>
-                        <span class="text-secondary small d-block">
-                            Replace standard anime posters with poster art in search results.
-                        </span>
-                        <span id="rpdb-search-warning-text"
-                            class="text-warning small d-block mt-1 fw-medium {% if is_p_valid %}d-none{% endif %}">
-                            <i class="fa-solid fa-circle-info me-1"></i>Select a poster art provider (RPDB, TOP Posters, or Custom) with a valid API key or pattern to enable poster art in search.
-                        </span>
-                    </label>
-                </div>
-            </div>
-
             <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="show_filler_tags" {% if
                     user.get('show_filler_tags', True) %}checked{% endif %}>
@@ -2626,7 +2608,8 @@
                         ('anisync_seasonal', 'Seasonal Showcase', 'discovery'),
                         ('anisync_top_airing', 'Top Airing', 'discovery'),
                         ('anisync_highest_rated', 'Highest Rated', 'discovery'),
-                        ('anisync_most_popular', 'Most Popular', 'discovery')
+                        ('anisync_most_popular', 'Most Popular', 'discovery'),
+                        ('anisync_search', 'Search', 'search')
                         ]
                         %}
 
@@ -2643,7 +2626,8 @@
                         (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or
                         user.get('simkl_access_token'))) or
                         item_source == 'rec' or
-                        item_source == 'discovery' %}
+                        item_source == 'discovery' or
+                        item_source == 'search' %}
                         {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
                         {% endif %}
                         {% endif %}
@@ -2659,7 +2643,8 @@
                         (item_source == 'combined' and (user.get('mal_access_token') or user.get('anilist_token') or
                         user.get('simkl_access_token'))) or
                         item_source == 'rec' or
-                        item_source == 'discovery' %}
+                        item_source == 'discovery' or
+                        item_source == 'search' %}
                         {% if item_id not in user.get('catalogs', []) %}
                         {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
                         {% endif %}
@@ -2670,7 +2655,7 @@
                         {% for item_id, item_name, item_source in active_user_order %}
                         {% set cur_cfg = user.get('catalog_configs', {}).get(item_id, {}) %}
                         {% set cur_title = cur_cfg.get('title', user.get('catalog_titles', {}).get(item_id, '')) %}
-                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% endif %}"
+                        <div class="catalog-order-item d-flex align-items-center justify-content-between p-2 mb-2 rounded {% if item_source == 'rec' and not user.get('enable_recommendations', True) %}d-none{% elif item_source == 'discovery' and not user.get('enable_discovery_catalogs', True) %}d-none{% elif item_source == 'combined' and not user.get('combine_watchlists', False) %}d-none{% elif item_source in ['mal', 'anilist', 'simkl'] and user.get('combine_watchlists', False) %}d-none{% elif item_source == 'search' and not user.get('enable_search', True) %}d-none{% endif %}"
                             draggable="true" data-id="{{ item_id }}" data-source="{{ item_source }}" data-default-name="{{ item_name }}"
                             style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); cursor: grab; transition: transform 0.2s, background 0.2s;">
                             <div class="d-flex align-items-center flex-grow-1 overflow-hidden min-w-0 me-3">
@@ -2678,7 +2663,7 @@
                                 <input class="form-check-input catalog-checkbox flex-shrink-0" type="checkbox"
                                     id="cat_{{ item_id }}" name="cat_{{ item_id }}"
                                     style="margin: 0 12px 0 0; cursor: pointer; float: none;"
-                                    {% if user.get('catalogs') is none or item_id in user.get('catalogs', []) or (item_source=='discovery' and 'enable_discovery_catalogs' not in user) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
+                                    {% if user.get('catalogs') is none or item_id in user.get('catalogs', []) or (item_source=='discovery' and 'enable_discovery_catalogs' not in user) or (item_source=='search' and user.get('enable_search', True)) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
                                 <div class="catalog-content-col d-flex flex-grow-1 overflow-hidden min-w-0">
                                     <label class="catalog-item-title small fw-medium text-light text-truncate mb-0" for="cat_{{ item_id }}"
                                         style="user-select: none; cursor: pointer;">
@@ -2686,8 +2671,8 @@
                                     </label>
                                     <div class="catalog-badges-wrap d-inline-flex align-items-center flex-shrink-0">
                                         <span
-                                            class="badge rounded-pill catalog-source-badge {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% else %}bg-warning text-dark{% endif %}">
-                                            {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery' else item_source | upper) }}
+                                            class="badge rounded-pill catalog-source-badge {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% elif item_source == 'search' %}bg-search text-white{% else %}bg-warning text-dark{% endif %}">
+                                            {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery' else ('SEARCH' if item_source == 'search' else item_source | upper)) }}
                                         </span>
                                         {% set is_item_dubbed = (cur_cfg.get('dubbed') or cur_cfg.get('audio') == 'dubbed') %}
                                         {% set cur_dub_lang = (cur_cfg.get('dub_language') or cur_cfg.get('dubbed_language') or user.get('dubbed_language') or user.get('dub_language', 'en'))|lower %}
@@ -3238,7 +3223,7 @@
                         </div>
 
                         <!-- 2. Placement -->
-                        <div>
+                        <div id="modalPlacementSection">
                             <div class="d-flex align-items-center justify-content-between mb-1">
                                 <label class="form-label small fw-semibold text-light mb-0">Placement</label>
                                 <button type="button" class="btn-modal-reset-field" onclick="setModalPlacement('all')" title="Reset placement">
@@ -3434,9 +3419,22 @@
                     <!-- Right: Live Preview -->
                     <div class="col-12 col-md-5 d-flex flex-column catalog-modal-preview-col">
                         <div class="preview-stage-wrap">
-                            <div class="preview-header d-flex align-items-center justify-content-between">
+                            <div class="preview-header d-flex align-items-center justify-content-between mb-2">
                                 <span class="preview-title">Live preview</span>
                                 <span class="preview-item-count text-secondary small" id="modalPreviewCount" style="font-size: 0.72rem; font-weight: 500;"></span>
+                            </div>
+
+                            <!-- Search Preview Query Input (Search Catalog Only) -->
+                            <div id="modalSearchPreviewBar" class="mb-2 d-none">
+                                <div class="input-group input-group-sm" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; overflow: hidden;">
+                                    <span class="input-group-text bg-transparent border-0 text-secondary ps-2 pe-1" style="font-size: 0.78rem;">
+                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                    </span>
+                                    <input type="text" id="modalSearchPreviewInput" class="form-control bg-transparent border-0 text-light py-1 px-2 shadow-none" placeholder="Search anime (e.g. Frieren, Solo Leveling)..." style="font-size: 0.8rem;" value="Frieren" oninput="onModalSearchPreviewInput()">
+                                    <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none px-2 py-0 border-0" id="modalSearchPreviewClear" onclick="clearModalSearchPreview()" style="font-size: 0.75rem;">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="preview-gallery-container">
@@ -3527,7 +3525,11 @@
   "legacyPlacements": {{ (user.get('catalog_placements') or {}) | tojson }},
   "legacySorts": {{ (user.get('catalog_sorts') or {}) | tojson }},
   "legacyShuffles": {{ (user.get('catalog_shuffles') or {}) | tojson }},
-  "legacyPosterArts": {{ (user.get('catalog_poster_arts') or {}) | tojson }},
+  {% set init_legacy_arts = (user.get('catalog_poster_arts') or {}).copy() %}
+  {% if not user.get('rpdb_in_search', True) and 'anisync_search' not in init_legacy_arts %}
+    {% set _ = init_legacy_arts.update({'anisync_search': False}) %}
+  {% endif %}
+  "legacyPosterArts": {{ init_legacy_arts | tojson }},
   "globalPosterProvider": {{ (user.get('poster_provider') or 'none') | tojson }}
 }
 </script>
@@ -4222,6 +4224,10 @@
             }
 
             // Placement
+            const placementSec = document.getElementById('modalPlacementSection');
+            if (placementSec) {
+                placementSec.style.display = (catId === 'anisync_search') ? 'none' : 'block';
+            }
             updatePlacementUI(cfg.placement || 'all');
 
             // Poster Shape
@@ -4586,6 +4592,84 @@
             return catalogFetchPromises[catId];
         }
 
+        function fetchSearchCatalogItems(query) {
+            query = (query !== null && query !== undefined ? query : '').trim();
+            if (!query) query = 'Frieren';
+            const cacheKey = 'search_' + query.toLowerCase();
+            if (catalogItemsCache[cacheKey]) {
+                return Promise.resolve(catalogItemsCache[cacheKey]);
+            }
+            if (!currentUserId) {
+                return Promise.resolve(PREVIEW_ANIME_ITEMS);
+            }
+            const fetchUrl = `/${currentUserId}/catalog/anime/anisync_search/search=${encodeURIComponent(query)}.json`;
+            return fetch(fetchUrl)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    const metas = (data && data.metas) || [];
+                    const items = metas.map(m => {
+                        let scoreStr = '8.5';
+                        if (m.score !== undefined && m.score !== null) {
+                            scoreStr = String(m.score);
+                            if (!scoreStr.includes('.')) scoreStr += '.0';
+                        }
+                        let eps = parseInt(m.episodes) || 0;
+                        if (!eps && m.next_episode) {
+                            eps = Math.max(0, parseInt(m.next_episode) - 1);
+                        }
+                        const hasRealBanner = m.background && m.background !== m.poster && m.background !== m.cover;
+                        const defaultLandscape = hasRealBanner
+                            ? m.background
+                            : (m.imdb_id ? `https://images.metahub.space/background/medium/${m.imdb_id}/img` : (m.background || m.poster || m.cover || ''));
+                        const isBadge = !!m.is_badge || (typeof m.poster === 'string' && m.poster.includes('/poster/') && m.poster.includes('badge=new'));
+                        return {
+                            title: m.name || m.title || '',
+                            cover: m.poster || m.cover || '',
+                            clean_poster: m.clean_poster || m.cover || m.poster || '',
+                            art_poster: m.art_poster || '',
+                            imdb_id: m.imdb_id || '',
+                            banner: defaultLandscape,
+                            is_badge: isBadge,
+                            score: scoreStr,
+                            airing_date: parseInt(m.airing_at) || 0,
+                            next_episode: parseInt(m.next_episode) || 0,
+                            episodes: eps,
+                            year: parseInt(m.year) || 0,
+                            updated_at: parseInt(m.updated_at) || 0
+                        };
+                    });
+                    catalogItemsCache[cacheKey] = items;
+                    return items;
+                })
+                .catch(err => {
+                    console.warn(`Could not load search preview for "${query}":`, err);
+                    return PREVIEW_ANIME_ITEMS;
+                });
+        }
+
+        let searchPreviewDebounceTimer = null;
+        function onModalSearchPreviewInput() {
+            if (activeModalCatalogId !== 'anisync_search') return;
+            clearTimeout(searchPreviewDebounceTimer);
+            searchPreviewDebounceTimer = setTimeout(() => {
+                const queryInput = document.getElementById('modalSearchPreviewInput');
+                const query = queryInput ? queryInput.value.trim() : '';
+                loadCatalogPreviewItems('anisync_search', query);
+            }, 300);
+        }
+        window.onModalSearchPreviewInput = onModalSearchPreviewInput;
+
+        window.clearModalSearchPreview = function() {
+            const queryInput = document.getElementById('modalSearchPreviewInput');
+            if (queryInput) {
+                queryInput.value = '';
+                loadCatalogPreviewItems('anisync_search', '');
+            }
+        };
+
         function applySortAndShuffle(items, cfg) {
             if (!items || items.length === 0) return [];
             let list = [...items];
@@ -4664,11 +4748,50 @@
             previewGrid.innerHTML = cardsHtml;
         }
 
-        function loadCatalogPreviewItems(catId) {
+        function loadCatalogPreviewItems(catId, searchQuery = null) {
             const cfg = catalogConfigs[catId] || {};
             const countEl = document.getElementById('modalPreviewCount');
+            const searchBar = document.getElementById('modalSearchPreviewBar');
+            const isSearch = (catId === 'anisync_search');
 
-            // If already cached, apply configs and render immediately!
+            if (searchBar) {
+                searchBar.classList.toggle('d-none', !isSearch);
+            }
+
+            if (isSearch) {
+                const searchInput = document.getElementById('modalSearchPreviewInput');
+                const query = (searchQuery !== null ? searchQuery : (searchInput ? searchInput.value.trim() : 'Frieren')) || 'Frieren';
+                const cacheKey = 'search_' + query.toLowerCase();
+
+                if (catalogItemsCache[cacheKey]) {
+                    const items = catalogItemsCache[cacheKey];
+                    if (countEl) {
+                        countEl.textContent = `${items.length} result${items.length === 1 ? '' : 's'}`;
+                    }
+                    currentPreviewAnimeList = applySortAndShuffle(items, cfg);
+                    updateModalLivePreview();
+                    return;
+                }
+
+                renderSkeletonPreview(cfg.shape || 'poster');
+                if (countEl) {
+                    countEl.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin me-1"></i>Searching...`;
+                }
+
+                fetchSearchCatalogItems(query).then(items => {
+                    if (activeModalCatalogId === catId) {
+                        if (countEl) {
+                            countEl.textContent = `${items.length} result${items.length === 1 ? '' : 's'}`;
+                        }
+                        const currentCfg = catalogConfigs[catId] || {};
+                        currentPreviewAnimeList = applySortAndShuffle(items, currentCfg);
+                        updateModalLivePreview(true);
+                    }
+                });
+                return;
+            }
+
+            // Normal catalog
             if (catalogItemsCache[catId]) {
                 const items = catalogItemsCache[catId];
                 if (countEl) {
@@ -5227,13 +5350,26 @@
                 }
             });
 
+            const enableSearch = enableSearchCheckbox && enableSearchCheckbox.checked;
+            const searchItems = document.querySelectorAll('.catalog-order-item[data-source="search"]');
+            searchItems.forEach(item => {
+                const cb = item.querySelector('.catalog-checkbox');
+                if (!enableSearch) {
+                    item.classList.add("d-none");
+                    if (cb) cb.checked = false;
+                } else {
+                    item.classList.remove("d-none");
+                    if (!isInitialLoad && cb) cb.checked = true;
+                }
+            });
+
             updateSortedInput();
 
-            const shouldShowCard = malToken || alToken || simklToken || enableRecs || enableDiscovery;
+            const shouldShowCard = malToken || alToken || simklToken || enableRecs || enableDiscovery || enableSearch;
             if (catalogManagementCard) {
                 if (shouldShowCard) {
                     catalogManagementCard.style.display = "block";
-                    if (!enableCatalogs && !enableRecs && !enableDiscovery) {
+                    if (!enableCatalogs && !enableRecs && !enableDiscovery && !enableSearch) {
                         catalogManagementCard.style.opacity = "0.4";
                         catalogManagementCard.style.pointerEvents = "none";
                         catalogManagementCard.style.filter = "grayscale(1)";
@@ -5265,67 +5401,20 @@
         }
 
         const enableSearchCheckbox = document.getElementById("enable_search");
-        let isRpdbKeyValid = "{{ user.get('rpdb_key_valid') }}" !== "False" && "{{ user.get('rpdb_api_key', '') }}" !== "";
-
-        function syncRpdbSearchState() {
-            const rpdbInSearchCheckbox = document.getElementById("rpdb_in_search");
-            if (!rpdbInSearchCheckbox) return;
-            const rpdbKeyEl = document.getElementById("rpdb_api_key");
-            const rpdbSearchWarningText = document.getElementById("rpdb-search-warning-text");
-            const providerInput = document.getElementById("poster_provider");
-            const provider = providerInput ? providerInput.value : "none";
-
-            let isValid = false;
-            if (provider === "rpdb") {
-                const hasRpdbKey = rpdbKeyEl && rpdbKeyEl.value.trim() !== "";
-                isValid = hasRpdbKey && isRpdbKeyValid;
-            } else if (provider === "top_poster" || provider === "topposters") {
-                const topKeyEl = document.getElementById("top_poster_key");
-                isValid = topKeyEl && topKeyEl.value.trim() !== "";
-            } else if (provider === "custom") {
-                const customPatternEl = document.getElementById("custom_poster_pattern");
-                isValid = customPatternEl && customPatternEl.value.trim() !== "";
-            }
-
-            if (isValid) {
-                rpdbInSearchCheckbox.disabled = false;
-                if (rpdbSearchWarningText) rpdbSearchWarningText.classList.add("d-none");
-            } else {
-                rpdbInSearchCheckbox.disabled = true;
-                rpdbInSearchCheckbox.checked = false;
-                if (rpdbSearchWarningText) rpdbSearchWarningText.classList.remove("d-none");
-            }
-        }
-
-        function toggleSearchDependents() {
-            const enableSearchCheckbox = document.getElementById("enable_search");
-            const searchOptionsContainer = document.getElementById("search-options-container");
-            const enableSearch = enableSearchCheckbox && enableSearchCheckbox.checked;
-            if (searchOptionsContainer) {
-                searchOptionsContainer.style.display = enableSearch ? "block" : "none";
-            }
-            syncRpdbSearchState();
-        }
-
         if (enableSearchCheckbox) {
-            enableSearchCheckbox.addEventListener("change", toggleSearchDependents);
-        }
-        const rpdbKeyInputEl = document.getElementById("rpdb_api_key");
-        if (rpdbKeyInputEl) {
-            rpdbKeyInputEl.addEventListener("input", function () {
-                isRpdbKeyValid = rpdbKeyInputEl.value.trim() !== "";
-                toggleSearchDependents();
+            enableSearchCheckbox.addEventListener("change", function() {
+                const searchCatCb = document.getElementById("cat_anisync_search");
+                if (searchCatCb) searchCatCb.checked = this.checked;
+                syncCatalogManagement(false);
             });
         }
-        const topKeyEl = document.getElementById("top_poster_key");
-        if (topKeyEl) {
-            topKeyEl.addEventListener("input", toggleSearchDependents);
+        const searchCatCb = document.getElementById("cat_anisync_search");
+        if (searchCatCb) {
+            searchCatCb.addEventListener("change", function() {
+                if (enableSearchCheckbox) enableSearchCheckbox.checked = this.checked;
+                syncCatalogManagement(false);
+            });
         }
-        const customPatternEl = document.getElementById("custom_poster_pattern");
-        if (customPatternEl) {
-            customPatternEl.addEventListener("input", toggleSearchDependents);
-        }
-        toggleSearchDependents(); // Run on initial load
 
         // Combined watchlist toggle visibility logic
 
@@ -5607,10 +5696,6 @@
         const enableSearch = document.getElementById('enable_search');
         const enableSearchVal = document.getElementById('enable_search_val');
         if (enableSearch && enableSearchVal) enableSearchVal.value = enableSearch.checked ? 'true' : 'false';
-
-        const rpdbInSearch = document.getElementById('rpdb_in_search');
-        const rpdbInSearchVal = document.getElementById('rpdb_in_search_val');
-        if (rpdbInSearch && rpdbInSearchVal) rpdbInSearchVal.value = rpdbInSearch.checked ? 'true' : 'false';
 
         const showFiller = document.getElementById('show_filler_tags');
         const showFillerVal = document.getElementById('show_filler_tags_val');

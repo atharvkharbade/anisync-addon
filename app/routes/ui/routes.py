@@ -88,6 +88,7 @@ async def guest_login():
             "anisync_top_airing",
             "anisync_highest_rated",
             "anisync_most_popular",
+            "anisync_search",
         ],
         "enable_dubbed_catalogs": False,
         "dubbed_language": "english",
