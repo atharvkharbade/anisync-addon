@@ -1,7 +1,7 @@
 import secrets
 from datetime import datetime, timedelta
 
-from quart import flash, redirect, render_template, request, session, url_for
+from quart import flash, make_response, redirect, render_template, request, session, url_for
 
 from app.api import mal as mal_api
 from app.routes.auth.blueprint import auth_bp
@@ -20,7 +20,9 @@ async def authorize_mal():
     session["oauth_state"] = state
 
     auth_url = mal_api.get_auth_url(code_challenge, state)
-    return await render_template("mal_connecting.html", redirect_url=auth_url)
+    resp = await make_response(await render_template("mal_connecting.html", redirect_url=auth_url))
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return resp
 
 
 @auth_bp.route("/callback")

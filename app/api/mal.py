@@ -6,7 +6,7 @@ from config import Config
 
 AUTH_URL = "https://myanimelist.net/v1"
 BASE_URL = Config.MAL_API_URL
-N_BYTES = 96
+N_BYTES = 64
 TIMEOUT = 10
 CODE_CHALLENGE_METHOD = "plain"
 
