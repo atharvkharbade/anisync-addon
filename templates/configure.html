@@ -2215,7 +2215,7 @@
                                 <i class="fa-solid fa-key gemini-icon" style="color: #ffc107;"></i>
                                 <input type="password" id="rpdb_api_key" name="rpdb_api_key" class="gemini-input"
                                     value="{{ user.get('rpdb_api_key', '') }}"
-                                    placeholder="RPDB API key here">
+                                    placeholder="RPDB API key here" autocomplete="new-password">
                                 <button type="button" class="gemini-btn" id="toggle-rpdb-visibility"
                                     style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
                                     <i class="fa-regular fa-eye"></i>
@@ -2257,7 +2257,7 @@
                                 <i class="fa-solid fa-key gemini-icon" style="color: #ef4444;"></i>
                                 <input type="password" id="top_poster_key" name="top_poster_key" class="gemini-input"
                                     value="{{ user.get('top_poster_key', '') }}"
-                                    placeholder="TOP Posters API key here">
+                                    placeholder="TOP Posters API key here" autocomplete="new-password">
                                 <button type="button" class="gemini-btn" id="toggle-top-visibility"
                                     style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
                                     <i class="fa-regular fa-eye"></i>
@@ -3066,7 +3066,7 @@
                             <div class="gemini-input-wrapper position-relative">
                                 <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
                                     value="{{ user.get('gemini_api_key', '') }}"
-                                    placeholder="Gemini API key here">
+                                    placeholder="Gemini API key here" autocomplete="new-password">
                                 <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
                                     style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
                                     <i class="fa-regular fa-eye" id="gemini-eye-icon"></i>
@@ -5001,6 +5001,11 @@
             if (cleanSrc && !img.dataset.fallbackRetried && img.src !== cleanSrc) {
                 img.dataset.fallbackRetried = '1';
                 img.src = cleanSrc;
+            } else if (!img.dataset.cacheBustRetried) {
+                img.dataset.cacheBustRetried = '1';
+                const targetSrc = cleanSrc || img.src;
+                const sep = targetSrc.includes('?') ? '&' : '?';
+                img.src = `${targetSrc}${sep}_cb=${Date.now()}`;
             } else {
                 img.onerror = null;
                 const isLandscape = img.closest('.preview-grid')?.classList.contains('landscape');

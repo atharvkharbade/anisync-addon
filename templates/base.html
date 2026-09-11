@@ -555,6 +555,13 @@
                 {% endfor %}
             {% endwith %}
         });
+
+        // Prevent Chrome a11y warning when Bootstrap hides modals with aria-hidden
+        document.addEventListener('hide.bs.modal', function(event) {
+            if (event.target && event.target.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     {% block scripts %}{% endblock %}
