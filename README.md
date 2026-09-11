@@ -125,7 +125,7 @@ Shows your watch progress and upcoming release countdowns directly in the anime 
 ### 🎨 Custom Poster Art & Shapes
 * **Poster Shapes**: Choose between standard portrait (3:4) and widescreen landscape (16:9) poster orientations.
 * **High-Res Artwork**: Crisp posters from AniList, MAL, and Kitsu.
-* **RPDB Support**: Add your Rating Poster DB API key to overlay rating badges on posters.
+* **RPDB & TopPosters Integration**: Add your RPDB or TopPosters API key to overlay rating badges and poster art.
 * **Custom Poster Endpoints**: Works with external poster proxies (like BetterPosters) with dynamic `{shape}` and `{endpoint}` placeholder support.
 
 ---
