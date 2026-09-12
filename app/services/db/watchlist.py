@@ -3,11 +3,33 @@ import logging
 from .connection import db
 
 
-def invalidate_user_watchlist_cache(user_id: str):
-    """Delete all cached watchlist documents for a specific user."""
+def _resolve_user_cache_uids(user_id: str) -> list[str]:
+    """Resolve all known user ID aliases (uid, manifest_token) for cache lookups."""
+    if not user_id:
+        return []
+    uids = {str(user_id)}
     try:
-        db.get_collection("user_watchlist_cache").delete_many({"uid": str(user_id)})
-        logging.info("Invalidated watchlist cache for user %s", user_id)
+        from .users import get_user
+
+        user = get_user(str(user_id))
+        if user:
+            if user.get("uid"):
+                uids.add(str(user["uid"]))
+            if user.get("manifest_token"):
+                uids.add(str(user["manifest_token"]))
+    except Exception as e:
+        logging.warning("Error resolving user cache uids for %s: %s", user_id, e)
+    return list(uids)
+
+
+def invalidate_user_watchlist_cache(user_id: str):
+    """Delete all cached watchlist documents for a specific user, including manifest_token aliases."""
+    try:
+        uids = _resolve_user_cache_uids(user_id)
+        if not uids:
+            return
+        db.get_collection("user_watchlist_cache").delete_many({"uid": {"$in": uids}})
+        logging.info("Invalidated watchlist cache for uids %s", uids)
     except Exception as e:
         logging.error("Failed to invalidate watchlist cache for user %s: %s", user_id, e)
 
@@ -16,13 +38,14 @@ def get_user_watch_progress(
     user_id: str, mal_id: str | None = None, anilist_id: str | None = None, simkl_id: str | None = None
 ) -> int:
     """Find the user's maximum watch progress (watched episode count) across cached watchlists."""
-    if not user_id:
+    uids = _resolve_user_cache_uids(user_id)
+    if not uids:
         return 0
 
     max_progress = 0
     try:
         cache_col = db.get_collection("user_watchlist_cache")
-        docs = list(cache_col.find({"uid": str(user_id)}))
+        docs = list(cache_col.find({"uid": {"$in": uids}}))
 
         mal_str = str(mal_id) if mal_id else None
         anilist_str = str(anilist_id) if anilist_id else None
@@ -176,9 +199,12 @@ def update_user_watchlist_cache_progress(
     simkl_id: str | None = None,
 ):
     """Update watch progress in-place in the cache database to keep it accurate after a scrobble."""
+    uids = _resolve_user_cache_uids(user_id)
+    if not uids:
+        return
     try:
         cache_col = db.get_collection("user_watchlist_cache")
-        docs = list(cache_col.find({"uid": str(user_id)}))
+        docs = list(cache_col.find({"uid": {"$in": uids}}))
         if not docs:
             return
 

@@ -95,6 +95,8 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
             logging.warning("Catalog request: Unknown user_id=%s", user_id)
             return await respond_with({"metas": []})
 
+    canonical_uid = user.get("uid") or user_id
+
     from app.services.db import is_anilist_in_cooldown
     if is_anilist_in_cooldown(user):
         user["anilist_enabled"] = False
@@ -137,23 +139,23 @@ async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extra
 
     # 3. Recommendations Catalogs
     if catalog_id in ["anisync_rec", "anisync_loved", "anisync_liked"]:
-        return await handle_recommendations_catalog(user, user_id, catalog_type, catalog_id, filters, extras)
+        return await handle_recommendations_catalog(user, canonical_uid, catalog_type, catalog_id, filters, extras)
 
     # 4. Combined Watchlists
     if catalog_id.startswith("comb_"):
-        return await handle_combined_catalog(user, user_id, catalog_type, catalog_id, filters, extras)
+        return await handle_combined_catalog(user, canonical_uid, catalog_type, catalog_id, filters, extras)
 
     # 5. Simkl Watchlists
     if catalog_id.startswith("simkl_"):
-        return await handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters, extras)
+        return await handle_simkl_catalog(user, canonical_uid, catalog_type, catalog_id, filters, extras)
 
     # 6. MAL Watchlists
     if catalog_id.startswith("mal_"):
-        return await handle_mal_catalog(user, user_id, catalog_type, catalog_id, filters, extras)
+        return await handle_mal_catalog(user, canonical_uid, catalog_type, catalog_id, filters, extras)
 
     # 7. AniList Watchlists
     if catalog_id.startswith("anilist_"):
-        return await handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filters, extras)
+        return await handle_anilist_catalog(user, canonical_uid, catalog_type, catalog_id, filters, extras)
 
     return await respond_with({"metas": []})
 
