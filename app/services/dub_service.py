@@ -26,8 +26,8 @@ MYDUBLIST_URL_TEMPLATE = (
 
 # In-memory TTL: 6 hours
 MEMORY_TTL_SECONDS = 3600 * 6
-# MongoDB TTL: 7 days
-DB_TTL_DAYS = 7
+# MongoDB TTL: 1 day (aligns with MyDubList daily updates)
+DB_TTL_DAYS = 1
 
 # Memory cache: language -> (cached_at_timestamp, set_of_mal_ids)
 _MEMORY_DUB_CACHE: dict[str, tuple[float, set[int]]] = {}
@@ -70,16 +70,17 @@ def normalize_dub_language(language: str | None) -> str:
     return result
 
 
-async def get_dubbed_mal_ids(language: str = "english") -> set[int]:
+async def get_dubbed_mal_ids(language: str = "english", force_refresh: bool = False) -> set[int]:
     """
     Retrieve the set of MyAnimeList IDs that have an available dub in the given language.
     Checks in-memory cache first, then MongoDB, then fetches from MyDubList GitHub dataset.
+    When force_refresh is True, bypasses cache to fetch fresh upstream data.
     """
     lang = normalize_dub_language(language)
     now_ts = time.time()
 
-    # 1. In-memory check
-    if lang in _MEMORY_DUB_CACHE:
+    # 1. In-memory check (skipped on force_refresh)
+    if not force_refresh and lang in _MEMORY_DUB_CACHE:
         cached_ts, id_set = _MEMORY_DUB_CACHE[lang]
         if now_ts - cached_ts < MEMORY_TTL_SECONDS:
             return id_set
@@ -87,11 +88,11 @@ async def get_dubbed_mal_ids(language: str = "english") -> set[int]:
     col = db.get_collection("dubbed_cache")
     now_dt = datetime.now(UTC)
 
-    # 2. MongoDB check
+    # 2. MongoDB check (skipped on force_refresh)
     doc = None
     try:
         doc = col.find_one({"language": lang})
-        if doc and doc.get("mal_ids") and doc.get("expires_at"):
+        if not force_refresh and doc and doc.get("mal_ids") and doc.get("expires_at"):
             # Ensure expires_at comparison is timezone-aware
             expires_at = doc["expires_at"]
             if expires_at.tzinfo is None:
@@ -162,11 +163,17 @@ async def is_mal_id_dubbed(mal_id: int | str, language: str = "english") -> bool
 
 
 async def dub_sync_loop():
-    """Background loop to ensure dub database is loaded and refreshed daily."""
+    """Background loop to ensure dub database is loaded and refreshed every 24 hours across all supported languages."""
     while True:
         try:
-            # Warm English cache first
-            await get_dubbed_mal_ids("english")
+            logger.info("Starting 24-hour background dub database sync for all supported languages...")
+            for lang in SUPPORTED_DUB_LANGUAGES:
+                try:
+                    await get_dubbed_mal_ids(lang, force_refresh=True)
+                    await asyncio.sleep(1.5)
+                except Exception as lang_err:
+                    logger.warning("Error refreshing dub cache for %s: %s", lang, lang_err)
+            logger.info("24-hour background dub database sync completed.")
         except Exception as e:
             logger.warning("Error in background dub sync loop: %s", e)
         await asyncio.sleep(86400)
