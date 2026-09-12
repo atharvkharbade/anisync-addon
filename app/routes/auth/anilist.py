@@ -93,6 +93,10 @@ async def disconnect_anilist():
     if not user_session:
         return redirect(url_for("ui.index"))
 
+    if request.method == "GET" and request.args.get("confirm") != "1":
+        await flash("Confirmation required to disconnect tracker.", "warning")
+        return redirect(url_for("ui.configure"))
+
     user = get_user(user_session["uid"])
     if user:
         user.pop("anilist_token", None)

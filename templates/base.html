@@ -199,9 +199,11 @@
                 <button type="button" class="btn btn-whats-new d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#whatsNewModal" onclick="fetchGitHubReleases();">
                     <i class="fa-regular fa-bell text-warning"></i><span class="d-none d-sm-inline font-semibold ms-2">What's New</span>
                 </button>
-                <a href="{{ url_for('auth.logout') }}" class="btn btn-logout d-inline-flex align-items-center justify-content-center">
-                    <i class="fa-solid fa-right-from-bracket"></i><span class="d-none d-sm-inline ms-2">Logout</span>
-                </a>
+                <form action="{{ url_for('auth.logout') }}" method="POST" class="d-inline m-0 p-0">
+                    <button type="submit" class="btn btn-logout d-inline-flex align-items-center justify-content-center">
+                        <i class="fa-solid fa-right-from-bracket"></i><span class="d-none d-sm-inline ms-2">Logout</span>
+                    </button>
+                </form>
             </div>
         </div>
     </nav>

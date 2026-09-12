@@ -54,7 +54,7 @@ def is_valid_user_id(user_id: str) -> bool:
     """Validate that the user ID follows standard numeric (MAL), AniList (al_digits), Simkl (simkl_digits), Guest (guest_...), MongoDB Hex UID, or alphanumeric username pattern."""
     if not user_id:
         return False
-    return bool(re.match(r"^[a-zA-Z0-9_-]{1,64}$", user_id))
+    return bool(re.match(r"^[a-zA-Z0-9_-]{3,64}$", user_id))
 
 
 _rate_limit_lock = threading.Lock()

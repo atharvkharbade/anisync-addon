@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 import urllib.parse
 
 from quart import Blueprint
@@ -14,12 +15,19 @@ from app.services.simkl_service import sync_simkl
 subtitles_bp = Blueprint("subtitles", __name__)
 
 
-_in_flight_scrobbles: set[tuple[str, str, int]] = set()
+_in_flight_scrobbles: dict[tuple[str, str, int], float] = {}
+_scrobble_debounce_seconds = 5.0
+_last_scrobble_prune = 0.0
 
 
-async def _release_scrobble_key(key: tuple[str, str, int]):
-    await asyncio.sleep(5.0)
-    _in_flight_scrobbles.discard(key)
+def _prune_scrobbles(now: float):
+    global _last_scrobble_prune
+    if now - _last_scrobble_prune > 60.0:
+        _last_scrobble_prune = now
+        stale_cutoff = now - 60.0
+        stale_keys = [k for k, ts in _in_flight_scrobbles.items() if ts < stale_cutoff]
+        for k in stale_keys:
+            _in_flight_scrobbles.pop(k, None)
 
 
 @subtitles_bp.route("/<user_id>/subtitles/<string:content_type>/<path:content_id>.json")
@@ -79,17 +87,21 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
         logging.warning("Could not resolve anime IDs from content_id=%s", content_id)
         return await respond_with({"subtitles": []})
 
+    now = time.monotonic()
+    _prune_scrobbles(now)
+
     # Debounce duplicate in-flight requests (Stremio fires multiple subtitle queries on play)
     scrobble_key = (str(user_id), str(clean_id), episode)
-    if scrobble_key in _in_flight_scrobbles:
+    last_scrobble_time = _in_flight_scrobbles.get(scrobble_key)
+    if last_scrobble_time is not None and (now - last_scrobble_time) < _scrobble_debounce_seconds:
         logging.info("Debouncing duplicate in-flight subtitle scrobble for %s", scrobble_key)
         return await respond_with({"subtitles": []})
-    _in_flight_scrobbles.add(scrobble_key)
+    _in_flight_scrobbles[scrobble_key] = now
 
     user = get_user(user_id, for_manifest=True)
     if not user:
         logging.warning("Unknown user_id=%s", user_id)
-        asyncio.create_task(_release_scrobble_key(scrobble_key))
+        _in_flight_scrobbles.pop(scrobble_key, None)
         return await respond_with({"subtitles": []})
 
     mal_enabled = user.get("mal_enabled", True) if user.get("mal_access_token") else False
@@ -98,60 +110,97 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
     sync_unlisted = user.get("sync_unlisted", True)
 
     if not mal_enabled and not anilist_enabled and not simkl_enabled:
-        asyncio.create_task(_release_scrobble_key(scrobble_key))
+        _in_flight_scrobbles.pop(scrobble_key, None)
         return await respond_with({"subtitles": []})
 
-    try:
-        if kitsu_id:
-            resolved_mal, resolved_al = await resolve(kitsu_id)
-            mal_id = mal_id or resolved_mal
-            anilist_id = anilist_id or resolved_al
-            logging.info("Resolved: kitsu=%s → mal=%s anilist=%s", kitsu_id, mal_id, anilist_id)
+    if kitsu_id:
+        resolved_mal, resolved_al = await resolve(kitsu_id)
+        mal_id = mal_id or resolved_mal
+        anilist_id = anilist_id or resolved_al
+        logging.info("Resolved: kitsu=%s → mal=%s anilist=%s", kitsu_id, mal_id, anilist_id)
 
-        from app.services.db import get_cached_ids, cache_ids, db, update_user_watchlist_cache_progress
-        cached_ids = get_cached_ids(kitsu_id) if kitsu_id else None
-        if cached_ids:
-            simkl_id = cached_ids.get("simkl_id")
-        if not simkl_id:
+    from app.services.db import get_cached_ids, cache_ids, db, update_user_watchlist_cache_progress
+    cached_ids = get_cached_ids(kitsu_id) if kitsu_id else None
+    if cached_ids:
+        simkl_id = cached_ids.get("simkl_id")
+    if not simkl_id:
+        try:
+            fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
+            if fribb_doc and fribb_doc.get("simkl_id"):
+                simkl_id = str(fribb_doc["simkl_id"])
+                try:
+                    cache_ids(kitsu_id, mal_id, anilist_id, simkl_id=simkl_id)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    tasks = []
+    if mal_enabled and mal_id and user.get("mal_access_token"):
+        tasks.append(sync_mal(user, mal_id, episode, sync_unlisted))
+    if anilist_enabled and anilist_id and user.get("anilist_token"):
+        tasks.append(sync_anilist(user, anilist_id, episode, sync_unlisted))
+    if simkl_enabled and user.get("simkl_access_token"):
+        simkl_season = 1
+        simkl_episode = episode
+        if anilist_id or mal_id:
             try:
-                fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
-                if fribb_doc and fribb_doc.get("simkl_id"):
-                    simkl_id = str(fribb_doc["simkl_id"])
-                    try:
-                        cache_ids(kitsu_id, mal_id, anilist_id, simkl_id=simkl_id)
-                    except Exception:
-                        pass
-            except Exception:
-                pass
+                from app.routes.meta import fetch_anizp_metadata
+                anizp_data = await fetch_anizp_metadata(anilist_id=anilist_id, mal_id=mal_id)
+                if anizp_data and isinstance(anizp_data.get("episodes"), dict):
+                    eps = anizp_data["episodes"]
+                    anizp_ep = eps.get(str(episode))
+                    if not anizp_ep:
+                        for ep_info in eps.values():
+                            if ep_info.get("absoluteEpisodeNumber") == episode or ep_info.get("episodeNumber") == episode:
+                                anizp_ep = ep_info
+                                break
+                    if anizp_ep:
+                        if anizp_ep.get("seasonNumber") is not None:
+                            try:
+                                simkl_season = int(anizp_ep["seasonNumber"])
+                            except (ValueError, TypeError):
+                                pass
+                        if anizp_ep.get("episodeNumber") is not None:
+                            try:
+                                simkl_episode = int(anizp_ep["episodeNumber"])
+                            except (ValueError, TypeError):
+                                pass
+            except Exception as e:
+                logging.debug("Could not resolve season from AniZip for Simkl: %s", e)
 
-        tasks = []
-        if mal_enabled and mal_id and user.get("mal_access_token"):
-            tasks.append(sync_mal(user, mal_id, episode, sync_unlisted))
-        if anilist_enabled and anilist_id and user.get("anilist_token"):
-            tasks.append(sync_anilist(user, anilist_id, episode, sync_unlisted))
-        if simkl_enabled and user.get("simkl_access_token"):
-            tasks.append(sync_simkl(user, kitsu_id, mal_id, anilist_id, episode, content_type, sync_unlisted, simkl_id=simkl_id))
+        tasks.append(
+            sync_simkl(
+                user,
+                kitsu_id,
+                mal_id,
+                anilist_id,
+                simkl_episode,
+                content_type,
+                sync_unlisted,
+                simkl_id=simkl_id,
+                season=simkl_season,
+            )
+        )
 
-        if tasks:
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            any_updated = False
-            for r in results:
-                if isinstance(r, Exception):
-                    logging.error("Sync task error: %s", r)
-                else:
-                    logging.info("Sync result: %s", r)
-                    if getattr(r, "name", None) == "OK":
-                        any_updated = True
+    if tasks:
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        any_updated = False
+        for r in results:
+            if isinstance(r, Exception):
+                logging.error("Sync task error: %s", r)
+            else:
+                logging.info("Sync result: %s", r)
+                if getattr(r, "name", None) == "OK":
+                    any_updated = True
 
-            if any_updated:
-                update_user_watchlist_cache_progress(
-                    user_id=user_id,
-                    episode=episode,
-                    mal_id=mal_id,
-                    anilist_id=anilist_id,
-                    simkl_id=simkl_id,
-                )
-    finally:
-        asyncio.create_task(_release_scrobble_key(scrobble_key))
+        if any_updated:
+            update_user_watchlist_cache_progress(
+                user_id=user_id,
+                episode=episode,
+                mal_id=mal_id,
+                anilist_id=anilist_id,
+                simkl_id=simkl_id,
+            )
 
     return await respond_with({"subtitles": []})
