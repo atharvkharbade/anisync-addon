@@ -3168,7 +3168,7 @@
                         <i class="fa-solid fa-triangle-exclamation me-2"></i><span>Danger Zone</span>
                     </h6>
                     <p class="text-secondary small mb-3" style="color: #a1a1aa !important; line-height: 1.5; font-size: 0.85rem;">
-                        Permanently delete your user records, disconnect connected tracker accounts (AniList, MAL, Simkl), and clear all saved catalog preferences.
+                        Permanently delete your user records, {% if not user.get('is_guest') %}disconnect connected tracker accounts (AniList, MAL, Simkl), and {% endif %}clear all saved catalog preferences.
                     </p>
                     <button type="button" class="btn btn-sm text-white px-3.5 py-2 fw-semibold d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#deleteAccountModal" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; font-size: 0.85rem; color: #f87171 !important;">
                         <i class="fa-solid fa-trash-can me-2"></i><span>Delete User Records</span>
@@ -3476,7 +3476,11 @@
                 </p>
                 <div class="p-3 rounded-3 mb-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08);">
                     <ul class="text-secondary small mb-0 ps-3" style="color: #cbd5e1 !important; font-size: 0.85rem; line-height: 1.7;">
+                        {% if user.get('is_guest') %}
+                        <li>Deactivate your installed manifest URL.</li>
+                        {% else %}
                         <li>Disconnect access for <strong>AniList</strong>, <strong>MyAnimeList</strong>, and <strong>Simkl</strong>.</li>
+                        {% endif %}
                         <li>Erase saved catalog ordering and genre filter preferences.</li>
                         <li>Clear saved addon configuration.</li>
                     </ul>
