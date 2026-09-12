@@ -479,14 +479,13 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         m["portrait_poster"] = portrait_poster
         m["landscape_poster"] = landscape_poster
 
-        # Update background with landscape badge so clients (such as Nuvio) that force
-        # landscape row views will display the new episode badge on the 16:9 backdrop card
-        if landscape_badge_url:
-            m["background"] = landscape_badge_url
-
         if is_landscape:
             m["posterShape"] = "landscape"
             m["poster"] = landscape_poster
+            # Update background with landscape badge so clients (such as Nuvio) that force
+            # landscape row views will display the new episode badge on the 16:9 backdrop card
+            if landscape_badge_url:
+                m["background"] = landscape_badge_url
         else:
             m["posterShape"] = "poster"
             m["poster"] = portrait_poster
