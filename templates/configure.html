@@ -4696,10 +4696,10 @@
         }
 
         function fetchSearchCatalogItems(query, isDubbed = false, dubLang = 'english') {
-            query = (query !== null && query !== undefined ? query : '').trim();
-            if (!query) query = 'Haikyu!!';
+            const rawQuery = (query !== null && query !== undefined ? query : '').trim();
+            const effectiveQuery = rawQuery || 'Haikyu!!';
             const normLang = (dubLang || 'english').toLowerCase();
-            const cacheKey = 'search_' + query.toLowerCase() + '_' + (isDubbed ? 'dub_' + normLang : 'all');
+            const cacheKey = 'search_' + effectiveQuery.toLowerCase() + '_' + (isDubbed ? 'dub_' + normLang : 'all');
             if (catalogItemsCache[cacheKey]) {
                 const cachedItems = catalogItemsCache[cacheKey];
                 if (Array.isArray(cachedItems)) {
@@ -4709,7 +4709,7 @@
             if (!currentUserId) {
                 return Promise.resolve(PREVIEW_ANIME_ITEMS);
             }
-            let fetchUrl = `/${currentUserId}/catalog/anime/anisync_search/search=${encodeURIComponent(query)}.json?_ts=${Date.now()}`;
+            let fetchUrl = `/${currentUserId}/catalog/anime/anisync_search/search=${encodeURIComponent(effectiveQuery)}.json?_ts=${Date.now()}`;
             if (isDubbed) {
                 fetchUrl += `&audio=dubbed&dub_language=${encodeURIComponent(normLang)}`;
             } else {
@@ -4723,18 +4723,14 @@
                 .then(data => {
                     const metas = (data && data.metas) || [];
                     if (metas.length === 0) {
-                        if (isDubbed) {
+                        if (isDubbed || rawQuery) {
                             catalogItemsCache[cacheKey] = [];
                             return [];
                         }
-                        if (!query || query.toLowerCase() === 'haikyu!!' || query.toLowerCase() === 'haikyuu!!' || query.toLowerCase() === 'frieren') {
-                            const sampleFallback = PREVIEW_ANIME_ITEMS.map(i => ({ ...i, is_sample_fallback: true }));
-                            catalogItemsCache[cacheKey] = sampleFallback;
-                            catalogItemsCache['anisync_search'] = sampleFallback;
-                            return sampleFallback;
-                        }
-                        catalogItemsCache[cacheKey] = [];
-                        return [];
+                        const sampleFallback = PREVIEW_ANIME_ITEMS.map(i => ({ ...i, is_sample_fallback: true }));
+                        catalogItemsCache[cacheKey] = sampleFallback;
+                        catalogItemsCache['anisync_search'] = sampleFallback;
+                        return sampleFallback;
                     }
                     const items = metas.filter(m => {
                         const sub = (m.subtype || '').toLowerCase();

@@ -250,7 +250,7 @@ async def delete_account():
 
         for del_uid in uids_to_delete:
             db.get_collection("user_watchlist_cache").delete_many({"uid": str(del_uid)})
-            db.get_collection("recommendations_cache").delete_many({"user_id": str(del_uid)})
+            db.get_collection("recommendations_cache").delete_many({"$or": [{"uid": str(del_uid)}, {"user_id": str(del_uid)}]})
             db.get_collection("sessions").delete_many({"data.user.uid": str(del_uid)})
 
         session.clear()
