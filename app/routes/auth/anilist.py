@@ -86,7 +86,7 @@ async def anilist_save():
         return {"ok": False, "error": "Invalid token"}, 400
 
 
-@auth_bp.route("/disconnect-anilist")
+@auth_bp.route("/disconnect-anilist", methods=["GET", "POST"])
 @rate_limit(limit=10, period_seconds=60)
 async def disconnect_anilist():
     user_session = session.get("user")

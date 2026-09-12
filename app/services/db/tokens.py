@@ -1,9 +1,13 @@
+import asyncio
 import logging
 import time
+from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 
 from .users import get_user, store_user
 from .watchlist import invalidate_user_watchlist_cache
+
+_mal_refresh_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
 
 def is_anilist_in_cooldown(user: dict) -> bool:
@@ -67,45 +71,46 @@ async def get_or_refresh_mal_token(user_id: str) -> str | None:
     """Gets the MAL access token for a user. If it's expired or close to expiring,
     attempts to refresh it in the background. If refreshing fails, marks MAL as expired.
     """
-    try:
-        user = get_user(user_id)
-        if not user or not user.get("mal_access_token") or not user.get("mal_refresh_token"):
-            return None
-
-        # If already marked expired, do not attempt to refresh or use
-        if user.get("mal_token_expired"):
-            return None
-
-        expiry = user.get("mal_expires_at")
-        now = datetime.now(UTC).replace(tzinfo=None)
-        if expiry and now >= expiry - timedelta(hours=2):
-            from app.api import mal as mal_api
-
-            try:
-                logging.info("Auto-refreshing MAL token for user %s", user_id)
-                token_data = await mal_api.refresh_token(user["mal_refresh_token"])
-                user["mal_access_token"] = token_data["access_token"]
-                user["mal_refresh_token"] = token_data["refresh_token"]
-                user["mal_expires_at"] = now + timedelta(seconds=token_data["expires_in"])
-                user["mal_consecutive_auth_errors"] = 0
-                user.pop("mal_token_expired", None)
-                store_user(user)
-            except Exception as e:
-                logging.error("Failed to auto-refresh MAL token for user %s: %s", user_id, e)
-                # Mark as expired on refresh failure
-                user["mal_enabled"] = False
-                user["mal_consecutive_auth_errors"] = 0
-                user.pop("mal_last_auth_error_at", None)
-                user["mal_token_expired"] = True
-                user["mal_expired_at"] = time.time()
-                store_user(user)
-                invalidate_user_watchlist_cache(user_id)
+    async with _mal_refresh_locks[str(user_id)]:
+        try:
+            user = get_user(user_id)
+            if not user or not user.get("mal_access_token") or not user.get("mal_refresh_token"):
                 return None
 
-        return user.get("mal_access_token")
-    except Exception as e:
-        logging.error("Error in get_or_refresh_mal_token: %s", e)
-        return None
+            # If already marked expired, do not attempt to refresh or use
+            if user.get("mal_token_expired"):
+                return None
+
+            expiry = user.get("mal_expires_at")
+            now = datetime.now(UTC).replace(tzinfo=None)
+            if expiry and now >= expiry - timedelta(hours=2):
+                from app.api import mal as mal_api
+
+                try:
+                    logging.info("Auto-refreshing MAL token for user %s", user_id)
+                    token_data = await mal_api.refresh_token(user["mal_refresh_token"])
+                    user["mal_access_token"] = token_data["access_token"]
+                    user["mal_refresh_token"] = token_data["refresh_token"]
+                    user["mal_expires_at"] = now + timedelta(seconds=token_data["expires_in"])
+                    user["mal_consecutive_auth_errors"] = 0
+                    user.pop("mal_token_expired", None)
+                    store_user(user)
+                except Exception as e:
+                    logging.error("Failed to auto-refresh MAL token for user %s: %s", user_id, e)
+                    # Mark as expired on refresh failure
+                    user["mal_enabled"] = False
+                    user["mal_consecutive_auth_errors"] = 0
+                    user.pop("mal_last_auth_error_at", None)
+                    user["mal_token_expired"] = True
+                    user["mal_expired_at"] = time.time()
+                    store_user(user)
+                    invalidate_user_watchlist_cache(user_id)
+                    return None
+
+            return user.get("mal_access_token")
+        except Exception as e:
+            logging.error("Error in get_or_refresh_mal_token: %s", e)
+            return None
 
 
 def reset_mal_error_counter(user_id: str):

@@ -75,7 +75,7 @@ def map_kitsu_to_stremio(
     logo = anizp_logo
     if not logo and cinemeta_data:
         logo = cinemeta_data.get("logo")
-    if not logo and not cinemeta_data and imdb_id:
+    if not logo and imdb_id:
         logo = f"https://images.metahub.space/logo/medium/{imdb_id}/img"
 
     average_rating = attributes.get("averageRating")
@@ -127,7 +127,16 @@ def map_kitsu_to_stremio(
 
         max_kitsu_ep = 0
         if episodes_data:
-            max_kitsu_ep = max([x.get("attributes", {}).get("number") or 0 for x in episodes_data])
+            ep_nums = []
+            for x in episodes_data:
+                raw_n = x.get("attributes", {}).get("number")
+                if raw_n is not None:
+                    try:
+                        ep_nums.append(int(raw_n))
+                    except (ValueError, TypeError):
+                        pass
+            if ep_nums:
+                max_kitsu_ep = max(ep_nums)
 
         max_anizp_ep = 0
         if anizp_episodes:

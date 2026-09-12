@@ -75,15 +75,19 @@ async def sync_anilist(user: dict, anilist_id: str, episode: int, sync_unlisted:
             return UpdateStatus.NULL
 
     # Determine new status & repeat count
+    media_format = (media.get("format") or "").upper()
+    is_movie_format = media_format == "MOVIE" or (media_format in ["SPECIAL", "OVA"] and total_episodes <= 1)
+    is_completed = bool((total_episodes and episode >= total_episodes) or (is_movie_format and episode >= 1))
+
     send_repeat = None
     if is_rewatching:
-        if total_episodes and episode >= total_episodes:
+        if is_completed:
             new_status = "COMPLETED"
             send_repeat = repeat + 1
         else:
             new_status = "REPEATING"
     else:
-        if total_episodes and episode >= total_episodes:
+        if is_completed:
             new_status = "COMPLETED"
         else:
             new_status = "CURRENT"

@@ -22,6 +22,7 @@ async def sync_simkl(
     content_type: str,
     sync_unlisted: bool,
     simkl_id: str | None = None,
+    season: int = 1,
 ) -> UpdateStatus:
     """Sync watch progress for a movie or show episode to Simkl."""
     user_id = user.get("uid")
@@ -92,6 +93,7 @@ async def sync_simkl(
             simkl_id=simkl_id,
             episode=episode,
             content_type=content_type,
+            season=season,
         )
         if success:
             reset_simkl_error_counter(user_id)

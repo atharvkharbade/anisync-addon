@@ -82,6 +82,9 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
             "genres": genres,
         }
 
+    al_scores = [entry.get("score", 0) for entry in anilist_items if (entry.get("score") or 0) > 0]
+    is_anilist_5_point = bool(al_scores) and max(al_scores) <= 5
+
     for entry in anilist_items:
         media = entry.get("media", {})
         t_obj = media.get("title") or {}
@@ -96,7 +99,9 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
         mal_id = str(media.get("idMal")) if media.get("idMal") else None
         status = normalize_user_status(entry.get("status"))
         rating = entry.get("score", 0) or 0
-        if rating > 10:
+        if is_anilist_5_point and rating > 0:
+            rating = int(round(rating * 2))
+        elif rating > 10:
             rating = int(rating / 10)
         genres = media.get("genres", []) or []
 

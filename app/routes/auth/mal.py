@@ -124,7 +124,7 @@ async def refresh_mal():
     return redirect(url_for("ui.configure"))
 
 
-@auth_bp.route("/disconnect-mal")
+@auth_bp.route("/disconnect-mal", methods=["GET", "POST"])
 @rate_limit(limit=10, period_seconds=60)
 async def disconnect_mal():
     user_session = session.get("user")

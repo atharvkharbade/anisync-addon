@@ -126,9 +126,9 @@ def get_simkl_display_title(show_obj: dict, title_lang: str, bulk_details: dict 
                 if t and t != "Unknown":
                     return t
 
-        if kitsu_id and (kitsu_id.isdigit() or isinstance(kitsu_id, str)):
-            k_id = int(kitsu_id) if kitsu_id.isdigit() else kitsu_id
-            kdoc = db.get_collection("kitsu_meta_cache").find_one({"kitsu_id": k_id})
+        if kitsu_id:
+            k_query = {"$or": [{"kitsu_id": str(kitsu_id)}, {"kitsu_id": int(kitsu_id)}]} if str(kitsu_id).isdigit() else {"kitsu_id": str(kitsu_id)}
+            kdoc = db.get_collection("kitsu_meta_cache").find_one(k_query)
             if kdoc and kdoc.get("data", {}).get("attributes"):
                 t = get_kitsu_title(kdoc["data"]["attributes"], title_lang)
                 if t and t != "Unknown":

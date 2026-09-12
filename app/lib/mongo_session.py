@@ -46,6 +46,21 @@ class MongoSession(dict, SessionMixin):
         self.modified = True
         return super().setdefault(key, default)
 
+    def rotate(self):
+        """Regenerate session ID to prevent session fixation attacks on login/elevation."""
+        old_sid = self.sid
+        self.sid = str(uuid.uuid4())
+        self.accessed = True
+        self.modified = True
+        if old_sid:
+            try:
+                from app.services.db import db
+
+                db.get_collection("sessions").delete_one({"sid": old_sid})
+            except Exception:
+                pass
+        return self.sid
+
 
 class MongoSessionInterface(SessionInterface):
     def __init__(self, collection_name="sessions"):

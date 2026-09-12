@@ -133,8 +133,10 @@ def build_filler_arc_header(
     if not range_strs:
         return None
 
+    target_ep = (watched_progress + 1) if (watched_progress is not None and watched_progress >= 0) else 1
+
     for r_start, r_end in ranges:
-        if r_start <= watched_progress <= r_end and watched_progress > 0:
+        if r_start <= target_ep <= r_end and (watched_progress > 0 or target_ep == 1):
             if r_start == r_end:
                 return f"[Current Filler Episode: Ep {r_start}]"
             return f"[Current Filler Arc: Episodes {r_start}–{r_end}]"
@@ -147,7 +149,7 @@ def build_filler_arc_header(
         return None
 
     for r_start, r_end in ranges:
-        if watched_progress < r_start and (r_start - watched_progress) <= 10:
+        if target_ep < r_start and (r_start - target_ep) <= 10:
             if r_start == r_end:
                 return f"[Upcoming Filler Episode: Ep {r_start}]"
             return f"[Upcoming Filler Arc: Episodes {r_start}–{r_end}]"

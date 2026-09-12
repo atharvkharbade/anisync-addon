@@ -175,6 +175,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         watched_kitsu_ids=watched_kitsu_ids,
         min_count=15,
         default_desc="Popular community recommendation.",
+        fallback_offset=0,
     )
     item_recs = pad_catalog(
         item_recs,
@@ -186,6 +187,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         watched_kitsu_ids=watched_kitsu_ids,
         min_count=15,
         default_desc="Popular community recommendation.",
+        fallback_offset=15,
     )
     loved_items = pad_catalog(
         loved_items,
@@ -197,6 +199,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         watched_kitsu_ids=watched_kitsu_ids,
         min_count=15,
         default_desc="Popular trending anime you might enjoy.",
+        fallback_offset=30,
     )
     liked_items = pad_catalog(
         liked_items,
@@ -208,6 +211,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         watched_kitsu_ids=watched_kitsu_ids,
         min_count=15,
         default_desc="Popular trending anime you might enjoy.",
+        fallback_offset=45,
     )
     genre_1_items = pad_catalog(
         genre_1_items,
@@ -219,6 +223,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         watched_kitsu_ids=watched_kitsu_ids,
         min_count=15,
         default_desc=f"Popular {genre_1_name} collection.",
+        fallback_offset=60,
     )
     genre_2_items = pad_catalog(
         genre_2_items,
@@ -230,6 +235,7 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         watched_kitsu_ids=watched_kitsu_ids,
         min_count=15,
         default_desc=f"Popular {genre_2_name} collection.",
+        fallback_offset=75,
     )
 
     top_picks = apply_sorting_order(top_picks, rec_sorting_order)[:30]

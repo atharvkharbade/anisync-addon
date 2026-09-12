@@ -49,6 +49,31 @@ def is_trusted_url(url: str) -> bool:
         return False
 
 
+FONT_CANDIDATES = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
+    "DejaVuSans-Bold.ttf",
+    "arialbd.ttf",
+    "Arial Bold.ttf",
+]
+
+
+def _get_truetype_font(size: int):
+    for candidate in FONT_CANDIDATES:
+        try:
+            return ImageFont.truetype(candidate, size)
+        except Exception:
+            continue
+    try:
+        return ImageFont.truetype("DejaVuSans.ttf", size)
+    except Exception:
+        pass
+    return ImageFont.load_default()
+
+
 def _render_modified_poster_sync(
     img_bytes: bytes, tracker: str, badge_style: str, shape: str = "poster", badge_type: str = "episode"
 ) -> bytes:
@@ -90,12 +115,8 @@ def _render_modified_poster_sync(
     draw = ImageDraw.Draw(overlay)
 
     try:
-        font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
         font_size_classic = max(14, int(13 * scale)) if is_landscape else max(10, int(12 * scale))
-        try:
-            font = ImageFont.truetype(font_path, font_size_classic)
-        except Exception:
-            font = ImageFont.load_default()
+        font = _get_truetype_font(font_size_classic)
 
         tracker_clean = tracker.replace(" ", "+").replace(",", "+")
         trackers = [t.strip() for t in tracker_clean.split("+") if t.strip()]
@@ -131,12 +152,8 @@ def _render_modified_poster_sync(
                 blur_radius = max(5, int(10 * scale))
                 outline_w = 1
 
-            try:
-                font_top = ImageFont.truetype(font_path, font_top_size)
-                font_bottom = ImageFont.truetype(font_path, font_bottom_size)
-            except Exception:
-                font_top = font
-                font_bottom = font
+            font_top = _get_truetype_font(font_top_size)
+            font_bottom = _get_truetype_font(font_bottom_size)
 
             # 1. Draw top rounded liquid glass badge ("NEW EPISODE" or "NEWLY RELEASED")
             text_top = "NEWLY RELEASED" if badge_type == "movie" else "NEW EPISODE"
@@ -150,24 +167,25 @@ def _render_modified_poster_sync(
 
             box_w = tw + pad_x
             box_h = th + pad_y
-            box_x1 = int((w - box_w) / 2)
+            box_x1 = max(0, int((w - box_w) / 2))
             box_y1 = margin_y
-            box_x2 = int(box_x1 + box_w)
+            box_x2 = min(w, int(box_x1 + box_w))
             box_y2 = int(box_y1 + box_h)
 
             # Apply Gaussian Blur to poster background slice under top badge
-            try:
-                crop_top = img.crop((box_x1, box_y1, box_x2, box_y2))
-                blur_top = crop_top.filter(ImageFilter.GaussianBlur(radius=blur_radius))
-                mask_top = Image.new("L", (box_w, box_h), 0)
-                mask_draw_t = ImageDraw.Draw(mask_top)
-                if hasattr(mask_draw_t, "rounded_rectangle"):
-                    mask_draw_t.rounded_rectangle([(0, 0), (box_w, box_h)], radius=radius, fill=255)
-                else:
-                    mask_draw_t.rectangle([(0, 0), (box_w, box_h)], fill=255)
-                img.paste(blur_top, (box_x1, box_y1), mask_top)
-            except Exception:
-                pass
+            if box_x2 > box_x1 and box_y2 > box_y1:
+                try:
+                    crop_top = img.crop((box_x1, box_y1, box_x2, box_y2))
+                    blur_top = crop_top.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+                    mask_top = Image.new("L", (box_x2 - box_x1, box_y2 - box_y1), 0)
+                    mask_draw_t = ImageDraw.Draw(mask_top)
+                    if hasattr(mask_draw_t, "rounded_rectangle"):
+                        mask_draw_t.rounded_rectangle([(0, 0), (box_x2 - box_x1, box_y2 - box_y1)], radius=radius, fill=255)
+                    else:
+                        mask_draw_t.rectangle([(0, 0), (box_x2 - box_x1, box_y2 - box_y1)], fill=255)
+                    img.paste(blur_top, (box_x1, box_y1), mask_top)
+                except Exception:
+                    pass
 
             # Draw liquid glass overlay and text
             if hasattr(draw, "rounded_rectangle"):
@@ -200,24 +218,25 @@ def _render_modified_poster_sync(
 
             bot_box_w = btw + pad_x
             bot_box_h = bth + pad_y
-            bot_box_x1 = int((w - bot_box_w) / 2)
-            bot_box_y1 = int(h - bot_box_h - margin_y)
-            bot_box_x2 = int(bot_box_x1 + bot_box_w)
-            bot_box_y2 = int(bot_box_y1 + bot_box_h)
+            bot_box_x1 = max(0, int((w - bot_box_w) / 2))
+            bot_box_y1 = max(box_y2 + 4, int(h - bot_box_h - margin_y))
+            bot_box_x2 = min(w, int(bot_box_x1 + bot_box_w))
+            bot_box_y2 = min(h, int(bot_box_y1 + bot_box_h))
 
             # Apply Gaussian Blur to poster background slice under bottom badge
-            try:
-                crop_bot = img.crop((bot_box_x1, bot_box_y1, bot_box_x2, bot_box_y2))
-                blur_bot = crop_bot.filter(ImageFilter.GaussianBlur(radius=blur_radius))
-                mask_bot = Image.new("L", (bot_box_w, bot_box_h), 0)
-                mask_draw_b = ImageDraw.Draw(mask_bot)
-                if hasattr(mask_draw_b, "rounded_rectangle"):
-                    mask_draw_b.rounded_rectangle([(0, 0), (bot_box_w, bot_box_h)], radius=radius, fill=255)
-                else:
-                    mask_draw_b.rectangle([(0, 0), (bot_box_w, bot_box_h)], fill=255)
-                img.paste(blur_bot, (bot_box_x1, bot_box_y1), mask_bot)
-            except Exception:
-                pass
+            if bot_box_x2 > bot_box_x1 and bot_box_y2 > bot_box_y1:
+                try:
+                    crop_bot = img.crop((bot_box_x1, bot_box_y1, bot_box_x2, bot_box_y2))
+                    blur_bot = crop_bot.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+                    mask_bot = Image.new("L", (bot_box_x2 - bot_box_x1, bot_box_y2 - bot_box_y1), 0)
+                    mask_draw_b = ImageDraw.Draw(mask_bot)
+                    if hasattr(mask_draw_b, "rounded_rectangle"):
+                        mask_draw_b.rounded_rectangle([(0, 0), (bot_box_x2 - bot_box_x1, bot_box_y2 - bot_box_y1)], radius=radius, fill=255)
+                    else:
+                        mask_draw_b.rectangle([(0, 0), (bot_box_x2 - bot_box_x1, bot_box_y2 - bot_box_y1)], fill=255)
+                    img.paste(blur_bot, (bot_box_x1, bot_box_y1), mask_bot)
+                except Exception:
+                    pass
 
             # Draw liquid glass overlay and text
             if hasattr(draw, "rounded_rectangle"):
@@ -283,16 +302,18 @@ def _render_modified_poster_sync(
             ty = bar_center_y - text_h / 2 - top
             draw.text((tx, ty), text, font=font, fill=(255, 255, 255, 255))
 
-        # Composite and convert
+        # Composite and convert onto dark card background to eliminate transparency artifacts
         combined = Image.alpha_composite(img, overlay)
-        final_img = combined.convert("RGB")
+        bg = Image.new("RGBA", combined.size, (15, 23, 42, 255))
+        final_img = Image.alpha_composite(bg, combined).convert("RGB")
 
     except Exception as ex:
         logging.error("Failed to dynamically draw overlay: %s. Falling back to solid white bar.", ex)
         fall_h = max(26, int(35 * scale))
         draw.rectangle([(0, int(h - fall_h)), (w, h)], fill=(255, 255, 255, 255))
         combined = Image.alpha_composite(img, overlay)
-        final_img = combined.convert("RGB")
+        bg = Image.new("RGBA", combined.size, (15, 23, 42, 255))
+        final_img = Image.alpha_composite(bg, combined).convert("RGB")
 
     # Output modified image as JPEG with 4:4:4 full chroma at quality 92
     output = io.BytesIO()
@@ -302,25 +323,40 @@ def _render_modified_poster_sync(
 
 
 def _render_framed_background_sync(img_bytes: bytes) -> bytes | None:
-    """Center-frames banner into 16:9 1920x1080 canvas. Returns None if already landscape."""
+    """Center-frames wide banner into 16:9 1920x1080 canvas with blurred ambient padding.
+    Returns None if already standard landscape (aspect_ratio <= 2.0).
+    """
     banner_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     bw, bh = banner_img.size
-    aspect_ratio = bw / float(bh)
+    aspect_ratio = bw / float(bh) if bh > 0 else 1.0
 
     if aspect_ratio <= 2.0:
         return None
 
     target_w, target_h = 1920, 1080
-    scale = target_h / float(bh)
-    new_w = int(bw * scale)
-    new_h = target_h
 
+    # Create ambient blurred background by resizing banner to fill canvas and applying heavy blur
+    bg_scale = max(target_w / float(bw), target_h / float(bh))
+    bg_w, bg_h = int(bw * bg_scale), int(bh * bg_scale)
+    bg_resized = banner_img.resize((bg_w, bg_h), Image.Resampling.BILINEAR)
+    bg_crop_x = (bg_w - target_w) // 2
+    bg_crop_y = (bg_h - target_h) // 2
+    bg_canvas = bg_resized.crop((bg_crop_x, bg_crop_y, bg_crop_x + target_w, bg_crop_y + target_h))
+    blurred_bg = bg_canvas.filter(ImageFilter.GaussianBlur(radius=30))
+
+    # Scale banner to fit target canvas while preserving 100% of character details
+    fg_scale = min(target_w / float(bw), target_h / float(bh))
+    new_w = int(bw * fg_scale)
+    new_h = int(bh * fg_scale)
     scaled_banner = banner_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-    crop_x = (new_w - target_w) // 2
-    final_img = scaled_banner.crop((crop_x, 0, crop_x + target_w, target_h))
+
+    # Paste centered horizontally and vertically onto blurred ambient backdrop
+    offset_x = (target_w - new_w) // 2
+    offset_y = (target_h - new_h) // 2
+    blurred_bg.paste(scaled_banner, (offset_x, offset_y))
 
     output = io.BytesIO()
-    final_img.save(output, format="JPEG", quality=90)
+    blurred_bg.save(output, format="JPEG", quality=90)
     output.seek(0)
     return output.read()
 

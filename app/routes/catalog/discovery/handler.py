@@ -33,9 +33,14 @@ async def discovery_catalogs_loop():
         await asyncio.sleep(12 * 3600 - 300)
 
 
+_discovery_prefetch_task = None
+
+
 def trigger_discovery_catalogs_prefetch():
-    """Start the background discovery catalogs prefetch loop."""
-    asyncio.create_task(discovery_catalogs_loop())
+    """Start the background discovery catalogs prefetch loop if not already running."""
+    global _discovery_prefetch_task
+    if _discovery_prefetch_task is None or _discovery_prefetch_task.done():
+        _discovery_prefetch_task = asyncio.create_task(discovery_catalogs_loop())
 
 
 async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filters, extras=""):
@@ -103,10 +108,19 @@ async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filt
     if is_custom_sort:
         metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
 
-    # Shuffle if enabled and not explicitly custom sorted
+    # Shuffle if enabled and not explicitly custom sorted (deterministic daily seed per user/catalog for stable pagination)
     if is_catalog_shuffle_enabled(user, catalog_id) and (not is_custom_sort or sort_by == "default"):
         metas = list(metas)
-        random.shuffle(metas)
+        today_str = datetime.date.today().isoformat()
+        seed_key = f"{user_id}_{catalog_id}_{today_str}"
+        random.Random(seed_key).shuffle(metas)
+
+    # Filter NSFW before slicing so the returned page length equals page_limit, preventing premature end-of-catalog
+    hide_nsfw = user.get("hide_nsfw", True) if user else True
+    if hide_nsfw:
+        from app.routes.catalog.formatting import is_nsfw_meta
+
+        metas = [m for m in metas if not is_nsfw_meta(m)]
 
     # Handle pagination skip
     try:

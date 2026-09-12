@@ -59,6 +59,19 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
         if lock:
             locked_at = lock.get("locked_at")
             if locked_at and (now - locked_at) < timedelta(minutes=10):
+                # On cold start (no mappings yet), briefly wait for rebuilding worker to finish
+                # rather than immediately returning with an empty database
+                if db.fribb_mappings.count_documents({}) == 0:
+                    import asyncio
+
+                    for _ in range(15):
+                        await asyncio.sleep(0.5)
+                        if db.fribb_mappings.count_documents({}) > 0:
+                            return
+                        if not db.fribb_meta.find_one({"key": "rebuild_lock"}):
+                            break
+                    if db.fribb_mappings.count_documents({}) > 0:
+                        return
                 logging.info("Another worker is currently rebuilding Fribb mappings. Skipping.")
                 return
             else:
@@ -73,6 +86,17 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
             return_document=False,
         )
         if res is not None:
+            if db.fribb_mappings.count_documents({}) == 0:
+                import asyncio
+
+                for _ in range(15):
+                    await asyncio.sleep(0.5)
+                    if db.fribb_mappings.count_documents({}) > 0:
+                        return
+                    if not db.fribb_meta.find_one({"key": "rebuild_lock"}):
+                        break
+                if db.fribb_mappings.count_documents({}) > 0:
+                    return
             logging.info("Another worker acquired the Fribb rebuild lock. Skipping.")
             return
     except Exception as e:

@@ -267,13 +267,6 @@ def update_user_watchlist_cache_progress(
                         mal_str or anilist_str or simkl_str,
                         episode,
                     )
-                elif not item_found:
-                    cache_col.delete_one({"_id": doc["_id"]})
-                    logging.info(
-                        "Show not found in watching cache for user %s, tracker %s. Invalidating cache document.",
-                        user_id,
-                        tracker,
-                    )
             else:
                 # If an item was found in a non-watching list (e.g. plan_to_watch, on_hold, dropped),
                 # it has transitioned to watching. Invalidate this cache document so it refetches clean.

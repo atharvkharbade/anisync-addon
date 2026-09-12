@@ -71,6 +71,11 @@ class AnilistTokenInvalidError(Exception):
     pass
 
 
+class AnilistAPIError(Exception):
+    """Exception raised when AniList API returns GraphQL errors or null data."""
+    pass
+
+
 async def _gql(token: str | None, query: str, variables: dict | None = None) -> dict:
     headers = {
         "Content-Type": "application/json",
@@ -163,7 +168,13 @@ async def save_entry(token: str, anilist_id: int, progress: int, status: str, re
         SAVE_MUTATION,
         variables,
     )
-    return data["data"]["SaveMediaListEntry"]
+    if not data or not isinstance(data, dict) or not data.get("data"):
+        errors = (data or {}).get("errors", [])
+        raise AnilistAPIError(f"AniList mutation failed: {errors}")
+    save_media = data["data"].get("SaveMediaListEntry")
+    if not save_media:
+        raise AnilistAPIError(f"AniList response missing SaveMediaListEntry: {data}")
+    return save_media
 
 
 USER_LIST_QUERY = """

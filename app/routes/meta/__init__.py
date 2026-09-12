@@ -144,7 +144,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         show_filler = user.get("show_filler_tags", False) if user else False
         show_watched = user.get("show_watched_tags", False) if user else False
         watched_progress = 0
-        if show_watched:
+        if show_watched or show_filler:
             from app.services.db import get_user_watch_progress
 
             watched_progress = get_user_watch_progress(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
@@ -239,7 +239,10 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             curr_desc = meta.get("description", "")
             meta["description"] = f"{header_text}\n\n{curr_desc}" if curr_desc else header_text
 
-        return await respond_with({"meta": meta}, max_age=86400, stale_while_revalidate=604800)
+        has_personalized = bool(dynamic_headers or (show_watched and watched_progress > 0))
+        cache_max_age = 60 if has_personalized else 86400
+        cache_stale = 120 if has_personalized else 604800
+        return await respond_with({"meta": meta}, max_age=cache_max_age, stale_while_revalidate=cache_stale)
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)
         return await respond_with({"meta": {}})

@@ -5008,6 +5008,15 @@
                 const currentCfg = catalogConfigs[catId] || {};
                 currentPreviewAnimeList = applySortAndShuffle(items, currentCfg);
                 updateModalLivePreview(true);
+            }).catch(err => {
+                console.error("Failed to load catalog items for preview:", err);
+                if (activeModalCatalogId !== catId) return;
+                if (countEl) {
+                    countEl.innerHTML = `<span class="badge bg-danger text-light fw-normal py-1 px-2" style="font-size: 0.72rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i>Failed to load preview</span>`;
+                }
+                const fallbackItems = PREVIEW_ANIME_ITEMS.map(i => ({ ...i, is_sample_fallback: true }));
+                currentPreviewAnimeList = applySortAndShuffle(fallbackItems, catalogConfigs[catId] || {});
+                updateModalLivePreview(true);
             });
         }
 
@@ -5256,7 +5265,7 @@
             const defName = defaultCatalogNames[activeModalCatalogId] || activeModalCatalogId;
             const trimmed = (val || '').trim();
             if (trimmed === '' || trimmed === defName) {
-                delete catalogConfigs[activeModalCatalogId].title;
+                catalogConfigs[activeModalCatalogId].title = '';
             } else {
                 catalogConfigs[activeModalCatalogId].title = val;
             }
@@ -5270,7 +5279,7 @@
             const input = document.getElementById('modalInputTitle');
             if (input) input.value = defName;
             if (catalogConfigs[activeModalCatalogId]) {
-                delete catalogConfigs[activeModalCatalogId].title;
+                catalogConfigs[activeModalCatalogId].title = '';
             }
             updateModalLivePreview();
             updateCatalogRowBadge(activeModalCatalogId);
@@ -5466,14 +5475,12 @@
 
         list.addEventListener("dragover", function (e) {
             e.preventDefault();
+            if (!draggedItem) return;
             const afterElement = getDragAfterElement(list, e.clientY);
-            const currentItem = e.target.closest(".catalog-order-item");
-            if (draggedItem && currentItem && currentItem !== draggedItem) {
-                if (afterElement == null) {
-                    list.appendChild(draggedItem);
-                } else {
-                    list.insertBefore(draggedItem, afterElement);
-                }
+            if (afterElement == null) {
+                list.appendChild(draggedItem);
+            } else if (afterElement !== draggedItem) {
+                list.insertBefore(draggedItem, afterElement);
             }
         });
 

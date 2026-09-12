@@ -73,9 +73,18 @@
         } catch (err) {
             document.getElementById('spinner').style.display = 'none';
             document.getElementById('title').textContent = 'Connection Failed';
-            document.getElementById('msg').innerHTML =
-                '<span class="error">' + err.message + '</span><br><br>' +
-                '<a href="/">Back to home</a>';
+            const msgEl = document.getElementById('msg');
+            msgEl.textContent = '';
+            const span = document.createElement('span');
+            span.className = 'error';
+            span.textContent = err.message || 'Unknown error';
+            msgEl.appendChild(span);
+            msgEl.appendChild(document.createElement('br'));
+            msgEl.appendChild(document.createElement('br'));
+            const link = document.createElement('a');
+            link.href = '/';
+            link.textContent = 'Back to home';
+            msgEl.appendChild(link);
         }
     })();
 </script>

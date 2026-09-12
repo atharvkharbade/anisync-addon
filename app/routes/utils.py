@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 import re
 import threading
@@ -6,6 +7,7 @@ from collections import defaultdict
 from functools import wraps
 
 from quart import Response, jsonify, request
+
 
 async def respond_with(data: dict, max_age: int | None = None, stale_while_revalidate: int | None = None) -> Response:
     resp = jsonify(data)
@@ -21,17 +23,31 @@ async def respond_with(data: dict, max_age: int | None = None, stale_while_reval
     return resp
 
 
+def _is_trusted_proxy(ip_str: str | None) -> bool:
+    if not ip_str:
+        return True
+    try:
+        ip = ipaddress.ip_address(ip_str)
+        return ip.is_loopback or ip.is_private
+    except ValueError:
+        return False
+
+
 def log_error(label: str, message: str, hint: str = "", code: int = 0):
     logging.error("%s [%s] %s | %s", label, code, message, hint)
 
 
 def get_remote_ip() -> str:
-    """Extract client IP address, prioritizing Cloudflare verified CF-Connecting-IP over X-Forwarded-For."""
-    if cf_connecting_ip := request.headers.get("CF-Connecting-IP"):
-        return cf_connecting_ip.strip()
-    if x_forwarded_for := request.headers.get("X-Forwarded-For"):
-        return x_forwarded_for.split(",")[0].strip()
-    return request.remote_addr or "127.0.0.1"
+    """Extract client IP address, trusting reverse proxy headers only when request originates from a local/private network proxy."""
+    peer_ip = request.remote_addr
+    if _is_trusted_proxy(peer_ip):
+        if cf_connecting_ip := request.headers.get("CF-Connecting-IP"):
+            return cf_connecting_ip.strip()
+        if x_forwarded_for := request.headers.get("X-Forwarded-For"):
+            return x_forwarded_for.split(",")[0].strip()
+        if x_real_ip := request.headers.get("X-Real-IP"):
+            return x_real_ip.strip()
+    return peer_ip or "127.0.0.1"
 
 
 def is_valid_user_id(user_id: str) -> bool:

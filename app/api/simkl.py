@@ -118,6 +118,7 @@ async def sync_history(
     episode: int,
     content_type: str,
     simkl_id: str | None = None,
+    season: int = 1,
 ) -> bool:
     """Post watch history update to Simkl."""
     client = get_client()
@@ -145,11 +146,13 @@ async def sync_history(
     if content_type == "movie":
         payload = {"movies": [{"ids": ids}]}
     else:
+        ep_num = int(episode)
+        season_num = int(season or 1)
         payload = {
             "shows": [
                 {
                     "ids": ids,
-                    "seasons": [{"number": 1, "episodes": [{"number": i} for i in range(1, int(episode) + 1)]}],
+                    "seasons": [{"number": season_num, "episodes": [{"number": ep_num}]}],
                 }
             ]
         }

@@ -50,6 +50,9 @@ def resolve_or_create_user(session_obj, tracker_id: str, find_by_tracker_func) -
             db.get_collection("users").delete_one({"_id": old_guest_uid})
             db.get_collection("users").delete_one({"uid": old_guest_uid})
 
+        if hasattr(session_obj, "rotate"):
+            session_obj.rotate()
+
         session_obj["user"] = {"uid": uid}
         if is_new_account:
             session_obj["is_new_user"] = True

@@ -101,7 +101,7 @@ async def simkl_callback():
         return redirect(url_for("ui.index"))
 
 
-@auth_bp.route("/disconnect-simkl")
+@auth_bp.route("/disconnect-simkl", methods=["GET", "POST"])
 @rate_limit(limit=10, period_seconds=60)
 async def disconnect_simkl():
     user_session = session.get("user")

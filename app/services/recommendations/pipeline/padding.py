@@ -8,14 +8,22 @@ def pad_catalog(
     watched_kitsu_ids: set[str] = None,
     min_count: int = 15,
     default_desc: str = None,
+    fallback_offset: int = 0,
 ) -> list[dict]:
     """
     Deduplicates items across catalog rows, excludes watched items,
     and pads each catalog with fallbacks up to min_count.
+    Rotates fallback items by fallback_offset to diversify recommendations across rows.
     """
     watched_mal_ids = watched_mal_ids or set()
     watched_anilist_ids = watched_anilist_ids or set()
     watched_kitsu_ids = watched_kitsu_ids or set()
+
+    if fallback_offset and fallback_list and len(fallback_list) > 1:
+        offset = fallback_offset % len(fallback_list)
+        effective_fallbacks = fallback_list[offset:] + fallback_list[:offset]
+    else:
+        effective_fallbacks = fallback_list
 
     padded_items = []
     for item in items:
@@ -41,7 +49,7 @@ def pad_catalog(
                 item_copy["description"] = f"{default_desc}  \n\n{syn}" if syn else default_desc
             padded_items.append(item_copy)
 
-    for fb_item in fallback_list:
+    for fb_item in effective_fallbacks:
         if len(padded_items) >= min_count:
             break
         if fb_item["id"] in shown_ids_set:
@@ -66,7 +74,7 @@ def pad_catalog(
         padded_items.append(item_copy)
 
     if len(padded_items) < min_count:
-        for fb_item in fallback_list:
+        for fb_item in effective_fallbacks:
             if len(padded_items) >= min_count:
                 break
             if any(x["id"] == fb_item["id"] for x in padded_items):

@@ -182,8 +182,10 @@ async def handle_configure_form(user: dict, form) -> dict | None:
                             title_val = str(cfg["title"]).strip()
                             if title_val:
                                 catalog_titles[cat_id] = title_val
-                            elif cat_id in catalog_titles:
-                                del catalog_titles[cat_id]
+                                catalog_configs[cat_id]["title"] = title_val
+                            else:
+                                catalog_titles.pop(cat_id, None)
+                                catalog_configs[cat_id].pop("title", None)
                         if "placement" in cfg and cfg["placement"] in ["all", "discover_only"]:
                             catalog_placements[cat_id] = cfg["placement"]
                         if "poster_art" in cfg:
@@ -195,10 +197,6 @@ async def handle_configure_form(user: dict, form) -> dict | None:
                                 if cat_id in catalog_poster_arts:
                                     del catalog_poster_arts[cat_id]
                                 catalog_configs[cat_id].pop("poster_art", None)
-                        else:
-                            if cat_id in catalog_poster_arts:
-                                del catalog_poster_arts[cat_id]
-                            catalog_configs[cat_id].pop("poster_art", None)
 
                         if "sort_by" in cfg:
                             sort_by = cfg.get("sort_by", "default")
