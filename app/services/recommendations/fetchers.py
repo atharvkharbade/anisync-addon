@@ -13,7 +13,7 @@ async def get_mal_recommendations_for_id(token: str | None, mal_id: str) -> list
         client = get_client()
         url = f"{Config.MAL_API_URL}/anime/{mal_id}"
         params = {
-            "fields": "recommendations{node{id,title,main_picture,genres,start_season,media_type,popularity,mean,synopsis,average_episode_duration,status}}"
+            "fields": "recommendations{node{id,title,main_picture,genres,start_season,media_type,popularity,mean,synopsis,average_episode_duration,status,num_episodes}}"
         }
         headers = {"Authorization": f"Bearer {token}"}
         try:
@@ -84,6 +84,7 @@ async def get_anilist_recommendations_bulk(token: str, anilist_ids: list[int]) -
             genres
             format
             duration
+            episodes
             popularity
             averageScore
             description
@@ -150,6 +151,7 @@ async def get_top_anime_by_genre(token: str, genre: str, sort: str = "POPULARITY
           genres
           format
           duration
+          episodes
           popularity
           averageScore
           description

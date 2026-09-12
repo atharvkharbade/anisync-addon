@@ -4663,14 +4663,31 @@
                         return sampleFallback;
                     }
                     const items = metas.map(m => {
-                        let scoreStr = '8.5';
-                        if (m.score !== undefined && m.score !== null) {
-                            scoreStr = String(m.score);
-                            if (!scoreStr.includes('.')) scoreStr += '.0';
+                        let scoreStr = '';
+                        const rawScore = (m.score !== undefined && m.score !== null)
+                            ? m.score
+                            : (m.average_score !== undefined && m.average_score !== null)
+                                ? m.average_score
+                                : (m.imdbRating !== undefined && m.imdbRating !== null)
+                                    ? m.imdbRating
+                                    : (m.rating !== undefined && m.rating !== null)
+                                        ? m.rating
+                                        : null;
+                        if (rawScore !== null && rawScore !== undefined) {
+                            let numScore = parseFloat(rawScore);
+                            if (!isNaN(numScore) && numScore > 0) {
+                                if (numScore > 10) numScore = numScore / 10;
+                                scoreStr = numScore.toFixed(1);
+                            }
                         }
-                        let eps = parseInt(m.episodes) || 0;
+                        let eps = parseInt(m.episodes) || parseInt(m.total_episodes) || parseInt(m.num_episodes) || 0;
                         if (!eps && m.next_episode) {
                             eps = Math.max(0, parseInt(m.next_episode) - 1);
+                        }
+                        let yr = parseInt(m.year) || 0;
+                        if (!yr && m.releaseInfo) {
+                            const matchYr = String(m.releaseInfo).match(/\b(19\d\d|20\d\d)\b/);
+                            if (matchYr) yr = parseInt(matchYr[1]);
                         }
                         const hasRealBanner = m.background && m.background !== m.poster && m.background !== m.cover;
                         const defaultLandscape = hasRealBanner
@@ -4690,7 +4707,7 @@
                             airing_date: parseInt(m.airing_at) || 0,
                             next_episode: parseInt(m.next_episode) || 0,
                             episodes: eps,
-                            year: parseInt(m.year) || 0,
+                            year: yr,
                             updated_at: parseInt(m.updated_at) || 0
                         };
                     });
@@ -4885,7 +4902,8 @@
 
                         // Missing/zero values ALWAYS go to the very end regardless of Asc or Desc!
                         if (aMissing && bMissing) {
-                            return (a.title || '').localeCompare(b.title || '');
+                            const tie = (a.title || '').localeCompare(b.title || '');
+                            return isAsc ? tie : -tie;
                         }
                         if (aMissing) return 1;
                         if (bMissing) return -1;
@@ -4901,8 +4919,9 @@
                         }
                     }
 
-                    // Deterministic tie-breaker by title
-                    return (a.title || '').localeCompare(b.title || '');
+                    // Deterministic tie-breaker by title (respect sort direction for consistent inversion)
+                    const tie = (a.title || '').localeCompare(b.title || '');
+                    return isAsc ? tie : -tie;
                 });
             }
 
@@ -5169,7 +5188,10 @@
                 const getCardTooltip = (item) => {
                     const curSort = cfg.sort_by || 'default';
                     let extra = '';
-                    if (curSort === 'score') extra = `★ ${item.score}`;
+                    if (curSort === 'score') {
+                        const num = parseFloat(item.score);
+                        extra = (num && num > 0) ? `★ ${item.score}` : 'Unrated';
+                    }
                     else if (curSort === 'release_date' || curSort === 'year') extra = `${item.release_date || item.year || 'N/A'}`;
                     else if (curSort === 'episodes') extra = `${item.episodes || 0} eps`;
                     else if (curSort === 'airing_date') {

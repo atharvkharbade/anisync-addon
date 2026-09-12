@@ -400,6 +400,35 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         else:
             m_copy["poster"] = current_poster if is_badge else clean_poster
 
+        # Standardize score and year for consistent display across Stremio and web previews
+        s_val = m_copy.get("score") if m_copy.get("score") is not None else m_copy.get("average_score")
+        if s_val is None:
+            s_val = m_copy.get("imdbRating")
+        if s_val is not None:
+            try:
+                num_s = float(s_val)
+                if num_s > 10:
+                    num_s = num_s / 10.0
+                if num_s > 0:
+                    m_copy["score"] = round(num_s, 1)
+                    if not m_copy.get("imdbRating"):
+                        m_copy["imdbRating"] = f"{num_s:.1f}"
+            except Exception:
+                pass
+
+        y_val = m_copy.get("year") or m_copy.get("releaseInfo")
+        if y_val:
+            try:
+                import re
+                m_yr = re.search(r'\b(19\d\d|20\d\d)\b', str(y_val))
+                if m_yr:
+                    yr_num = int(m_yr.group(1))
+                    m_copy["year"] = yr_num
+                    if not m_copy.get("releaseInfo"):
+                        m_copy["releaseInfo"] = str(yr_num)
+            except Exception:
+                pass
+
         formatted_metas.append(m_copy)
 
     from app.lib.meta_providers import enrich_catalog_metas_artwork

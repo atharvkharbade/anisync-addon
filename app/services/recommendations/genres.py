@@ -110,6 +110,7 @@ async def generate_genre_recommendations(
         desc_header = f"Popular {genre} anime based on your taste."
         full_desc = f"{desc_header}  \n\n{syn}" if syn else desc_header
 
+        score_val = round((avg_score / 10.0 if avg_score > 10 else float(avg_score)), 1) if avg_score else 0.0
         recs.append({
             "id": key,
             "type": item_type,
@@ -119,6 +120,10 @@ async def generate_genre_recommendations(
             "background": media.get("bannerImage"),
             "anilist_id": aid,
             "mal_id": mid,
+            "score": score_val,
+            "year": int(year or 0),
+            "episodes": int(media.get("episodes") or 0),
+            "popularity": int(pop_score or 0),
             "description": full_desc,
             "synopsis": syn,
         })

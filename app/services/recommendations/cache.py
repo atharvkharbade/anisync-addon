@@ -41,6 +41,12 @@ async def update_popular_fallbacks_cache():
           status
           format
           duration
+          episodes
+          averageScore
+          popularity
+          startDate {
+            year
+          }
           title {
             english
             romaji
@@ -83,6 +89,8 @@ async def update_popular_fallbacks_cache():
                 desc = re.sub("<[^<]+?>", "", desc)
                 desc = desc[:150] + "..." if len(desc) > 150 else desc
                 desc = desc.replace("\n", " ").replace("  ", " ").strip()
+                avg_sc = media.get("averageScore") or 0
+                sc_val = round((avg_sc / 10.0 if avg_sc > 10 else float(avg_sc)), 1) if avg_sc else 0.0
                 new_items.append({
                     "id": item_id,
                     "type": item_type,
@@ -92,6 +100,10 @@ async def update_popular_fallbacks_cache():
                     "background": media.get("bannerImage"),
                     "anilist_id": str(media.get("id")),
                     "mal_id": str(mal_id) if mal_id else None,
+                    "score": sc_val,
+                    "year": int((media.get("startDate") or {}).get("year") or 0),
+                    "episodes": int(media.get("episodes") or 0),
+                    "popularity": int(media.get("popularity") or 0),
                     "description": desc,
                 })
             if new_items:
@@ -133,6 +145,9 @@ async def update_popular_fallbacks_cache():
                         "poster_mal": poster,
                         "mal_id": str(mal_id),
                         "anilist_id": aid,
+                        "score": round(float(item.get("score") or 0.0), 1),
+                        "year": int(item.get("year") or 0),
+                        "episodes": int(item.get("episodes") or 0),
                         "description": desc,
                     })
             if new_items:

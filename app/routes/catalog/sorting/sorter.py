@@ -133,7 +133,17 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     score = sum(rated_global_scores) / len(rated_global_scores) if rated_global_scores else 0.0
             if not score and isinstance(item, dict):
                 try:
-                    score = float(item.get("score") or item.get("imdbRating") or 0)
+                    s_raw = item.get("score")
+                    if s_raw is None:
+                        s_raw = item.get("average_score")
+                    if s_raw is None:
+                        s_raw = item.get("imdbRating")
+                    if s_raw is None:
+                        s_raw = item.get("rating")
+                    if s_raw is not None:
+                        score = float(s_raw)
+                        if score > 10:
+                            score = score / 10.0
                 except Exception:
                     score = 0.0
             return float(score)
@@ -250,7 +260,13 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     return y * 10000 + mo * 100 + da
             if not yr and isinstance(item, dict):
                 try:
-                    yr = int(item.get("year") or item.get("releaseInfo") or 0)
+                    rel_inf = str(item.get("year") or item.get("releaseInfo") or "")
+                    import re
+                    m_yr = re.search(r'\b(19\d\d|20\d\d)\b', rel_inf)
+                    if m_yr:
+                        yr = int(m_yr.group(1))
+                    else:
+                        yr = int(rel_inf)
                 except Exception:
                     yr = 0
             if yr > 0:
@@ -293,7 +309,13 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                     eps = int(s_item.get("total_episodes_count") or show_obj.get("episodes_count") or show_obj.get("num_episodes") or show_obj.get("total_episodes", 0) or 0)
             if not eps and isinstance(item, dict):
                 try:
-                    eps = int(item.get("episodes") or item.get("totalEpisodes") or 0)
+                    eps = int(
+                        item.get("episodes")
+                        or item.get("total_episodes")
+                        or item.get("totalEpisodes")
+                        or item.get("num_episodes")
+                        or 0
+                    )
                 except Exception:
                     eps = 0
                 if not eps and item.get("next_episode"):
@@ -359,7 +381,7 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                 pop = max(al_p, mal_p, simkl_pop)
             if not pop and isinstance(item, dict):
                 try:
-                    pop = float(item.get("popularity") or 0)
+                    pop = float(item.get("popularity") or item.get("users_count") or item.get("watchers") or 0)
                 except Exception:
                     pop = 0.0
             return pop
@@ -408,7 +430,8 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
         if a_missing and b_missing:
             title_a = extract_title(a).lower()
             title_b = extract_title(b).lower()
-            return (title_a > title_b) - (title_a < title_b)
+            diff_title = (title_a > title_b) - (title_a < title_b)
+            return -diff_title if reverse else diff_title
         if a_missing:
             return 1
         if b_missing:
@@ -420,6 +443,7 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
 
         title_a = extract_title(a).lower()
         title_b = extract_title(b).lower()
-        return (title_a > title_b) - (title_a < title_b)
+        diff_title = (title_a > title_b) - (title_a < title_b)
+        return -diff_title if reverse else diff_title
 
     return sorted(items, key=cmp_to_key(compare_items))

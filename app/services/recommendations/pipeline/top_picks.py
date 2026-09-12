@@ -101,6 +101,10 @@ async def generate_top_picks(
         syn = clean_html(media.get("description") or "")
 
         key = f"mal:{mid}" if mid else f"anilist:{aid}"
+        score_val = round((avg_score / 10.0 if avg_score > 10 else float(avg_score)), 1) if avg_score else 0.0
+        year_val = int(year or 0)
+        episodes_val = int(media.get("episodes") or 0)
+
         if key not in rec_candidates:
             rec_candidates[key] = {
                 "id": key,
@@ -110,13 +114,23 @@ async def generate_top_picks(
                 "poster_al": poster,
                 "anilist_id": aid,
                 "mal_id": mid,
-                "score": rec.get("rating", 1),
+                "score": score_val,
+                "year": year_val,
+                "episodes": episodes_val,
+                "popularity": pop_score or 0,
+                "rec_votes": rec.get("rating", 1),
                 "description": "AniList Community Recommendation.",
                 "synopsis": syn,
                 "inspired_by_titles": [seed_title] if seed_title else [],
             }
         else:
-            rec_candidates[key]["score"] += rec.get("rating", 1)
+            rec_candidates[key]["rec_votes"] += rec.get("rating", 1)
+            if not rec_candidates[key].get("score") and score_val:
+                rec_candidates[key]["score"] = score_val
+            if not rec_candidates[key].get("year") and year_val:
+                rec_candidates[key]["year"] = year_val
+            if not rec_candidates[key].get("episodes") and episodes_val:
+                rec_candidates[key]["episodes"] = episodes_val
             if syn and not rec_candidates[key].get("synopsis"):
                 rec_candidates[key]["synopsis"] = syn
             if seed_title and seed_title not in rec_candidates[key]["inspired_by_titles"]:
@@ -199,6 +213,11 @@ async def generate_top_picks(
                 rec_poster_pref = get_effective_meta_providers(user).get("poster", "kitsu")
                 chosen_poster = al_poster if (rec_poster_pref == "anilist" and al_poster) else poster
 
+                mal_score_val = round(float(mean_score), 1) if mean_score else 0.0
+                mal_year_val = int(year or 0)
+                mal_episodes_val = int(node.get("num_episodes") or 0)
+                mal_pop_val = int(pop_rank or 0)
+
                 key = f"mal:{mid}"
                 if key not in rec_candidates:
                     rec_candidates[key] = {
@@ -210,21 +229,31 @@ async def generate_top_picks(
                         "poster_al": al_poster or poster,
                         "mal_id": str(mid),
                         "anilist_id": aid,
-                        "score": rec.get("num_recommendations", 1),
+                        "score": mal_score_val,
+                        "year": mal_year_val,
+                        "episodes": mal_episodes_val,
+                        "popularity": mal_pop_val,
+                        "rec_votes": rec.get("num_recommendations", 1),
                         "description": "MAL Community Recommendation.",
                         "synopsis": syn,
                         "inspired_by_titles": [seed_title],
                     }
                 else:
-                    rec_candidates[key]["score"] += rec.get("num_recommendations", 1)
+                    rec_candidates[key]["rec_votes"] += rec.get("num_recommendations", 1)
+                    if not rec_candidates[key].get("score") and mal_score_val:
+                        rec_candidates[key]["score"] = mal_score_val
+                    if not rec_candidates[key].get("year") and mal_year_val:
+                        rec_candidates[key]["year"] = mal_year_val
+                    if not rec_candidates[key].get("episodes") and mal_episodes_val:
+                        rec_candidates[key]["episodes"] = mal_episodes_val
                     if syn and not rec_candidates[key].get("synopsis"):
                         rec_candidates[key]["synopsis"] = syn
                     if seed_title not in rec_candidates[key]["inspired_by_titles"]:
                         rec_candidates[key]["inspired_by_titles"].append(seed_title)
 
-    top_picks = sorted(rec_candidates.values(), key=lambda x: x["score"], reverse=True)
+    top_picks = sorted(rec_candidates.values(), key=lambda x: x.get("rec_votes", 0), reverse=True)
     for tp in top_picks:
-        tp.pop("score", None)
+        tp.pop("rec_votes", None)
         syn = tp.get("synopsis") or ""
         inspired_by = tp.get("inspired_by_titles", [])
         if inspired_by:
