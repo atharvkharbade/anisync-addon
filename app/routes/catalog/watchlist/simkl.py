@@ -15,6 +15,7 @@ from app.routes.catalog.sorting import (
     extract_item_metadata_fields,
     get_catalog_sorting,
     is_catalog_shuffle_enabled,
+    resolve_title_lang,
     sort_watchlist_items,
 )
 from app.routes.utils import respond_with
@@ -214,9 +215,8 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
             random.shuffle(data_items)
             paged_data_items = data_items[offset : offset + page_limit]
         elif custom_sort_enabled and sort_by != "default":
-            title_lang = user.get("title_language", "english") if isinstance(user, dict) else "english"
             sorted_data_items = sort_watchlist_items(
-                data_items, sort_by, sort_order, "simkl", bulk_details=bulk_details, title_lang=title_lang
+                data_items, sort_by, sort_order, "simkl", bulk_details=bulk_details, title_lang=resolve_title_lang(user)
             )
             paged_data_items = sorted_data_items[offset : offset + page_limit]
         elif sort_by_new_ep and simkl_status in ["watching", "plantowatch"]:

@@ -13,6 +13,7 @@ from app.routes.catalog.sorting import (
     apply_catalog_dub_filter,
     get_catalog_sorting,
     is_catalog_shuffle_enabled,
+    resolve_title_lang,
     sort_watchlist_items,
     extract_item_metadata_fields,
 )
@@ -173,8 +174,7 @@ async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filter
             entries = list(entries)
             random.shuffle(entries)
         elif custom_sort_enabled and sort_by != "default":
-            title_lang = user.get("title_language", "english") if isinstance(user, dict) else "english"
-            entries = sort_watchlist_items(entries, sort_by, sort_order, "anilist", bulk_details=None, title_lang=title_lang)
+            entries = sort_watchlist_items(entries, sort_by, sort_order, "anilist", bulk_details=None, title_lang=resolve_title_lang(user))
         elif sort_by_new_ep and anilist_status in ["CURRENT", "PLANNING"]:
 
             def get_al_priority(entry):

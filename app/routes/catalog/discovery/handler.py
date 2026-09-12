@@ -10,6 +10,7 @@ from app.routes.catalog.sorting import (
     apply_catalog_dub_filter,
     get_catalog_sorting,
     is_catalog_shuffle_enabled,
+    resolve_title_lang,
     sort_watchlist_items,
 )
 from app.routes.utils import respond_with
@@ -106,8 +107,7 @@ async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filt
     # Apply Custom Sorting for Discovery Catalogs if enabled
     is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, "watching", url_filters=filters)
     if is_custom_sort:
-        title_lang = user.get("title_language", "english") if isinstance(user, dict) else "english"
-        metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio", title_lang=title_lang)
+        metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio", title_lang=resolve_title_lang(user))
 
     # Shuffle if enabled and not explicitly custom sorted (deterministic daily seed per user/catalog for stable pagination)
     if is_catalog_shuffle_enabled(user, catalog_id) and (not is_custom_sort or sort_by == "default"):

@@ -4,6 +4,47 @@ import re
 from app.routes.catalog.formatting import get_simkl_display_title, parse_iso_timestamp
 
 
+def extract_mal_node_title(node: dict, norm_lang: str) -> str:
+    """Extracts title from MAL node based on user language preference."""
+    if not node or not isinstance(node, dict):
+        return ""
+    alt = node.get("alternative_titles") or {}
+    if norm_lang == "japanese":
+        return alt.get("ja") or node.get("title", "") or ""
+    elif norm_lang == "romaji":
+        return node.get("title", "") or alt.get("en", "") or ""
+    else:
+        return alt.get("en") or node.get("title", "") or ""
+
+
+def extract_anilist_media_title(title_obj: dict, norm_lang: str) -> str:
+    """Extracts title from AniList media title object based on user language preference."""
+    if not title_obj or not isinstance(title_obj, dict):
+        return ""
+    if norm_lang == "japanese":
+        return (
+            title_obj.get("native")
+            or title_obj.get("romaji")
+            or title_obj.get("userPreferred")
+            or title_obj.get("english")
+            or ""
+        )
+    elif norm_lang == "romaji":
+        return (
+            title_obj.get("romaji")
+            or title_obj.get("userPreferred")
+            or title_obj.get("english")
+            or ""
+        )
+    else:
+        return (
+            title_obj.get("english")
+            or title_obj.get("userPreferred")
+            or title_obj.get("romaji")
+            or ""
+        )
+
+
 def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=None, title_lang="english"):
     """
     Sorts watchlist items according to the specified field and direction.
@@ -25,38 +66,11 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
             return str(item["name"]).strip()
         if tracker_type == "mal":
             node = item.get("node") or {}
-            alt = node.get("alternative_titles") or {}
-            if norm_lang == "japanese":
-                title = alt.get("ja") or node.get("title", "")
-            elif norm_lang == "romaji":
-                title = node.get("title", "") or alt.get("en", "")
-            else:
-                title = alt.get("en") or node.get("title", "")
+            title = extract_mal_node_title(node, norm_lang)
         elif tracker_type == "anilist":
             media = item.get("media") or {}
             title_obj = media.get("title") or {}
-            if norm_lang == "japanese":
-                title = (
-                    title_obj.get("native")
-                    or title_obj.get("romaji")
-                    or title_obj.get("userPreferred")
-                    or title_obj.get("english")
-                    or ""
-                )
-            elif norm_lang == "romaji":
-                title = (
-                    title_obj.get("romaji")
-                    or title_obj.get("userPreferred")
-                    or title_obj.get("english")
-                    or ""
-                )
-            else:
-                title = (
-                    title_obj.get("english")
-                    or title_obj.get("userPreferred")
-                    or title_obj.get("romaji")
-                    or ""
-                )
+            title = extract_anilist_media_title(title_obj, norm_lang)
         elif tracker_type == "simkl":
             show_obj = (item.get("show") or item.get("anime") or item) if isinstance(item, dict) else {}
             if not isinstance(show_obj, dict):
@@ -65,38 +79,10 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
         elif tracker_type == "combined":
             if item.get("anilist_item"):
                 media = (item["anilist_item"].get("media") or {}) if isinstance(item["anilist_item"], dict) else {}
-                title_obj = media.get("title") or {}
-                if norm_lang == "japanese":
-                    title = (
-                        title_obj.get("native")
-                        or title_obj.get("romaji")
-                        or title_obj.get("userPreferred")
-                        or title_obj.get("english")
-                        or ""
-                    )
-                elif norm_lang == "romaji":
-                    title = (
-                        title_obj.get("romaji")
-                        or title_obj.get("userPreferred")
-                        or title_obj.get("english")
-                        or ""
-                    )
-                else:
-                    title = (
-                        title_obj.get("english")
-                        or title_obj.get("userPreferred")
-                        or title_obj.get("romaji")
-                        or ""
-                    )
+                title = extract_anilist_media_title(media.get("title") or {}, norm_lang)
             if not title and item.get("mal_item"):
                 node = (item["mal_item"].get("node") or {}) if isinstance(item["mal_item"], dict) else {}
-                alt = node.get("alternative_titles") or {}
-                if norm_lang == "japanese":
-                    title = alt.get("ja") or node.get("title", "")
-                elif norm_lang == "romaji":
-                    title = node.get("title", "") or alt.get("en", "")
-                else:
-                    title = alt.get("en") or node.get("title", "")
+                title = extract_mal_node_title(node, norm_lang)
             if not title and item.get("simkl_item"):
                 s_item = item["simkl_item"]
                 show_obj = (s_item.get("show") or s_item.get("anime") or s_item) if isinstance(s_item, dict) else {}

@@ -123,3 +123,14 @@ def get_catalog_sorting(user, catalog_id, default_category_key=None, url_filters
             return True, sort_by, sort_order
 
     return False, "default", "desc"
+
+
+def resolve_title_lang(user: dict | None) -> str:
+    """
+    Extracts and normalizes the user's preferred title language setting.
+    Defaults to 'english'.
+    """
+    if isinstance(user, dict):
+        return (user.get("title_language") or "english").lower().strip()
+    return "english"
+

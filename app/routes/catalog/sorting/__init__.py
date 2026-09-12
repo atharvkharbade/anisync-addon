@@ -9,6 +9,7 @@ from .preferences import (
     get_catalog_sorting,
     is_catalog_dubbed_enabled,
     is_catalog_shuffle_enabled,
+    resolve_title_lang,
 )
 from .sorter import sort_watchlist_items
 
@@ -19,5 +20,6 @@ __all__ = [
     "get_catalog_sorting",
     "is_catalog_dubbed_enabled",
     "is_catalog_shuffle_enabled",
+    "resolve_title_lang",
     "sort_watchlist_items",
 ]

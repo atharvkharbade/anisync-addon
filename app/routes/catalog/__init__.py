@@ -31,6 +31,7 @@ from app.routes.catalog.sorting import (
     get_catalog_sorting,
     is_catalog_dubbed_enabled,
     is_catalog_shuffle_enabled,
+    resolve_title_lang,
     sort_watchlist_items,
 )
 from app.routes.catalog.watchlist import (
@@ -176,6 +177,7 @@ __all__ = [
     "is_nsfw_meta",
     "format_catalog_metas",
     "extract_item_metadata_fields",
+    "resolve_title_lang",
     "sort_watchlist_items",
     "get_catalog_sorting",
     "is_catalog_shuffle_enabled",
