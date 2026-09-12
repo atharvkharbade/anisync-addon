@@ -1948,11 +1948,9 @@
                         <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-sm btn-mal px-3 py-1.5 flex-fill justify-content-center {% if user.get('mal_token_expired') %}btn-pulse-mal{% endif %}" style="font-size: 0.8rem;">
                             <i class="fa-solid fa-rotate me-1"></i>Reconnect
                         </a>
-                        <form action="{{ url_for('auth.disconnect_mal') }}" method="POST" class="d-inline flex-fill m-0 p-0">
-                            <button type="submit" class="btn btn-sm btn-disconnect px-2.5 py-1.5 w-100 justify-content-center" style="font-size: 0.8rem;">
-                                <i class="fa-solid fa-unlink me-1"></i>Disconnect
-                            </button>
-                        </form>
+                        <a href="javascript:void(0)" onclick="disconnectTracker('{{ url_for('auth.disconnect_mal') }}');" class="btn btn-sm btn-disconnect px-2.5 py-1.5 flex-fill justify-content-center" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-unlink me-1"></i>Disconnect
+                        </a>
                     </div>
                     {% else %}
                     <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2.5">
@@ -2000,11 +1998,9 @@
                         <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-sm btn-anilist px-3 py-1.5 flex-fill justify-content-center {% if user.get('anilist_token_expired') %}btn-pulse-anilist{% endif %}" style="font-size: 0.8rem;">
                             <i class="fa-solid fa-rotate me-1"></i>Reconnect
                         </a>
-                        <form action="{{ url_for('auth.disconnect_anilist') }}" method="POST" class="d-inline flex-fill m-0 p-0">
-                            <button type="submit" class="btn btn-sm btn-disconnect px-2.5 py-1.5 w-100 justify-content-center" style="font-size: 0.8rem;">
-                                <i class="fa-solid fa-unlink me-1"></i>Disconnect
-                            </button>
-                        </form>
+                        <a href="javascript:void(0)" onclick="disconnectTracker('{{ url_for('auth.disconnect_anilist') }}');" class="btn btn-sm btn-disconnect px-2.5 py-1.5 flex-fill justify-content-center" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-unlink me-1"></i>Disconnect
+                        </a>
                     </div>
                     {% else %}
                     <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2.5">
@@ -2052,11 +2048,9 @@
                         <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-sm btn-simkl px-3 py-1.5 flex-fill justify-content-center {% if user.get('simkl_token_expired') %}btn-pulse-simkl{% endif %}" style="font-size: 0.8rem;">
                             <i class="fa-solid fa-rotate me-1"></i>Reconnect
                         </a>
-                        <form action="{{ url_for('auth.disconnect_simkl') }}" method="POST" class="d-inline flex-fill m-0 p-0">
-                            <button type="submit" class="btn btn-sm btn-disconnect px-2.5 py-1.5 w-100 justify-content-center" style="font-size: 0.8rem;">
-                                <i class="fa-solid fa-unlink me-1"></i>Disconnect
-                            </button>
-                        </form>
+                        <a href="javascript:void(0)" onclick="disconnectTracker('{{ url_for('auth.disconnect_simkl') }}');" class="btn btn-sm btn-disconnect px-2.5 py-1.5 flex-fill justify-content-center" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-unlink me-1"></i>Disconnect
+                        </a>
                     </div>
                     {% else %}
                     <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2.5">
@@ -3544,6 +3538,15 @@
 }
 </script>
 <script>
+    // Tracker disconnect handler (dynamic form avoids invalid HTML nested forms)
+    window.disconnectTracker = function(actionUrl) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = actionUrl;
+        document.body.appendChild(form);
+        form.submit();
+    };
+
     // Global user & catalog state
     window.currentUserId = '';
     window.isGuestUser = false;
