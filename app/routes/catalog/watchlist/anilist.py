@@ -173,7 +173,8 @@ async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filter
             entries = list(entries)
             random.shuffle(entries)
         elif custom_sort_enabled and sort_by != "default":
-            entries = sort_watchlist_items(entries, sort_by, sort_order, "anilist", bulk_details=None)
+            title_lang = user.get("title_language", "english") if isinstance(user, dict) else "english"
+            entries = sort_watchlist_items(entries, sort_by, sort_order, "anilist", bulk_details=None, title_lang=title_lang)
         elif sort_by_new_ep and anilist_status in ["CURRENT", "PLANNING"]:
 
             def get_al_priority(entry):

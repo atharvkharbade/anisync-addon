@@ -50,8 +50,9 @@ def sort_and_paginate_combined_items(
         return items_copy[offset : offset + page_limit]
 
     if custom_sort_enabled and sort_by != "default":
+        title_lang = user.get("title_language", "english") if isinstance(user, dict) else "english"
         sorted_items = sort_watchlist_items(
-            combined_items, sort_by, sort_order, "combined", bulk_details=bulk_details
+            combined_items, sort_by, sort_order, "combined", bulk_details=bulk_details, title_lang=title_lang
         )
         return sorted_items[offset : offset + page_limit]
 

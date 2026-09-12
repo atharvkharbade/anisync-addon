@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging
+import re
 import urllib.parse
 
 
@@ -410,16 +411,16 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
                 if num_s > 10:
                     num_s = num_s / 10.0
                 if num_s > 0:
-                    m_copy["score"] = round(num_s, 1)
+                    score_rounded = round(num_s, 1)
+                    m_copy["score"] = score_rounded
                     if not m_copy.get("imdbRating"):
-                        m_copy["imdbRating"] = f"{num_s:.1f}"
+                        m_copy["imdbRating"] = f"{score_rounded:.1f}"
             except Exception:
                 pass
 
         y_val = m_copy.get("year") or m_copy.get("releaseInfo")
         if y_val:
             try:
-                import re
                 m_yr = re.search(r'\b(19\d\d|20\d\d)\b', str(y_val))
                 if m_yr:
                     yr_num = int(m_yr.group(1))

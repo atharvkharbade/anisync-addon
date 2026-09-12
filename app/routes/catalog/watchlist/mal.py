@@ -218,8 +218,9 @@ async def handle_mal_catalog(user, user_id, catalog_type, catalog_id, filters, e
             random.shuffle(data_items)
             paged_data_items = data_items[offset : offset + page_limit]
         elif custom_sort_enabled and sort_by != "default":
+            title_lang = user.get("title_language", "english") if isinstance(user, dict) else "english"
             sorted_data_items = sort_watchlist_items(
-                data_items, sort_by, sort_order, "mal", bulk_details=bulk_details
+                data_items, sort_by, sort_order, "mal", bulk_details=bulk_details, title_lang=title_lang
             )
             paged_data_items = sorted_data_items[offset : offset + page_limit]
         elif sort_by_new_ep and mal_status in ["watching", "plan_to_watch"]:

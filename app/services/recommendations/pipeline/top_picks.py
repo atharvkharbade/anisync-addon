@@ -254,6 +254,8 @@ async def generate_top_picks(
     top_picks = sorted(rec_candidates.values(), key=lambda x: x.get("rec_votes", 0), reverse=True)
     for tp in top_picks:
         tp.pop("rec_votes", None)
+        if not tp.get("score") and tp.get("average_score"):
+            tp["score"] = tp["average_score"]
         syn = tp.get("synopsis") or ""
         inspired_by = tp.get("inspired_by_titles", [])
         if inspired_by:

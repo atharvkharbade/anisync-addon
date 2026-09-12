@@ -148,6 +148,7 @@ async def update_popular_fallbacks_cache():
                         "score": round(float(item.get("score") or 0.0), 1),
                         "year": int(item.get("year") or 0),
                         "episodes": int(item.get("episodes") or 0),
+                        "popularity": int(item.get("popularity") or 0),
                         "description": desc,
                     })
             if new_items:

@@ -50,7 +50,8 @@ async def handle_recommendations_catalog(user, user_id, catalog_type, catalog_id
     # Apply Custom Sorting for Recommendation Catalogs if enabled
     is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, None, url_filters=filters)
     if is_custom_sort:
-        metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
+        title_lang = user.get("title_language", "english") if isinstance(user, dict) else "english"
+        metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio", title_lang=title_lang)
 
     # Shuffle if enabled (only when not custom sorted)
     if is_catalog_shuffle_enabled(user, catalog_id) and (not is_custom_sort or sort_by == "default"):

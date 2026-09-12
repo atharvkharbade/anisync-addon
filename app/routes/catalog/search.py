@@ -19,7 +19,8 @@ async def _process_search_metas(raw_metas, user, catalog_id, filters):
     metas = await apply_catalog_dub_filter(metas, user, catalog_id)
     is_custom_sort, sort_by, sort_order = get_catalog_sorting(user, catalog_id, "watching", url_filters=filters)
     if is_custom_sort and sort_by != "default":
-        metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio")
+        title_lang = user.get("title_language", "english") if isinstance(user, dict) else "english"
+        metas = sort_watchlist_items(metas, sort_by, sort_order, tracker_type="stremio", title_lang=title_lang)
     if is_catalog_shuffle_enabled(user, catalog_id) and (not is_custom_sort or sort_by == "default"):
         metas = list(metas)
         random.shuffle(metas)

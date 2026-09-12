@@ -1,9 +1,10 @@
 from functools import cmp_to_key
+import re
 
-from app.routes.catalog.formatting import parse_iso_timestamp
+from app.routes.catalog.formatting import get_simkl_display_title, parse_iso_timestamp
 
 
-def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=None):
+def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=None, title_lang="english"):
     """
     Sorts watchlist items according to the specified field and direction.
     Supports score, last_updated, airing_date, year/release_date, episodes,
@@ -14,6 +15,7 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
         return items
 
     reverse = (sort_order == "desc")
+    norm_lang = (title_lang or "english").lower().strip()
 
     def extract_title(item):
         title = ""
@@ -24,43 +26,83 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
         if tracker_type == "mal":
             node = item.get("node") or {}
             alt = node.get("alternative_titles") or {}
-            title = alt.get("en") or node.get("title", "")
+            if norm_lang == "japanese":
+                title = alt.get("ja") or node.get("title", "")
+            elif norm_lang == "romaji":
+                title = node.get("title", "") or alt.get("en", "")
+            else:
+                title = alt.get("en") or node.get("title", "")
         elif tracker_type == "anilist":
             media = item.get("media") or {}
             title_obj = media.get("title") or {}
-            title = (
-                title_obj.get("english")
-                or title_obj.get("userPreferred")
-                or title_obj.get("romaji")
-                or ""
-            )
-        elif tracker_type == "simkl":
-            show_obj = (item.get("show") or item.get("anime") or item) if isinstance(item, dict) else {}
-            if not isinstance(show_obj, dict):
-                show_obj = {}
-            from app.routes.catalog.formatting import get_simkl_display_title
-            title = get_simkl_display_title(show_obj, "english", bulk_details=bulk_details) or show_obj.get("en_title") or show_obj.get("title", "")
-        elif tracker_type == "combined":
-            if item.get("anilist_item"):
-                media = (item["anilist_item"].get("media") or {}) if isinstance(item["anilist_item"], dict) else {}
-                title_obj = media.get("title") or {}
+            if norm_lang == "japanese":
+                title = (
+                    title_obj.get("native")
+                    or title_obj.get("romaji")
+                    or title_obj.get("userPreferred")
+                    or title_obj.get("english")
+                    or ""
+                )
+            elif norm_lang == "romaji":
+                title = (
+                    title_obj.get("romaji")
+                    or title_obj.get("userPreferred")
+                    or title_obj.get("english")
+                    or ""
+                )
+            else:
                 title = (
                     title_obj.get("english")
                     or title_obj.get("userPreferred")
                     or title_obj.get("romaji")
                     or ""
                 )
+        elif tracker_type == "simkl":
+            show_obj = (item.get("show") or item.get("anime") or item) if isinstance(item, dict) else {}
+            if not isinstance(show_obj, dict):
+                show_obj = {}
+            title = get_simkl_display_title(show_obj, norm_lang, bulk_details=bulk_details) or show_obj.get("en_title") or show_obj.get("title", "")
+        elif tracker_type == "combined":
+            if item.get("anilist_item"):
+                media = (item["anilist_item"].get("media") or {}) if isinstance(item["anilist_item"], dict) else {}
+                title_obj = media.get("title") or {}
+                if norm_lang == "japanese":
+                    title = (
+                        title_obj.get("native")
+                        or title_obj.get("romaji")
+                        or title_obj.get("userPreferred")
+                        or title_obj.get("english")
+                        or ""
+                    )
+                elif norm_lang == "romaji":
+                    title = (
+                        title_obj.get("romaji")
+                        or title_obj.get("userPreferred")
+                        or title_obj.get("english")
+                        or ""
+                    )
+                else:
+                    title = (
+                        title_obj.get("english")
+                        or title_obj.get("userPreferred")
+                        or title_obj.get("romaji")
+                        or ""
+                    )
             if not title and item.get("mal_item"):
                 node = (item["mal_item"].get("node") or {}) if isinstance(item["mal_item"], dict) else {}
                 alt = node.get("alternative_titles") or {}
-                title = alt.get("en") or node.get("title", "")
+                if norm_lang == "japanese":
+                    title = alt.get("ja") or node.get("title", "")
+                elif norm_lang == "romaji":
+                    title = node.get("title", "") or alt.get("en", "")
+                else:
+                    title = alt.get("en") or node.get("title", "")
             if not title and item.get("simkl_item"):
                 s_item = item["simkl_item"]
                 show_obj = (s_item.get("show") or s_item.get("anime") or s_item) if isinstance(s_item, dict) else {}
                 if not isinstance(show_obj, dict):
                     show_obj = {}
-                from app.routes.catalog.formatting import get_simkl_display_title
-                title = get_simkl_display_title(show_obj, "english", bulk_details=bulk_details) or show_obj.get("en_title") or show_obj.get("title", "")
+                title = get_simkl_display_title(show_obj, norm_lang, bulk_details=bulk_details) or show_obj.get("en_title") or show_obj.get("title", "")
         if not title and isinstance(item, dict):
             title = str(item.get("name") or item.get("title") or "")
         return str(title or "").strip()
@@ -267,7 +309,6 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
             if not yr and isinstance(item, dict):
                 try:
                     rel_inf = str(item.get("year") or item.get("releaseInfo") or "")
-                    import re
                     m_yr = re.search(r'\b(19\d\d|20\d\d)\b', rel_inf)
                     if m_yr:
                         yr = int(m_yr.group(1))

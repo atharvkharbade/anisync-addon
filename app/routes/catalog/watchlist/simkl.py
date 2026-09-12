@@ -214,8 +214,9 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
             random.shuffle(data_items)
             paged_data_items = data_items[offset : offset + page_limit]
         elif custom_sort_enabled and sort_by != "default":
+            title_lang = user.get("title_language", "english") if isinstance(user, dict) else "english"
             sorted_data_items = sort_watchlist_items(
-                data_items, sort_by, sort_order, "simkl", bulk_details=bulk_details
+                data_items, sort_by, sort_order, "simkl", bulk_details=bulk_details, title_lang=title_lang
             )
             paged_data_items = sorted_data_items[offset : offset + page_limit]
         elif sort_by_new_ep and simkl_status in ["watching", "plantowatch"]:
