@@ -307,7 +307,7 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
 
                     al_title = m.get("title", {}) or {}
                     title_lang = user.get("title_language", "english")
-                    title_name = get_anilist_title(m, title_lang)
+                    title_name = get_anilist_title(al_title, title_lang)
                     title_obj = {
                         "canonicalTitle": al_title.get("userPreferred") or al_title.get("romaji") or al_title.get("english"),
                         "titles": {

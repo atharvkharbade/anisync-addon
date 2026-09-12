@@ -11,6 +11,7 @@ def build_custom_poster_url(
     mal_id: str | None = None,
     kitsu_id: str | None = None,
     anilist_id: str | None = None,
+    simkl_id: str | None = None,
     rpdb_key: str | None = None,
     top_key: str | None = None,
 ) -> str | None:
@@ -33,13 +34,16 @@ def build_custom_poster_url(
 
         # Substitute placeholders
         url = custom_pattern
+        generic_id = mal_id or anilist_id or kitsu_id or simkl_id or imdb_id or ""
         replacements = {
             "{shape}": "landscape" if is_landscape else "poster",
             "{endpoint}": "backdrop-default" if is_landscape else "poster-default",
+            "{id}": str(generic_id) if generic_id else "",
             "{imdb_id}": imdb_id or "",
             "{mal_id}": str(mal_id) if mal_id else "",
             "{kitsu_id}": str(kitsu_id) if kitsu_id else "",
             "{anilist_id}": str(anilist_id) if anilist_id else "",
+            "{simkl_id}": str(simkl_id) if simkl_id else "",
             "{tmdb_id}": str(tmdb_id) if tmdb_id else "",
             "{tvdb_id}": str(tvdb_id) if tvdb_id else "",
             "{rpdb_key}": rpdb_key or "",

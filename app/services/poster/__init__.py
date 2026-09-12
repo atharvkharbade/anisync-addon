@@ -99,13 +99,14 @@ def get_poster_url(
     if provider == "custom" and not custom_pattern:
         return fallback_poster
 
-    # Trigger background mappings resolution if we still lack external IDs
-    if not (imdb_id or tmdb_id or tvdb_id):
-        trigger_background_resolution(kitsu_id=kitsu_id, mal_id=mal_id, anilist_id=anilist_id)
-        return fallback_poster
-
     # Provider specific URL generation
     if provider == "custom":
+        # Check if custom pattern requires Western/external IDs
+        needs_external_id = any(p in custom_pattern for p in ("{imdb_id}", "{tmdb_id}", "{tvdb_id}"))
+        if needs_external_id and not (imdb_id or tmdb_id or tvdb_id):
+            trigger_background_resolution(kitsu_id=kitsu_id, mal_id=mal_id, anilist_id=anilist_id)
+            return fallback_poster
+
         return build_custom_poster_url(
             custom_pattern=custom_pattern,
             shape=shape,
@@ -116,9 +117,15 @@ def get_poster_url(
             mal_id=mal_id,
             kitsu_id=kitsu_id,
             anilist_id=anilist_id,
+            simkl_id=simkl_id,
             rpdb_key=rpdb_key,
             top_key=top_key,
         )
+
+    # Trigger background mappings resolution if we still lack external IDs (for RPDB / TopPosters)
+    if not (imdb_id or tmdb_id or tvdb_id):
+        trigger_background_resolution(kitsu_id=kitsu_id, mal_id=mal_id, anilist_id=anilist_id)
+        return fallback_poster
 
     if provider == "top_poster":
         res = build_top_poster_url(
