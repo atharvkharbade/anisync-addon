@@ -19,15 +19,18 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
         title = ""
         if not isinstance(item, dict):
             return ""
+        if item.get("name"):
+            return str(item["name"]).strip()
         if tracker_type == "mal":
             node = item.get("node") or {}
-            title = node.get("title", "")
+            alt = node.get("alternative_titles") or {}
+            title = alt.get("en") or node.get("title", "")
         elif tracker_type == "anilist":
             media = item.get("media") or {}
             title_obj = media.get("title") or {}
             title = (
-                title_obj.get("userPreferred")
-                or title_obj.get("english")
+                title_obj.get("english")
+                or title_obj.get("userPreferred")
                 or title_obj.get("romaji")
                 or ""
             )
@@ -35,26 +38,29 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
             show_obj = (item.get("show") or item.get("anime") or item) if isinstance(item, dict) else {}
             if not isinstance(show_obj, dict):
                 show_obj = {}
-            title = show_obj.get("en_title") or show_obj.get("title", "")
+            from app.routes.catalog.formatting import get_simkl_display_title
+            title = get_simkl_display_title(show_obj, "english", bulk_details=bulk_details) or show_obj.get("en_title") or show_obj.get("title", "")
         elif tracker_type == "combined":
             if item.get("anilist_item"):
                 media = (item["anilist_item"].get("media") or {}) if isinstance(item["anilist_item"], dict) else {}
                 title_obj = media.get("title") or {}
                 title = (
-                    title_obj.get("userPreferred")
-                    or title_obj.get("english")
+                    title_obj.get("english")
+                    or title_obj.get("userPreferred")
                     or title_obj.get("romaji")
                     or ""
                 )
             if not title and item.get("mal_item"):
                 node = (item["mal_item"].get("node") or {}) if isinstance(item["mal_item"], dict) else {}
-                title = node.get("title", "")
+                alt = node.get("alternative_titles") or {}
+                title = alt.get("en") or node.get("title", "")
             if not title and item.get("simkl_item"):
                 s_item = item["simkl_item"]
                 show_obj = (s_item.get("show") or s_item.get("anime") or s_item) if isinstance(s_item, dict) else {}
                 if not isinstance(show_obj, dict):
                     show_obj = {}
-                title = show_obj.get("en_title") or show_obj.get("title", "")
+                from app.routes.catalog.formatting import get_simkl_display_title
+                title = get_simkl_display_title(show_obj, "english", bulk_details=bulk_details) or show_obj.get("en_title") or show_obj.get("title", "")
         if not title and isinstance(item, dict):
             title = str(item.get("name") or item.get("title") or "")
         return str(title or "").strip()
