@@ -55,7 +55,11 @@ async def logo_svg():
 @rate_limit(limit=60, period_seconds=60)
 async def base_manifest():
     unconfigured = build_base_manifest()
-    return await respond_with(unconfigured, max_age=86400, stale_while_revalidate=86400)
+    resp = await respond_with(unconfigured)
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 
 @manifest_bp.route("/<user_id>/manifest.json")
@@ -63,16 +67,27 @@ async def base_manifest():
 async def user_manifest(user_id: str):
     if not is_valid_user_id(user_id):
         unconfigured = build_base_manifest()
-        return await respond_with(unconfigured, max_age=86400, stale_while_revalidate=86400)
+        resp = await respond_with(unconfigured)
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
 
     user = get_user(user_id, for_manifest=True)
     if not user:
         unconfigured = build_base_manifest()
-        return await respond_with(unconfigured, max_age=86400, stale_while_revalidate=86400)
+        resp = await respond_with(unconfigured)
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
 
     manifest_data = build_user_manifest(user_id, user)
-    max_age = 43200 if manifest_data.get("catalogs") else 86400
-    return await respond_with(manifest_data, max_age=max_age, stale_while_revalidate=86400)
+    resp = await respond_with(manifest_data)
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 
 __all__ = [

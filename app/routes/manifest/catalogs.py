@@ -246,6 +246,8 @@ def get_configured_catalog(cat: dict, catalog_configs: dict, catalog_shapes: dic
     placement = cat_cfg.get("placement") or catalog_placements.get(cat_id)
     if placement == "discover_only":
         c["showInHome"] = False
+    else:
+        c["showInHome"] = True
 
     return c
 
@@ -317,9 +319,6 @@ def filter_user_catalogs(user: dict) -> list[dict]:
                         active_catalogs.append(configured_cat)
 
         # 2. Append any other CATALOGS that were not explicitly in the sorted user_catalogs (e.g. search catalogs)
-        has_comb_in_user_catalogs = any(c.startswith("comb_") for c in user_catalogs)
-        has_single_in_user_catalogs = any(c.startswith(("mal_", "anilist_", "simkl_")) for c in user_catalogs)
-
         for cat in CATALOGS:
             cat_id = cat["id"]
             if cat_id == "anisync_search":
@@ -350,12 +349,7 @@ def filter_user_catalogs(user: dict) -> list[dict]:
                     continue
                 # Omit if the user explicitly unchecked it
                 if cat_id not in user_catalogs:
-                    if cat_id.startswith("comb_") and not has_comb_in_user_catalogs:
-                        pass
-                    elif cat_id.startswith(("mal_", "anilist_", "simkl_")) and not has_single_in_user_catalogs:
-                        pass
-                    else:
-                        continue
+                    continue
 
             configured_cat = _configure(cat)
             if configured_cat not in active_catalogs:

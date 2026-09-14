@@ -2724,11 +2724,12 @@
                         ]
                         %}
 
+                        {% set saved_order = user.get('catalogs_order') or user.get('catalogs') or [] %}
                         {% set active_user_order = [] %}
 
-                        <!-- 1. Construct user-sorted list first -->
-                        {% if user.get('catalogs') %}
-                        {% for sorted_id in (user.get('catalogs') or []) %}
+                        <!-- 1. Construct user-sorted list first using saved_order -->
+                        {% if saved_order %}
+                        {% for sorted_id in saved_order %}
                         {% for item_id, item_name, item_source in default_order %}
                         {% if item_id == sorted_id %}
                         {% if (item_source == 'mal' and user.get('mal_access_token')) or
@@ -2755,15 +2756,15 @@
                         user.get('simkl_access_token'))) or
                         item_source == 'rec' or
                         item_source == 'discovery' or
-                        (item_source == 'search' and not user.get('catalogs')) %}
-                        {% if not user.get('catalogs') or item_id not in (user.get('catalogs') or []) %}
+                        (item_source == 'search' and not saved_order) %}
+                        {% if not saved_order or item_id not in saved_order %}
                         {% set _ = active_user_order.append((item_id, item_name, item_source)) %}
                         {% endif %}
                         {% endif %}
                         {% endfor %}
 
-                        <!-- If returning user had search unselected/disabled, append search at the very bottom -->
-                        {% if user.get('catalogs') and 'anisync_search' not in (user.get('catalogs') or []) %}
+                        <!-- If returning user had search unselected/disabled and not in saved_order, append search at the very bottom -->
+                        {% if saved_order and 'anisync_search' not in saved_order %}
                         {% set _ = active_user_order.append(('anisync_search', 'Search', 'search')) %}
                         {% endif %}
 
@@ -2779,7 +2780,11 @@
                                 <input class="form-check-input catalog-checkbox flex-shrink-0" type="checkbox"
                                     id="cat_{{ item_id }}" name="cat_{{ item_id }}"
                                     style="margin: 0 12px 0 0; cursor: pointer; float: none;"
-                                    {% if user.get('catalogs') is none or item_id in (user.get('catalogs') or []) or (item_source=='discovery' and user.get('enable_discovery_catalogs', True if user.get('is_guest') else False)) or (item_source=='rec' and user.get('enable_recommendations', False)) or (item_source=='search' and user.get('enable_search', True)) or (item_source=='combined' and user.get('combine_watchlists', False) and 'comb_' not in (user.get('catalogs')|string)) or (item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) and 'mal_' not in (user.get('catalogs')|string) and 'anilist_' not in (user.get('catalogs')|string) and 'simkl_' not in (user.get('catalogs')|string)) %}checked{% endif %}>
+                                    {% if user.get('catalogs') is none %}
+                                        {% if item_source == 'combined' and user.get('combine_watchlists', False) %}checked{% elif item_source in ['mal', 'anilist', 'simkl'] and not user.get('combine_watchlists', False) %}checked{% elif item_source == 'discovery' and user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) %}checked{% elif item_source == 'rec' and user.get('enable_recommendations', False) %}checked{% elif item_source == 'search' and user.get('enable_search', True) %}checked{% endif %}
+                                    {% else %}
+                                        {% if item_id in (user.get('catalogs') or []) %}checked{% endif %}
+                                    {% endif %}>
                                 <div class="catalog-content-col d-flex flex-grow-1 overflow-hidden min-w-0">
                                     <label class="catalog-item-title small fw-medium text-light text-truncate mb-0" for="cat_{{ item_id }}"
                                         style="user-select: none; cursor: pointer;">
@@ -3235,7 +3240,7 @@
                                     Discover only
                                 </button>
                             </div>
-                            <span class="text-secondary small d-block mt-1" style="font-size: 0.72rem; opacity: 0.55; line-height: 1.35;"><strong>Discover only</strong> removes this row from Home while keeping it in Discover.</span>
+                            <span class="text-secondary small d-block mt-1" style="font-size: 0.72rem; opacity: 0.55; line-height: 1.35;"><strong>Discover only</strong> hides this row from the Home board on supported clients (like <strong>Nuvio</strong>). Stock Stremio displays all enabled catalogs on Home.</span>
                         </div>
 
                         <!-- 3. Poster Shape -->
@@ -5596,8 +5601,9 @@
                     item.classList.add("d-none");
                     if (cb && (combineEnabled || !enableCatalogs)) cb.checked = false;
                 } else {
+                    const wasHidden = item.classList.contains("d-none");
                     item.classList.remove("d-none");
-                    if (!isInitialLoad && cb) cb.checked = true;
+                    if (!isInitialLoad && cb && wasHidden) cb.checked = true;
                 }
             });
 
@@ -5607,8 +5613,9 @@
                     item.classList.add("d-none");
                     if (cb && (combineEnabled || !enableCatalogs)) cb.checked = false;
                 } else {
+                    const wasHidden = item.classList.contains("d-none");
                     item.classList.remove("d-none");
-                    if (!isInitialLoad && cb) cb.checked = true;
+                    if (!isInitialLoad && cb && wasHidden) cb.checked = true;
                 }
             });
 
@@ -5618,8 +5625,9 @@
                     item.classList.add("d-none");
                     if (cb && (combineEnabled || !enableCatalogs)) cb.checked = false;
                 } else {
+                    const wasHidden = item.classList.contains("d-none");
                     item.classList.remove("d-none");
-                    if (!isInitialLoad && cb) cb.checked = true;
+                    if (!isInitialLoad && cb && wasHidden) cb.checked = true;
                 }
             });
 
@@ -5630,8 +5638,9 @@
                     item.classList.add("d-none");
                     if (cb && (!combineEnabled || !enableCatalogs)) cb.checked = false;
                 } else {
+                    const wasHidden = item.classList.contains("d-none");
                     item.classList.remove("d-none");
-                    if (!isInitialLoad && cb) cb.checked = true;
+                    if (!isInitialLoad && cb && wasHidden) cb.checked = true;
                 }
             });
 
@@ -5646,11 +5655,8 @@
                 } else {
                     const wasHidden = item.classList.contains("d-none");
                     item.classList.remove("d-none");
-                    if (!isInitialLoad && cb) {
+                    if (!isInitialLoad && cb && wasHidden) {
                         cb.checked = true;
-                        if (wasHidden && container && item.parentElement === container) {
-                            container.appendChild(item);
-                        }
                     }
                 }
             });
@@ -5664,11 +5670,8 @@
                 } else {
                     const wasHidden = item.classList.contains("d-none");
                     item.classList.remove("d-none");
-                    if (!isInitialLoad && cb) {
+                    if (!isInitialLoad && cb && wasHidden) {
                         cb.checked = true;
-                        if (wasHidden && container && item.parentElement === container) {
-                            container.appendChild(item);
-                        }
                     }
                 }
             });
@@ -5683,11 +5686,8 @@
                 } else {
                     const wasHidden = item.classList.contains("d-none");
                     item.classList.remove("d-none");
-                    if (!isInitialLoad && cb) {
+                    if (!isInitialLoad && cb && wasHidden) {
                         cb.checked = true;
-                        if (wasHidden && container && item.parentElement === container) {
-                            container.appendChild(item);
-                        }
                     }
                 }
             });

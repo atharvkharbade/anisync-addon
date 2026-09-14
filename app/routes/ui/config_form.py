@@ -142,6 +142,11 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         sorted_input = form.get("sorted_catalogs") or ""
         sorted_ids = [x.strip() for x in sorted_input.split(",") if x.strip()]
 
+        user["catalogs_order"] = [cat for cat in sorted_ids if cat in POSSIBLE_CATS]
+        for cat in POSSIBLE_CATS:
+            if cat not in user["catalogs_order"]:
+                user["catalogs_order"].append(cat)
+
         enabled_list = []
         for cat in sorted_ids:
             if cat in POSSIBLE_CATS and form.get(f"cat_{cat}"):
