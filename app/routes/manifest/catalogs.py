@@ -249,6 +249,11 @@ def get_configured_catalog(cat: dict, catalog_configs: dict, catalog_shapes: dic
     else:
         c["showInHome"] = True
 
+    # Standard Stremio protocol backward/forward compatibility (v3 + v4 & Nuvio)
+    extra_list = [ex for ex in c.get("extra", [])] if isinstance(c.get("extra"), list) else []
+    c["extraSupported"] = [ex["name"] for ex in extra_list if isinstance(ex, dict) and "name" in ex]
+    c["extraRequired"] = [ex["name"] for ex in extra_list if isinstance(ex, dict) and ex.get("isRequired") is True]
+
     return c
 
 
