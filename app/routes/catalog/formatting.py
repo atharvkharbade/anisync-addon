@@ -9,7 +9,8 @@ def _parse_stremio_filters(extras: str) -> dict:
     if not extras:
         return {}
     filters = {}
-    for part in extras.split("&"):
+    normalized = extras.replace("/", "&")
+    for part in normalized.split("&"):
         if "=" not in part:
             continue
         k, v = part.split("=", 1)

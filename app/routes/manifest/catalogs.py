@@ -242,15 +242,38 @@ def get_configured_catalog(cat: dict, catalog_configs: dict, catalog_shapes: dic
     if title and str(title).strip():
         c["name"] = str(title).strip()
 
-    # Placement: "discover_only" hides row from Home board while keeping in Discover (Nuvio)
+    # Placement: "discover_only" hides row from Home board while keeping in Discover (Nuvio & Stremio)
     placement = cat_cfg.get("placement") or catalog_placements.get(cat_id)
+
+    # Deep-copy extra dicts to avoid mutating global CATALOGS
+    extra_list = [dict(ex) for ex in c.get("extra", []) if isinstance(ex, dict) and "name" in ex]
+    genre_ex = next((ex for ex in extra_list if ex.get("name") == "genre"), None)
+
     if placement == "discover_only":
         c["showInHome"] = False
+        if cat_id != "anisync_search":
+            if genre_ex:
+                opts = list(genre_ex.get("options", []))
+                if "None" not in opts:
+                    opts.insert(0, "None")
+                genre_ex["options"] = opts
+                genre_ex["isRequired"] = True
+            else:
+                extra_list.insert(0, {"name": "genre", "isRequired": True, "options": ["None"]})
     else:
         c["showInHome"] = True
+        if genre_ex:
+            if genre_ex.get("options") == ["None"]:
+                extra_list.remove(genre_ex)
+            else:
+                genre_ex["isRequired"] = False
+                opts = list(genre_ex.get("options", []))
+                if "None" in opts:
+                    opts.remove("None")
+                genre_ex["options"] = opts
 
+    c["extra"] = extra_list
     # Standard Stremio protocol backward/forward compatibility (v3 + v4 & Nuvio)
-    extra_list = [ex for ex in c.get("extra", [])] if isinstance(c.get("extra"), list) else []
     c["extraSupported"] = [ex["name"] for ex in extra_list if isinstance(ex, dict) and "name" in ex]
     c["extraRequired"] = [ex["name"] for ex in extra_list if isinstance(ex, dict) and ex.get("isRequired") is True]
 

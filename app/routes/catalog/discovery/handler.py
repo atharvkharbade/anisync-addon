@@ -53,6 +53,8 @@ async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filt
     now = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
 
     genre = filters.get("genre")
+    if genre in ("None", "All", ""):
+        genre = None
     cache_key = f"{catalog_id}:{genre}" if genre else catalog_id
 
     cached = None
