@@ -938,7 +938,7 @@
         padding: 3px 8px;
         text-align: center;
         flex-shrink: 0;
-        order: 2;
+        order: 3;
     }
     .catalog-dub-badge {
         font-size: 0.65rem;
@@ -951,6 +951,25 @@
         flex-shrink: 0;
         white-space: nowrap;
         order: 1;
+    }
+    .catalog-discover-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        padding: 3px 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        white-space: nowrap;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(52, 211, 153, 0.4);
+        color: #34d399;
+        border-radius: 20px;
+        order: 2;
+    }
+    .catalog-discover-badge.d-none {
+        display: none !important;
     }
     .catalog-config-btn {
         width: 32px;
@@ -978,48 +997,52 @@
         opacity: 0.85 !important;
     }
 
-    /* Mobile: 2-line Subtitle Layout */
+    /* Mobile: Subtitle Column Layout (<= 576px) */
     @media (max-width: 576px) {
         .catalog-order-item {
-            padding: 8px 10px !important;
+            padding: 8px 10px;
         }
         .catalog-content-col {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            justify-content: center !important;
-            gap: 4px !important;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 4px;
         }
         .catalog-content-col .catalog-item-title {
-            width: 100% !important;
-            line-height: 1.25 !important;
+            width: 100%;
+            line-height: 1.25;
         }
         .catalog-badges-wrap {
-            display: inline-flex !important;
-            flex-direction: row !important;
-            align-items: center !important;
-            gap: 6px !important;
-            flex-wrap: nowrap !important;
-            margin-top: 2px !important;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            width: 100%;
+            margin-top: 3px;
         }
         .catalog-source-badge {
-            width: auto !important;
-            min-width: 0 !important;
-            font-size: 0.62rem !important;
-            padding: 2px 7px !important;
-            letter-spacing: 0.02em !important;
-            border-radius: 20px !important;
-            order: 1 !important;
+            width: auto;
+            min-width: 0;
+            font-size: 0.62rem;
+            padding: 2px 7px;
+            letter-spacing: 0.02em;
+            order: 1;
+        }
+        .catalog-discover-badge {
+            font-size: 0.62rem;
+            padding: 2px 7px;
+            letter-spacing: 0.02em;
+            order: 2;
         }
         .catalog-dub-badge {
-            font-size: 0.62rem !important;
-            padding: 2px 7px !important;
-            letter-spacing: 0.02em !important;
-            border-radius: 20px !important;
-            order: 2 !important;
+            font-size: 0.62rem;
+            padding: 2px 7px;
+            letter-spacing: 0.02em;
+            order: 3;
         }
         .catalog-config-btn {
-            width: 34px !important;
-            height: 34px !important;
+            width: 34px;
+            height: 34px;
         }
     }
 
@@ -2785,16 +2808,18 @@
                                     {% else %}
                                         {% if item_id in (user.get('catalogs') or []) %}checked{% endif %}
                                     {% endif %}>
-                                <div class="catalog-content-col d-flex flex-grow-1 overflow-hidden min-w-0">
+                                <div class="catalog-content-col flex-grow-1 overflow-hidden min-w-0">
                                     <label class="catalog-item-title small fw-medium text-light text-truncate mb-0" for="cat_{{ item_id }}"
                                         style="user-select: none; cursor: pointer;">
                                         <span id="label_text_{{ item_id }}">{{ cur_title if cur_title else item_name }}</span>
                                     </label>
-                                    <div class="catalog-badges-wrap d-inline-flex align-items-center flex-shrink-0">
+                                    <div class="catalog-badges-wrap flex-shrink-0">
                                         <span
                                             class="badge rounded-pill catalog-source-badge {% if item_source == 'mal' %}bg-primary{% elif item_source == 'anilist' %}bg-info text-dark{% elif item_source == 'simkl' %}bg-simkl{% elif item_source == 'combined' %}bg-success text-white{% elif item_source == 'discovery' %}bg-discovery{% elif item_source == 'search' %}bg-search text-white{% else %}bg-warning text-dark{% endif %}">
                                             {{ 'RECOMMENDED' if item_source == 'rec' else ('DISCOVERY' if item_source == 'discovery' else ('SEARCH' if item_source == 'search' else item_source | upper)) }}
                                         </span>
+                                        {% set is_discover_only = (cur_cfg.get('placement') == 'discover_only' or user.get('catalog_placements', {}).get(item_id) == 'discover_only') %}
+                                        <span id="badge_placement_{{ item_id }}" class="badge rounded-pill catalog-discover-badge {% if not is_discover_only %}d-none{% endif %}">DISCOVER ONLY</span>
                                         {% set is_item_dubbed = (cur_cfg.get('dubbed') or cur_cfg.get('audio') == 'dubbed') %}
                                         {% set cur_dub_lang = (cur_cfg.get('dub_language') or cur_cfg.get('dubbed_language') or user.get('dubbed_language') or user.get('dub_language', 'en'))|lower %}
                                         {% set cur_dub_code = 'EN' if cur_dub_lang in ['en', 'english'] else ('JA' if cur_dub_lang in ['ja', 'japanese'] else ('ES' if cur_dub_lang in ['es', 'spanish'] else ('DE' if cur_dub_lang in ['de', 'german'] else ('FR' if cur_dub_lang in ['fr', 'french'] else ('IT' if cur_dub_lang in ['it', 'italian'] else ('PT' if cur_dub_lang in ['pt', 'portuguese'] else cur_dub_lang[:2]|upper)))))) %}
@@ -4267,6 +4292,15 @@
                     const lang = (cfg.dub_language || 'english').toLowerCase();
                     const code = DUB_LANG_CODES[lang] || lang.substring(0, 2).toUpperCase();
                     dubBadge.textContent = `DUBBED • ${code}`;
+                }
+            }
+            const placementBadge = document.getElementById('badge_placement_' + catId);
+            if (placementBadge) {
+                const cfg = catalogConfigs[catId];
+                const isDiscoverOnly = Boolean(cfg && cfg.placement === 'discover_only');
+                placementBadge.classList.toggle('d-none', !isDiscoverOnly);
+                if (isDiscoverOnly) {
+                    placementBadge.textContent = 'DISCOVER ONLY';
                 }
             }
         }
