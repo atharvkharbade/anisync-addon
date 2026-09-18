@@ -3,7 +3,7 @@ from .catalogs import CATALOGS, filter_user_catalogs
 
 MANIFEST = {
     "id": "com.anisync.stremio",
-    "version": "1.5.0",
+    "version": "1.5.1",
     "name": "AniSync",
     "logo": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png",
     "icon": f"{Config.PROTOCOL}://{Config.REDIRECT_URL}/logo.png",
