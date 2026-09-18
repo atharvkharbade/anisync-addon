@@ -38,6 +38,19 @@ def create_app() -> App:
 
         init_client()
 
+        # One-time migration: flush pre-fix stale recommendations cache
+        try:
+            from datetime import datetime
+            from app.services.db import db
+            migration_col = db.get_collection("migrations")
+            if not migration_col.find_one({"id": "v1_5_1_flush_stale_recs"}):
+                from app.services.recommendations.cache import recommendations_cache_collection
+                deleted = recommendations_cache_collection.delete_many({}).deleted_count
+                migration_col.insert_one({"id": "v1_5_1_flush_stale_recs", "applied_at": datetime.utcnow()})
+                logging.info("Applied migration v1_5_1_flush_stale_recs: deleted %s stale recs", deleted)
+        except Exception as e:
+            logging.error("Failed to run recommendations cache migration: %s", e)
+
         # Ensure Fribb mappings are populated and schema is up-to-date in the background
         import asyncio
 
