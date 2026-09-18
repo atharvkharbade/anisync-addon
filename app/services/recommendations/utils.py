@@ -116,3 +116,12 @@ def normalize_user_status(status: str | None) -> str:
     if s in ["plan_to_watch", "planning", "plantowatch"]:
         return "planning"
     return s
+
+
+def normalize_title(s: str) -> str:
+    """Normalize anime title using NFKC unicode normalization, lowercasing, and stripping whitespace."""
+    if not s:
+        return ""
+    import unicodedata
+    return unicodedata.normalize("NFKC", str(s)).lower().strip()
+

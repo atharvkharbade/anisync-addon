@@ -4,7 +4,7 @@ from app.api import anilist as anilist_api
 from app.api import mal as mal_api
 from app.api import simkl as simkl_api
 from app.services.db import db, handle_invalid_anilist_token, store_user
-from app.services.recommendations.utils import normalize_user_status
+from app.services.recommendations.utils import normalize_title, normalize_user_status
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +47,12 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
                 if len(items) < MAL_PAGE_SIZE or not res.get("paging", {}).get("next"):
                     break
                 offset += len(items)
+                if offset >= MAL_FETCH_CAP:
+                    logger.warning(
+                        "MAL user %s has reached the %d fetch cap; recommendations fetch truncated.",
+                        user_id,
+                        MAL_FETCH_CAP,
+                    )
         except Exception as e:
             logger.warning("Failed to fetch MAL user list: %s", e)
 
@@ -274,6 +280,9 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
         for t in show.get("all_titles") or ([show["title"]] if show.get("title") else []):
             if t:
                 watched_titles.add(t.lower().strip())
+                norm_t = normalize_title(t)
+                if norm_t:
+                    watched_titles.add(norm_t)
 
     # Bulk-resolve IDs from fribb_mappings and id_cache
     raw_mal_ids = list(watched_mal_ids)

@@ -263,14 +263,25 @@ def save_user_anime_meta_status(
         "fetched_at": now,
         "expires_at": now + timedelta(hours=24),
     }
-
-    query_filter = {"uid": canonical_uid}
     if mal_id:
-        query_filter["mal_id"] = str(mal_id)
-    elif anilist_id:
-        query_filter["anilist_id"] = str(anilist_id)
-    elif simkl_id:
-        query_filter["simkl_id"] = str(simkl_id)
+        doc["mal_id"] = str(mal_id)
+    if anilist_id:
+        doc["anilist_id"] = str(anilist_id)
+    if simkl_id:
+        doc["simkl_id"] = str(simkl_id)
+
+    or_clauses = []
+    if mal_id:
+        or_clauses.append({"mal_id": str(mal_id)})
+    if anilist_id:
+        or_clauses.append({"anilist_id": str(anilist_id)})
+    if simkl_id:
+        or_clauses.append({"simkl_id": str(simkl_id)})
+
+    if not or_clauses:
+        return
+
+    query_filter = {"uid": canonical_uid, "$or": or_clauses}
 
     try:
         meta_col.update_one(query_filter, {"$set": doc}, upsert=True)
@@ -403,8 +414,12 @@ def update_user_watchlist_cache_progress(
             meta_subquery.append({"simkl_id": simkl_str})
         if meta_subquery:
             db.get_collection("user_anime_status_cache").update_many(
-                {"uid": {"$in": uids}, "$or": meta_subquery},
-                {"$set": {"progress": episode, "status": "watching"}},
+                {
+                    "uid": {"$in": uids},
+                    "$or": meta_subquery,
+                    "status": {"$nin": ["completed", "dropped"]},
+                },
+                {"$set": {"progress": episode}},
             )
 
     except Exception as e:

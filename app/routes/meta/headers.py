@@ -57,31 +57,18 @@ def _format_status_header(status_info: dict) -> str | None:
 
 
 async def build_user_status_header(
-    user_or_id: dict | str | None,
-    user_id_or_mal: str | None = None,
+    user: dict | None,
+    user_id: str,
     mal_id: str | None = None,
     anilist_id: str | None = None,
     simkl_id: str | None = None,
 ) -> str | None:
-    if isinstance(user_or_id, dict):
-        user = user_or_id
-        user_id = str(user_id_or_mal or user.get("uid") or "")
-        m_id = mal_id
-        al_id = anilist_id
-        sk_id = simkl_id
-    else:
-        user = None
-        user_id = str(user_or_id or "")
-        m_id = user_id_or_mal
-        al_id = mal_id
-        sk_id = anilist_id
-
     # 1. Check local caches (user_anime_status_cache + user_watchlist_cache)
-    status_info = db_service.get_user_anime_meta_status(user_id, mal_id=m_id, anilist_id=al_id, simkl_id=sk_id)
+    status_info = db_service.get_user_anime_meta_status(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
     if status_info:
         return _format_status_header(status_info)
 
-    # 2. If not in cache, perform on-demand tracker lookup (MAL > AniList > Simkl)
+    # 2. If not in cache, perform on-demand tracker lookup (MAL > AniList)
     if not user and user_id:
         from app.services.db.users import get_user
         user = get_user(user_id)
@@ -94,7 +81,7 @@ async def build_user_status_header(
         return None
 
     # --- MAL Check ---
-    if m_id and user.get("mal_enabled", True) and user.get("mal_access_token"):
+    if mal_id and user.get("mal_enabled", True) and user.get("mal_access_token"):
         try:
             from app.api import mal as mal_api
             from app.api.mal import MalTokenInvalidError
@@ -102,7 +89,7 @@ async def build_user_status_header(
 
             mal_token = await get_or_refresh_mal_token(canonical_uid)
             if mal_token:
-                mal_details = await asyncio.wait_for(mal_api.get_anime_details(mal_token, str(m_id)), timeout=2.5)
+                mal_details = await asyncio.wait_for(mal_api.get_anime_details(mal_token, str(mal_id)), timeout=2.5)
                 reset_mal_error_counter(canonical_uid)
                 my_status = mal_details.get("my_list_status")
                 if my_status and my_status.get("status"):
@@ -116,21 +103,20 @@ async def build_user_status_header(
                         progress=prog,
                         total_episodes=total,
                         score=sc,
-                        mal_id=m_id,
-                        anilist_id=al_id,
-                        simkl_id=sk_id,
+                        mal_id=mal_id,
+                        anilist_id=anilist_id,
+                        simkl_id=simkl_id,
                         tracker="mal",
                     )
                     return _format_status_header({"status": st, "progress": prog, "total_episodes": total, "score": sc})
         except MalTokenInvalidError as e:
             logging.warning("MAL token invalid during on-demand lookup for user %s: %s", canonical_uid, e)
-            from app.services.db import handle_invalid_mal_token
             handle_invalid_mal_token(canonical_uid)
         except Exception as e:
-            logging.debug("On-demand MAL status lookup skipped for user %s, anime %s: %s", user_id, m_id, e)
+            logging.debug("On-demand MAL status lookup skipped for user %s, anime %s: %s", user_id, mal_id, e)
 
     # --- AniList Check ---
-    if al_id and user.get("anilist_enabled", True) and user.get("anilist_token"):
+    if anilist_id and user.get("anilist_enabled", True) and user.get("anilist_token"):
         try:
             from app.api import anilist as anilist_api
             from app.api.anilist import AnilistTokenInvalidError
@@ -152,7 +138,7 @@ async def build_user_status_header(
                     }
                     """
                     data = await asyncio.wait_for(
-                        anilist_api._gql(user["anilist_token"], query, {"userId": int(al_uid), "mediaId": int(al_id)}),
+                        anilist_api._gql(user["anilist_token"], query, {"userId": int(al_uid), "mediaId": int(anilist_id)}),
                         timeout=2.5,
                     )
                     reset_anilist_error_counter(canonical_uid)
@@ -169,59 +155,17 @@ async def build_user_status_header(
                             progress=prog,
                             total_episodes=total,
                             score=sc,
-                            mal_id=m_id,
-                            anilist_id=al_id,
-                            simkl_id=sk_id,
+                            mal_id=mal_id,
+                            anilist_id=anilist_id,
+                            simkl_id=simkl_id,
                             tracker="anilist",
                         )
                         return _format_status_header({"status": st, "progress": prog, "total_episodes": total, "score": sc})
         except AnilistTokenInvalidError as e:
             logging.warning("AniList token invalid during on-demand lookup for user %s: %s", canonical_uid, e)
-            from app.services.db import handle_invalid_anilist_token
             handle_invalid_anilist_token(canonical_uid)
         except Exception as e:
-            logging.debug("On-demand AniList status lookup skipped for user %s, anime %s: %s", user_id, al_id, e)
-
-    # --- Simkl Check ---
-    if sk_id and user.get("simkl_enabled", True) and user.get("simkl_access_token"):
-        try:
-            from app.api import simkl as simkl_api
-            from app.services.db import handle_invalid_simkl_token, reset_simkl_error_counter
-
-            client = simkl_api.get_client()
-            headers = {
-                "Authorization": f"Bearer {user['simkl_access_token']}",
-                "simkl-api-key": simkl_api.Config.SIMKL_CLIENT_ID,
-                "User-Agent": "AniSync/1.0",
-            }
-            url = f"{simkl_api.BASE_URL}/sync/ratings/anime/{sk_id}"
-            resp = await asyncio.wait_for(client.get(url, headers=headers, timeout=2.5), timeout=2.5)
-            if resp.status_code in (401, 403):
-                handle_invalid_simkl_token(canonical_uid)
-            elif resp.status_code == 200:
-                reset_simkl_error_counter(canonical_uid)
-                data = resp.json()
-                if isinstance(data, list) and data:
-                    item = data[0]
-                    st = item.get("status") or item.get("list")
-                    if st:
-                        prog = item.get("watched_episodes_count") or 0
-                        sc = item.get("user_rating") or 0
-                        total = item.get("total_episodes_count") or 0
-                        db_service.save_user_anime_meta_status(
-                            canonical_uid,
-                            status=st,
-                            progress=prog,
-                            total_episodes=total,
-                            score=sc,
-                            mal_id=m_id,
-                            anilist_id=al_id,
-                            simkl_id=sk_id,
-                            tracker="simkl",
-                        )
-                        return _format_status_header({"status": st, "progress": prog, "total_episodes": total, "score": sc})
-        except Exception as e:
-            logging.debug("On-demand Simkl status lookup skipped for user %s, anime %s: %s", user_id, sk_id, e)
+            logging.debug("On-demand AniList status lookup skipped for user %s, anime %s: %s", user_id, anilist_id, e)
 
     return None
 
