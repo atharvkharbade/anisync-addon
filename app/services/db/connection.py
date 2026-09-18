@@ -51,6 +51,9 @@ def init_indexes():
         db.get_collection("user_watchlist_cache").create_index([("uid", 1), ("tracker", 1), ("status", 1)])
         db.get_collection("user_watchlist_cache").create_index("expires_at", expireAfterSeconds=0)
 
+        db.get_collection("user_anime_status_cache").create_index([("uid", 1), ("mal_id", 1), ("anilist_id", 1), ("simkl_id", 1)])
+        db.get_collection("user_anime_status_cache").create_index("expires_at", expireAfterSeconds=0)
+
         db.get_collection("anilist_airing_cache").create_index("anilist_id")
         db.get_collection("anilist_airing_cache").create_index("expires_at", expireAfterSeconds=0)
 

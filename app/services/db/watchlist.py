@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 import logging
 
 from .connection import db
@@ -29,6 +30,7 @@ def invalidate_user_watchlist_cache(user_id: str):
         if not uids:
             return
         db.get_collection("user_watchlist_cache").delete_many({"uid": {"$in": uids}})
+        db.get_collection("user_anime_status_cache").delete_many({"uid": {"$in": uids}})
         logging.info("Invalidated watchlist cache for uids %s", uids)
     except Exception as e:
         logging.error("Failed to invalidate watchlist cache for user %s: %s", user_id, e)
@@ -115,12 +117,44 @@ def get_user_anime_meta_status(
         return None
 
     try:
-        cache_col = db.get_collection("user_watchlist_cache")
-        docs = list(cache_col.find({"uid": str(user_id)}))
+        uids = _resolve_user_cache_uids(user_id)
+        if not uids:
+            return None
 
         mal_str = str(mal_id) if mal_id else None
         anilist_str = str(anilist_id) if anilist_id else None
         simkl_str = str(simkl_id) if simkl_id else None
+
+        # 1. First check dedicated on-demand single-item cache
+        meta_col = db.get_collection("user_anime_status_cache")
+        query_or = []
+        if mal_str:
+            query_or.append({"mal_id": mal_str})
+        if anilist_str:
+            query_or.append({"anilist_id": anilist_str})
+        if simkl_str:
+            query_or.append({"simkl_id": simkl_str})
+
+        if query_or:
+            cached_meta = meta_col.find_one({"uid": {"$in": uids}, "$or": query_or})
+            if cached_meta and isinstance(cached_meta, dict) and cached_meta.get("status"):
+                score = cached_meta.get("score") or 0
+                if isinstance(score, (int, float)) and score > 10:
+                    score = round(score / 10.0, 1)
+                return {
+                    "status": cached_meta.get("status"),
+                    "progress": cached_meta.get("progress") or 0,
+                    "total_episodes": cached_meta.get("total_episodes") or 0,
+                    "score": score,
+                }
+
+        # 2. Check full-list catalog watchlist cache
+        cache_col = db.get_collection("user_watchlist_cache")
+        docs = list(cache_col.find({"uid": {"$in": uids}}))
+
+        # Enforce deterministic tracker priority: MAL > AniList > Simkl
+        tracker_order = {"mal": 0, "anilist": 1, "simkl": 2}
+        docs.sort(key=lambda d: tracker_order.get(d.get("tracker"), 99))
 
         for doc in docs:
             tracker = doc.get("tracker")
@@ -152,7 +186,8 @@ def get_user_anime_meta_status(
                             status = (entry.get("status") or "").lower()
                             progress = entry.get("progress") or 0
                             total_eps = media.get("episodes") or 0
-                            score = entry.get("score") or 0
+                            raw_score = entry.get("score") or 0
+                            score = round(raw_score / 10.0, 1) if raw_score > 10 else raw_score
                             return {"status": status, "progress": progress, "total_episodes": total_eps, "score": score}
 
             elif tracker == "simkl":
@@ -189,6 +224,58 @@ def get_user_anime_meta_status(
         logging.error("Failed to query anime meta status for user %s: %s", user_id, e)
 
     return None
+
+
+def save_user_anime_meta_status(
+    user_id: str,
+    status: str,
+    progress: int,
+    total_episodes: int,
+    score: float | int,
+    mal_id: str | None = None,
+    anilist_id: str | None = None,
+    simkl_id: str | None = None,
+    tracker: str | None = None,
+):
+    """Save an on-demand tracker lookup result to the dedicated user_anime_status_cache collection."""
+    if not user_id:
+        return
+    uids = _resolve_user_cache_uids(user_id)
+    canonical_uid = uids[0] if uids else str(user_id)
+
+    now = datetime.now(UTC).replace(tzinfo=None)
+    meta_col = db.get_collection("user_anime_status_cache")
+
+    norm_score = float(score) if score else 0.0
+    if norm_score > 10:
+        norm_score = round(norm_score / 10.0, 1)
+
+    doc = {
+        "uid": canonical_uid,
+        "status": (status or "").lower(),
+        "progress": int(progress or 0),
+        "total_episodes": int(total_episodes or 0),
+        "score": norm_score,
+        "mal_id": str(mal_id) if mal_id else None,
+        "anilist_id": str(anilist_id) if anilist_id else None,
+        "simkl_id": str(simkl_id) if simkl_id else None,
+        "tracker": tracker,
+        "fetched_at": now,
+        "expires_at": now + timedelta(hours=24),
+    }
+
+    query_filter = {"uid": canonical_uid}
+    if mal_id:
+        query_filter["mal_id"] = str(mal_id)
+    elif anilist_id:
+        query_filter["anilist_id"] = str(anilist_id)
+    elif simkl_id:
+        query_filter["simkl_id"] = str(simkl_id)
+
+    try:
+        meta_col.update_one(query_filter, {"$set": doc}, upsert=True)
+    except Exception as e:
+        logging.error("Failed to save user_anime_status_cache for %s: %s", user_id, e)
 
 
 def update_user_watchlist_cache_progress(
@@ -305,6 +392,20 @@ def update_user_watchlist_cache_progress(
                         user_id,
                         tracker,
                     )
+
+        # Also update single-item on-demand cache if present
+        meta_subquery = []
+        if mal_str:
+            meta_subquery.append({"mal_id": mal_str})
+        if anilist_str:
+            meta_subquery.append({"anilist_id": anilist_str})
+        if simkl_str:
+            meta_subquery.append({"simkl_id": simkl_str})
+        if meta_subquery:
+            db.get_collection("user_anime_status_cache").update_many(
+                {"uid": {"$in": uids}, "$or": meta_subquery},
+                {"$set": {"progress": episode, "status": "watching"}},
+            )
 
     except Exception as e:
         logging.error("Failed to update watchlist cache progress for user %s: %s", user_id, e)

@@ -16,11 +16,37 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
         tuple of (merged_shows, watched_mal_ids, watched_anilist_ids, watched_kitsu_ids, watched_titles)
     """
     # 1. Fetch watched history from track managers
+    MAL_PAGE_SIZE = 1000
+    MAL_FETCH_CAP = 3000
     mal_items = []
     if user.get("mal_access_token") and user.get("mal_enabled", True):
         try:
-            res = await mal_api.get_user_anime_list(user["mal_access_token"], limit=100)
-            mal_items = res.get("data", [])
+            offset = 0
+            seen_mal_ids = set()
+            while offset < MAL_FETCH_CAP:
+                try:
+                    res = await mal_api.get_user_anime_list(user["mal_access_token"], limit=MAL_PAGE_SIZE, offset=offset)
+                except Exception as page_err:
+                    logger.warning("MAL page fetch failed at offset %d for user %s: %s", offset, user_id, page_err)
+                    break
+
+                items = res.get("data", [])
+                if not items:
+                    break
+
+                new_items = []
+                for itm in items:
+                    nid = str((itm.get("node") or {}).get("id") or "")
+                    if nid and nid in seen_mal_ids:
+                        continue
+                    if nid:
+                        seen_mal_ids.add(nid)
+                    new_items.append(itm)
+
+                mal_items.extend(new_items)
+                if len(items) < MAL_PAGE_SIZE or not res.get("paging", {}).get("next"):
+                    break
+                offset += len(items)
         except Exception as e:
             logger.warning("Failed to fetch MAL user list: %s", e)
 
@@ -65,6 +91,19 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
         else:
             title = node.get("title") or alt_titles.get("en") or "Unknown Title"
 
+        all_titles = set()
+        if node.get("title"):
+            all_titles.add(node["title"])
+        if alt_titles.get("en"):
+            all_titles.add(alt_titles["en"])
+        if alt_titles.get("ja"):
+            all_titles.add(alt_titles["ja"])
+        synonyms = alt_titles.get("synonyms")
+        if isinstance(synonyms, list):
+            for syn in synonyms:
+                if syn:
+                    all_titles.add(syn)
+
         mal_id = str(node.get("id"))
         list_status = node.get("my_list_status", {})
         status = normalize_user_status(list_status.get("status"))
@@ -73,6 +112,7 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
 
         merged_shows[mal_id] = {
             "title": title,
+            "all_titles": list(all_titles),
             "mal_id": mal_id,
             "anilist_id": None,
             "kitsu_id": None,
@@ -95,6 +135,15 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
         else:
             title = t_obj.get("romaji") or t_obj.get("userPreferred") or t_obj.get("english") or "Unknown Title"
 
+        all_titles = set()
+        for t_key in ["romaji", "english", "native", "userPreferred"]:
+            t_val = t_obj.get(t_key)
+            if t_val:
+                all_titles.add(t_val)
+        for syn in media.get("synonyms") or []:
+            if syn:
+                all_titles.add(syn)
+
         anilist_id = str(media.get("id"))
         mal_id = str(media.get("idMal")) if media.get("idMal") else None
         status = normalize_user_status(entry.get("status"))
@@ -109,6 +158,7 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
         if key not in merged_shows:
             merged_shows[key] = {
                 "title": title,
+                "all_titles": list(all_titles),
                 "mal_id": mal_id,
                 "anilist_id": anilist_id,
                 "kitsu_id": None,
@@ -120,6 +170,10 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
         else:
             merged_shows[key]["anilist_id"] = anilist_id
             merged_shows[key]["rating"] = max(merged_shows[key].get("rating") or 0, rating)
+
+            old_titles = set(merged_shows[key].get("all_titles") or [])
+            old_titles.update(all_titles)
+            merged_shows[key]["all_titles"] = list(old_titles)
 
             old_status = merged_shows[key]["status"]
             if old_status == "planning" and status != "planning":
@@ -148,6 +202,13 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
         kitsu_id = str(show_ids.get("kitsu") or "") or None
 
         title = show_obj.get("title") or ""
+        all_titles = set()
+        if title:
+            all_titles.add(title)
+        for s_t in [show_obj.get("title_romaji"), show_obj.get("title_en"), show_obj.get("english_title")]:
+            if s_t:
+                all_titles.add(s_t)
+
         status = normalize_user_status(item.get("list"))
         rating = item.get("user_rating", 0) or 0
         genres = show_obj.get("genres", []) or []
@@ -163,6 +224,10 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
             if kitsu_id:
                 merged_shows[matched_key]["kitsu_id"] = kitsu_id
             merged_shows[matched_key]["rating"] = max(merged_shows[matched_key].get("rating") or 0, rating)
+
+            old_titles = set(merged_shows[matched_key].get("all_titles") or [])
+            old_titles.update(all_titles)
+            merged_shows[matched_key]["all_titles"] = list(old_titles)
 
             old_status = merged_shows[matched_key]["status"]
             if old_status == "planning" and status != "planning":
@@ -183,6 +248,7 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
             )
             merged_shows[key] = {
                 "title": title,
+                "all_titles": list(all_titles),
                 "mal_id": mal_id,
                 "anilist_id": anilist_id,
                 "kitsu_id": kitsu_id,
@@ -192,24 +258,22 @@ async def fetch_user_watchlist_history(user: dict, user_id: str) -> tuple[dict, 
                 "genres": genres,
             }
 
-    # Watched sets for filtering
+    # Watched sets for filtering (all watchlist entries, including plan to watch)
     watched_mal_ids = set()
     watched_anilist_ids = set()
     watched_kitsu_ids = set()
     watched_titles = set()
 
     for show in merged_shows.values():
-        if show["status"] == "planning":
-            continue
-
         if show.get("mal_id"):
             watched_mal_ids.add(str(show["mal_id"]))
         if show.get("anilist_id"):
             watched_anilist_ids.add(str(show["anilist_id"]))
         if show.get("kitsu_id"):
             watched_kitsu_ids.add(str(show["kitsu_id"]))
-        if show.get("title"):
-            watched_titles.add(show["title"].lower())
+        for t in show.get("all_titles") or ([show["title"]] if show.get("title") else []):
+            if t:
+                watched_titles.add(t.lower().strip())
 
     # Bulk-resolve IDs from fribb_mappings and id_cache
     raw_mal_ids = list(watched_mal_ids)

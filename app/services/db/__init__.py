@@ -43,6 +43,7 @@ from .watchlist import (
     get_user_anime_meta_status,
     get_user_watch_progress,
     invalidate_user_watchlist_cache,
+    save_user_anime_meta_status,
     update_user_watchlist_cache_progress,
 )
 
@@ -69,6 +70,7 @@ __all__ = [
     "invalidate_user_watchlist_cache",
     "get_user_watch_progress",
     "get_user_anime_meta_status",
+    "save_user_anime_meta_status",
     "update_user_watchlist_cache_progress",
     "get_cached_ids",
     "get_cached_ids_by_mal",

@@ -199,7 +199,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         show_airing = user.get("show_airing_in_synopsis", False) if user else False
 
         if show_tracking:
-            user_status_hdr = build_user_status_header(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
+            user_status_hdr = await build_user_status_header(user, user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
             if user_status_hdr:
                 dynamic_headers.append(user_status_hdr)
 
