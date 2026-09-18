@@ -1940,7 +1940,7 @@
             <div class="card-dark p-3 p-sm-4 mb-3">
                 <h6 class="fw-semibold mb-3"><i class="fa-solid fa-user-check me-2" style="color: #38bdf8;"></i>Tracking Services</h6>
                 <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                    Connect your accounts and toggle real-time watch progress sync.
+                    Connect your accounts and manage tracker catalogs and watch progress.
                 </p>
 
             <div class="d-flex flex-column gap-2">
@@ -1965,7 +1965,7 @@
                     </div>
                     <div class="form-check form-switch mb-2 pt-1 d-flex align-items-center gap-2">
                         <input class="form-check-input mt-0" type="checkbox" role="switch" id="mal_enabled" {% if user.get('mal_enabled', True) %}checked{% endif %} {% if user.get('mal_token_expired') %}disabled{% endif %}>
-                        <label class="form-check-label text-secondary small fw-medium" for="mal_enabled">Sync Enabled</label>
+                        <label class="form-check-label text-secondary small fw-medium" for="mal_enabled">Enable Tracker</label>
                     </div>
                     <div class="d-flex align-items-center gap-2 pt-1">
                         <a href="{{ url_for('auth.authorize_mal') }}" class="btn btn-sm btn-mal px-3 py-1.5 flex-fill justify-content-center {% if user.get('mal_token_expired') %}btn-pulse-mal{% endif %}" style="font-size: 0.8rem;">
@@ -2015,7 +2015,7 @@
                     </div>
                     <div class="form-check form-switch mb-2 pt-1 d-flex align-items-center gap-2">
                         <input class="form-check-input mt-0" type="checkbox" role="switch" id="anilist_enabled" {% if user.get('anilist_enabled', True) %}checked{% endif %} {% if user.get('anilist_token_expired') %}disabled{% endif %}>
-                        <label class="form-check-label text-secondary small fw-medium" for="anilist_enabled">Sync Enabled</label>
+                        <label class="form-check-label text-secondary small fw-medium" for="anilist_enabled">Enable Tracker</label>
                     </div>
                     <div class="d-flex align-items-center gap-2 pt-1">
                         <a href="{{ url_for('auth.authorize_anilist') }}" class="btn btn-sm btn-anilist px-3 py-1.5 flex-fill justify-content-center {% if user.get('anilist_token_expired') %}btn-pulse-anilist{% endif %}" style="font-size: 0.8rem;">
@@ -2065,7 +2065,7 @@
                     </div>
                     <div class="form-check form-switch mb-2 pt-1 d-flex align-items-center gap-2">
                         <input class="form-check-input mt-0" type="checkbox" role="switch" id="simkl_enabled" {% if user.get('simkl_enabled', True) %}checked{% endif %} {% if user.get('simkl_token_expired') %}disabled{% endif %}>
-                        <label class="form-check-label text-secondary small fw-medium" for="simkl_enabled">Sync Enabled</label>
+                        <label class="form-check-label text-secondary small fw-medium" for="simkl_enabled">Enable Tracker</label>
                     </div>
                     <div class="d-flex align-items-center gap-2 pt-1">
                         <a href="{{ url_for('auth.authorize_simkl') }}" class="btn btn-sm btn-simkl px-3 py-1.5 flex-fill justify-content-center {% if user.get('simkl_token_expired') %}btn-pulse-simkl{% endif %}" style="font-size: 0.8rem;">
@@ -2095,6 +2095,11 @@
                     {% endif %}
                 </div>
 
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mt-3 px-1 text-secondary" style="font-size: 0.76rem; color: #94a3b8 !important;">
+                <i class="fa-solid fa-circle-info text-info flex-shrink-0"></i>
+                <span>Disabling a tracker hides its catalogs and pauses watch history, badges, and progress scrobbling for that service.</span>
             </div>
             </div>
 
