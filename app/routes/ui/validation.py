@@ -18,27 +18,34 @@ async def check_gemini_api_key_valid(api_key: str) -> tuple[bool, str]:
         "gemini-3.7-flash",
         "gemini-3.6-flash",
         "gemini-3.5-flash",
-        "gemini-3-flash",
         "gemini-3.5-flash-lite",
         "gemini-3.1-flash-lite",
         "gemini-2.5-flash",
-        "gemini-2.5-flash-lite",
     ]
     payload = {"contents": [{"parts": [{"text": "Hello, respond with OK if you read this."}]}]}
     last_error = "Invalid API key"
 
-    async with httpx.AsyncClient(timeout=5) as client:
+    async with httpx.AsyncClient(timeout=10) as client:
         for model in models:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
                 resp = await client.post(url, json=payload)
                 if resp.status_code == 200:
                     return True, "API key verified"
-                else:
-                    try:
-                        last_error = resp.json().get("error", {}).get("message", "Invalid API key")
-                    except Exception:
-                        last_error = f"HTTP {resp.status_code}"
+
+                err_data = {}
+                try:
+                    err_data = resp.json().get("error", {})
+                    last_error = err_data.get("message", "Invalid API key")
+                except Exception:
+                    last_error = f"HTTP {resp.status_code}"
+
+                # Early-exit if the API key is fundamentally invalid to avoid cascading through all fallback models
+                error_details = err_data.get("details", [])
+                if any(isinstance(d, dict) and d.get("reason") == "API_KEY_INVALID" for d in error_details):
+                    return False, last_error
+                if resp.status_code in (400, 403) and "API key" in last_error:
+                    return False, last_error
             except Exception as e:
                 last_error = f"Validation failed: {str(e)}"
 
