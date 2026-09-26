@@ -171,3 +171,36 @@ async def sync_history(
     except Exception as e:
         logger.error("Failed to sync watch history to Simkl: %s", e)
         return False
+
+
+async def add_to_list(
+    token: str,
+    ids: dict,
+    status: str = "completed",
+    content_type: str = "show",
+) -> bool:
+    """Add or update an item's status in the user's Simkl list."""
+    client = get_client()
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "simkl-api-key": Config.SIMKL_CLIENT_ID,
+        "Content-Type": "application/json",
+        "User-Agent": "AniSync/1.0",
+    }
+    key = "movies" if content_type == "movie" else "shows"
+    payload = {key: [{"ids": ids, "to": status}]}
+    try:
+        resp = await client.post(
+            f"{BASE_URL}/sync/add-to-list",
+            json=payload,
+            headers=headers,
+            timeout=TIMEOUT,
+        )
+        _raise_for_status(resp)
+        return True
+    except SimklTokenInvalidError:
+        raise
+    except Exception as e:
+        logger.error("Failed to update Simkl list status to %s: %s", status, e)
+        return False
+

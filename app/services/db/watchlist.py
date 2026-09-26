@@ -36,77 +36,92 @@ def invalidate_user_watchlist_cache(user_id: str):
         logging.error("Failed to invalidate watchlist cache for user %s: %s", user_id, e)
 
 
+def _resolve_canonical_tracker_data(tracker_entries: list[dict]) -> dict:
+    """Resolve canonical total_episodes, clamped watch progress, status, and score across multiple trackers.
+
+    Rules:
+    1. Majority Vote (2+ agree on total_episodes > 0): that count wins.
+    2. Tie or Three-Way Disagreement:
+       - Prefer any tracker marked 'completed' or 'finished'.
+       - If statuses equal or inconclusive, fall back to tracker priority: MAL > AniList > Simkl.
+    3. Single Tracker: use its total_episodes directly.
+    4. Zero / None: return total_episodes=None and do not clamp progress to 0.
+    5. Progress Clamping: clamped_progress = min(raw_progress, canonical_total_episodes) if canonical_total_episodes > 0.
+    6. Status: 'completed' if any tracker is completed or clamped_progress >= canonical_total_episodes.
+    """
+    if not tracker_entries:
+        return {"status": None, "progress": 0, "total_episodes": None, "score": 0}
+
+    tracker_prio = {"mal": 0, "anilist": 1, "simkl": 2}
+
+    # 1. Total episodes resolution
+    valid_ep_entries = [e for e in tracker_entries if (e.get("total_episodes") or 0) > 0]
+    canonical_total = None
+
+    if len(valid_ep_entries) == 1:
+        canonical_total = valid_ep_entries[0]["total_episodes"]
+    elif len(valid_ep_entries) > 1:
+        counts = [e["total_episodes"] for e in valid_ep_entries]
+        from collections import Counter
+
+        freq = Counter(counts).most_common()
+        if len(freq) == 1 or freq[0][1] > freq[1][1]:
+            canonical_total = freq[0][0]
+        else:
+            # Tie or three-way disagreement
+            # Tie-break 1: prefer entry with status in ["completed", "finished"]
+            completed_entries = [
+                e for e in valid_ep_entries if (e.get("status") or "").lower() in ["completed", "finished"]
+            ]
+            if completed_entries:
+                completed_entries.sort(key=lambda e: tracker_prio.get(e.get("tracker"), 99))
+                canonical_total = completed_entries[0]["total_episodes"]
+            else:
+                # Tie-break 2: tracker hierarchy MAL > AniList > Simkl
+                sorted_entries = sorted(valid_ep_entries, key=lambda e: tracker_prio.get(e.get("tracker"), 99))
+                canonical_total = sorted_entries[0]["total_episodes"]
+
+    # 2. Progress resolution & clamping
+    raw_progress = max((e.get("progress") or 0) for e in tracker_entries)
+    if canonical_total and canonical_total > 0:
+        clamped_progress = min(raw_progress, canonical_total)
+    else:
+        clamped_progress = raw_progress
+
+    # 3. Status resolution
+    is_completed = any(
+        (e.get("status") or "").lower() in ["completed", "finished"] for e in tracker_entries
+    ) or (canonical_total and canonical_total > 0 and clamped_progress >= canonical_total)
+
+    if is_completed:
+        resolved_status = "completed"
+    else:
+        sorted_by_prio = sorted(tracker_entries, key=lambda e: tracker_prio.get(e.get("tracker"), 99))
+        resolved_status = sorted_by_prio[0].get("status") or "watching"
+
+    # 4. Score resolution
+    resolved_score = 0
+    for e in sorted(tracker_entries, key=lambda e: tracker_prio.get(e.get("tracker"), 99)):
+        if (e.get("score") or 0) > 0:
+            resolved_score = e["score"]
+            break
+
+    return {
+        "status": resolved_status,
+        "progress": clamped_progress,
+        "total_episodes": canonical_total,
+        "score": resolved_score,
+    }
+
+
 def get_user_watch_progress(
     user_id: str, mal_id: str | None = None, anilist_id: str | None = None, simkl_id: str | None = None
 ) -> int:
-    """Find the user's maximum watch progress (watched episode count) across cached watchlists."""
-    uids = _resolve_user_cache_uids(user_id)
-    if not uids:
-        return 0
-
-    max_progress = 0
-    try:
-        cache_col = db.get_collection("user_watchlist_cache")
-        docs = list(cache_col.find({"uid": {"$in": uids}}))
-
-        mal_str = str(mal_id) if mal_id else None
-        anilist_str = str(anilist_id) if anilist_id else None
-        simkl_str = str(simkl_id) if simkl_id else None
-
-        for doc in docs:
-            tracker = doc.get("tracker")
-            data = doc.get("data")
-            if not data:
-                continue
-
-            if tracker == "mal":
-                for item in data:
-                    node = item.get("node") or {}
-                    nid = str(node.get("id") or "")
-                    if nid and mal_str and nid == mal_str:
-                        status_obj = node.get("my_list_status") or {}
-                        max_progress = max(max_progress, status_obj.get("num_episodes_watched") or 0)
-
-            elif tracker == "anilist":
-                lists = data.get("lists") or []
-                for lst in lists:
-                    entries = lst.get("entries") or []
-                    for entry in entries:
-                        media = entry.get("media") or {}
-                        al_id = str(media.get("id") or "")
-                        al_mal_id = str(media.get("idMal") or "")
-                        if (anilist_str and al_id == anilist_str) or (mal_str and al_mal_id == mal_str):
-                            max_progress = max(max_progress, entry.get("progress") or 0)
-
-            elif tracker == "simkl":
-                for item in data:
-                    show_obj = item.get("show") or item.get("anime") or item
-                    ids = show_obj.get("ids") or {}
-                    s_mal = str(ids.get("mal") or "")
-                    s_al = str(ids.get("anilist") or "")
-                    s_simkl = str(ids.get("simkl") or "")
-
-                    match = False
-                    if mal_str and s_mal and s_mal == mal_str:
-                        match = True
-                    elif anilist_str and s_al and s_al == anilist_str:
-                        match = True
-                    elif simkl_str and s_simkl and s_simkl == simkl_str:
-                        match = True
-
-                    if match:
-                        prog = (
-                            item.get("watched_episodes_count")
-                            or item.get("episodes_watched")
-                            or item.get("progress")
-                            or 0
-                        )
-                        max_progress = max(max_progress, prog)
-
-    except Exception as e:
-        logging.error("Failed to query watch progress for user %s: %s", user_id, e)
-
-    return max_progress
+    """Find the user's maximum watch progress across cached watchlists, clamped to canonical episode count."""
+    status_info = get_user_anime_meta_status(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
+    if status_info:
+        return status_info.get("progress") or 0
+    return 0
 
 
 def get_user_anime_meta_status(
@@ -141,10 +156,18 @@ def get_user_anime_meta_status(
                 score = cached_meta.get("score") or 0
                 if isinstance(score, (int, float)) and score > 10:
                     score = round(score / 10.0, 1)
+                total_ep = cached_meta.get("total_episodes")
+                if total_ep is not None and int(total_ep) <= 0:
+                    total_ep = None
+                elif total_ep is not None:
+                    total_ep = int(total_ep)
+                prog = cached_meta.get("progress") or 0
+                if total_ep and total_ep > 0:
+                    prog = min(prog, total_ep)
                 return {
                     "status": cached_meta.get("status"),
-                    "progress": cached_meta.get("progress") or 0,
-                    "total_episodes": cached_meta.get("total_episodes") or 0,
+                    "progress": prog,
+                    "total_episodes": total_ep,
                     "score": score,
                 }
 
@@ -152,9 +175,7 @@ def get_user_anime_meta_status(
         cache_col = db.get_collection("user_watchlist_cache")
         docs = list(cache_col.find({"uid": {"$in": uids}}))
 
-        # Enforce deterministic tracker priority: MAL > AniList > Simkl
-        tracker_order = {"mal": 0, "anilist": 1, "simkl": 2}
-        docs.sort(key=lambda d: tracker_order.get(d.get("tracker"), 99))
+        tracker_entries = []
 
         for doc in docs:
             tracker = doc.get("tracker")
@@ -172,10 +193,18 @@ def get_user_anime_meta_status(
                         progress = status_obj.get("num_episodes_watched") or 0
                         total_eps = node.get("num_episodes") or 0
                         score = status_obj.get("score") or 0
-                        return {"status": status, "progress": progress, "total_episodes": total_eps, "score": score}
+                        tracker_entries.append({
+                            "tracker": "mal",
+                            "status": status,
+                            "progress": progress,
+                            "total_episodes": total_eps,
+                            "score": score,
+                        })
+                        break
 
             elif tracker == "anilist":
                 lists = data.get("lists") or []
+                item_found = False
                 for lst in lists:
                     entries = lst.get("entries") or []
                     for entry in entries:
@@ -188,7 +217,17 @@ def get_user_anime_meta_status(
                             total_eps = media.get("episodes") or 0
                             raw_score = entry.get("score") or 0
                             score = round(raw_score / 10.0, 1) if raw_score > 10 else raw_score
-                            return {"status": status, "progress": progress, "total_episodes": total_eps, "score": score}
+                            tracker_entries.append({
+                                "tracker": "anilist",
+                                "status": status,
+                                "progress": progress,
+                                "total_episodes": total_eps,
+                                "score": score,
+                            })
+                            item_found = True
+                            break
+                    if item_found:
+                        break
 
             elif tracker == "simkl":
                 for item in data:
@@ -218,7 +257,17 @@ def get_user_anime_meta_status(
                             or 0
                         )
                         score = item.get("user_rating") or item.get("score") or 0
-                        return {"status": status, "progress": progress, "total_episodes": total_eps, "score": score}
+                        tracker_entries.append({
+                            "tracker": "simkl",
+                            "status": status,
+                            "progress": progress,
+                            "total_episodes": total_eps,
+                            "score": score,
+                        })
+                        break
+
+        if tracker_entries:
+            return _resolve_canonical_tracker_data(tracker_entries)
 
     except Exception as e:
         logging.error("Failed to query anime meta status for user %s: %s", user_id, e)
