@@ -144,10 +144,17 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         show_filler = user.get("show_filler_tags", False) if user else False
         show_watched = user.get("show_watched_tags", False) if user else False
         watched_progress = 0
-        if show_watched or show_filler:
-            from app.services.db import get_user_watch_progress
+        canonical_total_episodes = None
+        if user_id:
+            from app.services.db import get_user_anime_meta_status, get_user_watch_progress
 
-            watched_progress = get_user_watch_progress(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
+            status_info = get_user_anime_meta_status(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
+            if status_info:
+                if show_watched or show_filler:
+                    watched_progress = status_info.get("progress") or 0
+                canonical_total_episodes = status_info.get("total_episodes")
+            elif show_watched or show_filler:
+                watched_progress = get_user_watch_progress(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
 
         title_lang = user.get("title_language", "english") if user else "english"
         effective_provs = get_effective_meta_providers(user)
@@ -165,6 +172,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             cinemeta_data=cinemeta_data,
             show_watched_tags=show_watched,
             watched_progress=watched_progress,
+            canonical_total_episodes=canonical_total_episodes,
             title_language=title_lang,
             episodes_provider=effective_provs.get("episodes", "anizp"),
             backdrop_provider=effective_provs.get("backdrop", "fanart"),

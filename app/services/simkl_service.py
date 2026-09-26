@@ -23,6 +23,7 @@ async def sync_simkl(
     sync_unlisted: bool,
     simkl_id: str | None = None,
     season: int = 1,
+    total_episodes: int | None = None,
 ) -> UpdateStatus:
     """Sync watch progress for a movie or show episode to Simkl."""
     user_id = user.get("uid")
@@ -100,6 +101,53 @@ async def sync_simkl(
             logger.info(
                 "Simkl updated: kitsu=%s mal=%s al=%s simkl=%s ep=%d type=%s", kitsu_id, mal_id, anilist_id, simkl_id, episode, content_type
             )
+
+            # Check if anime is completed
+            is_completed = False
+            if content_type == "movie":
+                is_completed = episode >= 1
+            else:
+                effective_total = total_episodes
+                if effective_total is None or effective_total <= 0:
+                    try:
+                        from app.services.db import get_user_anime_meta_status
+
+                        meta = get_user_anime_meta_status(user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
+                        if meta and meta.get("total_episodes"):
+                            effective_total = int(meta["total_episodes"])
+                    except Exception as meta_err:
+                        logger.debug("Could not resolve total_episodes from cache for Simkl: %s", meta_err)
+
+                if effective_total and effective_total > 0 and episode >= effective_total:
+                    is_completed = True
+
+            if is_completed:
+                ids = {}
+                if kitsu_id:
+                    ids["kitsu"] = str(kitsu_id)
+                if mal_id:
+                    ids["mal"] = int(mal_id) if isinstance(mal_id, (int, str)) and str(mal_id).isdigit() else mal_id
+                if anilist_id:
+                    ids["anilist"] = (
+                        int(anilist_id) if isinstance(anilist_id, (int, str)) and str(anilist_id).isdigit() else anilist_id
+                    )
+                if simkl_id:
+                    ids["simkl"] = int(simkl_id) if isinstance(simkl_id, (int, str)) and str(simkl_id).isdigit() else simkl_id
+
+                try:
+                    added = await simkl_api.add_to_list(
+                        token=token,
+                        ids=ids,
+                        status="completed",
+                        content_type=content_type,
+                    )
+                    if added:
+                        logger.info("Simkl marked as completed: %s", ids)
+                except SimklTokenInvalidError:
+                    raise
+                except Exception as list_err:
+                    logger.warning("Simkl add_to_list failed (best-effort): %s", list_err)
+
             return UpdateStatus.OK
         else:
             return UpdateStatus.FAIL

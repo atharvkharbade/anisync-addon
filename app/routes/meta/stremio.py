@@ -13,6 +13,7 @@ def map_kitsu_to_stremio(
     cinemeta_data: dict = None,
     show_watched_tags: bool = False,
     watched_progress: int = 0,
+    canonical_total_episodes: int | None = None,
     title_language: str = "english",
     episodes_provider: str = "anizp",
     backdrop_provider: str = "fanart",
@@ -147,7 +148,9 @@ def map_kitsu_to_stremio(
 
         total_ep = max(kitsu_ep_count, max_kitsu_ep, max_anizp_ep)
         if total_ep == 0:
-            total_ep = 12  # Default fallback
+            total_ep = canonical_total_episodes if (canonical_total_episodes and canonical_total_episodes > 0) else 12
+        elif canonical_total_episodes and canonical_total_episodes > 0:
+            total_ep = min(total_ep, canonical_total_episodes)
 
         # Create a mapping of episode number to Kitsu episode data for O(1) lookup
         kitsu_ep_map = {}

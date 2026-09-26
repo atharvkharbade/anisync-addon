@@ -143,29 +143,32 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
     if simkl_enabled and user.get("simkl_access_token"):
         simkl_season = 1
         simkl_episode = episode
+        anizp_total_episodes = None
         if anilist_id or mal_id:
             try:
                 from app.routes.meta import fetch_anizp_metadata
                 anizp_data = await fetch_anizp_metadata(anilist_id=anilist_id, mal_id=mal_id)
-                if anizp_data and isinstance(anizp_data.get("episodes"), dict):
-                    eps = anizp_data["episodes"]
-                    anizp_ep = eps.get(str(episode))
-                    if not anizp_ep:
-                        for ep_info in eps.values():
-                            if ep_info.get("absoluteEpisodeNumber") == episode or ep_info.get("episodeNumber") == episode:
-                                anizp_ep = ep_info
-                                break
-                    if anizp_ep:
-                        if anizp_ep.get("seasonNumber") is not None:
-                            try:
-                                simkl_season = int(anizp_ep["seasonNumber"])
-                            except (ValueError, TypeError):
-                                pass
-                        if anizp_ep.get("episodeNumber") is not None:
-                            try:
-                                simkl_episode = int(anizp_ep["episodeNumber"])
-                            except (ValueError, TypeError):
-                                pass
+                if anizp_data and isinstance(anizp_data, dict):
+                    anizp_total_episodes = anizp_data.get("episodeCount")
+                    if isinstance(anizp_data.get("episodes"), dict):
+                        eps = anizp_data["episodes"]
+                        anizp_ep = eps.get(str(episode))
+                        if not anizp_ep:
+                            for ep_info in eps.values():
+                                if ep_info.get("absoluteEpisodeNumber") == episode or ep_info.get("episodeNumber") == episode:
+                                    anizp_ep = ep_info
+                                    break
+                        if anizp_ep:
+                            if anizp_ep.get("seasonNumber") is not None:
+                                try:
+                                    simkl_season = int(anizp_ep["seasonNumber"])
+                                except (ValueError, TypeError):
+                                    pass
+                            if anizp_ep.get("episodeNumber") is not None:
+                                try:
+                                    simkl_episode = int(anizp_ep["episodeNumber"])
+                                except (ValueError, TypeError):
+                                    pass
             except Exception as e:
                 logging.debug("Could not resolve season from AniZip for Simkl: %s", e)
 
@@ -180,6 +183,7 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
                 sync_unlisted,
                 simkl_id=simkl_id,
                 season=simkl_season,
+                total_episodes=anizp_total_episodes,
             )
         )
 
