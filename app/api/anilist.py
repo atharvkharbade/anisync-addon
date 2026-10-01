@@ -6,7 +6,10 @@ from app.services.http import get_client
 from config import Config
 
 ANILIST_URL = Config.ANILIST_API_URL
-TIMEOUT = 4.0
+DEFAULT_TIMEOUT = 4.0
+AUTH_TIMEOUT = 15.0
+SCROBBLE_TIMEOUT = 8.0
+TIMEOUT = DEFAULT_TIMEOUT  # Backward compatibility for any external callers
 
 VIEWER_QUERY = """
 query {
@@ -76,7 +79,12 @@ class AnilistAPIError(Exception):
     pass
 
 
-async def _gql(token: str | None, query: str, variables: dict | None = None) -> dict:
+async def _gql(
+    token: str | None,
+    query: str,
+    variables: dict | None = None,
+    timeout: float | None = None,
+) -> dict:
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
@@ -92,14 +100,17 @@ async def _gql(token: str | None, query: str, variables: dict | None = None) -> 
         payload["variables"] = variables
 
     client = get_client()
+    req_timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
     
     retries = 2
     for attempt in range(retries):
         try:
-            resp = await client.post(ANILIST_URL, json=payload, headers=headers, timeout=TIMEOUT)
+            resp = await client.post(ANILIST_URL, json=payload, headers=headers, timeout=req_timeout)
             
             # Handle rate limiting (HTTP 429 Too Many Requests)
             if resp.status_code == 429:
+                if attempt == retries - 1:
+                    resp.raise_for_status()
                 retry_after = resp.headers.get("Retry-After")
                 wait_time = int(retry_after) if (retry_after and retry_after.isdigit()) else 1.0
                 logging.warning(
@@ -111,6 +122,10 @@ async def _gql(token: str | None, query: str, variables: dict | None = None) -> 
                 await asyncio.sleep(wait_time)
                 continue
                 
+            # AniList returns 401 for revoked/expired tokens, or 400/200 with error messages
+            if resp.status_code == 401:
+                raise AnilistTokenInvalidError("AniList token is invalid or expired.")
+
             if resp.status_code in (400, 200):
                 try:
                     data = resp.json()
@@ -128,7 +143,8 @@ async def _gql(token: str | None, query: str, variables: dict | None = None) -> 
             
         except (httpx.HTTPStatusError, httpx.RequestError, asyncio.TimeoutError) as e:
             if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 429:
-                # Handled above, but if it falls through (e.g. raised by raise_for_status somehow), continue
+                if attempt == retries - 1:
+                    raise e
                 continue
             if attempt == retries - 1:
                 raise e
@@ -138,8 +154,8 @@ async def _gql(token: str | None, query: str, variables: dict | None = None) -> 
     raise httpx.RequestError("AniList query failed after retries")
 
 
-async def get_viewer(token: str) -> dict:
-    data = await _gql(token, VIEWER_QUERY)
+async def get_viewer(token: str, timeout: float = AUTH_TIMEOUT) -> dict:
+    data = await _gql(token, VIEWER_QUERY, timeout=timeout)
     return (data.get("data") or {}).get("Viewer") or {}
 
 
@@ -159,7 +175,14 @@ async def get_media_status(token: str, anilist_id: int, use_cache: bool = True) 
     return media
 
 
-async def save_entry(token: str, anilist_id: int, progress: int, status: str, repeat: int | None = None) -> dict:
+async def save_entry(
+    token: str,
+    anilist_id: int,
+    progress: int,
+    status: str,
+    repeat: int | None = None,
+    timeout: float = SCROBBLE_TIMEOUT,
+) -> dict:
     variables = {"mediaId": anilist_id, "progress": progress, "status": status}
     if repeat is not None:
         variables["repeat"] = repeat
@@ -167,6 +190,7 @@ async def save_entry(token: str, anilist_id: int, progress: int, status: str, re
         token,
         SAVE_MUTATION,
         variables,
+        timeout=timeout,
     )
     if not data or not isinstance(data, dict) or not data.get("data"):
         errors = (data or {}).get("errors", [])
