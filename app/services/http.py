@@ -30,8 +30,17 @@ def init_client():
     global _client
     if _client is None:
         mounts = {}
-        direct_limits = httpx.Limits(max_connections=200, max_keepalive_connections=50)
-        proxy_limits = httpx.Limits(max_connections=200, max_keepalive_connections=0)
+        direct_limits = httpx.Limits(
+            max_connections=1000,
+            max_keepalive_connections=100,
+            keepalive_expiry=30.0,
+        )
+        proxy_limits = httpx.Limits(
+            max_connections=None,
+            max_keepalive_connections=0,
+            keepalive_expiry=10.0,
+        )
+        default_timeout = httpx.Timeout(8.0, connect=5.0, pool=2.0)
         
         # Determine global proxy
         global_proxy = Config.PROXY_URL if Config.PROXY_URL else None
@@ -69,9 +78,9 @@ def init_client():
             mounts["all://"] = httpx.AsyncHTTPTransport(proxy=global_proxy, limits=proxy_limits)
             
         _client = PersistentAsyncClient(
-            timeout=8,
+            timeout=default_timeout,
             limits=direct_limits,
-            mounts=mounts
+            mounts=mounts,
         )
         
         if mounts:

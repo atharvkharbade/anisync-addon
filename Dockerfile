@@ -30,5 +30,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=5)" || exit 1
 
-CMD ["uvicorn", "run:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "4"]
+CMD ["uvicorn", "run:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "4", "--limit-max-requests", "5000", "--limit-max-requests-jitter", "500"]
 
