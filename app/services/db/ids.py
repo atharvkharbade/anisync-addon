@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 import logging
 
 from .connection import id_cache_collection
@@ -66,6 +67,7 @@ def cache_ids(
     tvdb_id: str | None = None,
 ):
     try:
+        now = datetime.now(UTC).replace(tzinfo=None)
         doc = {
             "kitsu_id": int(kitsu_id) if kitsu_id else None,
             "mal_id": str(mal_id) if mal_id else None,
@@ -74,19 +76,22 @@ def cache_ids(
             "imdb_id": str(imdb_id) if imdb_id else None,
             "tmdb_id": str(tmdb_id) if tmdb_id else None,
             "tvdb_id": str(tvdb_id) if tvdb_id else None,
+            "updated_at": now,
         }
         # Filter out None kitsu_id
         if doc["kitsu_id"] is None:
             return
-        existing = id_cache_collection.find_one({"kitsu_id": doc["kitsu_id"]})
-        if existing:
-            update_doc = {}
-            for k, v in doc.items():
-                if v is not None:
-                    update_doc[k] = v
-            if update_doc:
-                id_cache_collection.update_one({"kitsu_id": doc["kitsu_id"]}, {"$set": update_doc})
-        else:
-            id_cache_collection.insert_one(doc)
+        update_fields = {k: v for k, v in doc.items() if v is not None}
+        id_cache_collection.update_one(
+            {"kitsu_id": doc["kitsu_id"]},
+            {
+                "$set": update_fields,
+                "$setOnInsert": {
+                    "expires_at": now + timedelta(days=7),
+                    "created_at": now,
+                },
+            },
+            upsert=True,
+        )
     except Exception as e:
         logging.error("Cache write error: %s", e)

@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 import logging
 
 from pymongo import MongoClient
@@ -41,11 +42,18 @@ def init_indexes():
         db.get_collection("jikan_cache").create_index([("mal_id", 1), ("episode", 1)])
         db.get_collection("jikan_cache").create_index("cached_at", expireAfterSeconds=168 * 3600)
 
-        # id_cache indexes
+        # id_cache indexes and legacy expiration backfill
         db.get_collection("id_cache").create_index("kitsu_id")
         db.get_collection("id_cache").create_index("mal_id")
         db.get_collection("id_cache").create_index("anilist_id")
         db.get_collection("id_cache").create_index("simkl_id")
+        db.get_collection("id_cache").create_index("expires_at", expireAfterSeconds=0)
+
+        now = datetime.now(UTC).replace(tzinfo=None)
+        db.get_collection("id_cache").update_many(
+            {"expires_at": {"$exists": False}},
+            {"$set": {"expires_at": now + timedelta(days=7), "updated_at": now}},
+        )
 
         # Caching collections indexes
         db.get_collection("user_watchlist_cache").create_index([("uid", 1), ("tracker", 1), ("status", 1)])

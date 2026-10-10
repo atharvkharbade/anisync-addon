@@ -107,6 +107,7 @@ async def get_user_details(token: str) -> dict:
         headers={"Authorization": f"Bearer {token}"},
         params={"fields": "id,name,picture"},
         timeout=TIMEOUT,
+        follow_redirects=True,
     )
     _raise_for_status(resp)
     return resp.json()
@@ -123,6 +124,7 @@ async def get_anime_details(token: str, anime_id: str) -> dict:
         headers={"Authorization": f"Bearer {token}"},
         params={"fields": fields, "nsfw": "true"},
         timeout=TIMEOUT,
+        follow_redirects=True,
     )
     _raise_for_status(resp)
     return resp.json()
@@ -139,6 +141,7 @@ async def get_user_anime_list(token: str, status: str = "", limit: int = 100, of
         headers={"Authorization": f"Bearer {token}"},
         params=params,
         timeout=TIMEOUT,
+        follow_redirects=True,
     )
     _raise_for_status(resp)
     return resp.json()
@@ -170,6 +173,7 @@ async def update_watch_status(
         headers={"Authorization": f"Bearer {token}"},
         data=body,
         timeout=TIMEOUT,
+        follow_redirects=True,
     )
     _raise_for_status(resp)
     return resp.json()
