@@ -46,6 +46,7 @@ def init_indexes():
         db.get_collection("id_cache").create_index("mal_id")
         db.get_collection("id_cache").create_index("anilist_id")
         db.get_collection("id_cache").create_index("simkl_id")
+        db.get_collection("id_cache").create_index("expires_at", expireAfterSeconds=0)
 
         # Caching collections indexes
         db.get_collection("user_watchlist_cache").create_index([("uid", 1), ("tracker", 1), ("status", 1)])

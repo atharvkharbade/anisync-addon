@@ -102,7 +102,8 @@ async def _gql(
     client = get_client()
     req_timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
     
-    retries = 2
+    retries = 4
+    backoffs = [0.2, 0.5, 1.0, 1.5]
     for attempt in range(retries):
         try:
             resp = await client.post(ANILIST_URL, json=payload, headers=headers, timeout=req_timeout)
@@ -148,8 +149,9 @@ async def _gql(
                 continue
             if attempt == retries - 1:
                 raise e
-            logging.warning("AniList query request error (attempt %s/%s): %s", attempt + 1, retries, e)
-            await asyncio.sleep(0.5)
+            sleep_time = backoffs[attempt] if attempt < len(backoffs) else 1.0
+            logging.warning("AniList query request error (attempt %s/%s): %s (retrying in %ss)", attempt + 1, retries, e, sleep_time)
+            await asyncio.sleep(sleep_time)
             
     raise httpx.RequestError("AniList query failed after retries")
 
