@@ -76,7 +76,6 @@ def cache_ids(
             "imdb_id": str(imdb_id) if imdb_id else None,
             "tmdb_id": str(tmdb_id) if tmdb_id else None,
             "tvdb_id": str(tvdb_id) if tvdb_id else None,
-            "expires_at": now + timedelta(days=7),
             "updated_at": now,
         }
         # Filter out None kitsu_id
@@ -85,7 +84,13 @@ def cache_ids(
         update_fields = {k: v for k, v in doc.items() if v is not None}
         id_cache_collection.update_one(
             {"kitsu_id": doc["kitsu_id"]},
-            {"$set": update_fields},
+            {
+                "$set": update_fields,
+                "$setOnInsert": {
+                    "expires_at": now + timedelta(days=7),
+                    "created_at": now,
+                },
+            },
             upsert=True,
         )
     except Exception as e:
