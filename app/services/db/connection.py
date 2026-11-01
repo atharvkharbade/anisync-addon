@@ -1,5 +1,5 @@
-from datetime import UTC, datetime, timedelta
 import logging
+from datetime import UTC, datetime, timedelta
 
 from pymongo import MongoClient
 from pymongo.synchronous.collection import Collection
@@ -49,6 +49,10 @@ def init_indexes():
         db.get_collection("id_cache").create_index("simkl_id")
         db.get_collection("id_cache").create_index("expires_at", expireAfterSeconds=0)
 
+        # id_fallback_misses collection to prevent upstream rate-limit hammer on failed fallbacks
+        db.get_collection("id_fallback_misses").create_index("expires_at", expireAfterSeconds=0)
+        db.get_collection("id_fallback_misses").create_index([("source", 1), ("source_id", 1)])
+
         now = datetime.now(UTC).replace(tzinfo=None)
         db.get_collection("id_cache").update_many(
             {"expires_at": {"$exists": False}},
@@ -95,3 +99,4 @@ init_indexes()
 users_collection: Collection = db.get_collection("users")
 id_cache_collection: Collection = db.get_collection("id_cache")
 jikan_cache_collection: Collection = db.get_collection("jikan_cache")
+id_fallback_misses_collection: Collection = db.get_collection("id_fallback_misses")

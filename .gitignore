@@ -14,6 +14,7 @@ trigger_test_*.py
 *.dump
 *.bak
 tests/
+scripts/
 .impeccable/
 DESIGN.md
 PRODUCT.md
