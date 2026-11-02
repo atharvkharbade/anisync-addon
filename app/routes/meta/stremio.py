@@ -1,6 +1,112 @@
 import asyncio
-from datetime import datetime, timezone
+import re
+from datetime import UTC, date, datetime
+
 from .fetchers import clean_imdb_id
+
+# Roman numerals used as sequel markers. Single letters (i, v, x) are omitted on purpose:
+# they collide with ordinary title words such as "SPY x FAMILY" or "Hunter x Hunter".
+_ROMAN_SEASONS = {"ii": 2, "iii": 3, "iv": 4, "vi": 6, "vii": 7, "viii": 8, "ix": 9}
+
+# Max distance between the anime premiere and a Cinemeta season's Episode 1 air date
+# (absorbs JP vs US release-day differences and simulcast delays).
+_SEASON_PREMIERE_TOLERANCE_DAYS = 60
+
+
+def _parse_date(value) -> date | None:
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        return datetime.strptime(value.strip()[:10].replace("/", "-"), "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _title_season_candidates(titles: list[str]) -> list[int]:
+    """Season numbers suggested by titles. "Part N" / "Cour N" are split cours of one season, not seasons."""
+    found = []
+    for t in titles:
+        if not t:
+            continue
+        for pattern in (
+            r"\bseason\s*(\d+)\b",
+            r"\b(\d+)(?:st|nd|rd|th)\s+season\b",
+            r"(?:\s|^|\()(\d+)\s*(?:\)|$)",  # trailing number, e.g. "Bungou Stray Dogs 5"
+        ):
+            m = re.search(pattern, t, re.IGNORECASE)
+            if m and 1 <= int(m.group(1)) < 50:  # exclude release years like (2011)
+                found.append(int(m.group(1)))
+        for word in re.sub(r"[^\w\s]", " ", t.lower()).split():
+            if word in _ROMAN_SEASONS:
+                found.append(_ROMAN_SEASONS[word])
+    return list(dict.fromkeys(found))
+
+
+def detect_anime_season(
+    canonical_title: str,
+    titles_dict: dict | None,
+    anizp_episodes: dict | None,
+    cinemeta_videos: list | None,
+    start_date_str: str | None,
+) -> int | None:
+    """
+    Deterministically detects which season number an anime corresponds to in multi-season
+    databases (Cinemeta / TheTVDB / IMDb).
+
+    1. Checks AniZip episode metadata for any non-null seasonNumber.
+    2. When Cinemeta has per-season Episode 1 air dates, a season is only accepted if its
+       premiere lies within _SEASON_PREMIERE_TOLERANCE_DAYS of the anime's start date:
+       first among the season numbers suggested by the titles, then the nearest premiere.
+       Titles alone are not trusted here ("Kaiju No. 8" is not season 8, and "Part 2"
+       is usually the second cour of a season).
+    3. Without usable Cinemeta dates, falls back to the first title-suggested season.
+    """
+    # 1. From AniZip episode metadata
+    if anizp_episodes and isinstance(anizp_episodes, dict):
+        for ep in anizp_episodes.values():
+            if isinstance(ep, dict) and ep.get("seasonNumber") is not None:
+                try:
+                    s_val = int(ep["seasonNumber"])
+                    if s_val > 0:
+                        return s_val
+                except (ValueError, TypeError):
+                    pass
+
+    all_titles = [canonical_title]
+    if titles_dict and isinstance(titles_dict, dict):
+        all_titles.extend(str(v) for v in titles_dict.values() if v)
+    title_seasons = _title_season_candidates(all_titles)
+
+    # Episode 1 air date of each Cinemeta season
+    season_starts = {}
+    for v in cinemeta_videos or []:
+        if not isinstance(v, dict) or v.get("episode") != 1:
+            continue
+        try:
+            s_int = int(v.get("season"))
+        except (ValueError, TypeError):
+            continue
+        rel = _parse_date(v.get("released"))
+        if s_int > 0 and rel:
+            season_starts[s_int] = rel
+
+    start = _parse_date(start_date_str)
+    if season_starts and start:
+        def gap(s_int: int) -> int:
+            return abs((season_starts[s_int] - start).days)
+
+        # 2a. Title-suggested season confirmed by its premiere date
+        for s_int in title_seasons:
+            if s_int in season_starts and gap(s_int) <= _SEASON_PREMIERE_TOLERANCE_DAYS:
+                return s_int
+        # 2b. Nearest season premiere
+        nearest = min(season_starts, key=gap)
+        if gap(nearest) <= _SEASON_PREMIERE_TOLERANCE_DAYS:
+            return nearest
+        return None
+
+    # 3. No dates to verify against
+    return title_seasons[0] if title_seasons else None
 
 
 def map_kitsu_to_stremio(
@@ -165,27 +271,44 @@ def map_kitsu_to_stremio(
         # Build Cinemeta episode thumbnail and release date maps: (season, episode) -> value
         cinemeta_ep_thumbs = {}
         cinemeta_ep_released = {}
-        if cinemeta_data and isinstance(cinemeta_data.get("videos"), list):
-            for v in cinemeta_data["videos"]:
-                s = v.get("season")
-                e = v.get("episode")
-                thumb = v.get("thumbnail")
-                rel = v.get("released")
-                if s is not None and e is not None:
-                    try:
-                        s_int = int(s)
-                        e_int = int(e)
-                        if thumb:
-                            cinemeta_ep_thumbs[(s_int, e_int)] = thumb
-                        if rel:
-                            cinemeta_ep_released[(s_int, e_int)] = rel
-                    except (ValueError, TypeError):
-                        pass
+        cin_seasons = set()
+        cin_videos = cinemeta_data.get("videos") if cinemeta_data and isinstance(cinemeta_data.get("videos"), list) else []
+        for v in cin_videos:
+            s = v.get("season")
+            e = v.get("episode")
+            thumb = v.get("thumbnail")
+            rel = v.get("released")
+            if s is not None and e is not None:
+                try:
+                    s_int = int(s)
+                    e_int = int(e)
+                    cin_seasons.add(s_int)
+                    if thumb:
+                        cinemeta_ep_thumbs[(s_int, e_int)] = thumb
+                    if rel:
+                        cinemeta_ep_released[(s_int, e_int)] = rel
+                except (ValueError, TypeError):
+                    pass
 
-        # Detect if this anime is likely a sequel to avoid assuming Season 1 when seasonNumber is missing
+        detected_season = detect_anime_season(
+            attributes.get("canonicalTitle") or "",
+            attributes.get("titles") or {},
+            anizp_episodes,
+            cin_videos,
+            start_date,
+        )
+
         canonical_title = (attributes.get("canonicalTitle") or "").lower()
-        is_likely_sequel = any(
-            marker in canonical_title
+        cin_s1_start = cinemeta_ep_released.get((1, 1))
+        cin_s1_year = int(cin_s1_start[:4]) if cin_s1_start and cin_s1_start[:4].isdigit() else None
+        anime_start_year = int(start_date[:4]) if start_date and len(start_date) >= 4 and start_date[:4].isdigit() else None
+
+        # Determine if this anime is a sequel or spinoff to prevent wrongly defaulting to Season 1
+        is_likely_sequel = False
+        if detected_season is not None and detected_season > 1:
+            is_likely_sequel = True
+        elif any(
+            re.search(rf"\b{re.escape(marker)}\b", canonical_title)
             for marker in [
                 "season 2",
                 "season 3",
@@ -198,9 +321,18 @@ def map_kitsu_to_stremio(
                 "part 3",
                 "part 4",
                 "cour 2",
+                "arc",
+                "hen",
+                "act 2",
+                "kessen",
+                "sensou",
             ]
-        )
+        ):
+            is_likely_sequel = True
+        elif anime_start_year and cin_s1_year and (anime_start_year - cin_s1_year >= 2):
+            is_likely_sequel = True
 
+        last_valid_ep_date = None
         for i in range(1, total_ep + 1):
             ep_num = i
             kitsu_ep = kitsu_ep_map.get(i)
@@ -237,23 +369,62 @@ def map_kitsu_to_stremio(
                     or anizp_ep.get("title", {}).get("x-jat")
                     or f"Episode {ep_num}"
                 )
+
+            # Determine season for this specific episode (falling back to show-level detected_season)
+            ep_season = None
+            if anizp_ep.get("seasonNumber") is not None:
+                try:
+                    s_candidate = int(anizp_ep["seasonNumber"])
+                    if s_candidate > 0:
+                        ep_season = s_candidate
+                except (ValueError, TypeError):
+                    pass
+            if ep_season is None:
+                ep_season = detected_season
+
             # Match Cinemeta episode thumbnail and release date safely
             cinemeta_thumb = None
             cin_released = None
             if cinemeta_ep_thumbs or cinemeta_ep_released:
-                s_num = anizp_ep.get("seasonNumber")
-                if s_num is not None:
-                    try:
-                        s_int = int(s_num)
-                        cinemeta_thumb = cinemeta_ep_thumbs.get((s_int, ep_num))
-                        cin_released = cinemeta_ep_released.get((s_int, ep_num))
-                    except (ValueError, TypeError):
-                        pass
-                elif not is_likely_sequel:
-                    cinemeta_thumb = cinemeta_ep_thumbs.get((1, ep_num))
-                    cin_released = cinemeta_ep_released.get((1, ep_num))
+                if ep_season is not None:
+                    cinemeta_thumb = cinemeta_ep_thumbs.get((ep_season, ep_num))
+                    cin_released = cinemeta_ep_released.get((ep_season, ep_num))
+                elif not is_likely_sequel and cin_seasons == {1}:
+                    # Only fall back to Season 1 if Cinemeta has ONLY 1 season and start years align
+                    if anime_start_year is None or (cin_s1_year and abs(anime_start_year - cin_s1_year) <= 1):
+                        cinemeta_thumb = cinemeta_ep_thumbs.get((1, ep_num))
+                        cin_released = cinemeta_ep_released.get((1, ep_num))
 
-            released = attrs.get("airdate") or anizp_ep.get("airdate") or cin_released
+            candidate_released = attrs.get("airdate") or anizp_ep.get("airdate") or cin_released
+
+            # Validate episode release date against anime start date and chronological ordering
+            released = None
+            if candidate_released:
+                try:
+                    date_str = str(candidate_released).strip()[:10].replace("/", "-")
+                    ep_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                    is_date_valid = True
+
+                    # 1. Episode air date cannot precede the anime premiere year
+                    if anime_start_year and ep_date.year < anime_start_year:
+                        is_date_valid = False
+
+                    # 2. Monotonicity: episode N cannot air prior to episode N-1
+                    if last_valid_ep_date and ep_date < last_valid_ep_date:
+                        is_date_valid = False
+
+                    # 3. Unreleased anime status check: cannot have episodes in the past
+                    if anime_status in ["unreleased", "not_yet_released"]:
+                        now_date = datetime.now(UTC).date()
+                        if ep_date < now_date:
+                            is_date_valid = False
+
+                    if is_date_valid:
+                        # Keep the original value: Cinemeta timestamps carry the actual air time
+                        released = str(candidate_released).strip()
+                        last_valid_ep_date = ep_date
+                except (ValueError, TypeError):
+                    pass
 
             # If the anime or episode is unreleased (air date in future), Cinemeta's Metahub
             # thumbnail link is pre-computed and guaranteed to 404 on Metahub/TMDB.
@@ -265,11 +436,13 @@ def map_kitsu_to_stremio(
                     try:
                         date_str = str(released).strip()[:10].replace("/", "-")
                         ep_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-                        now_date = datetime.now(timezone.utc).date()
+                        now_date = datetime.now(UTC).date()
                         if ep_date > now_date:
                             cinemeta_thumb = None
                     except (ValueError, TypeError):
                         pass
+                elif not released and is_likely_sequel:
+                    cinemeta_thumb = None
 
             if episodes_provider == "kitsu":
                 overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
