@@ -1,5 +1,5 @@
-from datetime import UTC, datetime, timedelta
 import logging
+from datetime import UTC, datetime, timedelta
 
 from .connection import db
 

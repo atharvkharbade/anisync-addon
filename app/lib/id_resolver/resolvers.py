@@ -2,6 +2,8 @@ import asyncio
 import logging
 
 from app.services.db import (
+    attach_simkl_id,
+    cache_fallback_ids,
     cache_ids,
     db,
     get_cached_ids,
@@ -9,6 +11,8 @@ from app.services.db import (
     get_cached_ids_by_mal,
     get_cached_ids_by_simkl,
     id_cache_collection,
+    is_fallback_miss,
+    record_fallback_miss,
 )
 from app.services.http import get_client
 
@@ -20,6 +24,7 @@ from .remote import (
     _try_fribb,
     fetch_anime_info_by_anilist_id,
     fetch_anime_info_by_mal_id,
+    normalize_canonical_format,
     search_kitsu_by_title,
 )
 
@@ -62,6 +67,114 @@ async def resolve(kitsu_id: str) -> tuple[str | None, str | None]:
 
     logging.error("All resolvers failed for kitsu_id=%s", kitsu_id)
     return None, None
+
+
+async def _verified_title_fallback(
+    info: dict | None,
+    mal_id: str | None = None,
+    anilist_id: str | None = None,
+    simkl_id: str | None = None,
+    source: str = "mal",
+    source_id: str = "",
+) -> str | None:
+    if not info:
+        if source and source_id:
+            # AniList/MAL lookups fail transiently (rate limits, timeouts): retry sooner
+            record_fallback_miss(source, source_id, "No info retrieved", ttl_hours=1)
+        return None
+
+    # Step 1: Search Kitsu using deterministic metadata gates
+    kitsu_id = await search_kitsu_by_title(info)
+    if not kitsu_id:
+        if source and source_id:
+            record_fallback_miss(source, source_id, "No candidate passed Kitsu gates")
+        return None
+
+    client = get_client()
+
+    # Step 2: Authoritative forward validation:
+    # Query ARM -> ani.zip -> Fribb DIRECTLY, bypassing local id_cache!
+    # This prevents confirming or sealing a pre-poisoned local cache document.
+    auth_mal = None
+    auth_al = None
+    check_failed = False
+    for name, fn in [("ARM", _try_arm), ("ani.zip", _try_anizp), ("Fribb", _try_fribb)]:
+        try:
+            m, a = await fn(client, kitsu_id)
+            if m or a:
+                auth_mal, auth_al = m, a
+                break
+        except Exception as e:
+            check_failed = True
+            logging.debug("Authoritative forward check %s failed for kitsu_id=%s: %s", name, kitsu_id, e)
+
+    # Decision 1: Candidate is authoritatively mapped to another anime in authoritative DBs
+    if auth_mal or auth_al:
+        mal_conflict = mal_id and auth_mal and str(auth_mal) != str(mal_id)
+        al_conflict = anilist_id and auth_al and str(auth_al) != str(anilist_id)
+        if mal_conflict or al_conflict:
+            logging.warning(
+                "Rejecting title fallback kitsu_id=%s: candidate authoritatively belongs to mal=%s anilist=%s (query had mal=%s al=%s)",
+                kitsu_id,
+                auth_mal,
+                auth_al,
+                mal_id,
+                anilist_id,
+            )
+            if source and source_id:
+                record_fallback_miss(
+                    source,
+                    source_id,
+                    f"Candidate {kitsu_id} belongs to different anime (mal={auth_mal}, al={auth_al})",
+                )
+            return None
+
+        # Title-only search with no IDs to verify against: reject mapped candidate
+        if not mal_id and not anilist_id:
+            logging.warning(
+                "Rejecting title-only fallback kitsu_id=%s: candidate is mapped to mal=%s anilist=%s but query had neither",
+                kitsu_id,
+                auth_mal,
+                auth_al,
+            )
+            if source and source_id:
+                record_fallback_miss(source, source_id, f"Candidate {kitsu_id} already mapped")
+            return None
+
+        # No conflict is not the same as a confirmation: require at least one ID to positively match,
+        # otherwise a guessed ID would be written onto an authoritative doc.
+        mal_match = mal_id and auth_mal and str(auth_mal) == str(mal_id)
+        al_match = anilist_id and auth_al and str(auth_al) == str(anilist_id)
+        if not (mal_match or al_match):
+            logging.warning(
+                "Rejecting title fallback kitsu_id=%s: authoritative mal=%s anilist=%s cannot be verified against query mal=%s al=%s",
+                kitsu_id,
+                auth_mal,
+                auth_al,
+                mal_id,
+                anilist_id,
+            )
+            if source and source_id:
+                record_fallback_miss(source, source_id, f"Candidate {kitsu_id} mapping unverifiable")
+            return None
+
+        # Authoritative sources actually confirm this mapping! Safe to cache authoritatively
+        final_mal = mal_id or auth_mal
+        final_al = anilist_id or auth_al
+        cache_ids(kitsu_id, final_mal, final_al, simkl_id=simkl_id)
+        return kitsu_id
+
+    # An upstream error means "unmapped" is unproven: the candidate may belong to another anime
+    if check_failed:
+        logging.warning("Skipping title fallback kitsu_id=%s: authoritative forward check incomplete", kitsu_id)
+        if source and source_id:
+            record_fallback_miss(source, source_id, f"Forward check for {kitsu_id} incomplete", ttl_hours=1)
+        return None
+
+    # Decision 2: Candidate is unmapped everywhere in authoritative DBs.
+    # Safe to cache as speculative fallback using insert-only protection (never overwrites existing).
+    cache_fallback_ids(kitsu_id, mal_id, anilist_id, simkl_id=simkl_id)
+    return kitsu_id
 
 
 async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
@@ -114,7 +227,7 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
             sites = data.get("Sites", {})
             kitsu_sites = sites.get("Kitsu", {})
             kitsu_id = None
-            for k, v in kitsu_sites.items():
+            for _k, v in kitsu_sites.items():
                 if v.get("id"):
                     kitsu_id = str(v["id"])
                     break
@@ -125,14 +238,20 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
     except Exception as e:
         logging.warning("MAL-Sync mal->kitsu failed for mal_id=%s: %s", mal_id, e)
 
-    # Try Title-based fallback
+    # Try Title-based fallback (skipped while a negative-cache entry is active)
+    if is_fallback_miss("mal", mal_id):
+        return None
     try:
-        title, anilist_id = await fetch_anime_info_by_mal_id(mal_id)
-        if title:
-            kitsu_id = await search_kitsu_by_title(title)
+        info = await fetch_anime_info_by_mal_id(mal_id)
+        if info:
+            al_id = info.get("anilist_id")
+            kitsu_id = await _verified_title_fallback(
+                info, mal_id=mal_id, anilist_id=al_id, source="mal", source_id=mal_id
+            )
             if kitsu_id:
-                cache_ids(kitsu_id, mal_id, anilist_id)
                 return kitsu_id
+        else:
+            record_fallback_miss("mal", mal_id, "No info from AniList or MAL", ttl_hours=1)
     except Exception as e:
         logging.warning("Title fallback failed for mal_id=%s: %s", mal_id, e)
 
@@ -204,14 +323,20 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
     except Exception as e:
         logging.warning("Fribb anilist->kitsu failed for anilist_id=%s: %s", anilist_id, e)
 
-    # Try Title-based fallback
+    # Try Title-based fallback (skipped while a negative-cache entry is active)
+    if is_fallback_miss("anilist", anilist_id):
+        return None
     try:
-        title, mal_id = await fetch_anime_info_by_anilist_id(anilist_id)
-        if title:
-            kitsu_id = await search_kitsu_by_title(title)
+        info = await fetch_anime_info_by_anilist_id(anilist_id)
+        if info:
+            m_id = info.get("mal_id")
+            kitsu_id = await _verified_title_fallback(
+                info, mal_id=m_id, anilist_id=anilist_id, source="anilist", source_id=anilist_id
+            )
             if kitsu_id:
-                cache_ids(kitsu_id, mal_id, anilist_id)
                 return kitsu_id
+        else:
+            record_fallback_miss("anilist", anilist_id, "No info from AniList", ttl_hours=1)
     except Exception as e:
         logging.warning("Title fallback failed for anilist_id=%s: %s", anilist_id, e)
 
@@ -253,7 +378,12 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> str | None:
                             kitsu_id = await resolve_anilist_to_kitsu(anilist_id)
 
                     if kitsu_id:
-                        cache_ids(kitsu_id, mal_id, anilist_id, simkl_id)
+                        if ids.get("kitsu"):
+                            # Simkl itself supplied the Kitsu mapping
+                            cache_ids(kitsu_id, mal_id, anilist_id, simkl_id)
+                        else:
+                            # Derived via resolver (possibly a title fallback): never re-assert it as authoritative
+                            attach_simkl_id(kitsu_id, simkl_id)
                         return kitsu_id
     except Exception as e:
         logging.warning("Failed to resolve simkl_id=%s via user watchlist cache: %s", simkl_id, e)
@@ -274,7 +404,10 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> str | None:
     except Exception as e:
         logging.warning("Failed to resolve simkl_id=%s via fribb_mappings: %s", simkl_id, e)
 
-    # Fallback 2: Simkl API lookup
+    # Fallback 2: Simkl API lookup. A negative-cache entry is only ever recorded by the title-only
+    # branch below, i.e. after Simkl returned no usable IDs, so it is safe to skip the API call here.
+    if is_fallback_miss("simkl", simkl_id):
+        return None
     client = get_client()
     try:
         from config import Config
@@ -300,10 +433,34 @@ async def resolve_simkl_to_kitsu(simkl_id: str) -> str | None:
                 else:
                     title = data.get("title") or data.get("en_title")
                     if title:
-                        kitsu_id = await search_kitsu_by_title(title)
+                        alt_titles = []
+                        if data.get("title"):
+                            alt_titles.append(data["title"])
+                        if data.get("en_title"):
+                            alt_titles.append(data["en_title"])
+                        simkl_year = data.get("year")
+                        simkl_eps = data.get("total_episodes")
+                        simkl_fmt = normalize_canonical_format(data.get("anime_type"))
+                        simkl_info = {
+                            "titles": alt_titles,
+                            "format": simkl_fmt,
+                            "year": simkl_year,
+                            "episodes": simkl_eps,
+                        }
+                        kitsu_id = await _verified_title_fallback(
+                            simkl_info,
+                            simkl_id=simkl_id_val,
+                            source="simkl",
+                            source_id=simkl_id,
+                        )
 
             if kitsu_id:
-                cache_ids(kitsu_id, mal_id, anilist_id, simkl_id_val)
+                if ids.get("kitsu"):
+                    # Simkl itself supplied the Kitsu mapping
+                    cache_ids(kitsu_id, mal_id, anilist_id, simkl_id_val)
+                else:
+                    # Derived via resolver or title fallback: never re-assert it as authoritative
+                    attach_simkl_id(kitsu_id, simkl_id_val)
                 return kitsu_id
     except Exception as e:
         logging.warning("Simkl to kitsu resolution failed for simkl_id=%s: %s", simkl_id, e)
