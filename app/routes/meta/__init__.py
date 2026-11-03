@@ -15,7 +15,6 @@ from .fetchers import (
     fetch_anizp_metadata,
     fetch_cinemeta_metadata,
     fetch_kitsu_meta,
-    get_banner_aspect_ratio,
 )
 from .headers import (
     build_expired_trackers_notice,
@@ -264,7 +263,6 @@ __all__ = [
     "fetch_anizp_metadata",
     "fetch_cinemeta_metadata",
     "fetch_kitsu_meta",
-    "get_banner_aspect_ratio",
     "apply_metadata_provider_override",
     "build_user_status_header",
     "build_next_airing_header",

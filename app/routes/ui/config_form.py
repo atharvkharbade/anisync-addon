@@ -129,7 +129,10 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         user["meta_poster_provider"] = form.get("meta_poster_provider", "anilist").lower()
 
     if "meta_backdrop_provider" in form:
-        user["meta_backdrop_provider"] = form.get("meta_backdrop_provider", "fanart").lower()
+        val = (form.get("meta_backdrop_provider") or "fanart").lower()
+        if val == "anilist":
+            val = "tvdb"
+        user["meta_backdrop_provider"] = val if val in ("fanart", "tvdb", "kitsu") else "fanart"
 
     if "meta_artwork_provider" in form:
         user["meta_artwork_provider"] = form.get("meta_artwork_provider", "anilist").lower()
