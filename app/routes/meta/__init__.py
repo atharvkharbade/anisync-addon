@@ -174,7 +174,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             canonical_total_episodes=canonical_total_episodes,
             title_language=title_lang,
             episodes_provider=effective_provs.get("episodes", "anizp"),
-            backdrop_provider=effective_provs.get("backdrop", "fanart"),
+            backdrop_provider=effective_provs.get("backdrop", "cinemeta"),
             poster_provider=effective_provs.get("poster", "anilist"),
         )
 

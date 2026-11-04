@@ -124,7 +124,7 @@ def map_kitsu_to_stremio(
     canonical_total_episodes: int | None = None,
     title_language: str = "english",
     episodes_provider: str = "anizp",
-    backdrop_provider: str = "fanart",
+    backdrop_provider: str = "cinemeta",
     poster_provider: str = "anilist",
 ) -> dict:
     data = kitsu_data.get("data", {})
@@ -146,12 +146,12 @@ def map_kitsu_to_stremio(
         title = attributes.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown Title"
     synopsis = attributes.get("synopsis", "")
     anizp_images = anizp_data.get("images", []) if anizp_data else []
-    anizp_fanart = None
+    tvdb_fanart = None
     anizp_poster = None
     anizp_logo = None
     for img in anizp_images:
-        if img.get("coverType") == "Fanart" and not anizp_fanart:
-            anizp_fanart = img.get("url")
+        if img.get("coverType") == "Fanart" and not tvdb_fanart:
+            tvdb_fanart = img.get("url")
         elif img.get("coverType") == "Poster" and not anizp_poster:
             anizp_poster = img.get("url")
         elif img.get("coverType") in ["Clearlogo", "Logo"] and not anizp_logo:
@@ -174,7 +174,7 @@ def map_kitsu_to_stremio(
         backdrop_provider,
         sources={
             "cinemeta": cin_bg,
-            "tvdb": anizp_fanart,
+            "tvdb": tvdb_fanart,
             "kitsu": kitsu_cover,
         },
         disallow=poster,

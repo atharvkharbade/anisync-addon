@@ -1,12 +1,26 @@
+def normalize_backdrop_pref(val: str | None) -> str:
+    """
+    Normalizes backdrop preference strings.
+    - 'anilist' -> 'tvdb' (legacy setting)
+    - 'fanart' -> 'cinemeta' (legacy rename)
+    - allows 'cinemeta', 'tvdb', 'kitsu', 'fanarttv'
+    - any unknown / empty value falls back to 'cinemeta'
+    """
+    cleaned = (val or "").strip().lower()
+    if cleaned == "anilist":
+        return "tvdb"
+    if cleaned == "fanart":
+        return "cinemeta"
+    if cleaned in ("cinemeta", "tvdb", "kitsu", "fanarttv"):
+        return cleaned
+    return "cinemeta"
+
+
 def get_effective_meta_providers(user: dict | None) -> dict:
     pref = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
     if pref == "custom":
         legacy_artwork = (user.get("meta_artwork_provider") or "anilist").lower()
-        backdrop_val = (user.get("meta_backdrop_provider") or "fanart").lower()
-        if backdrop_val == "anilist":
-            backdrop_val = "tvdb"
-        if backdrop_val not in ("fanart", "tvdb", "kitsu"):
-            backdrop_val = "fanart"
+        backdrop_val = normalize_backdrop_pref(user.get("meta_backdrop_provider"))
         return {
             "synopsis": (user.get("meta_synopsis_provider") or "kitsu").lower(),
             "episodes": (user.get("meta_episodes_provider") or "anizp").lower(),
@@ -19,7 +33,7 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "synopsis": "mal",
             "episodes": "anizp",
             "poster": "mal",
-            "backdrop": "fanart",
+            "backdrop": "cinemeta",
             "airing": "mal",
         }
     elif pref == "anilist":
@@ -27,7 +41,7 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "synopsis": "anilist",
             "episodes": "anizp",
             "poster": "anilist",
-            "backdrop": "fanart",
+            "backdrop": "cinemeta",
             "airing": "anilist",
         }
     else:  # kitsu
@@ -35,7 +49,7 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "synopsis": "kitsu",
             "episodes": "anizp",
             "poster": "kitsu",
-            "backdrop": "fanart",
+            "backdrop": "cinemeta",
             "airing": "anilist",
         }
 
@@ -70,9 +84,10 @@ def clean_imdb_id(val) -> str | None:
 
 
 BACKDROP_ORDER = {
-    "fanart": ("cinemeta", "tvdb", "kitsu"),
+    "cinemeta": ("cinemeta", "tvdb", "kitsu"),
     "tvdb": ("tvdb", "cinemeta", "kitsu"),
     "kitsu": ("kitsu", "tvdb", "cinemeta"),
+    "fanarttv": ("fanarttv", "cinemeta", "tvdb", "kitsu"),
 }
 
 
@@ -86,10 +101,8 @@ def pick_backdrop(
     Deterministic backdrop selector shared between catalog enrichment and meta detail routes.
     Prioritizes according to user preference, cascading safely to alternative 16:9 artwork sources.
     """
-    normalized_pref = pref.lower() if pref else "fanart"
-    if normalized_pref == "anilist":
-        normalized_pref = "tvdb"
-    order = BACKDROP_ORDER.get(normalized_pref, BACKDROP_ORDER["fanart"])
+    normalized_pref = normalize_backdrop_pref(pref)
+    order = BACKDROP_ORDER.get(normalized_pref, BACKDROP_ORDER["cinemeta"])
 
     for name in order:
         url = sources.get(name)
@@ -123,7 +136,7 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
     from app.services.db import db
 
     effective = get_effective_meta_providers(user)
-    backdrop_pref = effective.get("backdrop", "fanart")
+    backdrop_pref = effective.get("backdrop", "cinemeta")
 
     # 1. Gather all items and their known IDs
     extracted_items = []
@@ -309,14 +322,14 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
 
         # AniZip artwork
         anizp_data = (anizp_by_key.get(f"al_{aid}") if aid else None) or (anizp_by_key.get(f"mal_{mid}") if mid else None) or {}
-        anizp_fanart = None
+        tvdb_fanart = None
         anizp_logo = None
         if anizp_data:
             for img in anizp_data.get("images", []):
                 ctype = img.get("coverType")
                 url = img.get("url") or ""
-                if ctype == "Fanart" and not anizp_fanart:
-                    anizp_fanart = url
+                if ctype == "Fanart" and not tvdb_fanart:
+                    tvdb_fanart = url
                 elif ctype in ["Clearlogo", "Logo"] and not anizp_logo:
                     if "/icons/" not in url and "/icon/" not in url:
                         anizp_logo = url
@@ -376,7 +389,7 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
             backdrop_pref,
             sources={
                 "cinemeta": cinemeta_bg,
-                "tvdb": anizp_fanart,
+                "tvdb": tvdb_fanart,
                 "kitsu": kitsu_cover,
             },
             extras=[item_bg, simkl_fanart, metahub_bg, anilist_banner],

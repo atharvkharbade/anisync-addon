@@ -77,7 +77,7 @@ async def guest_login():
         "meta_synopsis_provider": "kitsu",
         "meta_episodes_provider": "anizp",
         "meta_poster_provider": "anilist",
-        "meta_backdrop_provider": "fanart",
+        "meta_backdrop_provider": "cinemeta",
         "meta_artwork_provider": "anilist",
         "meta_airing_provider": "anilist",
         "catalogs": [

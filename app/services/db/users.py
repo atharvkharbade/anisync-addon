@@ -64,7 +64,7 @@ def get_user(user_id: str, for_manifest: bool = False) -> dict | None:
             "meta_synopsis_provider": "kitsu",
             "meta_episodes_provider": "anizp",
             "meta_poster_provider": "anilist",
-            "meta_backdrop_provider": "fanart",
+            "meta_backdrop_provider": "cinemeta",
             "meta_airing_provider": "anilist",
             "catalogs": [
                 "anisync_search",

@@ -89,6 +89,12 @@ def init_indexes():
         db.get_collection("recommendations_cache").create_index("uid", unique=True)
         db.get_collection("recommendations_cache").create_index("expires_at", expireAfterSeconds=0)
 
+        # Migrate legacy 'fanart' backdrop provider to 'cinemeta'
+        db.get_collection("users").update_many(
+            {"meta_backdrop_provider": "fanart"},
+            {"$set": {"meta_backdrop_provider": "cinemeta"}},
+        )
+
         db.get_collection("banner_ratios").create_index("url", unique=True)
     except Exception as e:
         logging.error("Failed to initialize database indexes: %s", e)
