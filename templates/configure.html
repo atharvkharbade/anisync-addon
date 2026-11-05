@@ -3033,7 +3033,7 @@
                                 {% set cur_backdrop = (user.get('meta_backdrop_provider') or 'cinemeta')|lower %}
                                 {% if cur_backdrop == 'anilist' %}{% set cur_backdrop = 'tvdb' %}{% endif %}
                                 {% if cur_backdrop in ['fanart', ''] %}{% set cur_backdrop = 'cinemeta' %}{% endif %}
-                                {% if cur_backdrop not in ['cinemeta', 'tvdb', 'kitsu'] %}{% set cur_backdrop = 'cinemeta' %}{% endif %}
+                                {% if cur_backdrop not in ['cinemeta', 'tvdb', 'kitsu', 'fanarttv'] %}{% set cur_backdrop = 'cinemeta' %}{% endif %}
                                 <input type="hidden" id="meta_backdrop_provider" name="meta_backdrop_provider" value="{{ cur_backdrop }}">
                                 <div class="custom-select-wrapper mb-1" data-input-id="meta_backdrop_provider">
                                     <div class="custom-select">
@@ -3042,6 +3042,8 @@
                                                 <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
                                             {% elif cur_backdrop == 'tvdb' %}
                                                 <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
+                                            {% elif cur_backdrop == 'fanarttv' %}
+                                                <img src="/assets/fanart_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Fanart.tv
                                             {% else %}
                                                 <img src="/assets/cinemeta_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Cinemeta
                                             {% endif %}
@@ -3052,6 +3054,9 @@
                                         <div class="custom-option-item d-flex align-items-center" data-value="cinemeta">
                                             <img src="/assets/cinemeta_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Cinemeta
                                         </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="fanarttv">
+                                            <img src="/assets/fanart_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Fanart.tv
+                                        </div>
                                         <div class="custom-option-item d-flex align-items-center" data-value="tvdb">
                                             <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                         </div>
@@ -3061,8 +3066,46 @@
                                     </div>
                                 </div>
                                 <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
-                                    Cinemeta, TheTVDB, or Kitsu cover art. Missing artwork falls back to the next source.
+                                    Cinemeta, Fanart.tv, TheTVDB, or Kitsu cover art. Missing artwork falls back to the next source.
                                 </p>
+                                <!-- Fanart.tv Personal Key Container (shown when fanarttv is selected) -->
+                                <div id="fanart-key-container" class="mt-2 {% if cur_backdrop != 'fanarttv' %}d-none{% endif %}">
+                                    <label class="form-label small fw-semibold text-secondary mb-1 d-flex align-items-center">
+                                        Fanart.tv API Key <span class="badge bg-secondary-subtle text-secondary ms-2" style="font-size: 0.65rem;">Optional</span>
+                                    </label>
+                                    <div class="gemini-input-wrapper position-relative">
+                                        <i class="fa-solid fa-key gemini-icon" style="color: #3b82f6;"></i>
+                                        <input type="password" id="fanart_personal_key" name="fanart_personal_key" class="gemini-input"
+                                            value="{{ user.get('fanart_personal_key', '') }}"
+                                            placeholder="Fanart API key here" autocomplete="new-password">
+                                        <button type="button" class="gemini-btn" id="toggle-fanart-visibility"
+                                            style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="gemini-btn p-0" id="validate-fanart-btn" title="Validate Key">
+                                            <i id="fanart-check-icon"
+                                                class="fa-solid {% if user.get('fanart_personal_key') %}{% if user.get('fanart_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                                style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                                        </button>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <span id="fanart-validation-status"
+                                            class="small {% if user.get('fanart_personal_key') %}{% if user.get('fanart_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}" style="font-size: 0.73rem;">
+                                            {% if user.get('fanart_personal_key') %}
+                                                {% if user.get('fanart_key_valid') == False %}Invalid Fanart.tv API key{% else %}API key verified ✓{% endif %}
+                                            {% else %}
+                                                Not verified
+                                            {% endif %}
+                                        </span>
+                                        <a href="https://fanart.tv/get-an-api-key/" target="_blank"
+                                            class="small text-info text-decoration-none" style="font-size: 0.73rem;">
+                                            Get Fanart.tv API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.65rem;"></i>
+                                        </a>
+                                    </div>
+                                    <p class="text-secondary small mt-1 mb-0" style="font-size: 0.72rem; line-height: 1.35;">
+                                        You can add your own API key to avoid shared server rate limits.
+                                    </p>
+                                </div>
                             </div>
 
                             <!-- 5. Airing Countdowns -->
@@ -3900,6 +3943,9 @@
                     if (inputId === "metadata_provider") {
                         syncMetadataProviderFields();
                     }
+                    if (inputId === "meta_backdrop_provider") {
+                        syncBackdropProviderFields();
+                    }
                     if (inputId === "modal_sort_by") {
                         if (typeof onModalSortByChange === "function") {
                             onModalSortByChange(val);
@@ -3943,6 +3989,19 @@
             }
         }
         syncMetadataProviderFields();
+
+        function syncBackdropProviderFields() {
+            const backdropInput = document.getElementById("meta_backdrop_provider");
+            const fanartContainer = document.getElementById("fanart-key-container");
+            if (backdropInput && fanartContainer) {
+                if (backdropInput.value === "fanarttv") {
+                    fanartContainer.classList.remove("d-none");
+                } else {
+                    fanartContainer.classList.add("d-none");
+                }
+            }
+        }
+        syncBackdropProviderFields();
 
         function syncPosterProviderFields() {
             const providerInput = document.getElementById("poster_provider");
@@ -6032,6 +6091,70 @@
                 } finally {
                     validateTopBtn.disabled = false;
                 }
+            });
+        }
+
+        const fanartKeyInput = document.getElementById("fanart_personal_key");
+        const toggleFanartBtn = document.getElementById("toggle-fanart-visibility");
+        if (fanartKeyInput && toggleFanartBtn) {
+            toggleFanartBtn.addEventListener("click", function () {
+                if (fanartKeyInput.type === "password") {
+                    fanartKeyInput.type = "text";
+                    toggleFanartBtn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+                } else {
+                    fanartKeyInput.type = "password";
+                    toggleFanartBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+                }
+            });
+        }
+
+        const validateFanartBtn = document.getElementById("validate-fanart-btn");
+        const fanartCheckIcon = document.getElementById("fanart-check-icon");
+        const fanartStatusSpan = document.getElementById("fanart-validation-status");
+        if (validateFanartBtn && fanartCheckIcon && fanartStatusSpan && fanartKeyInput) {
+            validateFanartBtn.addEventListener("click", async function () {
+                const apiKey = fanartKeyInput.value.trim();
+                if (!apiKey) {
+                    fanartStatusSpan.textContent = "Key cannot be empty";
+                    fanartStatusSpan.className = "small text-danger";
+                    fanartCheckIcon.className = "fa-solid fa-circle-check text-danger";
+                    return;
+                }
+                fanartStatusSpan.textContent = "Verifying...";
+                fanartStatusSpan.className = "small text-info";
+                fanartCheckIcon.className = "fa-solid fa-circle-notch fa-spin text-info";
+                validateFanartBtn.disabled = true;
+                try {
+                    const response = await fetch("/fanart/validation", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ api_key: apiKey })
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.status === "success") {
+                        fanartStatusSpan.textContent = result.message;
+                        fanartStatusSpan.className = "small text-success fw-semibold";
+                        fanartCheckIcon.className = "fa-solid fa-circle-check text-success";
+                    } else {
+                        fanartStatusSpan.textContent = result.message || "Invalid API key";
+                        fanartStatusSpan.className = "small text-danger";
+                        fanartCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                    }
+                } catch (err) {
+                    fanartStatusSpan.textContent = "Verification failed";
+                    fanartStatusSpan.className = "small text-danger";
+                    fanartCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                } finally {
+                    validateFanartBtn.disabled = false;
+                }
+            });
+
+            fanartKeyInput.addEventListener("input", function () {
+                fanartCheckIcon.className = "fa-solid fa-circle-check text-secondary";
+                fanartStatusSpan.textContent = "Not verified";
+                fanartStatusSpan.className = "small text-secondary";
             });
         }
 

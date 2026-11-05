@@ -278,8 +278,10 @@ async def handle_configure_form(user: dict, form) -> dict | None:
     rpdb_task = None
     gemini_task = None
     top_poster_task = None
+    fanart_task = None
     rpdb_key = user.get("rpdb_api_key", "")
     gemini_key = user.get("gemini_api_key", "")
+    fanart_key = user.get("fanart_personal_key", "")
 
     if "rpdb_api_key" in form:
         rpdb_key = form.get("rpdb_api_key", "").strip()
@@ -310,7 +312,17 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         else:
             user["gemini_key_valid"] = False
 
-    if rpdb_task or gemini_task or top_poster_task:
+    if "fanart_personal_key" in form:
+        fanart_key = form.get("fanart_personal_key", "").strip()
+        user["fanart_personal_key"] = fanart_key
+        if fanart_key:
+            from .validation import check_fanart_api_key_valid
+
+            fanart_task = check_fanart_api_key_valid(fanart_key)
+        else:
+            user["fanart_key_valid"] = False
+
+    if rpdb_task or gemini_task or top_poster_task or fanart_task:
         tasks = []
         if rpdb_task:
             tasks.append(rpdb_task)
@@ -318,6 +330,8 @@ async def handle_configure_form(user: dict, form) -> dict | None:
             tasks.append(top_poster_task)
         if gemini_task:
             tasks.append(gemini_task)
+        if fanart_task:
+            tasks.append(fanart_task)
 
         results = await asyncio.gather(*tasks)
 
@@ -334,6 +348,10 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         if gemini_task:
             gemini_valid = results[idx][0]
             user["gemini_key_valid"] = gemini_valid
+            idx += 1
+        if fanart_task:
+            fanart_res = results[idx]
+            user["fanart_key_valid"] = fanart_res[0] if isinstance(fanart_res, (list, tuple)) else bool(fanart_res)
 
     if "rec_excluded_movie_genres" in form:
         user["rec_excluded_movie_genres"] = form.getlist("rec_excluded_movie_genres")
@@ -370,6 +388,8 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         validation_failed_msg.append("Invalid TOP Posters API key")
     if user.get("enable_recommendations") and gemini_key and not user.get("gemini_key_valid", False):
         validation_failed_msg.append("Invalid Gemini API key")
+    if user.get("meta_backdrop_provider") == "fanarttv" and fanart_key and not user.get("fanart_key_valid", False):
+        validation_failed_msg.append("Invalid Fanart.tv API key")
 
     is_json = False
     if has_request_context():

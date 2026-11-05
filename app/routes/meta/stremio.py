@@ -119,6 +119,7 @@ def map_kitsu_to_stremio(
     show_filler_tags: bool = False,
     loop=None,
     cinemeta_data: dict = None,
+    fanart_data: dict = None,
     show_watched_tags: bool = False,
     watched_progress: int = 0,
     canonical_total_episodes: int | None = None,
@@ -170,9 +171,15 @@ def map_kitsu_to_stremio(
     kitsu_cover = cover_data.get("original") or cover_data.get("large") or cover_data.get("medium")
 
     cin_bg = cinemeta_data.get("background") if cinemeta_data else None
+    fanarttv_bg = None
+    if fanart_data:
+        from app.services.fanart import pick_fanart_background
+        fanarttv_bg = pick_fanart_background(fanart_data)
+
     chosen_bg = pick_backdrop(
         backdrop_provider,
         sources={
+            "fanarttv": fanarttv_bg,
             "cinemeta": cin_bg,
             "tvdb": tvdb_fanart,
             "kitsu": kitsu_cover,

@@ -81,6 +81,9 @@ def init_indexes():
         db.get_collection("cinemeta_meta_cache").create_index([("imdb_id", 1), ("media_type", 1)], unique=True)
         db.get_collection("cinemeta_meta_cache").create_index("expires_at", expireAfterSeconds=0)
 
+        db.get_collection("fanart_meta_cache").create_index([("kind", 1), ("ext_id", 1)], unique=True)
+        db.get_collection("fanart_meta_cache").create_index("expires_at", expireAfterSeconds=0)
+
         db.get_collection("anilist_meta_cache").create_index("anilist_id", unique=True)
         db.get_collection("anilist_meta_cache").create_index("expires_at", expireAfterSeconds=0)
 
@@ -106,3 +109,4 @@ users_collection: Collection = db.get_collection("users")
 id_cache_collection: Collection = db.get_collection("id_cache")
 jikan_cache_collection: Collection = db.get_collection("jikan_cache")
 id_fallback_misses_collection: Collection = db.get_collection("id_fallback_misses")
+fanart_meta_cache_collection: Collection = db.get_collection("fanart_meta_cache")

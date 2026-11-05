@@ -59,6 +59,7 @@ def init_client():
             "raw.githubusercontent.com": Config.PROXY_GITHUB,
             "images.metahub.space": Config.PROXY_METAHUB,
             "api.rpdb.co": Config.PROXY_RPDB,
+            "webservice.fanart.tv": Config.PROXY_FANART,
         }
         
         for domain, proxy_val in services.items():

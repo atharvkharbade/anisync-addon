@@ -158,6 +158,28 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         title_lang = user.get("title_language", "english") if user else "english"
         effective_provs = get_effective_meta_providers(user)
 
+        fanart_data = {}
+        if effective_provs.get("backdrop") == "fanarttv":
+            try:
+                from app.services.fanart import fetch_fanart
+                from app.services.db import get_cached_ids
+                tvdb_id = (anizp_data.get("mappings", {}).get("thetvdb_id") if anizp_data else None)
+                if not tvdb_id and kitsu_id:
+                    cached_ids = get_cached_ids(kitsu_id)
+                    if cached_ids:
+                        tvdb_id = cached_ids.get("tvdb_id")
+                k_data = kitsu_data.get("data") or {} if isinstance(kitsu_data, dict) else {}
+                k_attrs = k_data.get("attributes") or {} if isinstance(k_data, dict) else {}
+                subtype = (k_attrs.get("subtype") or "tv").lower()
+                is_movie = (subtype == "movie")
+                fanart_kind = "movies" if is_movie and imdb_id else ("tv" if tvdb_id else ("movies" if imdb_id else None))
+                fanart_id = imdb_id if fanart_kind == "movies" else tvdb_id
+                if fanart_kind and fanart_id:
+                    client_key = user.get("fanart_personal_key") if user else None
+                    fanart_data = await asyncio.wait_for(fetch_fanart(fanart_kind, fanart_id, client_key=client_key), timeout=2.5)
+            except Exception as e:
+                logging.warning("Failed to fetch Fanart.tv metadata in handle_meta: %s", e)
+
         # Offload CPU-bound mapping to worker threads
         run_loop = asyncio.get_running_loop()
         meta = await asyncio.to_thread(
@@ -169,6 +191,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             show_filler_tags=show_filler,
             loop=run_loop,
             cinemeta_data=cinemeta_data,
+            fanart_data=fanart_data,
             show_watched_tags=show_watched,
             watched_progress=watched_progress,
             canonical_total_episodes=canonical_total_episodes,

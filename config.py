@@ -41,6 +41,8 @@ class Config:
     PROXY_GITHUB = os.getenv("PROXY_GITHUB", "")
     PROXY_METAHUB = os.getenv("PROXY_METAHUB", "")
     PROXY_RPDB = os.getenv("PROXY_RPDB", "")
+    PROXY_FANART = os.getenv("PROXY_FANART", "")
+    FANART_API_KEY = os.getenv("FANART_API_KEY", "")
 
     # MAL OAuth
     MAL_CLIENT_ID = os.getenv("MAL_CLIENT_ID", "")

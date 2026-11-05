@@ -101,6 +101,50 @@ async def validate_top_poster_key():
         return {"status": "error", "message": f"Validation failed: {str(e)}"}, 500
 
 
+async def check_fanart_api_key_valid(api_key: str) -> tuple[bool, str]:
+    if not api_key or not api_key.strip():
+        return False, "Key cannot be empty"
+
+    import httpx
+    clean_key = api_key.strip()
+    try:
+        from app.services.http import get_client
+        from config import Config
+        client = get_client()
+
+        # Test as api-key directly
+        resp = await client.get("https://webservice.fanart.tv/v3/tv/267440", headers={"api-key": clean_key}, timeout=5.0)
+        if resp.status_code == 200:
+            return True, "API key verified ✓"
+
+        # If 401 and server key is present, test as client-key
+        if Config.FANART_API_KEY:
+            resp2 = await client.get(
+                "https://webservice.fanart.tv/v3/tv/267440",
+                headers={"api-key": Config.FANART_API_KEY, "client-key": clean_key},
+                timeout=5.0,
+            )
+            if resp2.status_code == 200:
+                return True, "API key verified ✓"
+
+        return False, "Invalid Fanart.tv API key"
+    except Exception as e:
+        return False, f"Validation failed: {str(e)}"
+
+
+@ui_bp.route("/fanart/validation", methods=["POST"])
+@rate_limit(limit=10, period_seconds=60)
+async def validate_fanart_key():
+    data = await request.get_json() or {}
+    api_key = data.get("api_key", "").strip()
+    if not api_key:
+        return {"status": "error", "message": "Key cannot be empty"}, 400
+    is_valid, msg = await check_fanart_api_key_valid(api_key)
+    if is_valid:
+        return {"status": "success", "message": msg}
+    return {"status": "error", "message": msg}, 400
+
+
 @ui_bp.route("/health")
 @rate_limit(limit=60, period_seconds=60)
 async def health():

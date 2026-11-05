@@ -1,6 +1,7 @@
 from .connection import (
     client,
     db,
+    fanart_meta_cache_collection,
     id_cache_collection,
     id_fallback_misses_collection,
     init_indexes,

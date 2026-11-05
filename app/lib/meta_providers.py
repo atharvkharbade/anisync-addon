@@ -183,6 +183,7 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
             "anilist_id": str(anilist_id) if anilist_id else None,
             "simkl_id": str(simkl_id) if simkl_id else None,
             "imdb_id": imdb_id,
+            "tvdb_id": None,
         })
 
     # 2. Bulk resolve missing cross-tracker and IMDB IDs from local MongoDB (id_cache & fribb_mappings)
@@ -215,6 +216,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                 s_id = str(doc.get("simkl_id") or doc.get("simkl") or "") or None
                 im_id = clean_imdb_id(doc.get("imdb_id"))
 
+                tv_id = str(doc.get("tvdb_id") or doc.get("thetvdb_id") or "") or None
+
                 keys_to_update = []
                 for id_type, id_val in [("kitsu", k), ("mal", m_id), ("anilist", a_id), ("simkl", s_id)]:
                     if id_val:
@@ -234,6 +237,7 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                         "anilist_id": a_id,
                         "simkl_id": s_id,
                         "imdb_id": im_id,
+                        "tvdb_id": tv_id,
                     }
                 else:
                     if k and not existing_entry.get("kitsu_id"):
@@ -246,6 +250,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                         existing_entry["simkl_id"] = s_id
                     if im_id and not existing_entry.get("imdb_id"):
                         existing_entry["imdb_id"] = im_id
+                    if tv_id and not existing_entry.get("tvdb_id"):
+                        existing_entry["tvdb_id"] = tv_id
 
                 for key_tuple in keys_to_update:
                     id_map[key_tuple] = existing_entry
@@ -280,8 +286,10 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
             if not item_info["simkl_id"] and resolved.get("simkl_id"):
                 item_info["simkl_id"] = resolved["simkl_id"]
                 known_simkl.add(resolved["simkl_id"])
+            if not item_info.get("tvdb_id") and resolved.get("tvdb_id"):
+                item_info["tvdb_id"] = resolved["tvdb_id"]
 
-    # 3. Bulk fetch cached rich metadata (AniZip, Cinemeta, Kitsu)
+    # 3. Bulk fetch cached rich metadata (AniZip, Cinemeta, Kitsu, Fanart)
     anizp_by_key = {}
     anizp_keys = [f"al_{a}" for a in known_al if a] + [f"mal_{m}" for m in known_mal if m]
     if anizp_keys:
@@ -291,6 +299,38 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                     anizp_by_key[doc["key"]] = doc["data"]
         except Exception as e:
             logging.error("enrich_catalog_metas_artwork: anizp_meta_cache query failed: %s", e)
+
+    fanart_by_key = {}
+    missing_for_fanart = []
+    if backdrop_pref == "fanarttv":
+        fanart_or = []
+        for it in extracted_items:
+            aid = it["anilist_id"]
+            mid = it["mal_id"]
+            anizp = (anizp_by_key.get(f"al_{aid}") if aid else None) or (anizp_by_key.get(f"mal_{mid}") if mid else None) or {}
+            if not it.get("tvdb_id") and anizp:
+                tvid = anizp.get("mappings", {}).get("thetvdb_id")
+                if tvid:
+                    it["tvdb_id"] = str(tvid)
+            t_id = it.get("tvdb_id")
+            im_id = it.get("imdb_id")
+            m_type = (it.get("meta", {}).get("type") or "").lower()
+            if m_type == "movie" and im_id:
+                fanart_or.append({"kind": "movies", "ext_id": str(im_id)})
+            elif t_id:
+                fanart_or.append({"kind": "tv", "ext_id": str(t_id)})
+            elif im_id:
+                fanart_or.append({"kind": "movies", "ext_id": str(im_id)})
+        if fanart_or:
+            try:
+                for doc in db.fanart_meta_cache.find({"$or": fanart_or}):
+                    k_kind = doc.get("kind")
+                    k_ext = doc.get("ext_id")
+                    # Cached misses ({}) count as cached so they are not re-queued for warming every request
+                    if k_kind and k_ext:
+                        fanart_by_key[f"{k_kind}_{k_ext}"] = doc.get("data") or {}
+            except Exception as e:
+                logging.error("enrich_catalog_metas_artwork: fanart_meta_cache query failed: %s", e)
 
     cinemeta_by_imdb = {}
     if known_imdb:
@@ -384,10 +424,27 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
             item_bg = None
             m.pop("background", None)
 
+        # Fanart.tv artwork
+        fanarttv_bg = None
+        if backdrop_pref == "fanarttv":
+            from app.services.fanart import pick_fanart_background
+            m_type = (m.get("type") or "").lower()
+            tv_id = item_info.get("tvdb_id")
+            f_kind = "movies" if m_type == "movie" and imdb_id else ("tv" if tv_id else ("movies" if imdb_id else None))
+            f_ext = imdb_id if f_kind == "movies" else (tv_id if f_kind == "tv" else None)
+            if f_kind and f_ext:
+                f_key = f"{f_kind}_{f_ext}"
+                if f_key in fanart_by_key:
+                    fanarttv_bg = pick_fanart_background(fanart_by_key[f_key])
+                else:
+                    user_fanart_key = user.get("fanart_personal_key") if user else None
+                    missing_for_fanart.append((f_kind, f_ext, user_fanart_key))
+
         # --- Resolve Background ---
         chosen_bg = pick_backdrop(
             backdrop_pref,
             sources={
+                "fanarttv": fanarttv_bg,
                 "cinemeta": cinemeta_bg,
                 "tvdb": tvdb_fanart,
                 "kitsu": kitsu_cover,
@@ -423,6 +480,16 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
             import asyncio
             loop = asyncio.get_running_loop()
             loop.create_task(bg_warm_anizip(missing_for_anizp[:25]))
+        except (RuntimeError, Exception):
+            pass
+
+    if missing_for_fanart:
+        try:
+            import asyncio
+            from app.services.fanart import bg_warm_fanart
+            unique_missing = list({(k, e): (k, e, ck) for (k, e, ck) in missing_for_fanart}.values())
+            loop = asyncio.get_running_loop()
+            loop.create_task(bg_warm_fanart(unique_missing[:25]))
         except (RuntimeError, Exception):
             pass
 
