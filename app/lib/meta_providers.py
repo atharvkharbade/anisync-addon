@@ -2,11 +2,16 @@ def get_effective_meta_providers(user: dict | None) -> dict:
     pref = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
     if pref == "custom":
         legacy_artwork = (user.get("meta_artwork_provider") or "anilist").lower()
+        backdrop_val = (user.get("meta_backdrop_provider") or "fanart").lower()
+        if backdrop_val == "anilist":
+            backdrop_val = "tvdb"
+        if backdrop_val not in ("fanart", "tvdb", "kitsu"):
+            backdrop_val = "fanart"
         return {
             "synopsis": (user.get("meta_synopsis_provider") or "kitsu").lower(),
             "episodes": (user.get("meta_episodes_provider") or "anizp").lower(),
             "poster": (user.get("meta_poster_provider") or legacy_artwork).lower(),
-            "backdrop": (user.get("meta_backdrop_provider") or "fanart").lower(),
+            "backdrop": backdrop_val,
             "airing": (user.get("meta_airing_provider") or "anilist").lower(),
         }
     elif pref == "mal":
@@ -64,6 +69,42 @@ def clean_imdb_id(val) -> str | None:
     return val if (val and val.startswith("tt")) else None
 
 
+BACKDROP_ORDER = {
+    "fanart": ("cinemeta", "tvdb", "kitsu"),
+    "tvdb": ("tvdb", "cinemeta", "kitsu"),
+    "kitsu": ("kitsu", "tvdb", "cinemeta"),
+}
+
+
+def pick_backdrop(
+    pref: str,
+    sources: dict[str, str | None],
+    extras: list[str | None] = (),
+    disallow: str | None = None,
+) -> str | None:
+    """
+    Deterministic backdrop selector shared between catalog enrichment and meta detail routes.
+    Prioritizes according to user preference, cascading safely to alternative 16:9 artwork sources.
+    """
+    normalized_pref = pref.lower() if pref else "fanart"
+    if normalized_pref == "anilist":
+        normalized_pref = "tvdb"
+    order = BACKDROP_ORDER.get(normalized_pref, BACKDROP_ORDER["fanart"])
+
+    for name in order:
+        url = sources.get(name)
+        if url and isinstance(url, str) and url.strip():
+            if not disallow or url.strip() != disallow.strip():
+                return url.strip()
+
+    for url in extras:
+        if url and isinstance(url, str) and url.strip():
+            if not disallow or url.strip() != disallow.strip():
+                return url.strip()
+
+    return None
+
+
 def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) -> None:
     """Enriches catalog preview items with native 16:9 widescreen `background` and transparent `logo`
     for optimal rendering in modern clients like Nuvio (Hero catalog & Landscape poster mode).
@@ -78,6 +119,7 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
         return
 
     import logging
+
     from app.services.db import db
 
     effective = get_effective_meta_providers(user)
@@ -315,28 +357,31 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
 
         # Existing background / bannerImage on item
         item_bg = m.get("background") or m.get("bannerImage")
+        anilist_banner = None
         if item_bg and not isinstance(item_bg, str):
             item_bg = None
         elif item_bg and isinstance(poster_url, str) and item_bg.strip() == poster_url.strip():
             item_bg = None
             m.pop("background", None)
+        elif item_bg and ("/media/anime/banner/" in item_bg or "s4.anilist.co" in item_bg):
+            # Ultra-wide AniList banners (1900x400) crop badly in 16:9 cards: only keep a real banner
+            # as a last resort for titles with no other wide artwork (PVs, shorts, announced shows)
+            if "/banner/" in item_bg:
+                anilist_banner = item_bg
+            item_bg = None
+            m.pop("background", None)
 
         # --- Resolve Background ---
-        # Prioritize based on user backdrop preference, cascading to providers with native 16:9 artwork
-        if backdrop_pref == "kitsu":
-            bg_candidates = [kitsu_cover, anizp_fanart, cinemeta_bg, item_bg, simkl_fanart, metahub_bg]
-        elif backdrop_pref == "anilist":
-            bg_candidates = [item_bg, anizp_fanart, cinemeta_bg, kitsu_cover, simkl_fanart, metahub_bg]
-        else:  # fanart (default) / mal / simkl
-            bg_candidates = [anizp_fanart, cinemeta_bg, item_bg, kitsu_cover, simkl_fanart, metahub_bg]
-
-        chosen_bg = None
-        for cand in bg_candidates:
-            if cand and isinstance(cand, str) and cand.strip():
-                # Never use portrait poster as background (prevents distorted/pixelated hero banners in Nuvio)
-                if cand.strip() != poster_url.strip():
-                    chosen_bg = cand.strip()
-                    break
+        chosen_bg = pick_backdrop(
+            backdrop_pref,
+            sources={
+                "cinemeta": cinemeta_bg,
+                "tvdb": anizp_fanart,
+                "kitsu": kitsu_cover,
+            },
+            extras=[item_bg, simkl_fanart, metahub_bg, anilist_banner],
+            disallow=poster_url,
+        )
 
         if chosen_bg:
             m["background"] = chosen_bg
@@ -372,6 +417,7 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
 async def bg_warm_anizip(item_infos: list[dict]):
     """Background task to fetch and cache AniZip metadata for items missing from anizp_meta_cache."""
     import asyncio
+
     from app.routes.meta import fetch_anizp_metadata
 
     sem = asyncio.Semaphore(5)

@@ -48,16 +48,16 @@ async def fetch_supplemental_discovery_data() -> dict:
         jikan_schedule_task = asyncio.create_task(get_airing_schedule(page=1))
         jikan_fav_task = asyncio.create_task(get_top_anime(filter_by="favorite", page=1))
 
-        kitsu_pop_task = asyncio.create_task(fetch_kitsu_discovery("sort=-userCount&page%5Blimit%5D=25"))
-        kitsu_rating_task = asyncio.create_task(fetch_kitsu_discovery("sort=-averageRating&page%5Blimit%5D=25"))
+        kitsu_pop_task = asyncio.create_task(fetch_kitsu_discovery("sort=-userCount&page%5Blimit%5D=20"))
+        kitsu_rating_task = asyncio.create_task(fetch_kitsu_discovery("sort=-averageRating&page%5Blimit%5D=20"))
         kitsu_airing_task = asyncio.create_task(
-            fetch_kitsu_discovery("filter%5Bstatus%5D=current&sort=-userCount&page%5Blimit%5D=25")
+            fetch_kitsu_discovery("filter%5Bstatus%5D=current&sort=-userCount&page%5Blimit%5D=20")
         )
         kitsu_season_task = asyncio.create_task(
-            fetch_kitsu_discovery("filter%5Bstatus%5D=current&sort=-createdAt&page%5Blimit%5D=25")
+            fetch_kitsu_discovery("filter%5Bstatus%5D=current&sort=-createdAt&page%5Blimit%5D=20")
         )
         kitsu_movie_task = asyncio.create_task(
-            fetch_kitsu_discovery("filter%5Bsubtype%5D=movie&sort=-averageRating&page%5Blimit%5D=25")
+            fetch_kitsu_discovery("filter%5Bsubtype%5D=movie&sort=-averageRating&page%5Blimit%5D=20")
         )
 
         (
@@ -78,7 +78,7 @@ async def fetch_supplemental_discovery_data() -> dict:
             jikan_airing_task,
             jikan_top_task,
             jikan_movie_task,
-            jikan_season_now,
+            jikan_season_task,
             jikan_schedule_task,
             jikan_fav_task,
             kitsu_pop_task,

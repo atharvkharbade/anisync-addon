@@ -2,6 +2,8 @@ import asyncio
 import re
 from datetime import UTC, date, datetime
 
+from app.lib.meta_providers import pick_backdrop
+
 from .fetchers import clean_imdb_id
 
 # Roman numerals used as sequel markers. Single letters (i, v, x) are omitted on purpose:
@@ -167,15 +169,17 @@ def map_kitsu_to_stremio(
     cover_data = attributes.get("coverImage") or {}
     kitsu_cover = cover_data.get("original") or cover_data.get("large") or cover_data.get("medium")
 
-    if backdrop_provider == "kitsu":
-        background = kitsu_cover or anizp_fanart or (cinemeta_data.get("background") if cinemeta_data else "") or poster
-    else:  # fanart (default)
-        background = (
-            (cinemeta_data.get("background") if cinemeta_data else None)
-            or anizp_fanart
-            or kitsu_cover
-            or poster
-        )
+    cin_bg = cinemeta_data.get("background") if cinemeta_data else None
+    chosen_bg = pick_backdrop(
+        backdrop_provider,
+        sources={
+            "cinemeta": cin_bg,
+            "tvdb": anizp_fanart,
+            "kitsu": kitsu_cover,
+        },
+        disallow=poster,
+    )
+    background = chosen_bg or poster
 
     imdb_id = clean_imdb_id(anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None)
 

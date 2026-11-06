@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import logging
 import re
+
 from app.services.http import get_client
 
 KITSU_API_BASE = "https://kitsu.io/api/edge"
@@ -190,43 +191,6 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
         return {}
 
 
-async def get_banner_aspect_ratio(banner_url: str) -> float:
-    """Check banner aspect ratio with MongoDB caching. Returns 2.5 on error to trigger safe fallback."""
-    if not banner_url:
-        return 2.5
-    try:
-        from app.services.db import db
-
-        col = db.get_collection("banner_ratios")
-        doc = col.find_one({"url": banner_url})
-        if doc and "ratio" in doc:
-            return float(doc["ratio"])
-
-        import httpx
-        from PIL import Image
-
-        Image.MAX_IMAGE_PIXELS = 25_000_000
-
-        async with httpx.AsyncClient(timeout=4.0) as client:
-            resp = await client.get(banner_url, headers={"User-Agent": "Mozilla/5.0"})
-            if resp.status_code == 200 and len(resp.content) <= 10 * 1024 * 1024:
-                img = Image.open(io.BytesIO(resp.content))
-                bw, bh = img.size
-                ratio = round(bw / float(bh), 2) if bh > 0 else 2.5
-                try:
-                    col.update_one(
-                        {"url": banner_url},
-                        {"$set": {"url": banner_url, "ratio": ratio}},
-                        upsert=True,
-                    )
-                except Exception as ex:
-                    logging.warning("Failed to cache banner ratio for %s: %s", banner_url, ex)
-                return ratio
-    except Exception as e:
-        logging.warning("Failed to resolve banner aspect ratio for %s: %s", banner_url, e)
-    return 2.5
-
-
 async def apply_metadata_provider_override(
     meta: dict,
     user: dict,
@@ -238,7 +202,6 @@ async def apply_metadata_provider_override(
     effective = get_effective_meta_providers(user)
     synopsis_prov = effective["synopsis"]
     poster_prov = effective["poster"]
-    backdrop_prov = effective["backdrop"]
 
     mal_data_ret = None
     al_data_ret = None
@@ -255,9 +218,9 @@ async def apply_metadata_provider_override(
         except Exception as e:
             logging.warning("Failed to fetch MAL metadata for mal_id=%s: %s", mal_id, e)
 
-    # 2. Fetch AniList data if needed for synopsis, poster, or backdrop
+    # 2. Fetch AniList data if needed for synopsis or poster
     al_data = None
-    if (synopsis_prov == "anilist" or poster_prov == "anilist" or backdrop_prov == "anilist") and anilist_id:
+    if (synopsis_prov == "anilist" or poster_prov == "anilist") and anilist_id:
         try:
             from app.api.anilist import get_media_status
 
@@ -297,14 +260,5 @@ async def apply_metadata_provider_override(
         poster_url = cover.get("extraLarge") or cover.get("large")
         if poster_url:
             meta["poster"] = poster_url
-
-    # 5. Apply Backdrop Override
-    if backdrop_prov == "anilist" and al_data:
-        banner_url = al_data.get("bannerImage")
-        if banner_url:
-            ratio = await get_banner_aspect_ratio(banner_url)
-            if ratio <= 2.0:
-                meta["background"] = banner_url
-            # Else (ratio > 2.0 ultra-wide banner): skip and retain Fanart/Kitsu/Cinemeta fallback
 
     return mal_data_ret, al_data_ret
