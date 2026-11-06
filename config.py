@@ -43,6 +43,8 @@ class Config:
     PROXY_RPDB = os.getenv("PROXY_RPDB", "")
     PROXY_FANART = os.getenv("PROXY_FANART", "")
     FANART_API_KEY = os.getenv("FANART_API_KEY", "")
+    # DeepSeek chat model used for AI recommendations (overridable without a code change)
+    DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
 
     # MAL OAuth
     MAL_CLIENT_ID = os.getenv("MAL_CLIENT_ID", "")

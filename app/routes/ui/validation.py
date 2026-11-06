@@ -14,22 +14,25 @@ async def check_gemini_api_key_valid(api_key: str) -> tuple[bool, str]:
         return False, "Key cannot be empty"
 
     models = [
-        "gemini-3.8-flash",
-        "gemini-3.7-flash",
-        "gemini-3.6-flash",
-        "gemini-3.5-flash",
         "gemini-3.5-flash-lite",
         "gemini-3.1-flash-lite",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
         "gemini-2.5-flash",
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
     ]
     payload = {"contents": [{"parts": [{"text": "Hello, respond with OK if you read this."}]}]}
     last_error = "Invalid API key"
 
+    clean_key = api_key.strip()
+    headers = {"x-goog-api-key": clean_key}
+
     async with httpx.AsyncClient(timeout=10) as client:
         for model in models:
             try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-                resp = await client.post(url, json=payload)
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+                resp = await client.post(url, json=payload, headers=headers)
                 if resp.status_code == 200:
                     return True, "API key verified"
 
@@ -44,12 +47,35 @@ async def check_gemini_api_key_valid(api_key: str) -> tuple[bool, str]:
                 error_details = err_data.get("details", [])
                 if any(isinstance(d, dict) and d.get("reason") == "API_KEY_INVALID" for d in error_details):
                     return False, last_error
-                if resp.status_code in (400, 403) and "API key" in last_error:
+                if resp.status_code in (400, 403) and ("API key" in last_error or "API_KEY" in str(err_data)):
                     return False, last_error
             except Exception as e:
                 last_error = f"Validation failed: {str(e)}"
 
     return False, last_error
+
+
+async def check_deepseek_api_key_valid(api_key: str) -> tuple[bool, str]:
+    if not api_key or not api_key.strip():
+        return False, "Key cannot be empty"
+
+    import httpx
+    clean_key = api_key.strip()
+    try:
+        headers = {"Authorization": f"Bearer {clean_key}"}
+        url = "https://api.deepseek.com/models"
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200:
+                return True, "API key verified ✓"
+
+            try:
+                err_msg = resp.json().get("error", {}).get("message", "Invalid DeepSeek API key")
+            except Exception:
+                err_msg = f"HTTP {resp.status_code}"
+            return False, err_msg
+    except Exception as e:
+        return False, f"Validation failed: {str(e)}"
 
 
 @ui_bp.route("/gemini/validation", methods=["POST"])
@@ -58,6 +84,19 @@ async def validate_gemini_key():
     data = await request.get_json() or {}
     api_key = data.get("api_key", "").strip()
     is_valid, msg = await check_gemini_api_key_valid(api_key)
+    if is_valid:
+        return {"status": "success", "message": msg}
+    return {"status": "error", "message": msg}, 400
+
+
+@ui_bp.route("/deepseek/validation", methods=["POST"])
+@rate_limit(limit=10, period_seconds=60)
+async def validate_deepseek_key():
+    data = await request.get_json() or {}
+    api_key = data.get("api_key", "").strip()
+    if not api_key:
+        return {"status": "error", "message": "Key cannot be empty"}, 400
+    is_valid, msg = await check_deepseek_api_key_valid(api_key)
     if is_valid:
         return {"status": "success", "message": msg}
     return {"status": "error", "message": msg}, 400

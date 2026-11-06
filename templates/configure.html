@@ -1886,6 +1886,8 @@
                     value="{{ 'true' if user.get('enable_recommendations', False) else 'false' }}">
                 <input type="hidden" id="recommendations_filter_watched_val" name="recommendations_filter_watched"
                     value="{{ 'true' if user.get('recommendations_filter_watched', True) else 'false' }}">
+                <input type="hidden" id="enable_ai_recommendations_val" name="enable_ai_recommendations"
+                    value="{{ 'true' if user.get('enable_ai_recommendations', True if (user.get('gemini_api_key') or user.get('deepseek_api_key')) else False) else 'false' }}">
                 <input type="hidden" id="enable_search_val" name="enable_search"
                     value="{{ 'true' if user.get('enable_search', True) else 'false' }}">
                 <input type="hidden" id="rpdb_in_search_val" name="rpdb_in_search"
@@ -2630,48 +2632,128 @@
                         </div>
                     </div>
 
-                    <!-- Gemini AI Section Replica -->
+                    <!-- AI Recommendations Section -->
                     <div id="gemini-key-section" style="margin-top: 1.5rem;">
-                        <label class="rec-label mb-2">GEMINI AI (OPTIONAL)</label>
-                        <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                            Used to generate personalized, AI-powered explanations for recommended anime based on
-                            your unique watch history.
-                        </p>
-
-                        <div class="gemini-input-wrapper position-relative">
-                            <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
-                                value="{{ user.get('gemini_api_key', '') }}"
-                                placeholder="Gemini API key here" autocomplete="new-password">
-                            <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
-                                style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
-                                <i class="fa-regular fa-eye" id="gemini-eye-icon"></i>
-                            </button>
-                            <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
-                                title="Validate Key">
-                                <i id="gemini-check-icon"
-                                    class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
-                                    style="font-size: 1.1rem; transition: color 0.2s;"></i>
-                            </button>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="enable_ai_recommendations"
+                                {% if user.get('enable_ai_recommendations', True if (user.get('gemini_api_key') or user.get('deepseek_api_key')) else False) %}checked{% endif %}>
+                            <label class="form-check-label ms-1" for="enable_ai_recommendations">
+                                <span class="fw-medium d-inline-flex align-items-center">AI Recommendations<span class="text-secondary fw-normal small" style="margin-left: 7px; font-size: 0.8rem;">(Optional)</span></span>
+                                <span class="text-secondary small d-block" style="font-size: 0.78rem; line-height: 1.4;">
+                                    Used to generate personalized, AI-powered explanations for recommended anime based on your unique watch history.
+                                </span>
+                            </label>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mt-2.5">
-                            <span id="gemini-validation-status"
-                                class="small ms-3 {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
-                                {% if user.get('gemini_api_key') %}
-                                {% if user.get('gemini_key_valid') == False %}
-                                Invalid Gemini API key
-                                {% else %}
-                                API key verified
-                                {% endif %}
-                                {% else %}
-                                Not verified
-                                {% endif %}
-                            </span>
-                            <a href="https://aistudio.google.com/" target="_blank"
-                                class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
-                                Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
-                                    style="font-size: 0.65rem;"></i>
-                            </a>
+                        <!-- AI Provider & Key Options (only visible when enabled) -->
+                        <div id="ai-recommendations-options" class="mt-3" {% if not user.get('enable_ai_recommendations', True if (user.get('gemini_api_key') or user.get('deepseek_api_key')) else False) %}style="display: none;"{% endif %}>
+                            <!-- AI Provider Choice -->
+                            <div class="mb-3" style="max-width: 320px;">
+                                <label class="form-label small fw-semibold text-secondary mb-1 d-flex align-items-center">
+                                    AI Provider
+                                </label>
+                                {% set cur_ai_provider = (user.get('ai_provider') or 'gemini')|lower %}
+                                {% if cur_ai_provider not in ['gemini', 'deepseek'] %}{% set cur_ai_provider = 'gemini' %}{% endif %}
+                                <input type="hidden" id="ai_provider" name="ai_provider" value="{{ cur_ai_provider }}">
+                                <div class="custom-select-wrapper" data-input-id="ai_provider">
+                                    <div class="custom-select">
+                                        <span class="custom-select-text d-flex align-items-center">
+                                            {% if cur_ai_provider == 'deepseek' %}
+                                                <img src="/assets/deepseek_logo.png" width="18" height="18" style="margin-right: 10px; object-fit: contain;">DeepSeek
+                                            {% else %}
+                                                <img src="/assets/gemini_logo.png" width="18" height="18" style="margin-right: 10px; object-fit: contain;">Google Gemini
+                                            {% endif %}
+                                        </span>
+                                        <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                                    </div>
+                                    <div class="custom-options-menu">
+                                        <div class="custom-option-item d-flex align-items-center" data-value="gemini">
+                                            <img src="/assets/gemini_logo.png" width="18" height="18" style="margin-right: 10px; object-fit: contain;">Google Gemini
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="deepseek">
+                                            <img src="/assets/deepseek_logo.png" width="18" height="18" style="margin-right: 10px; object-fit: contain;">DeepSeek
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Google Gemini Key Container -->
+                            <div id="gemini-provider-container" class="{% if cur_ai_provider != 'gemini' %}d-none{% endif %}">
+                                <div class="gemini-input-wrapper position-relative">
+                                    <input type="password" id="gemini_api_key" name="gemini_api_key" class="gemini-input"
+                                        value="{{ user.get('gemini_api_key', '') }}"
+                                        placeholder="Gemini API key here" autocomplete="new-password">
+                                    <button type="button" class="gemini-btn" id="toggle-gemini-visibility"
+                                        style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                        <i class="fa-regular fa-eye" id="gemini-eye-icon"></i>
+                                    </button>
+                                    <button type="button" class="gemini-btn p-0" id="validate-gemini-btn"
+                                        title="Validate Key">
+                                        <i id="gemini-check-icon"
+                                            class="fa-solid {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                            style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                                    </button>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mt-2.5">
+                                    <span id="gemini-validation-status"
+                                        class="small ms-3 {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                        {% if user.get('gemini_api_key') %}
+                                        {% if user.get('gemini_key_valid') == False %}
+                                        Invalid Gemini API key
+                                        {% else %}
+                                        API key verified ✓
+                                        {% endif %}
+                                        {% else %}
+                                        Not verified
+                                        {% endif %}
+                                    </span>
+                                    <a href="https://aistudio.google.com/app/apikey" target="_blank"
+                                        class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
+                                        Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
+                                            style="font-size: 0.65rem;"></i>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- DeepSeek Key Container -->
+                            <div id="deepseek-provider-container" class="{% if cur_ai_provider != 'deepseek' %}d-none{% endif %}">
+                                <div class="gemini-input-wrapper position-relative">
+                                    <input type="password" id="deepseek_api_key" name="deepseek_api_key" class="gemini-input"
+                                        value="{{ user.get('deepseek_api_key', '') }}"
+                                        placeholder="DeepSeek API key here" autocomplete="new-password">
+                                    <button type="button" class="gemini-btn" id="toggle-deepseek-visibility"
+                                        style="border-right: 1px solid #2a2a2a; padding-right: 0.75rem; margin-right: 0.75rem;">
+                                        <i class="fa-regular fa-eye" id="deepseek-eye-icon"></i>
+                                    </button>
+                                    <button type="button" class="gemini-btn p-0" id="validate-deepseek-btn"
+                                        title="Validate Key">
+                                        <i id="deepseek-check-icon"
+                                            class="fa-solid {% if user.get('deepseek_api_key') %}{% if user.get('deepseek_key_valid') == False %}fa-circle-xmark text-danger{% else %}fa-circle-check text-success{% endif %}{% else %}fa-circle-check text-secondary{% endif %}"
+                                            style="font-size: 1.1rem; transition: color 0.2s;"></i>
+                                    </button>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mt-2.5">
+                                    <span id="deepseek-validation-status"
+                                        class="small ms-3 {% if user.get('deepseek_api_key') %}{% if user.get('deepseek_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                        {% if user.get('deepseek_api_key') %}
+                                        {% if user.get('deepseek_key_valid') == False %}
+                                        Invalid DeepSeek API key
+                                        {% else %}
+                                        API key verified ✓
+                                        {% endif %}
+                                        {% else %}
+                                        Not verified
+                                        {% endif %}
+                                    </span>
+                                    <a href="https://platform.deepseek.com/api_keys" target="_blank"
+                                        class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
+                                        Get DeepSeek API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
+                                            style="font-size: 0.65rem;"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3070,8 +3152,8 @@
                                 </p>
                                 <!-- Fanart.tv Personal Key Container (shown when fanarttv is selected) -->
                                 <div id="fanart-key-container" class="mt-2 {% if cur_backdrop != 'fanarttv' %}d-none{% endif %}">
-                                    <label class="form-label small fw-semibold text-secondary mb-1 d-flex align-items-center">
-                                        Fanart.tv API Key <span class="badge bg-secondary-subtle text-secondary ms-2" style="font-size: 0.65rem;">Optional</span>
+                                    <label class="form-label small fw-semibold text-secondary mb-1 d-inline-flex align-items-center">
+                                        Fanart.tv API Key<span class="text-secondary fw-normal small" style="margin-left: 7px; font-size: 0.8rem;">(Optional)</span>
                                     </label>
                                     <div class="gemini-input-wrapper position-relative">
                                         <i class="fa-solid fa-key gemini-icon" style="color: #3b82f6;"></i>
@@ -3946,6 +4028,9 @@
                     if (inputId === "meta_backdrop_provider") {
                         syncBackdropProviderFields();
                     }
+                    if (inputId === "ai_provider") {
+                        syncAiProviderFields();
+                    }
                     if (inputId === "modal_sort_by") {
                         if (typeof onModalSortByChange === "function") {
                             onModalSortByChange(val);
@@ -4002,6 +4087,16 @@
             }
         }
         syncBackdropProviderFields();
+
+        function syncAiProviderFields() {
+            const aiProvInput = document.getElementById("ai_provider");
+            const val = aiProvInput ? aiProvInput.value : "gemini";
+            const geminiContainer = document.getElementById("gemini-provider-container");
+            const deepseekContainer = document.getElementById("deepseek-provider-container");
+            if (geminiContainer) geminiContainer.classList.toggle("d-none", val !== "gemini");
+            if (deepseekContainer) deepseekContainer.classList.toggle("d-none", val !== "deepseek");
+        }
+        syncAiProviderFields();
 
         function syncPosterProviderFields() {
             const providerInput = document.getElementById("poster_provider");
@@ -5830,6 +5925,14 @@
             });
         }
 
+        const enableAiCheckbox = document.getElementById("enable_ai_recommendations");
+        const aiOptionsContainer = document.getElementById("ai-recommendations-options");
+        if (enableAiCheckbox && aiOptionsContainer) {
+            enableAiCheckbox.addEventListener("change", function() {
+                aiOptionsContainer.style.display = this.checked ? "block" : "none";
+            });
+        }
+
         const enableSearchCheckbox = document.getElementById("enable_search");
         if (enableSearchCheckbox) {
             enableSearchCheckbox.addEventListener("change", function() {
@@ -5970,6 +6073,72 @@
                 checkIcon.className = "fa-solid fa-circle-check text-secondary";
                 geminiStatusSpan.textContent = "Not verified";
                 geminiStatusSpan.className = "small text-secondary ms-3";
+            });
+        }
+
+        const deepseekKeyInput = document.getElementById("deepseek_api_key");
+        const toggleDeepseekBtn = document.getElementById("toggle-deepseek-visibility");
+        if (toggleDeepseekBtn && deepseekKeyInput) {
+            toggleDeepseekBtn.addEventListener("click", function () {
+                if (deepseekKeyInput.type === "password") {
+                    deepseekKeyInput.type = "text";
+                    toggleDeepseekBtn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+                } else {
+                    deepseekKeyInput.type = "password";
+                    toggleDeepseekBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+                }
+            });
+        }
+
+        const validateDeepseekBtn = document.getElementById("validate-deepseek-btn");
+        const deepseekCheckIcon = document.getElementById("deepseek-check-icon");
+        const deepseekStatusSpan = document.getElementById("deepseek-validation-status");
+        if (validateDeepseekBtn && deepseekCheckIcon && deepseekStatusSpan && deepseekKeyInput) {
+            validateDeepseekBtn.addEventListener("click", async function () {
+                const apiKey = deepseekKeyInput.value.trim();
+                if (!apiKey) {
+                    deepseekStatusSpan.textContent = "Key cannot be empty";
+                    deepseekStatusSpan.className = "small text-danger ms-3";
+                    deepseekCheckIcon.className = "fa-solid fa-circle-check text-danger";
+                    return;
+                }
+                deepseekStatusSpan.textContent = "Verifying...";
+                deepseekStatusSpan.className = "small text-info ms-3";
+                deepseekCheckIcon.className = "fa-solid fa-circle-notch fa-spin text-info";
+                validateDeepseekBtn.disabled = true;
+                try {
+                    const response = await fetch("/deepseek/validation", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ api_key: apiKey })
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.status === "success") {
+                        deepseekStatusSpan.textContent = result.message || "API key verified ✓";
+                        deepseekStatusSpan.className = "small text-success fw-semibold ms-3";
+                        deepseekCheckIcon.className = "fa-solid fa-circle-check text-success";
+                    } else {
+                        deepseekStatusSpan.textContent = result.message || "Invalid API key";
+                        deepseekStatusSpan.className = "small text-danger ms-3";
+                        deepseekCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                    }
+                } catch (err) {
+                    deepseekStatusSpan.textContent = "Verification failed";
+                    deepseekStatusSpan.className = "small text-danger ms-3";
+                    deepseekCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                } finally {
+                    validateDeepseekBtn.disabled = false;
+                }
+            });
+        }
+
+        if (deepseekKeyInput && deepseekCheckIcon && deepseekStatusSpan) {
+            deepseekKeyInput.addEventListener("input", function () {
+                deepseekCheckIcon.className = "fa-solid fa-circle-check text-secondary";
+                deepseekStatusSpan.textContent = "Not verified";
+                deepseekStatusSpan.className = "small text-secondary ms-3";
             });
         }
 
@@ -6234,6 +6403,10 @@
         const filterWatchedCheckbox = document.getElementById("recommendations_filter_watched");
         const filterWatchedVal = document.getElementById('recommendations_filter_watched_val');
         if (filterWatchedCheckbox && filterWatchedVal) filterWatchedVal.value = filterWatchedCheckbox.checked ? 'true' : 'false';
+
+        const enableAiCheckbox = document.getElementById("enable_ai_recommendations");
+        const enableAiVal = document.getElementById('enable_ai_recommendations_val');
+        if (enableAiCheckbox && enableAiVal) enableAiVal.value = enableAiCheckbox.checked ? 'true' : 'false';
 
         const enableDiscoveryCheckbox = document.getElementById("enable_discovery_catalogs");
         const enableDiscoveryVal = document.getElementById('enable_discovery_catalogs_val');

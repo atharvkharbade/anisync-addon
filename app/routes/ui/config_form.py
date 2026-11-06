@@ -253,6 +253,8 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         user["enable_recommendations"] = form.get("enable_recommendations") == "true"
     if "recommendations_filter_watched" in form:
         user["recommendations_filter_watched"] = form.get("recommendations_filter_watched") == "true"
+    if "enable_ai_recommendations" in form:
+        user["enable_ai_recommendations"] = form.get("enable_ai_recommendations") in ("true", "on", "1")
     if "enable_discovery_catalogs" in form:
         user["enable_discovery_catalogs"] = form.get("enable_discovery_catalogs") == "true"
     if "shuffle_discovery_catalogs" in form:
@@ -279,9 +281,15 @@ async def handle_configure_form(user: dict, form) -> dict | None:
     gemini_task = None
     top_poster_task = None
     fanart_task = None
+    deepseek_task = None
     rpdb_key = user.get("rpdb_api_key", "")
     gemini_key = user.get("gemini_api_key", "")
+    deepseek_key = user.get("deepseek_api_key", "")
     fanart_key = user.get("fanart_personal_key", "")
+
+    if "ai_provider" in form:
+        ai_prov = (form.get("ai_provider") or "gemini").strip().lower()
+        user["ai_provider"] = ai_prov if ai_prov in ("gemini", "deepseek") else "gemini"
 
     if "rpdb_api_key" in form:
         rpdb_key = form.get("rpdb_api_key", "").strip()
@@ -304,13 +312,28 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         else:
             user["top_key_valid"] = False
 
+    ai_recs_active = user.get(
+        "enable_ai_recommendations",
+        True if (gemini_key or deepseek_key) else False,
+    )
+
     if "gemini_api_key" in form:
         gemini_key = form.get("gemini_api_key", "").strip()
         user["gemini_api_key"] = gemini_key
-        if gemini_key:
+        if gemini_key and ai_recs_active:
             gemini_task = check_gemini_api_key_valid(gemini_key)
-        else:
+        elif not gemini_key:
             user["gemini_key_valid"] = False
+
+    if "deepseek_api_key" in form:
+        deepseek_key = form.get("deepseek_api_key", "").strip()
+        user["deepseek_api_key"] = deepseek_key
+        if deepseek_key and ai_recs_active:
+            from .validation import check_deepseek_api_key_valid
+
+            deepseek_task = check_deepseek_api_key_valid(deepseek_key)
+        elif not deepseek_key:
+            user["deepseek_key_valid"] = False
 
     if "fanart_personal_key" in form:
         fanart_key = form.get("fanart_personal_key", "").strip()
@@ -322,7 +345,7 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         else:
             user["fanart_key_valid"] = False
 
-    if rpdb_task or gemini_task or top_poster_task or fanart_task:
+    if rpdb_task or gemini_task or deepseek_task or top_poster_task or fanart_task:
         tasks = []
         if rpdb_task:
             tasks.append(rpdb_task)
@@ -330,6 +353,8 @@ async def handle_configure_form(user: dict, form) -> dict | None:
             tasks.append(top_poster_task)
         if gemini_task:
             tasks.append(gemini_task)
+        if deepseek_task:
+            tasks.append(deepseek_task)
         if fanart_task:
             tasks.append(fanart_task)
 
@@ -348,6 +373,10 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         if gemini_task:
             gemini_valid = results[idx][0]
             user["gemini_key_valid"] = gemini_valid
+            idx += 1
+        if deepseek_task:
+            deepseek_res = results[idx]
+            user["deepseek_key_valid"] = deepseek_res[0] if isinstance(deepseek_res, (list, tuple)) else bool(deepseek_res)
             idx += 1
         if fanart_task:
             fanart_res = results[idx]
@@ -386,8 +415,12 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         validation_failed_msg.append("Invalid RPDB API key")
     if current_poster_provider in ("top_poster", "topposters") and top_key and not user.get("top_key_valid", False):
         validation_failed_msg.append("Invalid TOP Posters API key")
-    if user.get("enable_recommendations") and gemini_key and not user.get("gemini_key_valid", False):
-        validation_failed_msg.append("Invalid Gemini API key")
+    if user.get("enable_recommendations") and ai_recs_active:
+        active_ai = (user.get("ai_provider") or "gemini").lower()
+        if active_ai == "deepseek" and deepseek_key and not user.get("deepseek_key_valid", False):
+            validation_failed_msg.append("Invalid DeepSeek API key")
+        elif active_ai == "gemini" and gemini_key and not user.get("gemini_key_valid", False):
+            validation_failed_msg.append("Invalid Gemini API key")
     if user.get("meta_backdrop_provider") == "fanarttv" and fanart_key and not user.get("fanart_key_valid", False):
         validation_failed_msg.append("Invalid Fanart.tv API key")
 

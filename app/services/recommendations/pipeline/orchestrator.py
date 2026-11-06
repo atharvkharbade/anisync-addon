@@ -3,7 +3,10 @@ import logging
 import random
 
 from app.services.db import get_user
-from app.services.recommendations.ai_enhancer import enhance_recommendations_with_gemini
+from app.services.recommendations.ai_enhancer import (
+    enhance_recommendations_with_deepseek,
+    enhance_recommendations_with_gemini,
+)
 from app.services.recommendations.cache import get_popular_fallbacks, recommendations_cache_collection
 from app.services.recommendations.history import fetch_user_watchlist_history
 from app.services.recommendations.seeding import select_weighted_seeds
@@ -140,20 +143,36 @@ async def _update_recommendations_cache_impl(user_id: str, force: bool = False):
         watched_titles,
     )
 
-    # 7. Enhance recommendations using Gemini API if key is provided
+    # 7. Enhance recommendations using AI API (Gemini or DeepSeek) if enabled and key is provided
+    ai_provider = (user.get("ai_provider") or "gemini").lower()
     gemini_api_key = user.get("gemini_api_key", "").strip()
-    if gemini_api_key:
-        candidate_groups = {
-            "top_picks": top_picks,
-            "item_recs": item_recs,
-            "loved_items": loved_items,
-            "liked_items": liked_items,
-            "genre_1_items": genre_1_items,
-            "genre_2_items": genre_2_items,
-        }
-        enhanced_groups = await enhance_recommendations_with_gemini(
-            gemini_api_key, sorted_user_history, candidate_groups
-        )
+    deepseek_api_key = user.get("deepseek_api_key", "").strip()
+    enable_ai = user.get(
+        "enable_ai_recommendations",
+        True if (gemini_api_key or deepseek_api_key) else False,
+    )
+
+    candidate_groups = {
+        "top_picks": top_picks,
+        "item_recs": item_recs,
+        "loved_items": loved_items,
+        "liked_items": liked_items,
+        "genre_1_items": genre_1_items,
+        "genre_2_items": genre_2_items,
+    }
+
+    enhanced_groups = None
+    if enable_ai:
+        if ai_provider == "deepseek" and deepseek_api_key:
+            enhanced_groups = await enhance_recommendations_with_deepseek(
+                deepseek_api_key, sorted_user_history, candidate_groups
+            )
+        elif gemini_api_key:
+            enhanced_groups = await enhance_recommendations_with_gemini(
+                gemini_api_key, sorted_user_history, candidate_groups
+            )
+
+    if enhanced_groups:
         top_picks = enhanced_groups["top_picks"]
         item_recs = enhanced_groups["item_recs"]
         loved_items = enhanced_groups["loved_items"]
