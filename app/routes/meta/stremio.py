@@ -120,6 +120,7 @@ def map_kitsu_to_stremio(
     loop=None,
     cinemeta_data: dict = None,
     fanart_data: dict = None,
+    tvdb_data: list[dict] | None = None,
     show_watched_tags: bool = False,
     watched_progress: int = 0,
     canonical_total_episodes: int | None = None,
@@ -176,12 +177,17 @@ def map_kitsu_to_stremio(
         from app.services.fanart import pick_fanart_background
         fanarttv_bg = pick_fanart_background(fanart_data)
 
+    tvdb_api_bg = None
+    if tvdb_data:
+        from app.services.tvdb import pick_tvdb_background
+        tvdb_api_bg = pick_tvdb_background(tvdb_data)
+
     chosen_bg = pick_backdrop(
         backdrop_provider,
         sources={
             "fanarttv": fanarttv_bg,
             "cinemeta": cin_bg,
-            "tvdb": tvdb_fanart,
+            "tvdb": tvdb_api_bg or tvdb_fanart,
             "kitsu": kitsu_cover,
         },
         disallow=poster,

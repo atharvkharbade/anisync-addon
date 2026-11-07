@@ -312,6 +312,10 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                 tvid = anizp.get("mappings", {}).get("thetvdb_id")
                 if tvid:
                     it["tvdb_id"] = str(tvid)
+            if not it.get("imdb_id") and anizp:
+                imid = clean_imdb_id(anizp.get("mappings", {}).get("imdb_id"))
+                if imid:
+                    it["imdb_id"] = str(imid)
             t_id = it.get("tvdb_id")
             im_id = it.get("imdb_id")
             m_type = (it.get("meta", {}).get("type") or "").lower()
@@ -331,6 +335,42 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                         fanart_by_key[f"{k_kind}_{k_ext}"] = doc.get("data") or {}
             except Exception as e:
                 logging.error("enrich_catalog_metas_artwork: fanart_meta_cache query failed: %s", e)
+
+    tvdb_by_key = {}
+    missing_for_tvdb = []
+    if backdrop_pref == "tvdb":
+        tvdb_or = []
+        for it in extracted_items:
+            aid = it["anilist_id"]
+            mid = it["mal_id"]
+            anizp = (anizp_by_key.get(f"al_{aid}") if aid else None) or (anizp_by_key.get(f"mal_{mid}") if mid else None) or {}
+            if not it.get("tvdb_id") and anizp:
+                tvid = anizp.get("mappings", {}).get("thetvdb_id")
+                if tvid:
+                    it["tvdb_id"] = str(tvid)
+            if not it.get("imdb_id") and anizp:
+                imid = clean_imdb_id(anizp.get("mappings", {}).get("imdb_id"))
+                if imid:
+                    it["imdb_id"] = str(imid)
+            t_id = it.get("tvdb_id")
+            im_id = it.get("imdb_id")
+            m_type = (it.get("meta", {}).get("type") or "").lower()
+            if m_type == "movie" and im_id:
+                tvdb_or.append({"kind": "movies", "ext_id": str(im_id)})
+            elif t_id:
+                tvdb_or.append({"kind": "tv", "ext_id": str(t_id)})
+            elif im_id:
+                tvdb_or.append({"kind": "movies", "ext_id": str(im_id)})
+        if tvdb_or:
+            try:
+                for doc in db.tvdb_meta_cache.find({"$or": tvdb_or}):
+                    k_kind = doc.get("kind")
+                    k_ext = doc.get("ext_id")
+                    # Cached misses ([]) count as cached so they are not re-queued for warming every request
+                    if k_kind and k_ext:
+                        tvdb_by_key[f"{k_kind}_{k_ext}"] = doc.get("data") if doc.get("data") is not None else []
+            except Exception as e:
+                logging.error("enrich_catalog_metas_artwork: tvdb_meta_cache query failed: %s", e)
 
     cinemeta_by_imdb = {}
     if known_imdb:
@@ -440,13 +480,28 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                     user_fanart_key = user.get("fanart_personal_key") if user else None
                     missing_for_fanart.append((f_kind, f_ext, user_fanart_key))
 
+        # TheTVDB v4 artwork
+        tvdb_api_bg = None
+        if backdrop_pref == "tvdb":
+            from app.services.tvdb import pick_tvdb_background
+            m_type = (m.get("type") or "").lower()
+            tv_id = item_info.get("tvdb_id")
+            t_kind = "movies" if m_type == "movie" and imdb_id else ("tv" if tv_id else ("movies" if imdb_id else None))
+            t_ext = imdb_id if t_kind == "movies" else (tv_id if t_kind == "tv" else None)
+            if t_kind and t_ext:
+                t_key = f"{t_kind}_{t_ext}"
+                if t_key in tvdb_by_key:
+                    tvdb_api_bg = pick_tvdb_background(tvdb_by_key[t_key])
+                else:
+                    missing_for_tvdb.append((t_kind, t_ext))
+
         # --- Resolve Background ---
         chosen_bg = pick_backdrop(
             backdrop_pref,
             sources={
                 "fanarttv": fanarttv_bg,
                 "cinemeta": cinemeta_bg,
-                "tvdb": tvdb_fanart,
+                "tvdb": tvdb_api_bg or tvdb_fanart,
                 "kitsu": kitsu_cover,
             },
             extras=[item_bg, simkl_fanart, metahub_bg, anilist_banner],
@@ -490,6 +545,16 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
             unique_missing = list({(k, e): (k, e, ck) for (k, e, ck) in missing_for_fanart}.values())
             loop = asyncio.get_running_loop()
             loop.create_task(bg_warm_fanart(unique_missing[:25]))
+        except (RuntimeError, Exception):
+            pass
+
+    if missing_for_tvdb:
+        try:
+            import asyncio
+            from app.services.tvdb import bg_warm_tvdb
+            unique_tvdb = list(dict.fromkeys(missing_for_tvdb))
+            loop = asyncio.get_running_loop()
+            loop.create_task(bg_warm_tvdb(unique_tvdb[:25]))
         except (RuntimeError, Exception):
             pass
 

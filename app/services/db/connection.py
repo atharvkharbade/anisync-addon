@@ -84,6 +84,14 @@ def init_indexes():
         db.get_collection("fanart_meta_cache").create_index([("kind", 1), ("ext_id", 1)], unique=True)
         db.get_collection("fanart_meta_cache").create_index("expires_at", expireAfterSeconds=0)
 
+        db.get_collection("tvdb_meta_cache").create_index([("kind", 1), ("ext_id", 1)], unique=True)
+        db.get_collection("tvdb_meta_cache").create_index("expires_at", expireAfterSeconds=0)
+
+        db.get_collection("tvdb_auth").create_index("expires_at", expireAfterSeconds=0)
+
+        db.get_collection("tvdb_remote_ids").create_index("imdb_id", unique=True)
+        db.get_collection("tvdb_remote_ids").create_index("expires_at", expireAfterSeconds=0)
+
         db.get_collection("anilist_meta_cache").create_index("anilist_id", unique=True)
         db.get_collection("anilist_meta_cache").create_index("expires_at", expireAfterSeconds=0)
 
@@ -110,3 +118,6 @@ id_cache_collection: Collection = db.get_collection("id_cache")
 jikan_cache_collection: Collection = db.get_collection("jikan_cache")
 id_fallback_misses_collection: Collection = db.get_collection("id_fallback_misses")
 fanart_meta_cache_collection: Collection = db.get_collection("fanart_meta_cache")
+tvdb_meta_cache_collection: Collection = db.get_collection("tvdb_meta_cache")
+tvdb_auth_collection: Collection = db.get_collection("tvdb_auth")
+tvdb_remote_ids_collection: Collection = db.get_collection("tvdb_remote_ids")

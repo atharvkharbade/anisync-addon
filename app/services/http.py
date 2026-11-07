@@ -60,6 +60,7 @@ def init_client():
             "images.metahub.space": Config.PROXY_METAHUB,
             "api.rpdb.co": Config.PROXY_RPDB,
             "webservice.fanart.tv": Config.PROXY_FANART,
+            "api4.thetvdb.com": Config.PROXY_TVDB,
         }
         
         for domain, proxy_val in services.items():
