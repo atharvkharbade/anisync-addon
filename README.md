@@ -62,7 +62,7 @@ Search for any anime directly inside Stremio or Nuvio:
 ### 🤖 Personalized Anime Recommendations
 Discover new anime right on your home screen based on what you enjoy:
 * **Clear Reasons**: Every suggested anime explains why it's there (e.g. *"Inspired by your favorites: Hunter x Hunter"* or *"Popular Dark Fantasy based on your taste"*).
-* **Gemini AI Insights**: You can optionally add a free Google Gemini API key to get natural language recommendation notes.
+* **AI Insights (DeepSeek & Google Gemini)**: You can optionally add a DeepSeek or Google Gemini API key to get personalized natural language recommendation notes.
 * **3 Dedicated Rows**: *Top Picks for You*, *Inspired by your Favorites*, and *More from your Watchlist*.
 
 ![Stremio Recommendations](docs/images/Anime_Recommendations.png)
@@ -90,7 +90,7 @@ Choose where you want your anime summaries, ratings, and artwork to come from:
 * **Kitsu (Default)**: Fast metadata with reliable stream matching.
 * **MyAnimeList (MAL)**: Official MAL descriptions and community scores.
 * **AniList**: AniList summaries, average ratings, and clean textless posters.
-* **Custom**: Total freedom to independently choose your preferred source for **Series Synopsis**, **Episode Summaries** (AniZip / Kitsu / MAL), **Cover Posters**, **Backdrop Wallpaper** (Fanart.tv / Kitsu / AniList), and **Airing Countdowns**.
+* **Custom**: Total freedom to independently choose your preferred source for **Series Synopsis**, **Episode Summaries** (AniZip / Kitsu / MAL), **Cover Posters**, **Backdrop Wallpaper** (TheTVDB / Fanart.tv / Cinemeta / Kitsu / AniList / Simkl), and **Airing Countdowns**.
 
 ---
 
@@ -187,6 +187,11 @@ ANILIST_CLIENT_SECRET=your_anilist_client_secret
 SIMKL_CLIENT_ID=your_simkl_client_id
 SIMKL_CLIENT_SECRET=your_simkl_client_secret
 
+# ── Optional Artwork & Metadata API Keys ──────────────────────────────────
+# Server-wide keys for high-resolution backdrops and artwork
+TVDB_API_KEY=
+FANART_API_KEY=
+
 # ── Proxy Support (Optional) ──────────────────────────────────────────────
 # Route external API requests through HTTP, HTTPS, or SOCKS5 proxies
 PROXY_URL=
@@ -196,6 +201,8 @@ PROXY_SIMKL=
 PROXY_JIKAN=
 PROXY_KITSU=
 PROXY_ANIZP=
+PROXY_TVDB=
+PROXY_FANART=
 ```
 
 ### 2. Docker Compose
