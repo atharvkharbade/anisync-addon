@@ -2694,9 +2694,9 @@
                                     </button>
                                 </div>
 
-                                <div class="d-flex justify-content-between align-items-center mt-2.5">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mt-2">
                                     <span id="gemini-validation-status"
-                                        class="small ms-3 {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                        class="small text-nowrap {% if user.get('gemini_api_key') %}{% if user.get('gemini_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}" style="font-size: 0.74rem;">
                                         {% if user.get('gemini_api_key') %}
                                         {% if user.get('gemini_key_valid') == False %}
                                         Invalid Gemini API key
@@ -2708,7 +2708,7 @@
                                         {% endif %}
                                     </span>
                                     <a href="https://aistudio.google.com/app/apikey" target="_blank"
-                                        class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
+                                        class="small text-info text-decoration-none text-nowrap" style="font-size: 0.74rem;">
                                         Get Gemini API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
                                             style="font-size: 0.65rem;"></i>
                                     </a>
@@ -2733,9 +2733,9 @@
                                     </button>
                                 </div>
 
-                                <div class="d-flex justify-content-between align-items-center mt-2.5">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mt-2">
                                     <span id="deepseek-validation-status"
-                                        class="small ms-3 {% if user.get('deepseek_api_key') %}{% if user.get('deepseek_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}">
+                                        class="small text-nowrap {% if user.get('deepseek_api_key') %}{% if user.get('deepseek_key_valid') == False %}text-danger{% else %}text-success fw-medium{% endif %}{% else %}text-secondary{% endif %}" style="font-size: 0.74rem;">
                                         {% if user.get('deepseek_api_key') %}
                                         {% if user.get('deepseek_key_valid') == False %}
                                         Invalid DeepSeek API key
@@ -2747,7 +2747,7 @@
                                         {% endif %}
                                     </span>
                                     <a href="https://platform.deepseek.com/api_keys" target="_blank"
-                                        class="small text-info text-decoration-none me-3" style="font-size:0.78rem;">
+                                        class="small text-info text-decoration-none text-nowrap" style="font-size: 0.74rem;">
                                         Get DeepSeek API Key <i class="fa-solid fa-arrow-up-right-from-square ms-1"
                                             style="font-size: 0.65rem;"></i>
                                     </a>
@@ -4250,17 +4250,40 @@
                                 if (geminiKeyVal) {
                                     if (result.gemini_valid) {
                                         geminiCheckIcon.className = "fa-solid fa-circle-check text-success";
-                                        geminiStatusSpan.className = "small text-success fw-medium ms-3";
-                                        geminiStatusSpan.textContent = "API key verified";
+                                        geminiStatusSpan.className = "small text-success fw-medium text-nowrap";
+                                        geminiStatusSpan.textContent = "API key verified ✓";
                                     } else {
                                         geminiCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
-                                        geminiStatusSpan.className = "small text-danger ms-3";
+                                        geminiStatusSpan.className = "small text-danger text-nowrap";
                                         geminiStatusSpan.textContent = "Invalid Gemini API key";
                                     }
                                 } else {
                                     geminiCheckIcon.className = "fa-solid fa-circle-check text-secondary";
-                                    geminiStatusSpan.className = "small text-secondary ms-3";
+                                    geminiStatusSpan.className = "small text-secondary text-nowrap";
                                     geminiStatusSpan.textContent = "Not verified";
+                                }
+                            }
+
+                            // Update DeepSeek status dynamically
+                            const deepseekKeyEl = document.getElementById("deepseek_api_key");
+                            const deepseekKeyVal = deepseekKeyEl ? deepseekKeyEl.value.trim() : "";
+                            const deepseekCheckIcon = document.getElementById("deepseek-check-icon");
+                            const deepseekStatusSpan = document.getElementById("deepseek-validation-status");
+                            if (deepseekCheckIcon && deepseekStatusSpan) {
+                                if (deepseekKeyVal) {
+                                    if (result.deepseek_valid) {
+                                        deepseekCheckIcon.className = "fa-solid fa-circle-check text-success";
+                                        deepseekStatusSpan.className = "small text-success fw-medium text-nowrap";
+                                        deepseekStatusSpan.textContent = "API key verified ✓";
+                                    } else {
+                                        deepseekCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
+                                        deepseekStatusSpan.className = "small text-danger text-nowrap";
+                                        deepseekStatusSpan.textContent = "Invalid DeepSeek API key";
+                                    }
+                                } else {
+                                    deepseekCheckIcon.className = "fa-solid fa-circle-check text-secondary";
+                                    deepseekStatusSpan.className = "small text-secondary text-nowrap";
+                                    deepseekStatusSpan.textContent = "Not verified";
                                 }
                             }
                         } catch (statusUpdateErr) {
@@ -6031,12 +6054,12 @@
                 const apiKey = keyInput.value.trim();
                 if (!apiKey) {
                     geminiStatusSpan.textContent = "Key cannot be empty";
-                    geminiStatusSpan.className = "small text-danger ms-3";
+                    geminiStatusSpan.className = "small text-danger text-nowrap";
                     checkIcon.className = "fa-solid fa-circle-check text-danger";
                     return;
                 }
                 geminiStatusSpan.textContent = "Verifying...";
-                geminiStatusSpan.className = "small text-info ms-3";
+                geminiStatusSpan.className = "small text-info text-nowrap";
                 checkIcon.className = "fa-solid fa-circle-notch fa-spin text-info";
                 validateBtn.disabled = true;
                 try {
@@ -6049,17 +6072,17 @@
                     });
                     const result = await response.json();
                     if (response.ok && result.status === "success") {
-                        geminiStatusSpan.textContent = "API key verified";
-                        geminiStatusSpan.className = "small text-success fw-semibold ms-3";
+                        geminiStatusSpan.textContent = "API key verified ✓";
+                        geminiStatusSpan.className = "small text-success fw-semibold text-nowrap";
                         checkIcon.className = "fa-solid fa-circle-check text-success";
                     } else {
                         geminiStatusSpan.textContent = result.message || "Invalid API key";
-                        geminiStatusSpan.className = "small text-danger ms-3";
+                        geminiStatusSpan.className = "small text-danger text-nowrap";
                         checkIcon.className = "fa-solid fa-circle-xmark text-danger";
                     }
                 } catch (err) {
                     geminiStatusSpan.textContent = "Verification failed";
-                    geminiStatusSpan.className = "small text-danger ms-3";
+                    geminiStatusSpan.className = "small text-danger text-nowrap";
                     checkIcon.className = "fa-solid fa-circle-xmark text-danger";
                 } finally {
                     validateBtn.disabled = false;
@@ -6071,7 +6094,7 @@
             keyInput.addEventListener("input", function () {
                 checkIcon.className = "fa-solid fa-circle-check text-secondary";
                 geminiStatusSpan.textContent = "Not verified";
-                geminiStatusSpan.className = "small text-secondary ms-3";
+                geminiStatusSpan.className = "small text-secondary text-nowrap";
             });
         }
 
@@ -6097,12 +6120,12 @@
                 const apiKey = deepseekKeyInput.value.trim();
                 if (!apiKey) {
                     deepseekStatusSpan.textContent = "Key cannot be empty";
-                    deepseekStatusSpan.className = "small text-danger ms-3";
+                    deepseekStatusSpan.className = "small text-danger text-nowrap";
                     deepseekCheckIcon.className = "fa-solid fa-circle-check text-danger";
                     return;
                 }
                 deepseekStatusSpan.textContent = "Verifying...";
-                deepseekStatusSpan.className = "small text-info ms-3";
+                deepseekStatusSpan.className = "small text-info text-nowrap";
                 deepseekCheckIcon.className = "fa-solid fa-circle-notch fa-spin text-info";
                 validateDeepseekBtn.disabled = true;
                 try {
@@ -6116,16 +6139,16 @@
                     const result = await response.json();
                     if (response.ok && result.status === "success") {
                         deepseekStatusSpan.textContent = result.message || "API key verified ✓";
-                        deepseekStatusSpan.className = "small text-success fw-semibold ms-3";
+                        deepseekStatusSpan.className = "small text-success fw-semibold text-nowrap";
                         deepseekCheckIcon.className = "fa-solid fa-circle-check text-success";
                     } else {
                         deepseekStatusSpan.textContent = result.message || "Invalid API key";
-                        deepseekStatusSpan.className = "small text-danger ms-3";
+                        deepseekStatusSpan.className = "small text-danger text-nowrap";
                         deepseekCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
                     }
                 } catch (err) {
                     deepseekStatusSpan.textContent = "Verification failed";
-                    deepseekStatusSpan.className = "small text-danger ms-3";
+                    deepseekStatusSpan.className = "small text-danger text-nowrap";
                     deepseekCheckIcon.className = "fa-solid fa-circle-xmark text-danger";
                 } finally {
                     validateDeepseekBtn.disabled = false;
@@ -6137,7 +6160,7 @@
             deepseekKeyInput.addEventListener("input", function () {
                 deepseekCheckIcon.className = "fa-solid fa-circle-check text-secondary";
                 deepseekStatusSpan.textContent = "Not verified";
-                deepseekStatusSpan.className = "small text-secondary ms-3";
+                deepseekStatusSpan.className = "small text-secondary text-nowrap";
             });
         }
 
