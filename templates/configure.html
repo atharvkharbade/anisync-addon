@@ -2947,7 +2947,7 @@
             <div class="card-dark p-3 p-sm-4 mb-3">
                 <h6 class="fw-semibold mb-3"><i class="fa-solid fa-database me-2" style="color: #38bdf8;"></i>Metadata Preferences</h6>
                 <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                    Select your preferred metadata provider (Kitsu, MAL, AniList) and catalog title language (English, Romaji, Native).
+                    Select your preferred metadata provider (Kitsu, MAL, AniList, TheTVDB), catalog title language, and metadata localization language.
                 </p>
 
                 <!-- Metadata Provider Option -->
@@ -2962,6 +2962,8 @@
                                         <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">MyAnimeList
                                     {% elif user.get('metadata_provider', 'kitsu') == 'anilist' %}
                                         <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">AniList
+                                    {% elif user.get('metadata_provider', 'kitsu') == 'tvdb' %}
+                                        <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">TheTVDB
                                     {% elif user.get('metadata_provider', 'kitsu') == 'custom' %}
                                         <span class="d-inline-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius:4px; margin-right: 10px;"><i class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
                                     {% else %}
@@ -2979,6 +2981,9 @@
                                 </div>
                                 <div class="custom-option-item d-flex align-items-center" data-value="mal">
                                     <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">MyAnimeList
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="tvdb">
+                                    <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">TheTVDB
                                 </div>
                                 <div class="custom-option-item d-flex align-items-center" data-value="custom">
                                     <span class="d-inline-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius:4px; margin-right: 10px;"><i class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
@@ -3009,6 +3014,8 @@
                                                 <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
                                             {% elif user.get('meta_synopsis_provider', 'kitsu') == 'anilist' %}
                                                 <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                            {% elif user.get('meta_synopsis_provider', 'kitsu') == 'tvdb' %}
+                                                <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                             {% else %}
                                                 <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
                                             {% endif %}
@@ -3024,6 +3031,9 @@
                                         </div>
                                         <div class="custom-option-item d-flex align-items-center" data-value="mal">
                                             <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="tvdb">
+                                            <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                         </div>
                                     </div>
                                 </div>
@@ -3045,6 +3055,8 @@
                                                 <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
                                             {% elif user.get('meta_episodes_provider', 'anizp') == 'mal' %}
                                                 <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                            {% elif user.get('meta_episodes_provider', 'anizp') == 'tvdb' %}
+                                                <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                             {% else %}
                                                 <img src="/assets/anizip_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniZip
                                             {% endif %}
@@ -3060,6 +3072,9 @@
                                         </div>
                                         <div class="custom-option-item d-flex align-items-center" data-value="mal">
                                             <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="tvdb">
+                                            <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                         </div>
                                     </div>
                                 </div>
@@ -3082,6 +3097,8 @@
                                                 <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
                                             {% elif cur_poster == 'mal' %}
                                                 <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                            {% elif cur_poster == 'tvdb' %}
+                                                <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                             {% else %}
                                                 <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
                                             {% endif %}
@@ -3097,6 +3114,9 @@
                                         </div>
                                         <div class="custom-option-item d-flex align-items-center" data-value="mal">
                                             <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="tvdb">
+                                            <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                         </div>
                                     </div>
                                 </div>
@@ -3262,6 +3282,66 @@
                             </div>
                         </div>
                         <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.75) !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</p>
+                    </div>
+                </div>
+
+                <!-- Metadata Language Option -->
+                {% set cur_meta_lang = (cur_metadata_language|default(user.get('metadata_language', 'eng')) or 'eng')|lower %}
+                {% set meta_lang_badges = {
+                    'eng': ('EN', '#2563eb'),
+                    'fra': ('FR', '#0ea5e9'),
+                    'spa': ('ES', '#eab308'),
+                    'deu': ('DE', '#f97316'),
+                    'ita': ('IT', '#10b981'),
+                    'pt': ('PT', '#14b8a6'),
+                    'por': ('BR', '#22c55e'),
+                    'jpn': ('JA', '#dc2626')
+                } %}
+                {% set meta_lang_list = supported_metadata_languages if supported_metadata_languages is defined else {
+                    'eng': {'label': 'English'},
+                    'fra': {'label': 'French (Français)'},
+                    'spa': {'label': 'Spanish (Español)'},
+                    'deu': {'label': 'German (Deutsch)'},
+                    'ita': {'label': 'Italian (Italiano)'},
+                    'pt': {'label': 'Portuguese - Portugal (Português)'},
+                    'por': {'label': 'Portuguese - Brazil (Português BR)'},
+                    'jpn': {'label': 'Japanese (日本語)'}
+                } %}
+                {% if cur_meta_lang not in meta_lang_list %}{% set cur_meta_lang = 'eng' %}{% endif %}
+                {% set cur_badge = meta_lang_badges.get(cur_meta_lang, ('EN', '#2563eb')) %}
+                <div class="pt-3 mt-3 border-top border-secondary border-opacity-10">
+                    <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
+                        <span>Metadata Language</span>
+                    </label>
+                    <p class="text-secondary small mb-2" style="font-size: 0.78rem; line-height: 1.4;">
+                        Configure your preferred language for series titles, synopses, and episode summaries on Stremio detail pages.
+                    </p>
+                    <input type="hidden" id="metadata_language" name="metadata_language" value="{{ cur_meta_lang }}">
+                    <div style="max-width: 400px;">
+                        <div class="custom-select-wrapper mb-2" data-input-id="metadata_language">
+                            <div class="custom-select">
+                                <span class="custom-select-text d-flex align-items-center">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:{{ cur_badge[1] }}; border-radius:4px; font-size:9px;">{{ cur_badge[0] }}</span>{{ meta_lang_list[cur_meta_lang]['label'] }}
+                                </span>
+                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                            </div>
+                            <div class="custom-options-menu">
+                                {% for lang_code, lang_info in meta_lang_list.items() %}
+                                {% set opt_badge = meta_lang_badges.get(lang_code, (lang_code[:2]|upper, '#64748b')) %}
+                                <div class="custom-option-item d-flex align-items-center" data-value="{{ lang_code }}">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:{{ opt_badge[1] }}; border-radius:4px; font-size:9px;">{{ opt_badge[0] }}</span>{{ lang_info['label'] }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="mt-2 p-2 rounded-3" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 94, 91, 0.22);">
+                            <p class="text-secondary small mb-1" style="font-size: 0.74rem; color: rgba(255, 255, 255, 0.78) !important; line-height: 1.45;">
+                                <i class="fa-solid fa-clock-rotate-left me-1 text-info"></i>Stremio caches metadata for up to 24 hours, so language changes may take a while to appear on previously viewed titles.
+                            </p>
+                            <p class="text-secondary small mb-0" style="font-size: 0.73rem; color: rgba(255, 255, 255, 0.65) !important; line-height: 1.45;">
+                                <i class="fa-solid fa-circle-info me-1"></i>Falls back to English when a translation is missing; tracking status, airing countdown, and filler headers remain in English.
+                            </p>
+                        </div>
                     </div>
                 </div>
             

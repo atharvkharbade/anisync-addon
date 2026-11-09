@@ -116,17 +116,26 @@ async def handle_configure_form(user: dict, form) -> dict | None:
     if "title_language" in form:
         user["title_language"] = form.get("title_language", "english")
 
+    if "metadata_language" in form:
+        from app.lib.languages import normalize_metadata_language
+
+        user["metadata_language"] = normalize_metadata_language(form.get("metadata_language"))
+
     if "metadata_provider" in form:
-        user["metadata_provider"] = form.get("metadata_provider", "kitsu").lower()
+        prov = (form.get("metadata_provider") or "kitsu").strip().lower()
+        user["metadata_provider"] = prov if prov in ("kitsu", "anilist", "mal", "tvdb", "custom") else "kitsu"
 
     if "meta_synopsis_provider" in form:
-        user["meta_synopsis_provider"] = form.get("meta_synopsis_provider", "kitsu").lower()
+        prov = (form.get("meta_synopsis_provider") or "kitsu").strip().lower()
+        user["meta_synopsis_provider"] = prov if prov in ("kitsu", "anilist", "mal", "tvdb") else "kitsu"
 
     if "meta_episodes_provider" in form:
-        user["meta_episodes_provider"] = form.get("meta_episodes_provider", "anizp").lower()
+        prov = (form.get("meta_episodes_provider") or "anizp").strip().lower()
+        user["meta_episodes_provider"] = prov if prov in ("anizp", "kitsu", "mal", "tvdb") else "anizp"
 
     if "meta_poster_provider" in form:
-        user["meta_poster_provider"] = form.get("meta_poster_provider", "anilist").lower()
+        prov = (form.get("meta_poster_provider") or "anilist").strip().lower()
+        user["meta_poster_provider"] = prov if prov in ("anilist", "kitsu", "mal", "tvdb") else "anilist"
 
     if "meta_backdrop_provider" in form:
         from app.lib.meta_providers import normalize_backdrop_pref

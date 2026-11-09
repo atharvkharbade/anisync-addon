@@ -73,6 +73,7 @@ async def guest_login():
         "enable_search": True,
         "hide_nsfw": True,
         "title_language": "english",
+        "metadata_language": "eng",
         "metadata_provider": "kitsu",
         "meta_synopsis_provider": "kitsu",
         "meta_episodes_provider": "anizp",
@@ -165,6 +166,7 @@ async def configure(user_id: str = ""):
         if json_res:
             return json_res
 
+    from app.lib.languages import SUPPORTED_METADATA_LANGUAGES, normalize_metadata_language
     from app.services.dub_service import SUPPORTED_DUB_LANGUAGES
 
     resp = await make_response(
@@ -175,6 +177,8 @@ async def configure(user_id: str = ""):
             manifest_magnet=manifest_magnet,
             anime_genres=ANIME_GENRES,
             supported_dub_languages=SUPPORTED_DUB_LANGUAGES,
+            supported_metadata_languages=SUPPORTED_METADATA_LANGUAGES,
+            cur_metadata_language=normalize_metadata_language(user.get("metadata_language")),
         )
     )
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
