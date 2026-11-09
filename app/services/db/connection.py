@@ -2,6 +2,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 from pymongo import MongoClient
+from pymongo.errors import OperationFailure
 from pymongo.synchronous.collection import Collection
 from pymongo.synchronous.database import Database
 
@@ -18,6 +19,50 @@ client: MongoClient = MongoClient(
     retryReads=True,
 )
 db: Database = client.get_database(Config.MONGO_DB)
+
+
+PURGE_RETENTION_DAYS = 30
+META_TTL_MIGRATION_COLLECTIONS = (
+    "tvdb_meta_cache",
+    "fanart_meta_cache",
+    "cinemeta_meta_cache",
+    "kitsu_meta_cache",
+    "tvdb_translation_cache",
+    "tvdb_posters_cache",
+    "tvdb_episodes_cache",
+)
+
+
+def _migrate_collection_to_purge_at(col: Collection, now: datetime) -> None:
+    """Idempotently migrate a cache collection from expires_at TTL to purge_at TTL."""
+    expires_idx = col.index_information().get("expires_at_1")
+    if isinstance(expires_idx, dict) and "expireAfterSeconds" in expires_idx:
+        try:
+            col.drop_index("expires_at_1")
+        except OperationFailure:
+            pass
+
+    col.update_many(
+        {"purge_at": {"$exists": False}, "expires_at": {"$type": "date"}},
+        [
+            {
+                "$set": {
+                    "purge_at": {
+                        "$dateAdd": {
+                            "startDate": "$expires_at",
+                            "unit": "day",
+                            "amount": PURGE_RETENTION_DAYS,
+                        }
+                    }
+                }
+            }
+        ],
+    )
+    col.update_many(
+        {"purge_at": {"$exists": False}},
+        {"$set": {"purge_at": now + timedelta(days=PURGE_RETENTION_DAYS)}},
+    )
+    col.create_index("purge_at", expireAfterSeconds=0)
 
 
 def init_indexes():
@@ -73,19 +118,22 @@ def init_indexes():
         db.get_collection("kitsu_search_cache").create_index("expires_at", expireAfterSeconds=0)
 
         db.get_collection("kitsu_meta_cache").create_index("kitsu_id", unique=True)
-        db.get_collection("kitsu_meta_cache").create_index("expires_at", expireAfterSeconds=0)
 
         db.get_collection("anizp_meta_cache").create_index("key", unique=True)
         db.get_collection("anizp_meta_cache").create_index("expires_at", expireAfterSeconds=0)
 
         db.get_collection("cinemeta_meta_cache").create_index([("imdb_id", 1), ("media_type", 1)], unique=True)
-        db.get_collection("cinemeta_meta_cache").create_index("expires_at", expireAfterSeconds=0)
 
         db.get_collection("fanart_meta_cache").create_index([("kind", 1), ("ext_id", 1)], unique=True)
-        db.get_collection("fanart_meta_cache").create_index("expires_at", expireAfterSeconds=0)
 
         db.get_collection("tvdb_meta_cache").create_index([("kind", 1), ("ext_id", 1)], unique=True)
-        db.get_collection("tvdb_meta_cache").create_index("expires_at", expireAfterSeconds=0)
+
+        db.get_collection("tvdb_translation_cache").create_index([("kind", 1), ("ext_id", 1), ("lang", 1)], unique=True)
+        db.get_collection("tvdb_posters_cache").create_index([("kind", 1), ("ext_id", 1)], unique=True)
+        db.get_collection("tvdb_episodes_cache").create_index([("tvdb_id", 1), ("lang", 1)], unique=True)
+
+        for col_name in META_TTL_MIGRATION_COLLECTIONS:
+            _migrate_collection_to_purge_at(db.get_collection(col_name), now)
 
         db.get_collection("tvdb_auth").create_index("expires_at", expireAfterSeconds=0)
 
@@ -119,5 +167,8 @@ jikan_cache_collection: Collection = db.get_collection("jikan_cache")
 id_fallback_misses_collection: Collection = db.get_collection("id_fallback_misses")
 fanart_meta_cache_collection: Collection = db.get_collection("fanart_meta_cache")
 tvdb_meta_cache_collection: Collection = db.get_collection("tvdb_meta_cache")
+tvdb_translation_cache_collection: Collection = db.get_collection("tvdb_translation_cache")
+tvdb_posters_cache_collection: Collection = db.get_collection("tvdb_posters_cache")
+tvdb_episodes_cache_collection: Collection = db.get_collection("tvdb_episodes_cache")
 tvdb_auth_collection: Collection = db.get_collection("tvdb_auth")
 tvdb_remote_ids_collection: Collection = db.get_collection("tvdb_remote_ids")
