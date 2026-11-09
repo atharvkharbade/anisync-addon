@@ -11,10 +11,13 @@ from app.services.db import get_user
 
 from .fetchers import (
     apply_metadata_provider_override,
+    apply_provider_overrides,
     clean_imdb_id,
     fetch_anizp_metadata,
     fetch_cinemeta_metadata,
     fetch_kitsu_meta,
+    fetch_provider_overrides,
+    resolve_external_ids,
 )
 from .headers import (
     build_expired_trackers_notice,
@@ -91,57 +94,32 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         if not kitsu_data:
             return await respond_with({"meta": {}})
 
-        imdb_id = clean_imdb_id(anizp_data.get("mappings", {}).get("imdb_id") if anizp_data else None)
-        if not imdb_id and kitsu_id:
-            from app.services.db import db, get_cached_ids
+        k_data = kitsu_data.get("data") or {} if isinstance(kitsu_data, dict) else {}
+        k_attrs = k_data.get("attributes") or {} if isinstance(k_data, dict) else {}
+        k_status = (k_attrs.get("status") or "").lower()
+        is_releasing = k_status in ["current", "releasing", "unreleased", "not_yet_released"]
+        subtype = (k_attrs.get("subtype") or "tv").lower()
+        media_type = "movie" if subtype == "movie" else "series"
 
-            cached_ids = get_cached_ids(kitsu_id)
-            if cached_ids:
-                imdb_id = clean_imdb_id(cached_ids.get("imdb_id"))
-            if not imdb_id:
-                try:
-                    fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
-                    if fribb_doc:
-                        imdb_id = clean_imdb_id(fribb_doc.get("imdb_id"))
-                except Exception as e:
-                    logging.warning("Failed to query fribb_mappings for imdb_id: %s", e)
-            if imdb_id:
-                if not isinstance(anizp_data, dict):
-                    anizp_data = {}
-                if "mappings" not in anizp_data:
-                    anizp_data["mappings"] = {}
-                anizp_data["mappings"]["imdb_id"] = imdb_id
+        imdb_id, tvdb_id, simkl_id, is_movie = resolve_external_ids(
+            kitsu_id,
+            anizp_data,
+            subtype,
+            simkl_id=simkl_id,
+            mal_id=mal_id,
+            anilist_id=anilist_id,
+        )
+        if imdb_id and not (isinstance(anizp_data, dict) and clean_imdb_id((anizp_data.get("mappings") or {}).get("imdb_id"))):
+            if not isinstance(anizp_data, dict):
+                anizp_data = {}
+            if "mappings" not in anizp_data or not isinstance(anizp_data["mappings"], dict):
+                anizp_data["mappings"] = {}
+            anizp_data["mappings"]["imdb_id"] = imdb_id
 
-        cinemeta_data = {}
-        if imdb_id:
-            k_data = kitsu_data.get("data") or {} if isinstance(kitsu_data, dict) else {}
-            k_attrs = k_data.get("attributes") or {} if isinstance(k_data, dict) else {}
-            k_status = (k_attrs.get("status") or "").lower()
-            is_releasing = k_status in ["current", "releasing", "unreleased", "not_yet_released"]
-            subtype = (k_attrs.get("subtype") or "tv").lower()
-            media_type = "movie" if subtype == "movie" else "series"
-            cinemeta_data = await fetch_cinemeta_metadata(imdb_id, media_type, is_releasing=is_releasing)
-
-        # Resolve simkl_id if not present but we have kitsu_id
-        if not simkl_id and kitsu_id:
-            from app.services.db import cache_ids, db, get_cached_ids
-
-            cached_ids = get_cached_ids(kitsu_id)
-            if cached_ids:
-                simkl_id = cached_ids.get("simkl_id")
-            if not simkl_id:
-                try:
-                    fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
-                    if fribb_doc and fribb_doc.get("simkl_id"):
-                        simkl_id = str(fribb_doc["simkl_id"])
-                        try:
-                            cache_ids(kitsu_id, mal_id, anilist_id, simkl_id=simkl_id)
-                        except Exception:
-                            pass
-                except Exception as e:
-                    logging.warning("Failed to query fribb_mappings for simkl_id: %s", e)
         show_filler = user.get("show_filler_tags", False) if user else False
         show_watched = user.get("show_watched_tags", False) if user else False
+        show_tracking = user.get("show_tracking_in_synopsis", False) if user else False
+        show_airing = user.get("show_airing_in_synopsis", False) if user else False
         watched_progress = 0
         canonical_total_episodes = None
         if user_id:
@@ -157,49 +135,140 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
         title_lang = user.get("title_language", "english") if user else "english"
         effective_provs = get_effective_meta_providers(user)
+        metadata_language = effective_provs.get("language", "eng")
+        synopsis_prov = effective_provs.get("synopsis", "kitsu")
+        episodes_prov = effective_provs.get("episodes", "anizp")
+        poster_prov = effective_provs.get("poster", "anilist")
+        backdrop_prov = effective_provs.get("backdrop", "cinemeta")
 
-        fanart_data = {}
-        if effective_provs.get("backdrop") == "fanarttv":
-            try:
-                from app.services.fanart import fetch_fanart
-                from app.services.db import get_cached_ids
-                tvdb_id = (anizp_data.get("mappings", {}).get("thetvdb_id") if anizp_data else None)
-                if not tvdb_id and kitsu_id:
-                    cached_ids = get_cached_ids(kitsu_id)
-                    if cached_ids:
-                        tvdb_id = cached_ids.get("tvdb_id")
-                k_data = kitsu_data.get("data") or {} if isinstance(kitsu_data, dict) else {}
-                k_attrs = k_data.get("attributes") or {} if isinstance(k_data, dict) else {}
-                subtype = (k_attrs.get("subtype") or "tv").lower()
-                is_movie = (subtype == "movie")
-                fanart_kind = "movies" if is_movie and imdb_id else ("tv" if tvdb_id else ("movies" if imdb_id else None))
-                fanart_id = imdb_id if fanart_kind == "movies" else tvdb_id
-                if fanart_kind and fanart_id:
-                    client_key = user.get("fanart_personal_key") if user else None
-                    fanart_data = await asyncio.wait_for(fetch_fanart(fanart_kind, fanart_id, client_key=client_key), timeout=2.5)
-            except Exception as e:
-                logging.warning("Failed to fetch Fanart.tv metadata in handle_meta: %s", e)
+        ext_kind = "movies" if is_movie and imdb_id else ("tv" if tvdb_id else ("movies" if imdb_id else None))
+        ext_id = imdb_id if ext_kind == "movies" else tvdb_id
 
-        tvdb_data = []
-        if effective_provs.get("backdrop") == "tvdb":
-            try:
-                from app.services.tvdb import fetch_tvdb_artworks
-                from app.services.db import get_cached_ids
-                tvdb_id = (anizp_data.get("mappings", {}).get("thetvdb_id") if anizp_data else None)
-                if not tvdb_id and kitsu_id:
-                    cached_ids = get_cached_ids(kitsu_id)
-                    if cached_ids:
-                        tvdb_id = cached_ids.get("tvdb_id")
-                k_data = kitsu_data.get("data") or {} if isinstance(kitsu_data, dict) else {}
-                k_attrs = k_data.get("attributes") or {} if isinstance(k_data, dict) else {}
-                subtype = (k_attrs.get("subtype") or "tv").lower()
-                is_movie = (subtype == "movie")
-                tvdb_kind = "movies" if is_movie and imdb_id else ("tv" if tvdb_id else ("movies" if imdb_id else None))
-                tvdb_ext_id = imdb_id if tvdb_kind == "movies" else tvdb_id
-                if tvdb_kind and tvdb_ext_id:
-                    tvdb_data = await asyncio.wait_for(fetch_tvdb_artworks(tvdb_kind, tvdb_ext_id), timeout=2.5)
-            except Exception as e:
-                logging.warning("Failed to fetch TheTVDB metadata in handle_meta: %s", e)
+        tvdb_entity_kind = "movies" if is_movie else "tv"
+        tvdb_entity_id = imdb_id if is_movie else tvdb_id
+
+        need_tvdb_translation = (metadata_language != "eng" or synopsis_prov == "tvdb") and bool(tvdb_entity_id)
+        need_tvdb_posters = (poster_prov == "tvdb") and bool(tvdb_entity_id)
+        need_tvdb_episodes = (not is_movie) and (metadata_language != "eng" or episodes_prov == "tvdb") and bool(tvdb_id)
+
+        async def _noop(default):
+            return default
+
+        if imdb_id:
+            cinemeta_coro = asyncio.wait_for(fetch_cinemeta_metadata(imdb_id, media_type, is_releasing=is_releasing), timeout=3.0)
+        else:
+            cinemeta_coro = _noop({})
+
+        if backdrop_prov == "fanarttv" and ext_kind and ext_id:
+            from app.services.fanart import fetch_fanart
+
+            client_key = user.get("fanart_personal_key") if user else None
+            fanart_coro = asyncio.wait_for(fetch_fanart(ext_kind, ext_id, client_key=client_key), timeout=2.5)
+        else:
+            fanart_coro = _noop({})
+
+        if backdrop_prov == "tvdb" and ext_kind and ext_id:
+            from app.services.tvdb import fetch_tvdb_artworks
+
+            tvdb_art_coro = asyncio.wait_for(fetch_tvdb_artworks(ext_kind, ext_id), timeout=2.5)
+        else:
+            tvdb_art_coro = _noop([])
+
+        if need_tvdb_translation:
+            from app.services.tvdb import fetch_tvdb_translation
+
+            tvdb_trans_coro = asyncio.wait_for(
+                fetch_tvdb_translation(tvdb_entity_kind, tvdb_entity_id, metadata_language, is_releasing=is_releasing),
+                timeout=2.5,
+            )
+        else:
+            tvdb_trans_coro = _noop({})
+
+        if need_tvdb_posters:
+            from app.services.tvdb import fetch_tvdb_posters
+
+            tvdb_posters_coro = asyncio.wait_for(
+                fetch_tvdb_posters(tvdb_entity_kind, tvdb_entity_id, is_releasing=is_releasing),
+                timeout=2.5,
+            )
+        else:
+            tvdb_posters_coro = _noop({})
+
+        if need_tvdb_episodes:
+            from app.services.tvdb import fetch_tvdb_episodes
+
+            tvdb_eps_coro = asyncio.wait_for(
+                fetch_tvdb_episodes(tvdb_id, metadata_language, is_releasing=is_releasing),
+                timeout=3.0,
+            )
+        else:
+            tvdb_eps_coro = _noop([])
+
+        overrides_coro = asyncio.wait_for(
+            fetch_provider_overrides(user, mal_id, anilist_id, show_airing=show_airing),
+            timeout=3.0,
+        )
+
+        (
+            cinemeta_res,
+            fanart_res,
+            tvdb_art_res,
+            overrides_res,
+            tvdb_trans_res,
+            tvdb_posters_res,
+            tvdb_eps_res,
+        ) = await asyncio.gather(
+            cinemeta_coro,
+            fanart_coro,
+            tvdb_art_coro,
+            overrides_coro,
+            tvdb_trans_coro,
+            tvdb_posters_coro,
+            tvdb_eps_coro,
+            return_exceptions=True,
+        )
+
+        if isinstance(cinemeta_res, Exception):
+            logging.warning("Failed to fetch Cinemeta metadata in handle_meta: %s", cinemeta_res)
+            cinemeta_data = {}
+        else:
+            cinemeta_data = cinemeta_res or {}
+
+        if isinstance(fanart_res, Exception):
+            logging.warning("Failed to fetch Fanart.tv metadata in handle_meta: %s", fanart_res)
+            fanart_data = {}
+        else:
+            fanart_data = fanart_res or {}
+
+        if isinstance(tvdb_art_res, Exception):
+            logging.warning("Failed to fetch TheTVDB metadata in handle_meta: %s", tvdb_art_res)
+            tvdb_data = []
+        else:
+            tvdb_data = tvdb_art_res or []
+
+        if isinstance(overrides_res, Exception):
+            logging.warning("Failed to fetch provider overrides in handle_meta: %s", overrides_res)
+            mal_data_override, al_data_override = None, None
+        else:
+            mal_data_override, al_data_override = overrides_res
+
+        if isinstance(tvdb_trans_res, Exception):
+            logging.warning("Failed to fetch TheTVDB translation in handle_meta: %s", tvdb_trans_res)
+            tvdb_translation = {}
+        else:
+            tvdb_translation = tvdb_trans_res if isinstance(tvdb_trans_res, dict) else {}
+
+        if isinstance(tvdb_posters_res, Exception):
+            logging.warning("Failed to fetch TheTVDB posters in handle_meta: %s", tvdb_posters_res)
+            tvdb_posters = {}
+        else:
+            tvdb_posters = tvdb_posters_res if isinstance(tvdb_posters_res, dict) else {}
+
+        if isinstance(tvdb_eps_res, Exception):
+            logging.warning("Failed to fetch TheTVDB episodes in handle_meta: %s", tvdb_eps_res)
+            tvdb_episodes = []
+        else:
+            tvdb_episodes = tvdb_eps_res if isinstance(tvdb_eps_res, list) else []
 
         # Offload CPU-bound mapping to worker threads
         run_loop = asyncio.get_running_loop()
@@ -218,13 +287,31 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             watched_progress=watched_progress,
             canonical_total_episodes=canonical_total_episodes,
             title_language=title_lang,
-            episodes_provider=effective_provs.get("episodes", "anizp"),
-            backdrop_provider=effective_provs.get("backdrop", "cinemeta"),
-            poster_provider=effective_provs.get("poster", "anilist"),
+            episodes_provider=episodes_prov,
+            backdrop_provider=backdrop_prov,
+            poster_provider=poster_prov,
+            metadata_language=metadata_language,
+            tvdb_translation=tvdb_translation,
+            tvdb_posters=tvdb_posters,
+            tvdb_episodes=tvdb_episodes,
         )
 
         # Apply user preferred Metadata Provider override (MAL / AniList with Kitsu fallback)
-        mal_data_override, al_data_override = await apply_metadata_provider_override(meta, user, mal_id, anilist_id)
+        preserve_localized_synopsis = bool(
+            metadata_language != "eng" and tvdb_translation and (tvdb_translation.get("overview") or "").strip()
+        )
+        mal_data_override, al_data_override = apply_provider_overrides(
+            meta,
+            user,
+            mal_data_override,
+            al_data_override,
+            preserve_localized_synopsis=preserve_localized_synopsis,
+        )
+
+        # Sync single-video movie entry with final localized/provider title & overview
+        if meta.get("type") == "movie" and meta.get("videos"):
+            meta["videos"][0]["title"] = meta.get("name", meta["videos"][0].get("title"))
+            meta["videos"][0]["overview"] = meta.get("description", meta["videos"][0].get("overview"))
 
         # Apply custom poster provider if configured
         if (user.get("poster_provider") and user.get("poster_provider") != "none") or user.get("rpdb_api_key"):
@@ -247,9 +334,6 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         # Collect dynamic metadata headers
         dynamic_headers = []
 
-        show_tracking = user.get("show_tracking_in_synopsis", False) if user else False
-        show_airing = user.get("show_airing_in_synopsis", False) if user else False
-
         if show_tracking:
             user_status_hdr = await build_user_status_header(user, user_id, mal_id=mal_id, anilist_id=anilist_id, simkl_id=simkl_id)
             if user_status_hdr:
@@ -258,23 +342,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         if show_airing:
             airing_prov = effective_provs.get("airing", "anilist")
             al_data = al_data_override if (airing_prov == "anilist" and al_data_override) else None
-            if airing_prov == "anilist" and not al_data and anilist_id:
-                try:
-                    from app.api.anilist import get_media_status
-
-                    token = user.get("anilist_token", "") if user else ""
-                    al_data = await asyncio.wait_for(get_media_status(token, int(anilist_id)), timeout=3.0)
-                except Exception as e:
-                    logging.debug("Could not fetch AniList media status for airing countdown: %s", e)
-
             mal_data_airing = mal_data_override if (airing_prov == "mal" and mal_data_override) else None
-            if airing_prov == "mal" and not mal_data_airing and mal_id:
-                try:
-                    from app.api.jikan import get_anime_by_id
-
-                    mal_data_airing = await asyncio.wait_for(get_anime_by_id(mal_id), timeout=3.0)
-                except Exception:
-                    pass
 
             if airing_prov != "kitsu":
                 next_airing_hdr = build_next_airing_header(al_data, mal_data=mal_data_airing)
@@ -305,9 +373,12 @@ __all__ = [
     "handle_root_meta",
     "handle_meta",
     "clean_imdb_id",
+    "resolve_external_ids",
     "fetch_anizp_metadata",
     "fetch_cinemeta_metadata",
     "fetch_kitsu_meta",
+    "fetch_provider_overrides",
+    "apply_provider_overrides",
     "apply_metadata_provider_override",
     "build_user_status_header",
     "build_next_airing_header",

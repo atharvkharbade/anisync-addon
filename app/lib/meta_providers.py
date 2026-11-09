@@ -1,3 +1,6 @@
+from app.lib.languages import normalize_metadata_language
+
+
 def normalize_backdrop_pref(val: str | None) -> str:
     """
     Normalizes backdrop preference strings.
@@ -16,17 +19,45 @@ def normalize_backdrop_pref(val: str | None) -> str:
     return "cinemeta"
 
 
+def _normalize_provider_choice(val: str | None, allowed: tuple[str, ...], default: str) -> str:
+    cleaned = (val or "").strip().lower()
+    return cleaned if cleaned in allowed else default
+
+
+def get_effective_metadata_language(user: dict | None) -> str:
+    """Return the normalized metadata localization language for a user (defaults to 'eng')."""
+    return normalize_metadata_language(user.get("metadata_language") if user else None)
+
+
 def get_effective_meta_providers(user: dict | None) -> dict:
-    pref = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
+    pref = (user.get("metadata_provider", "kitsu") or "kitsu").strip().lower() if user else "kitsu"
+    language = get_effective_metadata_language(user)
     if pref == "custom":
-        legacy_artwork = (user.get("meta_artwork_provider") or "anilist").lower()
+        legacy_artwork = (user.get("meta_artwork_provider") or "anilist").strip().lower()
         backdrop_val = normalize_backdrop_pref(user.get("meta_backdrop_provider"))
         return {
-            "synopsis": (user.get("meta_synopsis_provider") or "kitsu").lower(),
-            "episodes": (user.get("meta_episodes_provider") or "anizp").lower(),
-            "poster": (user.get("meta_poster_provider") or legacy_artwork).lower(),
+            "synopsis": _normalize_provider_choice(
+                user.get("meta_synopsis_provider"),
+                ("kitsu", "mal", "anilist", "tvdb"),
+                "kitsu",
+            ),
+            "episodes": _normalize_provider_choice(
+                user.get("meta_episodes_provider"),
+                ("anizp", "kitsu", "mal", "tvdb"),
+                "anizp",
+            ),
+            "poster": _normalize_provider_choice(
+                user.get("meta_poster_provider") or legacy_artwork,
+                ("anilist", "kitsu", "mal", "tvdb"),
+                "anilist",
+            ),
             "backdrop": backdrop_val,
-            "airing": (user.get("meta_airing_provider") or "anilist").lower(),
+            "airing": _normalize_provider_choice(
+                user.get("meta_airing_provider"),
+                ("anilist", "mal"),
+                "anilist",
+            ),
+            "language": language,
         }
     elif pref == "mal":
         return {
@@ -35,6 +66,7 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "poster": "mal",
             "backdrop": "cinemeta",
             "airing": "mal",
+            "language": language,
         }
     elif pref == "anilist":
         return {
@@ -43,6 +75,16 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "poster": "anilist",
             "backdrop": "cinemeta",
             "airing": "anilist",
+            "language": language,
+        }
+    elif pref == "tvdb":
+        return {
+            "synopsis": "tvdb",
+            "episodes": "tvdb",
+            "poster": "tvdb",
+            "backdrop": "tvdb",
+            "airing": "anilist",
+            "language": language,
         }
     else:  # kitsu
         return {
@@ -51,6 +93,7 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "poster": "kitsu",
             "backdrop": "cinemeta",
             "airing": "anilist",
+            "language": language,
         }
 
 
