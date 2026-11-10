@@ -1141,9 +1141,12 @@ def _merge_portuguese_episodes(
             if ep_id is not None:
                 seen_ids.add(ep_id)
             if alt:
+                # TheTVDB fills untranslated names with English, so only trust the primary name
+                # when the primary variant actually translated that episode (it has an overview)
+                primary_translated = bool(alt.get("overview"))
                 merged.append({
                     **ep,
-                    "name": alt.get("name") or ep.get("name", ""),
+                    "name": (alt.get("name") if primary_translated else ep.get("name")) or ep.get("name") or alt.get("name", ""),
                     "overview": ep.get("overview") or alt.get("overview", ""),
                 })
             else:

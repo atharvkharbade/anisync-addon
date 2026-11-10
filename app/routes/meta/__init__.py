@@ -30,6 +30,9 @@ from .stremio import is_root_tvdb_entry, map_kitsu_to_stremio
 
 meta_bp = Blueprint("meta", __name__)
 
+# Strong references for shielded upstream fetches that outlive a timed-out request
+_keep_alive: set[asyncio.Future] = set()
+
 
 @meta_bp.route("/meta/<string:meta_type>/<string:meta_id>.json")
 @rate_limit(limit=60, period_seconds=60)
@@ -57,6 +60,16 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     def _budget(cap: float) -> float:
         return max(0.2, min(cap, deadline - time.monotonic()))
 
+    # Set when any upstream timed out: the response is then partial, so Stremio must not keep it for a day
+    degraded = False
+
+    async def _shielded(coro, timeout: float):
+        """Wait up to `timeout` without cancelling the fetch, so a slow upstream still fills its cache for the next request."""
+        task = asyncio.ensure_future(coro)
+        _keep_alive.add(task)
+        task.add_done_callback(_keep_alive.discard)
+        return await asyncio.wait_for(asyncio.shield(task), timeout=timeout)
+
     # Strip prefixes and get kitsu id
     kitsu_id = None
     anilist_id = None
@@ -66,13 +79,13 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     try:
         if meta_id.startswith(("mal:", "mal-", "mal_")):
             mal_id = meta_id[4:]
-            kitsu_id = await asyncio.wait_for(resolve_mal_to_kitsu(mal_id), timeout=_budget(2.0))
+            kitsu_id = await _shielded(resolve_mal_to_kitsu(mal_id), _budget(2.0))
         elif meta_id.startswith(("anilist:", "anilist-", "anilist_")):
             anilist_id = meta_id[8:]
-            kitsu_id = await asyncio.wait_for(resolve_anilist_to_kitsu(anilist_id), timeout=_budget(2.0))
+            kitsu_id = await _shielded(resolve_anilist_to_kitsu(anilist_id), _budget(2.0))
         elif meta_id.startswith(("simkl:", "simkl-", "simkl_")):
             simkl_id = meta_id[6:]
-            kitsu_id = await asyncio.wait_for(resolve_simkl_to_kitsu(simkl_id), timeout=_budget(2.0))
+            kitsu_id = await _shielded(resolve_simkl_to_kitsu(simkl_id), _budget(2.0))
         elif meta_id.startswith(("kitsu:", "kitsu-", "kitsu_")):
             kitsu_id = meta_id[6:]
     except TimeoutError:
@@ -85,10 +98,11 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
     # Resolve mapped IDs using db cache or resolvers robustly
     try:
-        resolved_mal, resolved_anilist = await asyncio.wait_for(resolve(kitsu_id), timeout=_budget(1.5))
+        resolved_mal, resolved_anilist = await _shielded(resolve(kitsu_id), _budget(1.5))
     except TimeoutError:
         logging.warning("Timed out resolving mapped IDs for kitsu_id=%s", kitsu_id)
         resolved_mal, resolved_anilist = None, None
+        degraded = True
     if not mal_id:
         mal_id = resolved_mal
     if not anilist_id:
@@ -98,15 +112,14 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         tasks = [asyncio.wait_for(fetch_kitsu_meta(kitsu_id), timeout=_budget(2.5))]
         if anilist_id or mal_id:
             tasks.append(
-                asyncio.wait_for(
-                    fetch_anizp_metadata(anilist_id=anilist_id, mal_id=mal_id),
-                    timeout=_budget(1.4),
-                )
+                _shielded(fetch_anizp_metadata(anilist_id=anilist_id, mal_id=mal_id), _budget(1.4))
             )
         else:
             tasks.append(asyncio.sleep(0, {}))
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
+        if any(isinstance(r, TimeoutError) for r in results):
+            degraded = True
         kitsu_data = results[0] if not isinstance(results[0], Exception) else {}
         anizp_data = results[1] if (len(results) > 1 and not isinstance(results[1], Exception)) else {}
 
@@ -163,8 +176,11 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         ext_kind = "movies" if is_movie and imdb_id else ("tv" if tvdb_id else ("movies" if imdb_id else None))
         ext_id = imdb_id if ext_kind == "movies" else tvdb_id
 
-        tvdb_entity_kind = ext_kind
-        tvdb_entity_id = ext_id
+        # Movies only resolve through IMDb: AniZip's thetvdb_id on a movie is its parent series (e.g. Mugen Train)
+        if is_movie:
+            tvdb_entity_kind, tvdb_entity_id = ("movies", imdb_id) if imdb_id else (None, None)
+        else:
+            tvdb_entity_kind, tvdb_entity_id = ext_kind, ext_id
 
         # TVDB translations are show-level: only apply them to the entry that starts the show, never to sequels/split cours
         need_tvdb_translation = (
@@ -251,6 +267,11 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             tvdb_eps_coro,
             return_exceptions=True,
         )
+        if any(
+            isinstance(r, TimeoutError)
+            for r in (cinemeta_res, fanart_res, tvdb_art_res, overrides_res, tvdb_trans_res, tvdb_posters_res, tvdb_eps_res)
+        ):
+            degraded = True
 
         if isinstance(cinemeta_res, Exception):
             logging.warning("Failed to fetch Cinemeta metadata in handle_meta: %s", cinemeta_res)
@@ -392,8 +413,12 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             meta["description"] = f"{header_text}\n\n{curr_desc}" if curr_desc else header_text
 
         has_personalized = bool(notice or dynamic_headers or (show_watched and watched_progress > 0))
-        cache_max_age = 60 if has_personalized else 86400
-        cache_stale = 120 if has_personalized else 604800
+        if has_personalized:
+            cache_max_age, cache_stale = 60, 120
+        elif degraded:
+            cache_max_age, cache_stale = 300, 600
+        else:
+            cache_max_age, cache_stale = 86400, 604800
         return await respond_with({"meta": meta}, max_age=cache_max_age, stale_while_revalidate=cache_stale)
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)
