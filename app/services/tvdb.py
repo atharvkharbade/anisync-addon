@@ -272,14 +272,42 @@ async def get_valid_token(force_refresh: bool = False) -> str | None:
             return None
 
 
-async def resolve_tvdb_remote_id(imdb_id: str, client, token: str) -> tuple[str | None, str | None]:
+def _cache_remote_id(
+    col,
+    clean_id: str,
+    entity_type: str | None,
+    entity_id: str | None,
+    ttl: timedelta,
+    now: datetime,
+) -> None:
+    try:
+        col.update_one(
+            {"imdb_id": clean_id},
+            {
+                "$set": {
+                    "imdb_id": clean_id,
+                    "entity_type": entity_type,
+                    "entity_id": entity_id,
+                    "expires_at": now + ttl,
+                    "updated_at": now,
+                }
+            },
+            upsert=True,
+        )
+    except Exception:
+        pass
+
+
+async def _resolve_tvdb_remote_id_with_status(
+    imdb_id: str, client, token: str
+) -> tuple[str | None, str | None, bool]:
     """
     Resolves IMDb ID to a TheTVDB entity (movie or series) with 30-day hit and 24-hour miss caching.
-    Returns (entity_type, entity_id) where entity_type is 'movie' or 'series'.
+    Returns (entity_type, entity_id, is_transient_error).
     """
     clean_id = (imdb_id or "").strip()
     if not clean_id:
-        return None, None
+        return None, None, False
 
     col = _get_col("tvdb_remote_ids")
     now = datetime.now(UTC).replace(tzinfo=None)
@@ -291,112 +319,57 @@ async def resolve_tvdb_remote_id(imdb_id: str, client, token: str) -> tuple[str 
             if exp and exp > now:
                 e_type = cached.get("entity_type")
                 e_id = cached.get("entity_id")
-                return (e_type, e_id) if e_type and e_id else (None, None)
+                return (e_type, e_id, False) if e_type and e_id else (None, None, False)
     except Exception as e:
         logging.warning("Error reading tvdb_remote_ids for %s: %s", clean_id, e)
 
-    async def _resolve_impl() -> tuple[str | None, str | None]:
+    async def _resolve_impl() -> tuple[str | None, str | None, bool]:
         url = f"https://api4.thetvdb.com/v4/search/remoteid/{clean_id}"
         try:
             resp = await _tvdb_get(url, client, token, timeout=5.0)
             if resp.status_code == 200:
                 res_json = resp.json()
-                data = res_json.get("data")
+                data = res_json.get("data") if isinstance(res_json, dict) else None
                 if isinstance(data, list):
                     for item in data:
                         if not isinstance(item, dict):
                             continue
-                        if "movie" in item and isinstance(item["movie"], dict):
-                            m_id = item["movie"].get("id")
-                            if m_id:
-                                str_mid = str(m_id)
-                                try:
-                                    col.update_one(
-                                        {"imdb_id": clean_id},
-                                        {
-                                            "$set": {
-                                                "imdb_id": clean_id,
-                                                "entity_type": "movie",
-                                                "entity_id": str_mid,
-                                                "expires_at": now + timedelta(days=30),
-                                                "updated_at": now,
-                                            }
-                                        },
-                                        upsert=True,
-                                    )
-                                except Exception:
-                                    pass
-                                return "movie", str_mid
-                        if "series" in item and isinstance(item["series"], dict):
-                            s_id = item["series"].get("id")
-                            if s_id:
-                                str_sid = str(s_id)
-                                try:
-                                    col.update_one(
-                                        {"imdb_id": clean_id},
-                                        {
-                                            "$set": {
-                                                "imdb_id": clean_id,
-                                                "entity_type": "series",
-                                                "entity_id": str_sid,
-                                                "expires_at": now + timedelta(days=30),
-                                                "updated_at": now,
-                                            }
-                                        },
-                                        upsert=True,
-                                    )
-                                except Exception:
-                                    pass
-                                return "series", str_sid
+                        for entity_type in ("movie", "series"):
+                            entity = item.get(entity_type)
+                            if isinstance(entity, dict) and entity.get("id"):
+                                str_eid = str(entity["id"])
+                                _cache_remote_id(col, clean_id, entity_type, str_eid, timedelta(days=30), now)
+                                return entity_type, str_eid, False
 
                 # No match found in list: cache 24h negative miss
-                try:
-                    col.update_one(
-                        {"imdb_id": clean_id},
-                        {
-                            "$set": {
-                                "imdb_id": clean_id,
-                                "entity_type": None,
-                                "entity_id": None,
-                                "expires_at": now + timedelta(days=1),
-                                "updated_at": now,
-                            }
-                        },
-                        upsert=True,
-                    )
-                except Exception:
-                    pass
-                return None, None
+                _cache_remote_id(col, clean_id, None, None, timedelta(days=1), now)
+                return None, None, False
 
-            elif resp.status_code == 404:
-                try:
-                    col.update_one(
-                        {"imdb_id": clean_id},
-                        {
-                            "$set": {
-                                "imdb_id": clean_id,
-                                "entity_type": None,
-                                "entity_id": None,
-                                "expires_at": now + timedelta(days=1),
-                                "updated_at": now,
-                            }
-                        },
-                        upsert=True,
-                    )
-                except Exception:
-                    pass
-                return None, None
+            if resp.status_code == 404:
+                _cache_remote_id(col, clean_id, None, None, timedelta(days=1), now)
+                return None, None, False
+
+            logging.warning("TheTVDB remoteid returned HTTP %s for %s", resp.status_code, clean_id)
+            return None, None, True
         except Exception as e:
             logging.warning("Failed to resolve TheTVDB remote ID for %s: %s", clean_id, e)
-
-        return None, None
+            return None, None, True
 
     return await _await_inflight(
         ("remote_id", clean_id),
         _resolve_impl,
-        stale_fallback=None,
-        default=(None, None),
+        stale_fallback=(None, None, True),
+        default=(None, None, True),
     )
+
+
+async def resolve_tvdb_remote_id(imdb_id: str, client, token: str) -> tuple[str | None, str | None]:
+    """
+    Resolves IMDb ID to a TheTVDB entity (movie or series) with 30-day hit and 24-hour miss caching.
+    Returns (entity_type, entity_id) where entity_type is 'movie' or 'series'.
+    """
+    entity_type, entity_id, _ = await _resolve_tvdb_remote_id_with_status(imdb_id, client, token)
+    return entity_type, entity_id
 
 
 def _trim_artworks(
@@ -456,7 +429,9 @@ async def _fetch_tvdb_artworks_impl(normalized_kind: str, str_id: str, stale_dat
         allowed_types = {3}
     else:
         # Movies: ext_id is imdb_id
-        entity_type, entity_id = await resolve_tvdb_remote_id(str_id, client, token)
+        entity_type, entity_id, is_transient = await _resolve_tvdb_remote_id_with_status(str_id, client, token)
+        if is_transient:
+            return stale_data if stale_data is not None else []
         if not entity_type or not entity_id:
             _write_cache(
                 "tvdb_meta_cache",
@@ -467,6 +442,7 @@ async def _fetch_tvdb_artworks_impl(normalized_kind: str, str_id: str, stale_dat
             )
             return []
 
+        token = await get_valid_token() or token
         if entity_type == "movie":
             endpoint_url = f"https://api4.thetvdb.com/v4/movies/{entity_id}/extended"
             allowed_types = {15}
@@ -491,7 +467,7 @@ async def _fetch_tvdb_artworks_impl(normalized_kind: str, str_id: str, stale_dat
             )
             return trimmed
 
-        elif resp.status_code == 404:
+        if resp.status_code == 404:
             _write_cache(
                 "tvdb_meta_cache",
                 query,
@@ -501,14 +477,13 @@ async def _fetch_tvdb_artworks_impl(normalized_kind: str, str_id: str, stale_dat
             )
             return []
 
-        elif resp.status_code in (429, 500, 502, 503, 504):
-            logging.warning(
-                "TheTVDB returned %s for %s/%s, falling back to stale cache if present",
-                resp.status_code,
-                normalized_kind,
-                str_id,
-            )
-            return stale_data if stale_data is not None else []
+        logging.warning(
+            "TheTVDB returned %s for %s/%s, falling back to stale cache if present",
+            resp.status_code,
+            normalized_kind,
+            str_id,
+        )
+        return stale_data if stale_data is not None else []
 
     except Exception as e:
         logging.warning("Failed to fetch artworks from TheTVDB (%s/%s): %s", normalized_kind, str_id, e)
@@ -596,7 +571,9 @@ async def _fetch_tvdb_translation_impl(
     if normalized_kind == "tv":
         entity_prefix = f"series/{str_id}"
     else:
-        entity_type, entity_id = await resolve_tvdb_remote_id(str_id, client, token)
+        entity_type, entity_id, is_transient = await _resolve_tvdb_remote_id_with_status(str_id, client, token)
+        if is_transient:
+            return stale_data if stale_data is not None else {}
         if not entity_type or not entity_id:
             _write_cache(
                 "tvdb_translation_cache",
@@ -611,13 +588,14 @@ async def _fetch_tvdb_translation_impl(
 
     url = f"https://api4.thetvdb.com/v4/{entity_prefix}/translations/{primary_tvdb}"
     result: dict = {}
+    fallback_transient_error = False
     try:
         resp = await _tvdb_get(url, client, token, timeout=5.0)
         if resp.status_code == 200:
             result = _extract_translation(resp.json(), primary_tvdb)
         elif resp.status_code == 404:
             result = {}
-        elif resp.status_code in (429, 500, 502, 503, 504):
+        else:
             logging.warning(
                 "TheTVDB translation returned %s for %s/%s (%s), falling back to stale cache",
                 resp.status_code,
@@ -627,26 +605,43 @@ async def _fetch_tvdb_translation_impl(
             )
             return stale_data if stale_data is not None else {}
 
-        # Portuguese (pt <-> por) fallback if primary is empty or missing overview
-        if fallback_tvdb and (not result or not result.get("overview")):
+        # Portuguese (pt <-> por) fallback if primary is empty or missing overview or name
+        if fallback_tvdb and (not result or not result.get("overview") or not result.get("name")):
             token = await get_valid_token() or token
             fb_url = f"https://api4.thetvdb.com/v4/{entity_prefix}/translations/{fallback_tvdb}"
-            fb_resp = await _tvdb_get(fb_url, client, token, timeout=5.0)
-            if fb_resp.status_code == 200:
-                fb_res = _extract_translation(fb_resp.json(), fallback_tvdb)
-                if fb_res:
-                    if not result:
-                        result = fb_res
-                    else:
-                        if not result.get("overview") and fb_res.get("overview"):
-                            result["overview"] = fb_res["overview"]
-                        if not result.get("name") and fb_res.get("name"):
-                            result["name"] = fb_res["name"]
-            elif fb_resp.status_code in (429, 500, 502, 503, 504) and not result:
-                return stale_data if stale_data is not None else {}
+            try:
+                fb_resp = await _tvdb_get(fb_url, client, token, timeout=5.0)
+                if fb_resp.status_code == 200:
+                    fb_res = _extract_translation(fb_resp.json(), fallback_tvdb)
+                    if fb_res:
+                        if not result:
+                            result = fb_res
+                        else:
+                            if not result.get("overview") and fb_res.get("overview"):
+                                result["overview"] = fb_res["overview"]
+                            if not result.get("name") and fb_res.get("name"):
+                                result["name"] = fb_res["name"]
+                elif fb_resp.status_code != 404:
+                    fallback_transient_error = True
+            except Exception as fb_err:
+                logging.warning(
+                    "Failed to fetch fallback TheTVDB translation (%s/%s/%s): %s",
+                    normalized_kind,
+                    str_id,
+                    fallback_tvdb,
+                    fb_err,
+                )
+                fallback_transient_error = True
     except Exception as e:
         logging.warning("Failed to fetch TheTVDB translation (%s/%s/%s): %s", normalized_kind, str_id, norm_lang, e)
         return stale_data if stale_data is not None else {}
+
+    if fallback_transient_error:
+        if not result:
+            return stale_data if stale_data is not None else {}
+        if stale_data and isinstance(stale_data, dict) and stale_data.get("name") and stale_data.get("overview"):
+            return stale_data
+        return result
 
     if result:
         ttl = timedelta(hours=12) if is_releasing else timedelta(days=7)
@@ -772,7 +767,7 @@ async def _fetch_series_posters(series_id: str, client, token: str, stale_data: 
     for r in resps:
         if isinstance(r, Exception):
             raise r
-        if r.status_code in (429, 500, 502, 503, 504):
+        if r.status_code not in (200, 404):
             return None
 
     r_series, r_seasons, r_ext = resps
@@ -834,7 +829,9 @@ async def _fetch_tvdb_posters_impl(
         if normalized_kind == "tv":
             result = await _fetch_series_posters(str_id, client, token, stale_data)
         else:
-            entity_type, entity_id = await resolve_tvdb_remote_id(str_id, client, token)
+            entity_type, entity_id, is_transient = await _resolve_tvdb_remote_id_with_status(str_id, client, token)
+            if is_transient:
+                return stale_data if stale_data is not None else {}
             if not entity_type or not entity_id:
                 _write_cache(
                     "tvdb_posters_cache",
@@ -850,9 +847,7 @@ async def _fetch_tvdb_posters_impl(
             else:
                 # TVDB v4 returns 400 for /movies/{id}/artworks?type=14; movie posters (type=14) are served on /movies/{id}/extended
                 resp = await _tvdb_get(f"https://api4.thetvdb.com/v4/movies/{entity_id}/extended", client, token, timeout=5.0)
-                if resp.status_code in (429, 500, 502, 503, 504):
-                    result = None
-                elif resp.status_code == 404:
+                if resp.status_code == 404:
                     result = {}
                 elif resp.status_code == 200:
                     data_obj = resp.json().get("data") if isinstance(resp.json(), dict) else {}
@@ -872,7 +867,7 @@ async def _fetch_tvdb_posters_impl(
                     else:
                         result = {}
                 else:
-                    result = {}
+                    result = None
 
         if result is None:
             logging.warning("TheTVDB posters hit transient error for %s/%s, falling back to stale cache", normalized_kind, str_id)
@@ -1057,16 +1052,14 @@ async def _fetch_episodes_for_lang(series_id: str, tvdb_lang: str, client, token
     """
     Fetches all pages of /v4/series/{id}/episodes/default/{tvdb_lang}.
     Returns cleaned episode list (including seasonNumber <= 0 for exact tvdbId matches),
-    [] on 404/empty, or None on transient 429/5xx errors.
+    [] on 404/empty, or None on transient 400/401/403/429/5xx errors.
     """
     base_url = f"https://api4.thetvdb.com/v4/series/{series_id}/episodes/default/{tvdb_lang}"
     resp0 = await _tvdb_get(f"{base_url}?page=0", client, token, timeout=5.0)
-    if resp0.status_code in (429, 500, 502, 503, 504):
-        return None
     if resp0.status_code == 404:
         return []
     if resp0.status_code != 200:
-        return []
+        return None
 
     payload0 = resp0.json()
     if not isinstance(payload0, dict):
@@ -1091,7 +1084,7 @@ async def _fetch_episodes_for_lang(series_id: str, tvdb_lang: str, client, token
                 for pr in page_resps:
                     if isinstance(pr, Exception):
                         raise pr
-                    if pr.status_code in (429, 500, 502, 503, 504):
+                    if pr.status_code not in (200, 404):
                         return None
                     if pr.status_code == 200:
                         pj = pr.json()
@@ -1109,10 +1102,10 @@ async def _fetch_episodes_for_lang(series_id: str, tvdb_lang: str, client, token
         while next_url and page_counter < _MAX_EPISODE_PAGES:
             full_next = next_url if next_url.startswith("http") else f"https://api4.thetvdb.com{next_url}"
             pr = await _tvdb_get(full_next, client, token, timeout=5.0)
-            if pr.status_code in (429, 500, 502, 503, 504):
-                return None
-            if pr.status_code != 200:
+            if pr.status_code == 404:
                 break
+            if pr.status_code != 200:
+                return None
             pj = pr.json()
             if not isinstance(pj, dict):
                 break
@@ -1122,6 +1115,58 @@ async def _fetch_episodes_for_lang(series_id: str, tvdb_lang: str, client, token
             page_counter += 1
 
     return _trim_episodes(raw_eps)
+
+
+def _merge_portuguese_episodes(
+    primary_eps: list[dict],
+    fb_eps: list[dict],
+    prefer_fb_overviews: bool,
+) -> list[dict]:
+    """
+    Merges primary and fallback Portuguese episode lists while always preserving primary names first,
+    backfilling missing overviews, and retaining primary-only regular (seasonNumber > 0) episodes.
+    """
+    if not primary_eps:
+        return fb_eps
+    if not fb_eps:
+        return primary_eps
+
+    if prefer_fb_overviews:
+        primary_by_id = {ep["id"]: ep for ep in primary_eps if ep.get("id") is not None}
+        seen_ids: set = set()
+        merged: list[dict] = []
+        for ep in fb_eps:
+            ep_id = ep.get("id")
+            alt = primary_by_id.get(ep_id) if ep_id is not None else None
+            if ep_id is not None:
+                seen_ids.add(ep_id)
+            if alt:
+                merged.append({
+                    **ep,
+                    "name": alt.get("name") or ep.get("name", ""),
+                    "overview": ep.get("overview") or alt.get("overview", ""),
+                })
+            else:
+                merged.append(ep)
+        for ep in primary_eps:
+            ep_id = ep.get("id")
+            if ep_id is not None and ep_id not in seen_ids and (ep.get("seasonNumber") or 0) > 0:
+                merged.append(ep)
+        return merged
+
+    fb_by_id = {ep["id"]: ep for ep in fb_eps if ep.get("id") is not None}
+    merged = []
+    for ep in primary_eps:
+        alt = fb_by_id.get(ep.get("id")) if ep.get("id") is not None else None
+        if alt:
+            merged.append({
+                **ep,
+                "name": ep.get("name") or alt.get("name", ""),
+                "overview": ep.get("overview") or alt.get("overview", ""),
+            })
+        else:
+            merged.append(ep)
+    return merged
 
 
 async def _fetch_tvdb_episodes_impl(
@@ -1156,28 +1201,23 @@ async def _fetch_tvdb_episodes_impl(
             if primary_total == 0 or primary_ratio < 0.5:
                 token = await get_valid_token() or token
                 fb_eps = await _fetch_episodes_for_lang(str_id, fallback_tvdb, client, token)
-                if fb_eps:
-                    fb_count, _, _ = _overview_coverage(fb_eps)
-                    if fb_count > primary_count or not primary_eps:
-                        primary_by_id = {ep["id"]: ep for ep in primary_eps if ep.get("id") is not None}
-                        merged = []
-                        for ep in fb_eps:
-                            if not ep.get("overview"):
-                                alt = primary_by_id.get(ep.get("id"))
-                                if alt and alt.get("overview"):
-                                    ep = {**ep, "overview": alt["overview"]}
-                            merged.append(ep)
-                        final_eps = merged
-                    elif primary_count > 0:
-                        fb_by_id = {ep["id"]: ep for ep in fb_eps if ep.get("id") is not None}
-                        merged = []
-                        for ep in primary_eps:
-                            if not ep.get("overview"):
-                                alt = fb_by_id.get(ep.get("id"))
-                                if alt and alt.get("overview"):
-                                    ep = {**ep, "overview": alt["overview"], "name": alt.get("name") or ep.get("name", "")}
-                            merged.append(ep)
-                        final_eps = merged
+                if fb_eps is None:
+                    logging.warning(
+                        "TheTVDB fallback episodes hit transient error for %s (%s), skipping incomplete cache",
+                        str_id,
+                        norm_lang,
+                    )
+                    if stale_data:
+                        return stale_data
+                    if stale_data is not None and not primary_eps:
+                        return stale_data
+                    return primary_eps
+                fb_count, _, _ = _overview_coverage(fb_eps)
+                final_eps = _merge_portuguese_episodes(
+                    primary_eps,
+                    fb_eps,
+                    prefer_fb_overviews=(fb_count > primary_count or not primary_eps),
+                )
 
         ttl = (timedelta(hours=4) if is_releasing else timedelta(days=7)) if final_eps else timedelta(days=1)
         _write_cache(

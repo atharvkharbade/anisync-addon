@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 import urllib.parse
 
 from quart import Blueprint
@@ -51,39 +52,57 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         logging.warning("Meta request: Unknown user_id=%s", user_id)
         return await respond_with({"meta": {}})
 
+    deadline = time.monotonic() + 2.8
+
+    def _budget(cap: float) -> float:
+        return max(0.2, min(cap, deadline - time.monotonic()))
+
     # Strip prefixes and get kitsu id
     kitsu_id = None
     anilist_id = None
     mal_id = None
     simkl_id = None
 
-    if meta_id.startswith(("mal:", "mal-", "mal_")):
-        mal_id = meta_id[4:]
-        kitsu_id = await resolve_mal_to_kitsu(mal_id)
-    elif meta_id.startswith(("anilist:", "anilist-", "anilist_")):
-        anilist_id = meta_id[8:]
-        kitsu_id = await resolve_anilist_to_kitsu(anilist_id)
-    elif meta_id.startswith(("simkl:", "simkl-", "simkl_")):
-        simkl_id = meta_id[6:]
-        kitsu_id = await resolve_simkl_to_kitsu(simkl_id)
-    elif meta_id.startswith(("kitsu:", "kitsu-", "kitsu_")):
-        kitsu_id = meta_id[6:]
+    try:
+        if meta_id.startswith(("mal:", "mal-", "mal_")):
+            mal_id = meta_id[4:]
+            kitsu_id = await asyncio.wait_for(resolve_mal_to_kitsu(mal_id), timeout=_budget(2.0))
+        elif meta_id.startswith(("anilist:", "anilist-", "anilist_")):
+            anilist_id = meta_id[8:]
+            kitsu_id = await asyncio.wait_for(resolve_anilist_to_kitsu(anilist_id), timeout=_budget(2.0))
+        elif meta_id.startswith(("simkl:", "simkl-", "simkl_")):
+            simkl_id = meta_id[6:]
+            kitsu_id = await asyncio.wait_for(resolve_simkl_to_kitsu(simkl_id), timeout=_budget(2.0))
+        elif meta_id.startswith(("kitsu:", "kitsu-", "kitsu_")):
+            kitsu_id = meta_id[6:]
+    except TimeoutError:
+        logging.warning("Timed out resolving Kitsu ID for meta_id=%s", meta_id)
+        kitsu_id = None
 
     if not kitsu_id:
         logging.warning("Could not map meta_id=%s to Kitsu ID", meta_id)
         return await respond_with({"meta": {}})
 
     # Resolve mapped IDs using db cache or resolvers robustly
-    resolved_mal, resolved_anilist = await resolve(kitsu_id)
+    try:
+        resolved_mal, resolved_anilist = await asyncio.wait_for(resolve(kitsu_id), timeout=_budget(1.5))
+    except TimeoutError:
+        logging.warning("Timed out resolving mapped IDs for kitsu_id=%s", kitsu_id)
+        resolved_mal, resolved_anilist = None, None
     if not mal_id:
         mal_id = resolved_mal
     if not anilist_id:
         anilist_id = resolved_anilist
 
     try:
-        tasks = [fetch_kitsu_meta(kitsu_id)]
+        tasks = [asyncio.wait_for(fetch_kitsu_meta(kitsu_id), timeout=_budget(2.5))]
         if anilist_id or mal_id:
-            tasks.append(fetch_anizp_metadata(anilist_id=anilist_id, mal_id=mal_id))
+            tasks.append(
+                asyncio.wait_for(
+                    fetch_anizp_metadata(anilist_id=anilist_id, mal_id=mal_id),
+                    timeout=_budget(1.4),
+                )
+            )
         else:
             tasks.append(asyncio.sleep(0, {}))
 
@@ -144,8 +163,8 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         ext_kind = "movies" if is_movie and imdb_id else ("tv" if tvdb_id else ("movies" if imdb_id else None))
         ext_id = imdb_id if ext_kind == "movies" else tvdb_id
 
-        tvdb_entity_kind = "movies" if is_movie else "tv"
-        tvdb_entity_id = imdb_id if is_movie else tvdb_id
+        tvdb_entity_kind = ext_kind
+        tvdb_entity_id = ext_id
 
         # TVDB translations are show-level: only apply them to the entry that starts the show, never to sequels/split cours
         need_tvdb_translation = (
@@ -160,7 +179,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             return default
 
         if imdb_id:
-            cinemeta_coro = asyncio.wait_for(fetch_cinemeta_metadata(imdb_id, media_type, is_releasing=is_releasing), timeout=3.0)
+            cinemeta_coro = asyncio.wait_for(fetch_cinemeta_metadata(imdb_id, media_type, is_releasing=is_releasing), timeout=_budget(3.0))
         else:
             cinemeta_coro = _noop({})
 
@@ -168,14 +187,14 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             from app.services.fanart import fetch_fanart
 
             client_key = user.get("fanart_personal_key") if user else None
-            fanart_coro = asyncio.wait_for(fetch_fanart(ext_kind, ext_id, client_key=client_key), timeout=2.5)
+            fanart_coro = asyncio.wait_for(fetch_fanart(ext_kind, ext_id, client_key=client_key), timeout=_budget(2.5))
         else:
             fanart_coro = _noop({})
 
         if backdrop_prov == "tvdb" and ext_kind and ext_id:
             from app.services.tvdb import fetch_tvdb_artworks
 
-            tvdb_art_coro = asyncio.wait_for(fetch_tvdb_artworks(ext_kind, ext_id), timeout=2.5)
+            tvdb_art_coro = asyncio.wait_for(fetch_tvdb_artworks(ext_kind, ext_id), timeout=_budget(2.5))
         else:
             tvdb_art_coro = _noop([])
 
@@ -184,7 +203,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
             tvdb_trans_coro = asyncio.wait_for(
                 fetch_tvdb_translation(tvdb_entity_kind, tvdb_entity_id, metadata_language, is_releasing=is_releasing),
-                timeout=2.5,
+                timeout=_budget(2.5),
             )
         else:
             tvdb_trans_coro = _noop({})
@@ -194,7 +213,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
             tvdb_posters_coro = asyncio.wait_for(
                 fetch_tvdb_posters(tvdb_entity_kind, tvdb_entity_id, is_releasing=is_releasing),
-                timeout=2.5,
+                timeout=_budget(2.5),
             )
         else:
             tvdb_posters_coro = _noop({})
@@ -204,14 +223,14 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
 
             tvdb_eps_coro = asyncio.wait_for(
                 fetch_tvdb_episodes(tvdb_id, metadata_language, is_releasing=is_releasing),
-                timeout=3.0,
+                timeout=_budget(3.0),
             )
         else:
             tvdb_eps_coro = _noop([])
 
         overrides_coro = asyncio.wait_for(
             fetch_provider_overrides(user, mal_id, anilist_id, show_airing=show_airing),
-            timeout=3.0,
+            timeout=_budget(3.0),
         )
 
         (
@@ -262,6 +281,14 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             tvdb_translation = {}
         else:
             tvdb_translation = tvdb_trans_res if isinstance(tvdb_trans_res, dict) else {}
+
+        if tvdb_translation and not is_root_tvdb_entry(
+            subtype,
+            (anizp_data or {}).get("episodes") or {},
+            k_attrs,
+            cinemeta_data=cinemeta_data,
+        ):
+            tvdb_translation = {}
 
         if isinstance(tvdb_posters_res, Exception):
             logging.warning("Failed to fetch TheTVDB posters in handle_meta: %s", tvdb_posters_res)
@@ -364,7 +391,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             curr_desc = meta.get("description", "")
             meta["description"] = f"{header_text}\n\n{curr_desc}" if curr_desc else header_text
 
-        has_personalized = bool(dynamic_headers or (show_watched and watched_progress > 0))
+        has_personalized = bool(notice or dynamic_headers or (show_watched and watched_progress > 0))
         cache_max_age = 60 if has_personalized else 86400
         cache_stale = 120 if has_personalized else 604800
         return await respond_with({"meta": meta}, max_age=cache_max_age, stale_while_revalidate=cache_stale)

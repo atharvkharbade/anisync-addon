@@ -16,6 +16,48 @@ _ROMAN_SEASONS = {"ii": 2, "iii": 3, "iv": 4, "vi": 6, "vii": 7, "viii": 8, "ix"
 _SEASON_PREMIERE_TOLERANCE_DAYS = 60
 
 
+_RE_YEAR = re.compile(r"^(\d{4})$")
+_RE_YEAR_MONTH = re.compile(r"^(\d{4})[-/](\d{1,2})$")
+_RE_YMD = re.compile(r"^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$")
+_RE_ISO_MS_Z = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z$")
+
+
+def _normalize_iso_released(val) -> str | None:
+    """Normalize a date/timestamp string into strict ISO-8601 UTC format for Stremio."""
+    if not val or not isinstance(val, str):
+        return None
+    s = val.strip()
+    if not s:
+        return None
+    if _RE_ISO_MS_Z.match(s):
+        try:
+            datetime.fromisoformat(s[:-1] + "+00:00")
+            return s
+        except ValueError:
+            return None
+    if m := _RE_YEAR.match(s):
+        year = int(m.group(1))
+        return f"{year:04d}-01-01T00:00:00Z" if 1 <= year <= 9999 else None
+    if m := _RE_YEAR_MONTH.match(s):
+        try:
+            return datetime(int(m.group(1)), int(m.group(2)), 1).strftime("%Y-%m-%dT00:00:00Z")
+        except ValueError:
+            return None
+    if m := _RE_YMD.match(s):
+        try:
+            return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3))).strftime("%Y-%m-%dT00:00:00Z")
+        except ValueError:
+            return None
+    normalized = re.sub(r"^(\d{4})/(\d{2})/(\d{2})(?=[T\s])", r"\1-\2-\3", s)
+    try:
+        dt = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(UTC)
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def _parse_date(value) -> date | None:
     if not value or not isinstance(value, str):
         return None
@@ -258,7 +300,7 @@ def is_root_tvdb_entry(
             ep_in_season = int(ep1.get("episodeNumber") or 1)
         except (ValueError, TypeError):
             season, ep_in_season = 1, 1
-        return season <= 1 and ep_in_season <= 1
+        return season == 1 and ep_in_season <= 1
     single = _resolve_single_tvdb_season(subtype, anizp_episodes or {}, attributes, cinemeta_data)
     return single in (None, 1)
 
@@ -450,7 +492,7 @@ def map_kitsu_to_stremio(
                 "title": title,
                 "episode": 1,
                 "season": 1,
-                "released": start_date + "T00:00:00Z" if start_date else None,
+                "released": _normalize_iso_released(start_date),
                 "overview": synopsis,
                 "thumbnail": background or poster,
             }
@@ -639,32 +681,28 @@ def map_kitsu_to_stremio(
 
             # Validate episode release date against anime start date and chronological ordering
             released = None
-            if candidate_released:
-                try:
-                    date_str = str(candidate_released).strip()[:10].replace("/", "-")
-                    ep_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-                    is_date_valid = True
+            normalized_released = _normalize_iso_released(candidate_released)
+            if normalized_released:
+                ep_date = datetime.strptime(normalized_released[:10], "%Y-%m-%d").date()
+                is_date_valid = True
 
-                    # 1. Episode air date cannot precede the anime premiere year
-                    if anime_start_year and ep_date.year < anime_start_year:
+                # 1. Episode air date cannot precede the anime premiere year
+                if anime_start_year and ep_date.year < anime_start_year:
+                    is_date_valid = False
+
+                # 2. Monotonicity: episode N cannot air prior to episode N-1
+                if last_valid_ep_date and ep_date < last_valid_ep_date:
+                    is_date_valid = False
+
+                # 3. Unreleased anime status check: cannot have episodes in the past
+                if anime_status in ["unreleased", "not_yet_released"]:
+                    now_date = datetime.now(UTC).date()
+                    if ep_date < now_date:
                         is_date_valid = False
 
-                    # 2. Monotonicity: episode N cannot air prior to episode N-1
-                    if last_valid_ep_date and ep_date < last_valid_ep_date:
-                        is_date_valid = False
-
-                    # 3. Unreleased anime status check: cannot have episodes in the past
-                    if anime_status in ["unreleased", "not_yet_released"]:
-                        now_date = datetime.now(UTC).date()
-                        if ep_date < now_date:
-                            is_date_valid = False
-
-                    if is_date_valid:
-                        # Keep the original value: Cinemeta timestamps carry the actual air time
-                        released = str(candidate_released).strip()
-                        last_valid_ep_date = ep_date
-                except (ValueError, TypeError):
-                    pass
+                if is_date_valid:
+                    released = normalized_released
+                    last_valid_ep_date = ep_date
 
             # If the anime or episode is unreleased (air date in future), Cinemeta's Metahub
             # thumbnail link is pre-computed and guaranteed to 404 on Metahub/TMDB.
@@ -673,14 +711,10 @@ def map_kitsu_to_stremio(
                 if anime_status in ["unreleased", "not_yet_released"]:
                     cinemeta_thumb = None
                 elif released:
-                    try:
-                        date_str = str(released).strip()[:10].replace("/", "-")
-                        ep_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-                        now_date = datetime.now(UTC).date()
-                        if ep_date > now_date:
-                            cinemeta_thumb = None
-                    except (ValueError, TypeError):
-                        pass
+                    ep_date = datetime.strptime(released[:10], "%Y-%m-%d").date()
+                    now_date = datetime.now(UTC).date()
+                    if ep_date > now_date:
+                        cinemeta_thumb = None
                 elif not released and is_likely_sequel:
                     cinemeta_thumb = None
 
@@ -741,21 +775,13 @@ def map_kitsu_to_stremio(
             if show_watched_tags and ep_num <= watched_progress:
                 ep_title = f"[Watched] {ep_title}"
 
-            released_str = None
-            if released and isinstance(released, str) and released.strip():
-                released = released.strip()
-                if "T" not in released:
-                    released_str = released + "T00:00:00Z"
-                else:
-                    released_str = released
-
             videos.append(
                 {
                     "id": f"{video_base}:{ep_num}",
                     "title": ep_title,
                     "episode": ep_num,
                     "season": 1,
-                    "released": released_str,
+                    "released": released,
                     "overview": overview,
                     "thumbnail": thumbnail,
                 }

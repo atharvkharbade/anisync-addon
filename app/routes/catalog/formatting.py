@@ -29,9 +29,18 @@ def parse_iso_timestamp(ts_str: str) -> int:
         return 0
 
 
-def get_anilist_title(title_obj: dict, title_lang: str) -> str:
+def _normalize_title_lang(title_lang: str | None) -> str:
+    """Normalize a title_language setting, defaulting empty/None values to 'english'."""
+    if isinstance(title_lang, str):
+        norm = title_lang.strip().lower()
+        return norm or "english"
+    return "english"
+
+
+def get_anilist_title(title_obj: dict, title_lang: str | None) -> str:
     if not title_obj:
         return "Unknown"
+    title_lang = _normalize_title_lang(title_lang)
     if title_lang == "english":
         return title_obj.get("english") or title_obj.get("userPreferred") or title_obj.get("romaji") or "Unknown"
     elif title_lang == "romaji":
@@ -42,9 +51,10 @@ def get_anilist_title(title_obj: dict, title_lang: str) -> str:
         return title_obj.get("userPreferred") or title_obj.get("english") or title_obj.get("romaji") or "Unknown"
 
 
-def get_kitsu_title(attrs: dict, title_lang: str) -> str:
+def get_kitsu_title(attrs: dict, title_lang: str | None) -> str:
     if not attrs:
         return "Unknown"
+    title_lang = _normalize_title_lang(title_lang)
     titles = attrs.get("titles", {})
     if title_lang == "english":
         return titles.get("en") or titles.get("en_us") or attrs.get("canonicalTitle") or titles.get("en_jp") or "Unknown"
@@ -56,9 +66,10 @@ def get_kitsu_title(attrs: dict, title_lang: str) -> str:
         return attrs.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown"
 
 
-def get_mal_title(node: dict, title_lang: str) -> str:
+def get_mal_title(node: dict, title_lang: str | None) -> str:
     if not node:
         return ""
+    title_lang = _normalize_title_lang(title_lang)
     alt_titles = node.get("alternative_titles", {})
     if title_lang == "english":
         return alt_titles.get("en") or node.get("title") or ""
@@ -68,9 +79,10 @@ def get_mal_title(node: dict, title_lang: str) -> str:
         return node.get("title") or ""
 
 
-def get_simkl_display_title(show_obj: dict, title_lang: str, bulk_details: dict | None = None) -> str:
+def get_simkl_display_title(show_obj: dict, title_lang: str | None, bulk_details: dict | None = None) -> str:
     if not show_obj or not isinstance(show_obj, dict):
         return ""
+    title_lang = _normalize_title_lang(title_lang)
 
     raw_title = show_obj.get("title") or (show_obj.get("show") or {}).get("title") or ""
     if title_lang == "romaji":
@@ -229,9 +241,10 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
 
     import urllib.parse
 
+    from app.routes.catalog.sorting.preferences import resolve_title_lang
     from app.services.poster import get_poster_url
 
-    title_lang = user.get("title_language", "english") if user else "english"
+    title_lang = _normalize_title_lang(resolve_title_lang(user))
     is_watchlist_catalog = bool(
         catalog_id
         and any(

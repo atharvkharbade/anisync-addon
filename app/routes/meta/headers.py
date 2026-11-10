@@ -21,7 +21,7 @@ def _is_rate_limited(user_key: str) -> bool:
 
 
 def _format_status_header(status_info: dict) -> str | None:
-    status = (status_info.get("status") or "").lower()
+    status = (status_info.get("status") or "").strip().lower()
     progress = status_info.get("progress") or 0
     total_eps = status_info.get("total_episodes") or 0
     score = status_info.get("score") or 0
@@ -32,6 +32,7 @@ def _format_status_header(status_info: dict) -> str | None:
         "watching": "Watching",
         "current": "Watching",
         "completed": "Completed",
+        "repeating": "Repeating",
         "planning": "Plan to Watch",
         "plan_to_watch": "Plan to Watch",
         "plantowatch": "Plan to Watch",
@@ -43,7 +44,7 @@ def _format_status_header(status_info: dict) -> str | None:
     status_title = status_display_map.get(status, status.capitalize() if status else "Tracked")
 
     parts = [f"Status: {status_title}"]
-    if status in ["watching", "current", "on_hold", "paused", "hold", "dropped", "completed"] and progress > 0:
+    if status in ["watching", "current", "repeating", "on_hold", "paused", "hold", "dropped", "completed"] and progress > 0:
         if total_eps > 0:
             parts.append(f"Progress: {progress}/{total_eps} Ep")
         else:
