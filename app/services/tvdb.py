@@ -111,12 +111,12 @@ def _register_inflight(key: tuple, coro, *, background: bool = False) -> asyncio
 
 
 def _schedule_background_refresh(key: tuple, coro_factory) -> None:
-    existing = _inflight.get(key)
-    if existing is not None and not existing.done():
-        return
     try:
-        asyncio.get_running_loop()
+        loop = asyncio.get_running_loop()
     except RuntimeError:
+        return
+    existing = _inflight.get(key)
+    if existing is not None and not existing.done() and existing.get_loop() is loop:
         return
     _register_inflight(key, coro_factory(), background=True)
 
@@ -130,7 +130,7 @@ async def _await_inflight(
     timeout: float = _DEFAULT_CALLER_TIMEOUT,
 ):
     task = _inflight.get(key)
-    if task is None or task.done():
+    if task is None or task.done() or task.get_loop() is not asyncio.get_running_loop():
         task = _register_inflight(key, coro_factory(), background=False)
     try:
         return await asyncio.wait_for(asyncio.shield(task), timeout=timeout)

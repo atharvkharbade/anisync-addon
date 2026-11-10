@@ -238,6 +238,31 @@ def _resolve_single_tvdb_season(
     return detected if (detected and detected > 0) else None
 
 
+def is_root_tvdb_entry(
+    subtype: str,
+    anizp_episodes: dict | None,
+    attributes: dict,
+    cinemeta_data: dict | None = None,
+) -> bool:
+    """
+    True when a Kitsu entry starts its TVDB series (S1E1), so TVDB's show-level title and synopsis describe it.
+    Sequels and split cours (e.g. Bleach TYBW Part 2 = TVDB S17E14+, AoT S3) share one TVDB series, and its
+    translation would rename them to the parent show ("Bleach") and show the parent premise as synopsis.
+    """
+    if (subtype or "").lower() == "movie":
+        return True
+    ep1 = anizp_episodes.get("1") if isinstance(anizp_episodes, dict) else None
+    if isinstance(ep1, dict) and ep1.get("seasonNumber") is not None:
+        try:
+            season = int(ep1["seasonNumber"])
+            ep_in_season = int(ep1.get("episodeNumber") or 1)
+        except (ValueError, TypeError):
+            season, ep_in_season = 1, 1
+        return season <= 1 and ep_in_season <= 1
+    single = _resolve_single_tvdb_season(subtype, anizp_episodes or {}, attributes, cinemeta_data)
+    return single in (None, 1)
+
+
 def _resolve_localized_episode_text(
     norm_lang: str,
     anizp_code: str,

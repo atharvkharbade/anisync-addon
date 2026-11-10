@@ -54,7 +54,7 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "backdrop": backdrop_val,
             "airing": _normalize_provider_choice(
                 user.get("meta_airing_provider"),
-                ("anilist", "mal"),
+                ("anilist", "mal", "kitsu"),
                 "anilist",
             ),
             "language": language,

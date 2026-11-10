@@ -25,7 +25,7 @@ from .headers import (
     build_next_airing_header,
     build_user_status_header,
 )
-from .stremio import map_kitsu_to_stremio
+from .stremio import is_root_tvdb_entry, map_kitsu_to_stremio
 
 meta_bp = Blueprint("meta", __name__)
 
@@ -147,7 +147,12 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         tvdb_entity_kind = "movies" if is_movie else "tv"
         tvdb_entity_id = imdb_id if is_movie else tvdb_id
 
-        need_tvdb_translation = (metadata_language != "eng" or synopsis_prov == "tvdb") and bool(tvdb_entity_id)
+        # TVDB translations are show-level: only apply them to the entry that starts the show, never to sequels/split cours
+        need_tvdb_translation = (
+            (metadata_language != "eng" or synopsis_prov == "tvdb")
+            and bool(tvdb_entity_id)
+            and is_root_tvdb_entry(subtype, (anizp_data or {}).get("episodes") or {}, k_attrs)
+        )
         need_tvdb_posters = (poster_prov == "tvdb") and bool(tvdb_entity_id)
         need_tvdb_episodes = (not is_movie) and (metadata_language != "eng" or episodes_prov == "tvdb") and bool(tvdb_id)
 

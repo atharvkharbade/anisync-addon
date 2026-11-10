@@ -3293,8 +3293,8 @@
                     'spa': ('ES', '#eab308'),
                     'deu': ('DE', '#f97316'),
                     'ita': ('IT', '#10b981'),
-                    'pt': ('PT', '#14b8a6'),
-                    'por': ('BR', '#22c55e'),
+                    'pt': ('BR', '#22c55e'),
+                    'por': ('PT', '#14b8a6'),
                     'jpn': ('JA', '#dc2626')
                 } %}
                 {% set meta_lang_list = supported_metadata_languages if supported_metadata_languages is defined else {
@@ -3303,8 +3303,8 @@
                     'spa': {'label': 'Spanish (Español)'},
                     'deu': {'label': 'German (Deutsch)'},
                     'ita': {'label': 'Italian (Italiano)'},
-                    'pt': {'label': 'Portuguese - Portugal (Português)'},
-                    'por': {'label': 'Portuguese - Brazil (Português BR)'},
+                    'pt': {'label': 'Portuguese - Brazil (Português BR)'},
+                    'por': {'label': 'Portuguese - Portugal (Português)'},
                     'jpn': {'label': 'Japanese (日本語)'}
                 } %}
                 {% if cur_meta_lang not in meta_lang_list %}{% set cur_meta_lang = 'eng' %}{% endif %}
