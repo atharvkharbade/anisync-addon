@@ -131,7 +131,8 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
     from app.services.db import get_cached_ids, cache_ids, db, update_user_watchlist_cache_progress
     cached_ids = get_cached_ids(kitsu_id) if kitsu_id else None
     if cached_ids:
-        simkl_id = cached_ids.get("simkl_id")
+        # Keep a Simkl ID that came with the request (simkl:<id>); only fill it from the cache when missing
+        simkl_id = simkl_id or cached_ids.get("simkl_id")
     if not simkl_id and kitsu_id:
         try:
             fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
