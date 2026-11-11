@@ -1870,10 +1870,16 @@
                 <input type="hidden" name="manifest_token" value="{{ user.get('manifest_token', '') }}">
                 <input type="hidden" id="mal_enabled_val" name="mal_enabled"
                     value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
+                <input type="hidden" id="mal_sync_progress_val" name="mal_sync_progress"
+                    value="{{ 'true' if user.get('mal_sync_progress', True) else 'false' }}">
                 <input type="hidden" id="anilist_enabled_val" name="anilist_enabled"
                     value="{{ 'true' if user.get('anilist_enabled', True) else 'false' }}">
+                <input type="hidden" id="anilist_sync_progress_val" name="anilist_sync_progress"
+                    value="{{ 'true' if user.get('anilist_sync_progress', True) else 'false' }}">
                 <input type="hidden" id="simkl_enabled_val" name="simkl_enabled"
                     value="{{ 'true' if user.get('simkl_enabled', True) else 'false' }}">
+                <input type="hidden" id="simkl_sync_progress_val" name="simkl_sync_progress"
+                    value="{{ 'true' if user.get('simkl_sync_progress', True) else 'false' }}">
                 <input type="hidden" id="sync_unlisted_val" name="sync_unlisted"
                     value="{{ 'true' if user.get('sync_unlisted', True) else 'false' }}">
                 <input type="hidden" id="enable_new_episodes_badge_val" name="enable_new_episodes_badge"
@@ -2108,11 +2114,61 @@
             {% if not user.get('is_guest') %}
             <!-- Sync Preferences Card -->
             <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rotate text-info me-2"></i>Sync Preferences</h6>
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-rotate text-info me-2"></i>Sync Preferences</h6>
                 <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
                     Manage how your watch progress automatically updates across your connected services.
                 </p>
-                <div class="form-check form-switch mb-0">
+
+                {% if user.get('mal_access_token') %}
+                <div class="form-check form-switch mb-3" id="mal_sync_progress_wrap" style="transition: opacity 0.2s ease;">
+                    <input class="form-check-input" type="checkbox" role="switch" id="mal_sync_progress" {% if user.get('mal_sync_progress', True) %}checked{% endif %} {% if not user.get('mal_enabled', True) or user.get('mal_token_expired') %}disabled{% endif %}>
+                    <label class="form-check-label ms-1" for="mal_sync_progress">
+                        <span class="fw-medium d-block d-flex align-items-center gap-2">
+                            <img src="/assets/mal_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                            Sync to MyAnimeList
+                        </span>
+                        <span class="text-secondary small d-block">
+                            Automatically updates episode progress and status on MyAnimeList.
+                        </span>
+                    </label>
+                </div>
+                {% endif %}
+
+                {% if user.get('anilist_token') %}
+                <div class="form-check form-switch mb-3" id="anilist_sync_progress_wrap" style="transition: opacity 0.2s ease;">
+                    <input class="form-check-input" type="checkbox" role="switch" id="anilist_sync_progress" {% if user.get('anilist_sync_progress', True) %}checked{% endif %} {% if not user.get('anilist_enabled', True) or user.get('anilist_token_expired') %}disabled{% endif %}>
+                    <label class="form-check-label ms-1" for="anilist_sync_progress">
+                        <span class="fw-medium d-block d-flex align-items-center gap-2">
+                            <img src="/assets/anilist_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                            Sync to AniList
+                        </span>
+                        <span class="text-secondary small d-block">
+                            Automatically updates episode progress and status on AniList.
+                        </span>
+                    </label>
+                </div>
+                {% endif %}
+
+                {% if user.get('simkl_access_token') %}
+                <div class="form-check form-switch mb-3" id="simkl_sync_progress_wrap" style="transition: opacity 0.2s ease;">
+                    <input class="form-check-input" type="checkbox" role="switch" id="simkl_sync_progress" {% if user.get('simkl_sync_progress', True) %}checked{% endif %} {% if not user.get('simkl_enabled', True) or user.get('simkl_token_expired') %}disabled{% endif %}>
+                    <label class="form-check-label ms-1" for="simkl_sync_progress">
+                        <span class="fw-medium d-block d-flex align-items-center gap-2">
+                            <img src="/assets/simkl_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                            Sync to Simkl
+                        </span>
+                        <span class="text-secondary small d-block">
+                            Automatically updates episode progress and status on Simkl.
+                        </span>
+                    </label>
+                </div>
+                {% endif %}
+
+                {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') %}
+                <div class="my-3 border-top border-secondary border-opacity-10"></div>
+                {% endif %}
+
+                <div class="form-check form-switch mb-0" id="sync_unlisted_wrap" style="transition: opacity 0.2s ease;">
                     <input class="form-check-input" type="checkbox" role="switch" id="sync_unlisted" {% if user.get('sync_unlisted', True) %}checked{% endif %}>
                     <label class="form-check-label ms-1" for="sync_unlisted">
                         <span class="fw-medium d-block">Sync unlisted anime</span>
@@ -6080,6 +6136,81 @@
             }
         }
 
+        function syncTrackerProgressSwitches() {
+            const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
+            const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
+            const simklToken = "{{ 'true' if user.get('simkl_access_token') else 'false' }}" === "true";
+
+            const malExpired = "{{ 'true' if user.get('mal_token_expired') else 'false' }}" === "true";
+            const alExpired = "{{ 'true' if user.get('anilist_token_expired') else 'false' }}" === "true";
+            const simklExpired = "{{ 'true' if user.get('simkl_token_expired') else 'false' }}" === "true";
+
+            const malEnabledCheckbox = document.getElementById("mal_enabled");
+            const alEnabledCheckbox = document.getElementById("anilist_enabled");
+            const simklEnabledCheckbox = document.getElementById("simkl_enabled");
+
+            const malSyncCheckbox = document.getElementById("mal_sync_progress");
+            const alSyncCheckbox = document.getElementById("anilist_sync_progress");
+            const simklSyncCheckbox = document.getElementById("simkl_sync_progress");
+
+            const syncUnlistedCheckbox = document.getElementById("sync_unlisted");
+
+            if (malSyncCheckbox) {
+                const malDisabled = !malToken || malExpired || (malEnabledCheckbox && !malEnabledCheckbox.checked);
+                malSyncCheckbox.disabled = malDisabled;
+                const malWrap = document.getElementById("mal_sync_progress_wrap");
+                if (malWrap) malWrap.style.opacity = malDisabled ? "0.45" : "1";
+            }
+            if (alSyncCheckbox) {
+                const alDisabled = !alToken || alExpired || (alEnabledCheckbox && !alEnabledCheckbox.checked);
+                alSyncCheckbox.disabled = alDisabled;
+                const alWrap = document.getElementById("anilist_sync_progress_wrap");
+                if (alWrap) alWrap.style.opacity = alDisabled ? "0.45" : "1";
+            }
+            if (simklSyncCheckbox) {
+                const simklDisabled = !simklToken || simklExpired || (simklEnabledCheckbox && !simklEnabledCheckbox.checked);
+                simklSyncCheckbox.disabled = simklDisabled;
+                const simklWrap = document.getElementById("simkl_sync_progress_wrap");
+                if (simklWrap) simklWrap.style.opacity = simklDisabled ? "0.45" : "1";
+            }
+
+            // Sync unlisted anime only matters if at least one connected tracker has active progress sync
+            let anySyncActive = false;
+            if (malToken && !malExpired && (!malEnabledCheckbox || malEnabledCheckbox.checked) && (!malSyncCheckbox || malSyncCheckbox.checked)) {
+                anySyncActive = true;
+            }
+            if (alToken && !alExpired && (!alEnabledCheckbox || alEnabledCheckbox.checked) && (!alSyncCheckbox || alSyncCheckbox.checked)) {
+                anySyncActive = true;
+            }
+            if (simklToken && !simklExpired && (!simklEnabledCheckbox || simklEnabledCheckbox.checked) && (!simklSyncCheckbox || simklSyncCheckbox.checked)) {
+                anySyncActive = true;
+            }
+
+            if (syncUnlistedCheckbox) {
+                syncUnlistedCheckbox.disabled = !anySyncActive;
+                const syncUnlistedParent = syncUnlistedCheckbox.closest('.form-check');
+                if (syncUnlistedParent) syncUnlistedParent.style.opacity = !anySyncActive ? "0.45" : "1";
+            }
+        }
+
+        const malTrackerEnabled = document.getElementById("mal_enabled");
+        const alTrackerEnabled = document.getElementById("anilist_enabled");
+        const simklTrackerEnabled = document.getElementById("simkl_enabled");
+
+        const malTrackerSync = document.getElementById("mal_sync_progress");
+        const alTrackerSync = document.getElementById("anilist_sync_progress");
+        const simklTrackerSync = document.getElementById("simkl_sync_progress");
+
+        if (malTrackerEnabled) malTrackerEnabled.addEventListener("change", syncTrackerProgressSwitches);
+        if (alTrackerEnabled) alTrackerEnabled.addEventListener("change", syncTrackerProgressSwitches);
+        if (simklTrackerEnabled) simklTrackerEnabled.addEventListener("change", syncTrackerProgressSwitches);
+
+        if (malTrackerSync) malTrackerSync.addEventListener("change", syncTrackerProgressSwitches);
+        if (alTrackerSync) alTrackerSync.addEventListener("change", syncTrackerProgressSwitches);
+        if (simklTrackerSync) simklTrackerSync.addEventListener("change", syncTrackerProgressSwitches);
+
+        syncTrackerProgressSwitches();
+
         if (combineCheckbox) {
             combineCheckbox.addEventListener("change", () => syncCatalogManagement(false));
 
@@ -6479,9 +6610,17 @@
         const malEnabledVal = document.getElementById('mal_enabled_val');
         if (malEnabledCheckbox && malEnabledVal) malEnabledVal.value = malEnabledCheckbox.checked ? 'true' : 'false';
 
+        const malSyncCheckbox = document.getElementById('mal_sync_progress');
+        const malSyncVal = document.getElementById('mal_sync_progress_val');
+        if (malSyncCheckbox && malSyncVal) malSyncVal.value = malSyncCheckbox.checked ? 'true' : 'false';
+
         const anilistEnabledCheckbox = document.getElementById('anilist_enabled');
         const anilistEnabledVal = document.getElementById('anilist_enabled_val');
         if (anilistEnabledCheckbox && anilistEnabledVal) anilistEnabledVal.value = anilistEnabledCheckbox.checked ? 'true' : 'false';
+
+        const anilistSyncCheckbox = document.getElementById('anilist_sync_progress');
+        const anilistSyncVal = document.getElementById('anilist_sync_progress_val');
+        if (anilistSyncCheckbox && anilistSyncVal) anilistSyncVal.value = anilistSyncCheckbox.checked ? 'true' : 'false';
 
         const combineWatchlistsCheckbox = document.getElementById('combine_watchlists');
         const combineWatchlistsVal = document.getElementById('combine_watchlists_val');
@@ -6490,6 +6629,10 @@
         const simklEnabledCheckbox = document.getElementById('simkl_enabled');
         const simklEnabledVal = document.getElementById('simkl_enabled_val');
         if (simklEnabledCheckbox && simklEnabledVal) simklEnabledVal.value = simklEnabledCheckbox.checked ? 'true' : 'false';
+
+        const simklSyncCheckbox = document.getElementById('simkl_sync_progress');
+        const simklSyncVal = document.getElementById('simkl_sync_progress_val');
+        if (simklSyncCheckbox && simklSyncVal) simklSyncVal.value = simklSyncCheckbox.checked ? 'true' : 'false';
 
         const enableRecsCheckbox = document.getElementById("enable_recommendations");
         const enableRecsVal = document.getElementById('enable_recommendations_val');
