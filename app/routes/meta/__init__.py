@@ -34,6 +34,16 @@ meta_bp = Blueprint("meta", __name__)
 _keep_alive: set[asyncio.Future] = set()
 
 
+def _finish_keep_alive(task: asyncio.Future) -> None:
+    """Release a background task reference and consume any late exception so asyncio stays quiet."""
+    _keep_alive.discard(task)
+    if not task.cancelled():
+        try:
+            task.exception()
+        except Exception:
+            pass
+
+
 @meta_bp.route("/meta/<string:meta_type>/<string:meta_id>.json")
 @rate_limit(limit=60, period_seconds=60)
 async def handle_root_meta(meta_type: str, meta_id: str):
@@ -67,7 +77,7 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         """Wait up to `timeout` without cancelling the fetch, so a slow upstream still fills its cache for the next request."""
         task = asyncio.ensure_future(coro)
         _keep_alive.add(task)
-        task.add_done_callback(_keep_alive.discard)
+        task.add_done_callback(_finish_keep_alive)
         return await asyncio.wait_for(asyncio.shield(task), timeout=timeout)
 
     # Strip prefixes and get kitsu id

@@ -1117,14 +1117,30 @@ async def _fetch_episodes_for_lang(series_id: str, tvdb_lang: str, client, token
     return _trim_episodes(raw_eps)
 
 
+def _merge_episode_pair(primary_ep: dict | None, fb_ep: dict | None, base_ep: dict) -> dict:
+    """Merge a primary/fallback Portuguese episode pair, using fallback name only when primary lacks an overview and fallback has one."""
+    p_name = (primary_ep.get("name") or "") if primary_ep else ""
+    p_ov = (primary_ep.get("overview") or "") if primary_ep else ""
+    f_name = (fb_ep.get("name") or "") if fb_ep else ""
+    f_ov = (fb_ep.get("overview") or "") if fb_ep else ""
+
+    if primary_ep and fb_ep:
+        # TheTVDB fills untranslated episode names with English, so trust primary name unless primary omitted overview while fallback translated it.
+        name = p_name if (p_ov or not f_ov) else (f_name or p_name)
+    else:
+        name = p_name or f_name
+    overview = (base_ep.get("overview") or "") or p_ov or f_ov
+    return {**base_ep, "name": name, "overview": overview}
+
+
 def _merge_portuguese_episodes(
     primary_eps: list[dict],
     fb_eps: list[dict],
     prefer_fb_overviews: bool,
 ) -> list[dict]:
     """
-    Merges primary and fallback Portuguese episode lists while always preserving primary names first,
-    backfilling missing overviews, and retaining primary-only regular (seasonNumber > 0) episodes.
+    Merges primary and fallback Portuguese episode lists while trusting translated primary names,
+    using fallback names when primary left an episode untranslated, and retaining primary-only regular episodes.
     """
     if not primary_eps:
         return fb_eps
@@ -1140,17 +1156,7 @@ def _merge_portuguese_episodes(
             alt = primary_by_id.get(ep_id) if ep_id is not None else None
             if ep_id is not None:
                 seen_ids.add(ep_id)
-            if alt:
-                # TheTVDB fills untranslated names with English, so only trust the primary name
-                # when the primary variant actually translated that episode (it has an overview)
-                primary_translated = bool(alt.get("overview"))
-                merged.append({
-                    **ep,
-                    "name": (alt.get("name") if primary_translated else ep.get("name")) or ep.get("name") or alt.get("name", ""),
-                    "overview": ep.get("overview") or alt.get("overview", ""),
-                })
-            else:
-                merged.append(ep)
+            merged.append(_merge_episode_pair(alt, ep, ep) if alt else ep)
         for ep in primary_eps:
             ep_id = ep.get("id")
             if ep_id is not None and ep_id not in seen_ids and (ep.get("seasonNumber") or 0) > 0:
@@ -1161,14 +1167,7 @@ def _merge_portuguese_episodes(
     merged = []
     for ep in primary_eps:
         alt = fb_by_id.get(ep.get("id")) if ep.get("id") is not None else None
-        if alt:
-            merged.append({
-                **ep,
-                "name": ep.get("name") or alt.get("name", ""),
-                "overview": ep.get("overview") or alt.get("overview", ""),
-            })
-        else:
-            merged.append(ep)
+        merged.append(_merge_episode_pair(ep, alt, ep) if alt else ep)
     return merged
 
 
