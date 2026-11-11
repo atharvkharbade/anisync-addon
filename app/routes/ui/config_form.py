@@ -61,10 +61,16 @@ async def handle_configure_form(user: dict, form) -> dict | None:
 
     if "mal_enabled" in form:
         user["mal_enabled"] = form.get("mal_enabled") == "true"
+    if "mal_sync_progress" in form:
+        user["mal_sync_progress"] = form.get("mal_sync_progress") == "true"
     if "anilist_enabled" in form:
         user["anilist_enabled"] = form.get("anilist_enabled") == "true"
+    if "anilist_sync_progress" in form:
+        user["anilist_sync_progress"] = form.get("anilist_sync_progress") == "true"
     if "simkl_enabled" in form:
         user["simkl_enabled"] = form.get("simkl_enabled") == "true"
+    if "simkl_sync_progress" in form:
+        user["simkl_sync_progress"] = form.get("simkl_sync_progress") == "true"
     if "combine_watchlists" in form:
         user["combine_watchlists"] = form.get("combine_watchlists") == "true"
     if "sync_unlisted" in form:
