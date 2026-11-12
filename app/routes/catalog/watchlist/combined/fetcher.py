@@ -29,7 +29,7 @@ async def fetch_combined_tracker_lists(
             try:
                 from app.services.db import get_or_refresh_mal_token
 
-                mal_token = await get_or_refresh_mal_token(user_id)
+                mal_token = await get_or_refresh_mal_token(user.get("uid") or user_id)
                 if mal_token:
                     mal_entries = await get_cached_mal_user_anime_list(user_id, mal_token, mal_status)
             except Exception as ex:

@@ -48,7 +48,7 @@ async def handle_mal_catalog(user, user_id, catalog_type, catalog_id, filters, e
     try:
         from app.services.db import get_or_refresh_mal_token
 
-        mal_token = await get_or_refresh_mal_token(user_id)
+        mal_token = await get_or_refresh_mal_token(user.get("uid") or user_id)
         if not mal_token:
             return await respond_with({"metas": []})
         data_items = await get_cached_mal_user_anime_list(user_id, mal_token, mal_status)
