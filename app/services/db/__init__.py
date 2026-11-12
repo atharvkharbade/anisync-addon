@@ -43,6 +43,7 @@ from .users import (
     find_user_by_mal_id,
     find_user_by_simkl_id,
     get_user,
+    get_user_by_manifest_token,
     store_user,
 )
 from .watchlist import (
@@ -61,6 +62,7 @@ __all__ = [
     "jikan_cache_collection",
     "init_indexes",
     "get_user",
+    "get_user_by_manifest_token",
     "find_user_by_mal_id",
     "find_user_by_anilist_id",
     "find_user_by_simkl_id",

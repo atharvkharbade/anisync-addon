@@ -5,6 +5,15 @@ from datetime import UTC, datetime
 from .connection import users_collection
 
 
+def get_user_by_manifest_token(token: str) -> dict | None:
+    if not token or not isinstance(token, str):
+        return None
+    user = users_collection.find_one({"manifest_token": token})
+    if user:
+        user.setdefault("metadata_language", "eng")
+    return user
+
+
 def get_user(user_id: str, for_manifest: bool = False) -> dict | None:
     if not user_id:
         return None
