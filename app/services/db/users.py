@@ -118,6 +118,27 @@ def find_user_by_simkl_id(simkl_id: str) -> dict | None:
     )
 
 
+def update_user_fields(uid: str, set_fields: dict | None = None, unset_fields: list[str] | None = None) -> bool:
+    """Atomically update specific fields on a user document using $set and $unset.
+    Prevents race conditions where full document replace_one clobbers concurrent updates.
+    """
+    if not uid:
+        return False
+    update_doc = {}
+    if set_fields:
+        update_doc["$set"] = set_fields
+    if unset_fields:
+        update_doc["$unset"] = {f: "" for f in unset_fields}
+    if not update_doc:
+        return True
+    try:
+        res = users_collection.update_one({"uid": str(uid)}, update_doc)
+        return bool(res.acknowledged)
+    except Exception as e:
+        logging.error("Failed to update user fields for %s: %s", uid, e)
+        return False
+
+
 def store_user(user_details: dict) -> bool:
     uid = user_details.get("uid") or user_details.get("id")
     if not uid:

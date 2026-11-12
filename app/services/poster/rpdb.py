@@ -34,9 +34,16 @@ def check_rpdb_key_validity_background(user_id: str, rpdb_key: str):
 
         user = get_user(user_id)
         if user and user.get("rpdb_api_key") == rpdb_key:
+            from datetime import UTC
+            from app.services.db import update_user_fields
+
+            last_checked = datetime.now(UTC).replace(tzinfo=None)
             user["rpdb_key_valid"] = is_valid
-            user["rpdb_key_last_checked"] = datetime.utcnow()
-            store_user(user)
+            user["rpdb_key_last_checked"] = last_checked
+            update_user_fields(user.get("uid") or user_id, {
+                "rpdb_key_valid": is_valid,
+                "rpdb_key_last_checked": last_checked,
+            })
 
     try:
         loop = asyncio.get_running_loop()

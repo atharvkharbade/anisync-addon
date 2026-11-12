@@ -46,7 +46,9 @@ async def fetch_combined_tracker_lists(
                     viewer = await anilist_api.get_viewer(user["anilist_token"])
                     anilist_uid = int(viewer["id"])
                     user["anilist_id"] = str(anilist_uid)
-                    store_user(user)
+                    from app.services.db import update_user_fields
+
+                    update_user_fields(user.get("uid") or user_id, {"anilist_id": str(anilist_uid)})
 
                 statuses = [al_status]
                 if al_status == "CURRENT":
