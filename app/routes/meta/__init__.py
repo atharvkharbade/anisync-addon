@@ -45,13 +45,13 @@ def _finish_keep_alive(task: asyncio.Future) -> None:
 
 
 @meta_bp.route("/meta/<string:meta_type>/<string:meta_id>.json")
-@rate_limit(limit=60, period_seconds=60)
+@rate_limit(limit=120, period_seconds=60)
 async def handle_root_meta(meta_type: str, meta_id: str):
     return await respond_with({"meta": {}})
 
 
 @meta_bp.route("/<user_id>/meta/<string:meta_type>/<string:meta_id>.json")
-@rate_limit(limit=60, period_seconds=60)
+@rate_limit(limit=120, period_seconds=60)
 async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     meta_id = urllib.parse.unquote(meta_id)
     if meta_type not in ["anime", "series", "movie"]:

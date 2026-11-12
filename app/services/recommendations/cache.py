@@ -13,6 +13,7 @@ popular_fallbacks_collection = db.get_collection("popular_fallbacks")
 
 currently_updating_users = set()
 POPULAR_FALLBACKS = []
+_background_tasks: set[asyncio.Task] = set()
 
 
 def get_cached_recommendations(user_id: str) -> dict | None:
@@ -172,7 +173,9 @@ async def popular_fallbacks_loop():
 
 def trigger_popular_fallbacks_update_background():
     """Start the background popular fallbacks updater task."""
-    asyncio.create_task(popular_fallbacks_loop())
+    task = asyncio.create_task(popular_fallbacks_loop())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
 
 async def update_recommendations_cache(user_id: str, force: bool = False):
@@ -193,4 +196,6 @@ def trigger_recommendation_update_background(user_id: str, force: bool = False):
     user = get_user(user_id)
     if not user or not user.get("enable_recommendations", False):
         return
-    asyncio.create_task(update_recommendations_cache(user_id, force=force))
+    task = asyncio.create_task(update_recommendations_cache(user_id, force=force))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)

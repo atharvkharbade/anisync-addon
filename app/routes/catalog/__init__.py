@@ -53,14 +53,14 @@ catalog_bp = Blueprint("catalog", __name__)
 
 @catalog_bp.route("/catalog/<string:catalog_type>/<string:catalog_id>.json")
 @catalog_bp.route("/catalog/<string:catalog_type>/<string:catalog_id>/<path:extras>.json")
-@rate_limit(limit=60, period_seconds=60)
+@rate_limit(limit=120, period_seconds=60)
 async def handle_root_catalog(catalog_type: str, catalog_id: str, extras: str = ""):
     return await respond_with({"metas": []})
 
 
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>.json")
 @catalog_bp.route("/<user_id>/catalog/<string:catalog_type>/<string:catalog_id>/<path:extras>.json")
-@rate_limit(limit=60, period_seconds=60)
+@rate_limit(limit=120, period_seconds=60)
 async def handle_catalog(user_id: str, catalog_type: str, catalog_id: str, extras: str = ""):
     if not is_valid_user_id(user_id):
         return await respond_with({"metas": []})

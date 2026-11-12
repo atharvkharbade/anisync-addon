@@ -79,7 +79,7 @@ def rate_limit(limit: int, period_seconds: int = 60):
         @wraps(f)
         async def wrapped(*args, **kwargs):
             ip = get_remote_ip()
-            route = request.path
+            route = request.url_rule.rule if request.url_rule else request.path
             key = (ip, route)
             now = time.monotonic()
             cutoff = now - period_seconds
