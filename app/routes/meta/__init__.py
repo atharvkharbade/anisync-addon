@@ -89,15 +89,23 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     try:
         if meta_id.startswith(("mal:", "mal-", "mal_")):
             mal_id = meta_id[4:]
+            if len(mal_id) > 12 or not mal_id.isdigit():
+                return await respond_with({"meta": {}})
             kitsu_id = await _shielded(resolve_mal_to_kitsu(mal_id), _budget(2.0))
         elif meta_id.startswith(("anilist:", "anilist-", "anilist_")):
             anilist_id = meta_id[8:]
+            if len(anilist_id) > 12 or not anilist_id.isdigit():
+                return await respond_with({"meta": {}})
             kitsu_id = await _shielded(resolve_anilist_to_kitsu(anilist_id), _budget(2.0))
         elif meta_id.startswith(("simkl:", "simkl-", "simkl_")):
             simkl_id = meta_id[6:]
+            if len(simkl_id) > 12 or not simkl_id.isdigit():
+                return await respond_with({"meta": {}})
             kitsu_id = await _shielded(resolve_simkl_to_kitsu(simkl_id), _budget(2.0))
         elif meta_id.startswith(("kitsu:", "kitsu-", "kitsu_")):
             kitsu_id = meta_id[6:]
+            if len(kitsu_id) > 12 or not kitsu_id.isdigit():
+                return await respond_with({"meta": {}})
     except TimeoutError:
         logging.warning("Timed out resolving Kitsu ID for meta_id=%s", meta_id)
         kitsu_id = None

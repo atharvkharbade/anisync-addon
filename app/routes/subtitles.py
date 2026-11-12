@@ -52,26 +52,31 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
         parts = remainder.split(":")
         kitsu_id = parts[0].strip()
         if len(parts) > 1 and parts[1].isdigit():
-            episode = int(parts[1])
+            episode = int(parts[1]) if len(parts[1]) <= 6 else 1
     elif clean_id.startswith("mal:"):
         remainder = clean_id[len("mal:") :]
         parts = remainder.split(":")
         mal_id = parts[0].strip()
         if len(parts) > 1 and parts[1].isdigit():
-            episode = int(parts[1])
+            episode = int(parts[1]) if len(parts[1]) <= 6 else 1
     elif clean_id.startswith("anilist:"):
         remainder = clean_id[len("anilist:") :]
         parts = remainder.split(":")
         anilist_id = parts[0].strip()
         if len(parts) > 1 and parts[1].isdigit():
-            episode = int(parts[1])
+            episode = int(parts[1]) if len(parts[1]) <= 6 else 1
     elif clean_id.startswith("simkl:"):
         remainder = clean_id[len("simkl:") :]
         parts = remainder.split(":")
         simkl_id = parts[0].strip()
         if len(parts) > 1 and parts[1].isdigit():
-            episode = int(parts[1])
+            episode = int(parts[1]) if len(parts[1]) <= 6 else 1
     else:
+        return await respond_with({"subtitles": []})
+
+    # Validate ID length early to prevent BSON Int64 overflow and malformed queries
+    target_id = kitsu_id or mal_id or anilist_id or simkl_id
+    if not target_id or len(target_id) > 12 or not target_id.isdigit():
         return await respond_with({"subtitles": []})
 
     if not kitsu_id and not mal_id and not anilist_id and not simkl_id:
