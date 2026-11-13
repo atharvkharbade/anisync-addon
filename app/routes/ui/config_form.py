@@ -16,6 +16,40 @@ def store_user(user):
         return ui_mod.store_user(user)
     return _db_store_user(user)
 
+
+# Token state that background code (token refresh, auth error counters) may change while this form
+# request is in flight; the form never edits these, so the full-document save must not roll them back.
+_TRACKER_AUTH_FIELDS = tuple(
+    f"{p}_{f}"
+    for p, fields in (
+        ("mal", ("access_token", "refresh_token", "expires_at")),
+        ("anilist", ("token",)),
+        ("simkl", ("access_token",)),
+    )
+    for f in fields
+) + tuple(
+    f"{p}_{f}"
+    for p in ("mal", "anilist", "simkl")
+    for f in ("token_expired", "expired_at", "consecutive_auth_errors", "last_auth_error_at")
+) + ("mal_refresh_lock_until",)
+
+
+def _keep_latest_tracker_auth_state(user: dict) -> None:
+    try:
+        from app.services.db import users_collection
+
+        latest = users_collection.find_one({"uid": str(user.get("uid"))}, {f: 1 for f in _TRACKER_AUTH_FIELDS})
+    except Exception as e:
+        logging.warning("Could not re-read tracker auth state before saving settings: %s", e)
+        return
+    if not latest:
+        return
+    for field in _TRACKER_AUTH_FIELDS:
+        if field in latest:
+            user[field] = latest[field]
+        else:
+            user.pop(field, None)
+
 from .validation import check_gemini_api_key_valid
 from app.routes.catalog.sorting import get_allowed_sorts_for_catalog
 
@@ -409,6 +443,7 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         user["allow_legacy_uid"] = False
         migrated = True
 
+    _keep_latest_tracker_auth_state(user)
     store_user(user)
     invalidate_user_watchlist_cache(uid)
 

@@ -362,7 +362,7 @@ def _render_framed_background_sync(img_bytes: bytes) -> bytes | None:
 
 
 @poster_bp.route("/<user_id>/poster/<string:media_id>.jpg")
-@rate_limit(limit=120, period_seconds=60)
+@rate_limit(limit=300, period_seconds=60)
 async def serve_modified_poster(user_id: str, media_id: str):
     """
     Serve a modified poster with a Premium Accent Overlay indicator if a new episode has aired.

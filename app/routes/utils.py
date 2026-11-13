@@ -58,7 +58,7 @@ def is_valid_user_id(user_id: str) -> bool:
 
 
 _rate_limit_lock = threading.Lock()
-_rate_limit_buckets: dict[tuple[str, str], list[float]] = defaultdict(list)
+_rate_limit_buckets: dict[tuple[str, str, str], list[float]] = defaultdict(list)
 _last_rate_limit_cleanup = time.monotonic()
 
 
@@ -80,7 +80,10 @@ def rate_limit(limit: int, period_seconds: int = 60):
         async def wrapped(*args, **kwargs):
             ip = get_remote_ip()
             route = request.url_rule.rule if request.url_rule else request.path
-            key = (ip, route)
+            # Group by route pattern (not the raw path, so one bucket covers every anime ID), but keep
+            # users separate so people sharing one IP (household, mobile CGNAT) don't share a limit
+            view_user = str((request.view_args or {}).get("user_id") or "")[:64]
+            key = (ip, route, view_user)
             now = time.monotonic()
             cutoff = now - period_seconds
 
