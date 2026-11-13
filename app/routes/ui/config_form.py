@@ -17,8 +17,8 @@ def store_user(user):
     return _db_store_user(user)
 
 
-# Token state that background code (token refresh, auth error counters) may change while this form
-# request is in flight; the form never edits these, so the full-document save must not roll them back.
+# Token and profile state that background code (token refresh, auth error counters, profile sync) may
+# change while this form request is in flight; the form never edits these, so the full-document save must not roll them back.
 _TRACKER_AUTH_FIELDS = tuple(
     f"{p}_{f}"
     for p, fields in (
@@ -31,7 +31,11 @@ _TRACKER_AUTH_FIELDS = tuple(
     f"{p}_{f}"
     for p in ("mal", "anilist", "simkl")
     for f in ("token_expired", "expired_at", "consecutive_auth_errors", "last_auth_error_at")
-) + ("mal_refresh_lock_until",)
+) + ("mal_refresh_lock_until",) + (
+    # Written by the background profile sync that the same configure request starts
+    "name", "picture", "mal_picture", "anilist_username", "anilist_picture",
+    "simkl_username", "simkl_avatar", "last_profile_sync",
+)
 
 
 def _keep_latest_tracker_auth_state(user: dict) -> None:
