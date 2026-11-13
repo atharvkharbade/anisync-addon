@@ -23,7 +23,7 @@ _TRACKER_AUTH_FIELDS = tuple(
     f"{p}_{f}"
     for p, fields in (
         ("mal", ("access_token", "refresh_token", "expires_at")),
-        ("anilist", ("token",)),
+        ("anilist", ("token", "id")),
         ("simkl", ("access_token",)),
     )
     for f in fields
