@@ -106,7 +106,9 @@ async def update_discovery_catalogs_cache() -> dict:
             al_id = str(m["id"])
             mal_id = str(m.get("idMal") or "")
             kitsu_id = kitsu_mappings.get(f"mal:{mal_id}") or kitsu_mappings.get(f"anilist:{al_id}")
-            stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mal_id}" if mal_id else f"anilist:{al_id}")
+            if not kitsu_id:
+                continue
+            stremio_id = f"kitsu:{kitsu_id}"
 
             if stremio_id in seen_stremio_ids:
                 continue
@@ -176,7 +178,9 @@ async def update_discovery_catalogs_cache() -> dict:
             if not mal_id:
                 continue
             kitsu_id = kitsu_mappings.get(f"mal:{mal_id}")
-            stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"mal:{mal_id}"
+            if not kitsu_id:
+                continue
+            stremio_id = f"kitsu:{kitsu_id}"
 
             if stremio_id in seen_stremio_ids:
                 continue

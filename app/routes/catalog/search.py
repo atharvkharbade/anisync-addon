@@ -301,7 +301,9 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                         or kitsu_map.get(f"al:{al_id}")
                         or (kitsu_map.get(f"al:{int(al_id)}") if al_id and al_id.isdigit() else None)
                     )
-                    stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mal_id}" if mal_id else f"anilist:{al_id}")
+                    if not kitsu_id:
+                        continue
+                    stremio_id = f"kitsu:{kitsu_id}"
                     if stremio_id in existing_ids:
                         continue
 

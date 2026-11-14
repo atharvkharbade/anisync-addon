@@ -34,14 +34,31 @@ async def discovery_catalogs_loop():
         await asyncio.sleep(12 * 3600 - 300)
 
 
+async def fribb_mappings_loop():
+    """Background loop to periodically verify and refresh Fribb ID mappings daily."""
+    await asyncio.sleep(10)
+    while True:
+        try:
+            from app.lib.id_resolver.fribb import ensure_fribb_mappings
+            from app.services.http import get_client
+
+            await ensure_fribb_mappings(get_client())
+        except Exception as e:
+            logging.error("Error in fribb mappings refresh loop: %s", e)
+        await asyncio.sleep(24 * 3600)
+
+
 _discovery_prefetch_task = None
+_fribb_refresh_task = None
 
 
 def trigger_discovery_catalogs_prefetch():
-    """Start the background discovery catalogs prefetch loop if not already running."""
-    global _discovery_prefetch_task
+    """Start background discovery catalogs prefetch and daily Fribb mappings loops if not already running."""
+    global _discovery_prefetch_task, _fribb_refresh_task
     if _discovery_prefetch_task is None or _discovery_prefetch_task.done():
         _discovery_prefetch_task = asyncio.create_task(discovery_catalogs_loop())
+    if _fribb_refresh_task is None or _fribb_refresh_task.done():
+        _fribb_refresh_task = asyncio.create_task(fribb_mappings_loop())
 
 
 async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filters, extras=""):
