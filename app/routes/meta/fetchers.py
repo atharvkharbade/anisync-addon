@@ -208,6 +208,27 @@ async def fetch_anizp_metadata(anilist_id: str = None, mal_id: str = None) -> di
             except Exception as ex:
                 logging.error("Failed to write anizp_meta_cache for %s: %s", cache_key, ex)
             return data
+        elif resp.status_code == 404:
+            # Cache miss for 24 hours so we don't spam ani.zip on every catalog load
+            write_now = _now_naive_utc()
+            ttl = datetime.timedelta(hours=24)
+            try:
+                col.update_one(
+                    {"key": cache_key},
+                    {
+                        "$set": {
+                            "key": cache_key,
+                            "data": {},
+                            "expires_at": write_now + ttl,
+                            "updated_at": write_now,
+                            "is_miss": True,
+                        }
+                    },
+                    upsert=True,
+                )
+            except Exception as ex:
+                logging.error("Failed to write negative anizp_meta_cache for %s: %s", cache_key, ex)
+            return {}
     except Exception as e:
         logging.warning("Failed to fetch rich metadata from ani.zip: %s", e)
     return {}

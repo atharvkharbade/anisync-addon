@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 import time
@@ -332,6 +333,13 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
                 bulk_details.update(page_titles_bulk)
 
         # Build meta items
+        from app.routes.catalog.formatting import prefetch_simkl_cache_titles
+
+        prefetched_titles = prefetch_simkl_cache_titles(
+            [it.get("show") or it.get("anime") or it for it in paged_data_items],
+            title_lang,
+        )
+
         for item in paged_data_items:
             try:
                 if "show" in item and isinstance(item["show"], dict):
@@ -355,7 +363,7 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
                     or item.get("total_episodes_count")
                     or "?"
                 )
-                name = get_simkl_display_title(show_obj, title_lang, bulk_details=bulk_details)
+                name = get_simkl_display_title(show_obj, title_lang, bulk_details=bulk_details, prefetched_titles=prefetched_titles)
                 poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
                 if poster and not poster.startswith("http"):
                     poster = f"https://simkl.in/posters/{poster}_m.jpg"
@@ -430,8 +438,9 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
 
     metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
+    formatted_metas = await asyncio.to_thread(format_catalog_metas, metas, user, catalog_type, catalog_id)
     return await respond_with(
-        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+        {"metas": formatted_metas},
         max_age=300,
         stale_while_revalidate=600,
     )

@@ -337,8 +337,9 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
     anizp_keys = [f"al_{a}" for a in known_al if a] + [f"mal_{m}" for m in known_mal if m]
     if anizp_keys:
         try:
-            for doc in db.anizp_meta_cache.find({"key": {"$in": anizp_keys}}):
-                if doc.get("key") and doc.get("data"):
+            anizp_proj = {"key": 1, "data.images": 1, "data.mappings.thetvdb_id": 1, "data.mappings.imdb_id": 1, "_id": 0}
+            for doc in db.anizp_meta_cache.find({"key": {"$in": anizp_keys}}, anizp_proj):
+                if doc.get("key") and doc.get("data") is not None:
                     anizp_by_key[doc["key"]] = doc["data"]
         except Exception as e:
             logging.error("enrich_catalog_metas_artwork: anizp_meta_cache query failed: %s", e)
@@ -370,7 +371,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                 fanart_or.append({"kind": "movies", "ext_id": str(im_id)})
         if fanart_or:
             try:
-                for doc in db.fanart_meta_cache.find({"$or": fanart_or}):
+                fanart_proj = {"kind": 1, "ext_id": 1, "data": 1, "_id": 0}
+                for doc in db.fanart_meta_cache.find({"$or": fanart_or}, fanart_proj):
                     k_kind = doc.get("kind")
                     k_ext = doc.get("ext_id")
                     # Cached misses ({}) count as cached so they are not re-queued for warming every request
@@ -406,7 +408,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                 tvdb_or.append({"kind": "movies", "ext_id": str(im_id)})
         if tvdb_or:
             try:
-                for doc in db.tvdb_meta_cache.find({"$or": tvdb_or}):
+                tvdb_proj = {"kind": 1, "ext_id": 1, "data": 1, "_id": 0}
+                for doc in db.tvdb_meta_cache.find({"$or": tvdb_or}, tvdb_proj):
                     k_kind = doc.get("kind")
                     k_ext = doc.get("ext_id")
                     # Cached misses ([]) count as cached so they are not re-queued for warming every request
@@ -418,7 +421,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
     cinemeta_by_imdb = {}
     if known_imdb:
         try:
-            for doc in db.cinemeta_meta_cache.find({"imdb_id": {"$in": list(known_imdb)}}):
+            cinemeta_proj = {"imdb_id": 1, "data.background": 1, "data.logo": 1, "_id": 0}
+            for doc in db.cinemeta_meta_cache.find({"imdb_id": {"$in": list(known_imdb)}}, cinemeta_proj):
                 if doc.get("imdb_id") and doc.get("data"):
                     cinemeta_by_imdb[doc["imdb_id"]] = doc["data"]
         except Exception as e:
@@ -427,7 +431,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
     kitsu_by_id = {}
     if known_kitsu:
         try:
-            for doc in db.kitsu_meta_cache.find({"kitsu_id": {"$in": [str(k) for k in known_kitsu]}}):
+            kitsu_proj = {"kitsu_id": 1, "data.data.attributes.coverImage": 1, "_id": 0}
+            for doc in db.kitsu_meta_cache.find({"kitsu_id": {"$in": [str(k) for k in known_kitsu]}}, kitsu_proj):
                 if doc.get("kitsu_id") and doc.get("data"):
                     kitsu_by_id[doc["kitsu_id"]] = doc["data"]
         except Exception as e:

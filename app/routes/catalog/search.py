@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 import re
@@ -49,8 +50,9 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
             c_metas = cached.get("metas") or []
             if c_metas and all(m.get("date_val") is not None and m.get("score") is not None and m.get("year") is not None for m in c_metas):
                 processed_metas = await _process_search_metas(c_metas, user, catalog_id, filters)
+                formatted_metas = await asyncio.to_thread(format_catalog_metas, processed_metas, user, catalog_type, catalog_id)
                 return await respond_with(
-                    {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
+                    {"metas": formatted_metas},
                     max_age=60,
                     stale_while_revalidate=120,
                 )
@@ -378,15 +380,17 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
     elif cached:
         logging.warning("Search returned 0 results, returning expired cache for query '%s'", search_query)
         processed_metas = await _process_search_metas(cached["metas"], user, catalog_id, filters)
+        formatted_metas = await asyncio.to_thread(format_catalog_metas, processed_metas, user, catalog_type, catalog_id)
         return await respond_with(
-            {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
+            {"metas": formatted_metas},
             max_age=60,
             stale_while_revalidate=120,
         )
 
     processed_metas = await _process_search_metas(metas, user, catalog_id, filters)
+    formatted_metas = await asyncio.to_thread(format_catalog_metas, processed_metas, user, catalog_type, catalog_id)
     return await respond_with(
-        {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
+        {"metas": formatted_metas},
         max_age=60,
         stale_while_revalidate=120,
     )

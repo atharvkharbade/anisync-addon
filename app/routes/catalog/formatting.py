@@ -79,7 +79,142 @@ def get_mal_title(node: dict, title_lang: str | None) -> str:
         return node.get("title") or ""
 
 
-def get_simkl_display_title(show_obj: dict, title_lang: str | None, bulk_details: dict | None = None) -> str:
+def prefetch_simkl_cache_titles(shows: list[dict], title_lang: str | None) -> dict[str, str]:
+    """
+    Bulk prefetch cached titles for a list of Simkl items using single $in queries
+    with strict field projections, replacing per-item N+1 queries.
+    Returns a dict mapping item identity (e.g. "al_{id}", "mal_{id}", "kitsu_{id}") -> localized title.
+    """
+    if not shows:
+        return {}
+    title_lang = _normalize_title_lang(title_lang)
+    if title_lang == "romaji":
+        return {}
+
+    try:
+        from app.services.db import db
+
+        mal_without_al = set()
+        al_ids = set()
+        kitsu_ids = set()
+
+        for s in shows:
+            if not isinstance(s, dict):
+                continue
+            ids = s.get("ids") or {}
+            if not ids and ("show" in s or "anime" in s):
+                inner = s.get("show") or s.get("anime") or {}
+                ids = inner.get("ids") or {}
+            aid = str(ids.get("anilist") or "").strip()
+            mid = str(ids.get("mal") or "").strip()
+            kid = str(ids.get("kitsu") or "").strip()
+
+            if aid and aid.isdigit():
+                al_ids.add(int(aid))
+            elif mid and mid.isdigit():
+                mal_without_al.add(str(mid))
+            if kid:
+                kitsu_ids.add(str(kid))
+
+        resolved_mal_to_al = {}
+        if mal_without_al:
+            clean_mids = [m for m in mal_without_al if len(m) <= 12]
+            q_vals = clean_mids + [int(m) for m in clean_mids]
+            docs = list(
+                db.get_collection("id_cache").find(
+                    {"mal_id": {"$in": q_vals}},
+                    {"mal_id": 1, "anilist_id": 1, "_id": 0},
+                )
+            )
+            for d in docs:
+                m = str(d.get("mal_id") or "")
+                a = str(d.get("anilist_id") or "")
+                if m and a and a.isdigit():
+                    resolved_mal_to_al[m] = a
+                    al_ids.add(int(a))
+
+        al_airing_map = {}
+        if al_ids:
+            for d in db.get_collection("anilist_airing_cache").find(
+                {"anilist_id": {"$in": list(al_ids)}},
+                {"anilist_id": 1, "title": 1, "_id": 0},
+            ):
+                aid = d.get("anilist_id")
+                if aid and d.get("title"):
+                    t = get_anilist_title(d["title"], title_lang)
+                    if t and t != "Unknown":
+                        al_airing_map[str(aid)] = t
+
+        al_meta_map = {}
+        needed_al_meta = [a for a in al_ids if str(a) not in al_airing_map]
+        if needed_al_meta:
+            for d in db.get_collection("anilist_meta_cache").find(
+                {"anilist_id": {"$in": needed_al_meta}},
+                {"anilist_id": 1, "data.title": 1, "_id": 0},
+            ):
+                aid = d.get("anilist_id")
+                if aid and d.get("data", {}).get("title"):
+                    t = get_anilist_title(d["data"]["title"], title_lang)
+                    if t and t != "Unknown":
+                        al_meta_map[str(aid)] = t
+
+        kitsu_map = {}
+        if kitsu_ids:
+            clean_kids = [k for k in kitsu_ids if len(k) <= 12]
+            k_q = clean_kids + [int(k) for k in clean_kids if k.isdigit()]
+            for d in db.get_collection("kitsu_meta_cache").find(
+                {"kitsu_id": {"$in": k_q}},
+                {"kitsu_id": 1, "data.attributes": 1, "data.data.attributes": 1, "_id": 0},
+            ):
+                kid = str(d.get("kitsu_id") or "")
+                data_obj = d.get("data") or {}
+                attrs = data_obj.get("attributes") or (data_obj.get("data") or {}).get("attributes")
+                if kid and attrs:
+                    t = get_kitsu_title(attrs, title_lang)
+                    if t and t != "Unknown":
+                        kitsu_map[kid] = t
+
+        results = {}
+        for s in shows:
+            if not isinstance(s, dict):
+                continue
+            ids = s.get("ids") or {}
+            if not ids and ("show" in s or "anime" in s):
+                inner = s.get("show") or s.get("anime") or {}
+                ids = inner.get("ids") or {}
+            aid = str(ids.get("anilist") or "").strip()
+            mid = str(ids.get("mal") or "").strip()
+            kid = str(ids.get("kitsu") or "").strip()
+            if not aid and mid in resolved_mal_to_al:
+                aid = resolved_mal_to_al[mid]
+
+            t = None
+            if aid and aid in al_airing_map:
+                t = al_airing_map[aid]
+            elif aid and aid in al_meta_map:
+                t = al_meta_map[aid]
+            elif kid and kid in kitsu_map:
+                t = kitsu_map[kid]
+
+            if t:
+                if aid:
+                    results[f"al_{aid}"] = t
+                if mid:
+                    results[f"mal_{mid}"] = t
+                if kid:
+                    results[f"kitsu_{kid}"] = t
+        return results
+    except Exception as e:
+        logging.error("Failed to bulk prefetch Simkl titles: %s", e)
+        return {}
+
+
+def get_simkl_display_title(
+    show_obj: dict,
+    title_lang: str | None,
+    bulk_details: dict | None = None,
+    prefetched_titles: dict | None = None,
+) -> str:
     if not show_obj or not isinstance(show_obj, dict):
         return ""
     title_lang = _normalize_title_lang(title_lang)
@@ -113,7 +248,16 @@ def get_simkl_display_title(show_obj: dict, title_lang: str | None, bulk_details
     if title_lang == "english" and show_obj.get("en_title"):
         return show_obj["en_title"]
 
-    # 3. Check local database caches (zero external network latency)
+    # 3. Check prefetched bulk cache lookup
+    if prefetched_titles:
+        if al_id and f"al_{al_id}" in prefetched_titles:
+            return prefetched_titles[f"al_{al_id}"]
+        if mal_id and f"mal_{mal_id}" in prefetched_titles:
+            return prefetched_titles[f"mal_{mal_id}"]
+        if kitsu_id and f"kitsu_{kitsu_id}" in prefetched_titles:
+            return prefetched_titles[f"kitsu_{kitsu_id}"]
+
+    # 4. Fallback to individual local database caches (zero external network latency)
     try:
         from app.services.db import db
 

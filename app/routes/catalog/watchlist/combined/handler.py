@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from quart import request
 
@@ -152,8 +153,9 @@ async def handle_combined_catalog(user, user_id, catalog_type, catalog_id, filte
 
     metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
+    formatted_metas = await asyncio.to_thread(format_catalog_metas, metas, user, catalog_type, catalog_id)
     return await respond_with(
-        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+        {"metas": formatted_metas},
         max_age=300,
         stale_while_revalidate=600,
     )

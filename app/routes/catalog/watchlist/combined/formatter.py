@@ -29,6 +29,15 @@ def format_combined_page_metas(
     sort_by_new_ep = user.get("sort_by_new_episodes", False)
     enable_new_ep_badge = user.get("enable_new_episodes_badge", user.get("sort_by_new_episodes", True))
 
+    from app.routes.catalog.formatting import prefetch_simkl_cache_titles
+
+    simkl_shows = [
+        it["simkl_item"].get("show") or it["simkl_item"].get("anime") or it["simkl_item"]
+        for it in paged_items
+        if it.get("simkl_item") and isinstance(it["simkl_item"], dict)
+    ]
+    prefetched_simkl_titles = prefetch_simkl_cache_titles(simkl_shows, title_lang)
+
     for item in paged_items:
         try:
             name = "Unknown"
@@ -66,7 +75,7 @@ def format_combined_page_metas(
                 if not isinstance(show_obj, dict):
                     show_obj = {}
                 if name == "Unknown":
-                    name = get_simkl_display_title(show_obj, title_lang, bulk_details=bulk_details)
+                    name = get_simkl_display_title(show_obj, title_lang, bulk_details=bulk_details, prefetched_titles=prefetched_simkl_titles)
                 if not poster:
                     p = show_obj.get("poster") or show_obj.get("poster_image") or ""
                     if p and not p.startswith("http"):

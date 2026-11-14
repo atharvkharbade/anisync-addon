@@ -154,8 +154,9 @@ async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filt
         page_limit = 40
 
     metas = metas[offset : offset + page_limit]
+    formatted_metas = await asyncio.to_thread(format_catalog_metas, metas, user, catalog_type, catalog_id)
     return await respond_with(
-        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+        {"metas": formatted_metas},
         max_age=3600,
         stale_while_revalidate=7200,
     )

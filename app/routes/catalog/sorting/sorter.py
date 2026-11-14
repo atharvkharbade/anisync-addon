@@ -1,7 +1,7 @@
 from functools import cmp_to_key
 import re
 
-from app.routes.catalog.formatting import get_simkl_display_title, parse_iso_timestamp
+from app.routes.catalog.formatting import get_simkl_display_title, parse_iso_timestamp, prefetch_simkl_cache_titles
 
 
 def extract_mal_node_title(node: dict, norm_lang: str) -> str:
@@ -58,6 +58,18 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
     reverse = (sort_order == "desc")
     norm_lang = (title_lang or "english").lower().strip()
 
+    prefetched_simkl_titles = {}
+    if tracker_type == "simkl":
+        simkl_shows = [(it.get("show") or it.get("anime") or it) for it in items if isinstance(it, dict)]
+        prefetched_simkl_titles = prefetch_simkl_cache_titles(simkl_shows, title_lang)
+    elif tracker_type == "combined":
+        simkl_shows = [
+            (it["simkl_item"].get("show") or it["simkl_item"].get("anime") or it["simkl_item"])
+            for it in items
+            if isinstance(it, dict) and it.get("simkl_item") and isinstance(it["simkl_item"], dict)
+        ]
+        prefetched_simkl_titles = prefetch_simkl_cache_titles(simkl_shows, title_lang)
+
     def extract_title(item):
         title = ""
         if not isinstance(item, dict):
@@ -75,7 +87,7 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
             show_obj = (item.get("show") or item.get("anime") or item) if isinstance(item, dict) else {}
             if not isinstance(show_obj, dict):
                 show_obj = {}
-            title = get_simkl_display_title(show_obj, norm_lang, bulk_details=bulk_details) or show_obj.get("en_title") or show_obj.get("title", "")
+            title = get_simkl_display_title(show_obj, norm_lang, bulk_details=bulk_details, prefetched_titles=prefetched_simkl_titles) or show_obj.get("en_title") or show_obj.get("title", "")
         elif tracker_type == "combined":
             if item.get("anilist_item"):
                 media = (item["anilist_item"].get("media") or {}) if isinstance(item["anilist_item"], dict) else {}
@@ -88,7 +100,7 @@ def sort_watchlist_items(items, sort_by, sort_order, tracker_type, bulk_details=
                 show_obj = (s_item.get("show") or s_item.get("anime") or s_item) if isinstance(s_item, dict) else {}
                 if not isinstance(show_obj, dict):
                     show_obj = {}
-                title = get_simkl_display_title(show_obj, norm_lang, bulk_details=bulk_details) or show_obj.get("en_title") or show_obj.get("title", "")
+                title = get_simkl_display_title(show_obj, norm_lang, bulk_details=bulk_details, prefetched_titles=prefetched_simkl_titles) or show_obj.get("en_title") or show_obj.get("title", "")
         if not title and isinstance(item, dict):
             title = str(item.get("name") or item.get("title") or "")
         return str(title or "").strip()
