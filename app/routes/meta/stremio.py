@@ -293,14 +293,30 @@ def is_root_tvdb_entry(
     """
     if (subtype or "").lower() == "movie":
         return True
-    ep1 = anizp_episodes.get("1") if isinstance(anizp_episodes, dict) else None
-    if isinstance(ep1, dict) and ep1.get("seasonNumber") is not None:
-        try:
-            season = int(ep1["seasonNumber"])
-            ep_in_season = int(ep1.get("episodeNumber") or 1)
-        except (ValueError, TypeError):
-            season, ep_in_season = 1, 1
+    # Look at where all of this entry's regular episodes land, not only episode 1: TVDB sometimes orders a season
+    # differently (Cowboy Bebop's episode 1 is TVDB S1E14), but the entry that starts the show always contains S1E1,
+    # while a split cour / sequel (S1E13+, S2+) never does.
+    positions: list[tuple[int, int]] = []
+    saw_specials_only = False
+    if isinstance(anizp_episodes, dict):
+        for key, ep in anizp_episodes.items():
+            if not str(key).isdigit() or not isinstance(ep, dict) or ep.get("seasonNumber") is None:
+                continue
+            try:
+                season = int(ep["seasonNumber"])
+                ep_in_season = int(ep.get("episodeNumber") or 1)
+            except (ValueError, TypeError):
+                continue
+            if season >= 1:
+                positions.append((season, ep_in_season))
+            elif season == 0:
+                saw_specials_only = True
+    if positions:
+        season, ep_in_season = min(positions)
         return season == 1 and ep_in_season <= 1
+    if saw_specials_only:
+        # Mapped only to TVDB specials (S0): usually an OVA filed under a parent show, so its title would be wrong
+        return False
     single = _resolve_single_tvdb_season(subtype, anizp_episodes or {}, attributes, cinemeta_data)
     return single in (None, 1)
 
