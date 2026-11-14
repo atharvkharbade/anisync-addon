@@ -483,8 +483,10 @@ def map_kitsu_to_stremio(
     if start_date:
         release_info = start_date[:4]
         if end_date:
-            release_info += f"-{end_date[:4]}"
-        else:
+            # One year for movies and shows that started and ended in the same year ("2026", not "2026-2026")
+            if end_date[:4] != start_date[:4]:
+                release_info += f"-{end_date[:4]}"
+        elif subtype != "movie":
             release_info += "-"
 
     # Media Type
