@@ -437,6 +437,9 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             cache_max_age, cache_stale = 300, 600
         else:
             cache_max_age, cache_stale = 86400, 604800
+        from .stremio import unescape_meta_text
+
+        unescape_meta_text(meta)
         return await respond_with({"meta": meta}, max_age=cache_max_age, stale_while_revalidate=cache_stale)
     except Exception as e:
         logging.error("Failed to handle meta for %s: %s", meta_id, e)

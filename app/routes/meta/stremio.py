@@ -1,4 +1,5 @@
 import asyncio
+import html
 import re
 from datetime import UTC, date, datetime
 
@@ -278,6 +279,26 @@ def _resolve_single_tvdb_season(
         attributes.get("startDate"),
     )
     return detected if (detected and detected > 0) else None
+
+
+
+def unescape_meta_text(meta: dict) -> dict:
+    """Decode HTML entities that sources leave in plain text (Kitsu synopses carry "&amp;", "&#39;", ...)."""
+    if not isinstance(meta, dict):
+        return meta
+
+    def _u(val):
+        return html.unescape(val) if isinstance(val, str) and "&" in val else val
+
+    for key in ("name", "description"):
+        if key in meta:
+            meta[key] = _u(meta[key])
+    for video in meta.get("videos") or []:
+        if isinstance(video, dict):
+            for key in ("title", "name", "overview"):
+                if key in video:
+                    video[key] = _u(video[key])
+    return meta
 
 
 def is_root_tvdb_entry(
