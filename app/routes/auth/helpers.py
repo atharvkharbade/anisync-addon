@@ -1,4 +1,5 @@
 import secrets
+from pymongo.errors import DuplicateKeyError
 from app.services.db import db, get_user, invalidate_user_watchlist_cache
 
 
@@ -29,11 +30,19 @@ def resolve_or_create_user(session_obj, tracker_id: str, find_by_tracker_func) -
         # Migration check: if existing user has prefix, try to strip it
         if uid and (uid.startswith("al_") or uid.startswith("simkl_") or uid.startswith("guest_")):
             stripped_uid = uid.split("_", 1)[1]
-            if stripped_uid.isdigit() and not db.get_collection("users").find_one({"uid": stripped_uid}):
-                db.get_collection("users").delete_one({"uid": uid})
-                invalidate_user_watchlist_cache(uid)
-                uid = stripped_uid
-                user["uid"] = uid
+            if stripped_uid.isdigit():
+                try:
+                    res = db.get_collection("users").update_one({"uid": uid}, {"$set": {"uid": stripped_uid}})
+                    if res.matched_count > 0:
+                        invalidate_user_watchlist_cache(uid)
+                        uid = stripped_uid
+                        user = get_user(uid) or {}
+                except DuplicateKeyError:
+                    # A doc with stripped_uid already exists. Delete the old legacy duplicate.
+                    db.get_collection("users").delete_one({"uid": uid})
+                    invalidate_user_watchlist_cache(uid)
+                    uid = stripped_uid
+                    user = get_user(uid) or {}
 
         is_new_account = not bool(uid)
         if not uid:
