@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import html
 import logging
 import re
 import urllib.parse
@@ -647,5 +648,11 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         else:
             m["posterShape"] = "poster"
             m["poster"] = portrait_poster
+
+        # Unescape HTML entities in card text (e.g. &amp;, &#039;, &quot;)
+        if isinstance(m.get("name"), str) and "&" in m["name"]:
+            m["name"] = html.unescape(m["name"])
+        if isinstance(m.get("description"), str) and "&" in m["description"]:
+            m["description"] = html.unescape(m["description"])
 
     return formatted_metas
