@@ -656,3 +656,12 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
             m["description"] = html.unescape(m["description"])
 
     return formatted_metas
+
+
+async def format_catalog_metas_async(metas_list: list, user: dict, catalog_type: str, catalog_id: str | None = None) -> list:
+    """Runs format_catalog_metas in a worker thread (its Mongo reads are blocking) while letting it
+    schedule background warm-ups back on this event loop."""
+    from app.lib.meta_providers import BG_LOOP
+
+    BG_LOOP.set(asyncio.get_running_loop())
+    return await asyncio.to_thread(format_catalog_metas, metas_list, user, catalog_type, catalog_id)

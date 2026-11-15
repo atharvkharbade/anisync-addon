@@ -1,4 +1,28 @@
+import asyncio
+import contextvars
+
 from app.lib.languages import normalize_metadata_language
+
+# Event loop to schedule background warm-ups on when the enrichment runs in a worker thread (asyncio.to_thread).
+BG_LOOP: contextvars.ContextVar = contextvars.ContextVar("anisync_bg_loop", default=None)
+_bg_tasks: set = set()
+
+
+def _schedule_bg(make_coro) -> None:
+    """Start make_coro() as a background task, from the event loop thread or from a worker thread."""
+    def _start(loop):
+        task = loop.create_task(make_coro())
+        _bg_tasks.add(task)
+        task.add_done_callback(_bg_tasks.discard)
+
+    try:
+        _start(asyncio.get_running_loop())
+        return
+    except RuntimeError:
+        pass
+    loop = BG_LOOP.get()
+    if loop is not None and loop.is_running() and not loop.is_closed():
+        loop.call_soon_threadsafe(_start, loop)
 
 
 def normalize_backdrop_pref(val: str | None) -> str:
@@ -580,29 +604,26 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
 
     if missing_for_anizp:
         try:
-            import asyncio
-            loop = asyncio.get_running_loop()
-            loop.create_task(bg_warm_anizip(missing_for_anizp[:25]))
+            batch = missing_for_anizp[:25]
+            _schedule_bg(lambda: bg_warm_anizip(batch))
         except (RuntimeError, Exception):
             pass
 
     if missing_for_fanart:
         try:
-            import asyncio
             from app.services.fanart import bg_warm_fanart
             unique_missing = list({(k, e): (k, e, ck) for (k, e, ck) in missing_for_fanart}.values())
-            loop = asyncio.get_running_loop()
-            loop.create_task(bg_warm_fanart(unique_missing[:25]))
+            batch = unique_missing[:25]
+            _schedule_bg(lambda: bg_warm_fanart(batch))
         except (RuntimeError, Exception):
             pass
 
     if missing_for_tvdb:
         try:
-            import asyncio
             from app.services.tvdb import bg_warm_tvdb
             unique_tvdb = list(dict.fromkeys(missing_for_tvdb))
-            loop = asyncio.get_running_loop()
-            loop.create_task(bg_warm_tvdb(unique_tvdb[:25]))
+            batch = unique_tvdb[:25]
+            _schedule_bg(lambda: bg_warm_tvdb(batch))
         except (RuntimeError, Exception):
             pass
 

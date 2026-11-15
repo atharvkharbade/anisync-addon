@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import logging
 import time
@@ -8,7 +7,7 @@ from quart import request
 from config import Config
 from app.api import anilist as anilist_api
 from app.services.db import store_user, handle_invalid_anilist_token
-from app.routes.catalog.formatting import format_catalog_metas, get_anilist_title
+from app.routes.catalog.formatting import format_catalog_metas_async, get_anilist_title
 from app.routes.utils import respond_with
 from app.routes.catalog.sorting import (
     apply_catalog_dub_filter,
@@ -288,7 +287,7 @@ async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filter
 
     metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
-    formatted_metas = await asyncio.to_thread(format_catalog_metas, metas, user, catalog_type, catalog_id)
+    formatted_metas = await format_catalog_metas_async(metas, user, catalog_type, catalog_id)
     return await respond_with(
         {"metas": formatted_metas},
         max_age=300,

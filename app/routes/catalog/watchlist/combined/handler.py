@@ -1,9 +1,8 @@
-import asyncio
 import logging
 from quart import request
 
 from app.lib.id_resolver import bulk_resolve_to_kitsu
-from app.routes.catalog.formatting import format_catalog_metas
+from app.routes.catalog.formatting import format_catalog_metas_async
 from app.routes.catalog.sorting import apply_catalog_dub_filter, get_catalog_sorting
 from app.routes.utils import respond_with
 
@@ -153,7 +152,7 @@ async def handle_combined_catalog(user, user_id, catalog_type, catalog_id, filte
 
     metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
-    formatted_metas = await asyncio.to_thread(format_catalog_metas, metas, user, catalog_type, catalog_id)
+    formatted_metas = await format_catalog_metas_async(metas, user, catalog_type, catalog_id)
     return await respond_with(
         {"metas": formatted_metas},
         max_age=300,

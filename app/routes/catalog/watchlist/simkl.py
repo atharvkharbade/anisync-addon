@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import logging
 import time
@@ -7,7 +6,7 @@ import urllib.parse
 from quart import request
 
 from app.routes.catalog.formatting import (
-    format_catalog_metas,
+    format_catalog_metas_async,
     get_simkl_display_title,
     parse_iso_timestamp,
 )
@@ -438,7 +437,7 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
 
     metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
-    formatted_metas = await asyncio.to_thread(format_catalog_metas, metas, user, catalog_type, catalog_id)
+    formatted_metas = await format_catalog_metas_async(metas, user, catalog_type, catalog_id)
     return await respond_with(
         {"metas": formatted_metas},
         max_age=300,

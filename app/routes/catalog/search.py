@@ -1,11 +1,10 @@
-import asyncio
 import datetime
 import logging
 import re
 
 import random
 
-from app.routes.catalog.formatting import format_catalog_metas, get_anilist_title, get_kitsu_title
+from app.routes.catalog.formatting import format_catalog_metas_async, get_anilist_title, get_kitsu_title
 from app.routes.catalog.sorting.dubs import apply_catalog_dub_filter
 from app.routes.catalog.sorting.preferences import get_catalog_sorting, is_catalog_shuffle_enabled, resolve_title_lang
 from app.routes.catalog.sorting.sorter import sort_watchlist_items
@@ -50,7 +49,7 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
             c_metas = cached.get("metas") or []
             if c_metas and all(m.get("date_val") is not None and m.get("score") is not None and m.get("year") is not None for m in c_metas):
                 processed_metas = await _process_search_metas(c_metas, user, catalog_id, filters)
-                formatted_metas = await asyncio.to_thread(format_catalog_metas, processed_metas, user, catalog_type, catalog_id)
+                formatted_metas = await format_catalog_metas_async(processed_metas, user, catalog_type, catalog_id)
                 return await respond_with(
                     {"metas": formatted_metas},
                     max_age=60,
@@ -380,7 +379,7 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
     elif cached:
         logging.warning("Search returned 0 results, returning expired cache for query '%s'", search_query)
         processed_metas = await _process_search_metas(cached["metas"], user, catalog_id, filters)
-        formatted_metas = await asyncio.to_thread(format_catalog_metas, processed_metas, user, catalog_type, catalog_id)
+        formatted_metas = await format_catalog_metas_async(processed_metas, user, catalog_type, catalog_id)
         return await respond_with(
             {"metas": formatted_metas},
             max_age=60,
@@ -388,7 +387,7 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
         )
 
     processed_metas = await _process_search_metas(metas, user, catalog_id, filters)
-    formatted_metas = await asyncio.to_thread(format_catalog_metas, processed_metas, user, catalog_type, catalog_id)
+    formatted_metas = await format_catalog_metas_async(processed_metas, user, catalog_type, catalog_id)
     return await respond_with(
         {"metas": formatted_metas},
         max_age=60,

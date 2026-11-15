@@ -36,13 +36,10 @@ def resolve_or_create_user(session_obj, tracker_id: str, find_by_tracker_func) -
                     if res.matched_count > 0:
                         invalidate_user_watchlist_cache(uid)
                         uid = stripped_uid
-                        user = get_user(uid) or {}
+                        user["uid"] = uid
                 except DuplicateKeyError:
-                    # A doc with stripped_uid already exists. Delete the old legacy duplicate.
-                    db.get_collection("users").delete_one({"uid": uid})
-                    invalidate_user_watchlist_cache(uid)
-                    uid = stripped_uid
-                    user = get_user(uid) or {}
+                    # Another account already uses the stripped uid: keep this one under its legacy uid.
+                    pass
 
         is_new_account = not bool(uid)
         if not uid:
