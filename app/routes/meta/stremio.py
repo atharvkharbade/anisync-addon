@@ -500,7 +500,7 @@ def map_kitsu_to_stremio(
     # Release info (Year)
     start_date = attributes.get("startDate")
     end_date = attributes.get("endDate")
-    release_info = ""
+    release_info = None
     if start_date:
         release_info = start_date[:4]
         if end_date:
@@ -845,12 +845,13 @@ def map_kitsu_to_stremio(
         "poster": poster,
         "background": background,
         "imdbRating": rating,
-        "releaseInfo": release_info,
         "description": synopsis,
         "videos": videos,
         "genres": genres,
         "links": links,
     }
+    if release_info:
+        meta_obj["releaseInfo"] = release_info
     if logo:
         meta_obj["logo"] = logo
 
