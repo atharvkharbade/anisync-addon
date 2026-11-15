@@ -144,8 +144,8 @@ async def _wait_for_other_mal_refresh(uid: str, used_refresh_token: str) -> str 
     return _usable_mal_token(get_user(uid))
 
 
-async def get_or_refresh_mal_token(user_id: str) -> str | None:
-    """Gets the MAL access token for a user. If it's expired or close to expiring,
+async def get_or_refresh_mal_token(user_id: str, force: bool = False) -> str | None:
+    """Gets the MAL access token for a user. If it's expired or close to expiring (or force=True),
     attempts to refresh it. If refreshing fails, marks MAL as expired.
     Serialised per canonical uid: an asyncio lock inside this worker plus a Mongo lease across workers.
     """
@@ -170,7 +170,7 @@ async def get_or_refresh_mal_token(user_id: str) -> str | None:
 
             expiry = user.get("mal_expires_at")
             now = datetime.now(UTC).replace(tzinfo=None)
-            if not (expiry and now >= expiry - timedelta(hours=2)):
+            if not force and not (expiry and now >= expiry - timedelta(hours=2)):
                 return user.get("mal_access_token")
 
             used_refresh_token = user["mal_refresh_token"]
