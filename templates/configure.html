@@ -1938,8 +1938,6 @@
                     value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
                 <input type="hidden" id="enable_dubbed_catalogs_val" name="enable_dubbed_catalogs"
                     value="{{ 'true' if user.get('enable_dubbed_catalogs', False) else 'false' }}">
-                <input type="hidden" id="dubbed_only_discovery_val" name="dubbed_only_discovery"
-                    value="{{ 'true' if user.get('dubbed_only_discovery', False) else 'false' }}">
                 <input type="hidden" id="catalog_configs_val" name="catalog_configs" value="">
 
                 <!-- TAB 1: Trackers & Account -->
@@ -2250,7 +2248,7 @@
                                         <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0"
                                             style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating
                                         Poster DB (RPDB)
-                                        {% elif current_provider == 'top_poster' or current_provider == 'topposters' %}
+                                        {% elif current_provider == 'top_poster' %}
                                         <img src="/assets/topposters_logo.png" width="18" height="18"
                                             class="me-2 flex-shrink-0"
                                             style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP
@@ -3144,11 +3142,11 @@
                                 <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
                                     <i class="fa-solid fa-image text-info me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Cover Posters
                                 </label>
-                                <input type="hidden" id="meta_poster_provider" name="meta_poster_provider" value="{{ user.get('meta_poster_provider', user.get('meta_artwork_provider', 'anilist')) }}">
+                                <input type="hidden" id="meta_poster_provider" name="meta_poster_provider" value="{{ user.get('meta_poster_provider', 'anilist') }}">
                                 <div class="custom-select-wrapper mb-1" data-input-id="meta_poster_provider">
                                     <div class="custom-select">
                                         <span class="custom-select-text d-flex align-items-center">
-                                            {% set cur_poster = user.get('meta_poster_provider', user.get('meta_artwork_provider', 'anilist')) %}
+                                            {% set cur_poster = user.get('meta_poster_provider', 'anilist') %}
                                             {% if cur_poster == 'kitsu' %}
                                                 <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
                                             {% elif cur_poster == 'mal' %}
@@ -4541,7 +4539,7 @@
                 const keyEl = document.getElementById("rpdb_api_key");
                 return Boolean(keyEl && keyEl.value.trim().length > 0);
             }
-            if (prov === "top_poster" || prov === "topposters") {
+            if (prov === "top_poster") {
                 const keyEl = document.getElementById("top_poster_key");
                 return Boolean(keyEl && keyEl.value.trim().length > 0);
             }
@@ -5527,7 +5525,7 @@
                         if (curProvider === 'rpdb' && rpdbKey) {
                             return `https://api.ratingposterdb.com/${encodeURIComponent(rpdbKey)}/imdb/poster-default/${encodeURIComponent(item.imdb_id)}.jpg?fallback=true`;
                         }
-                        if ((curProvider === 'top_poster' || curProvider === 'topposters') && topKey) {
+                        if (curProvider === 'top_poster' && topKey) {
                             return `https://top-posters.com/${encodeURIComponent(topKey)}/imdb/poster-default/${encodeURIComponent(item.imdb_id)}.jpg`;
                         }
                         if (curProvider === 'custom' && customPattern) {
@@ -6074,13 +6072,6 @@
             enableDiscoveryCheckbox.addEventListener("change", () => syncCatalogManagement(false));
         }
 
-        const dubbedOnlyCheckbox = document.getElementById("dubbed_only_discovery");
-        const dubbedLangContainer = document.getElementById("dubbed_language_container");
-        if (dubbedOnlyCheckbox && dubbedLangContainer) {
-            dubbedOnlyCheckbox.addEventListener("change", function() {
-                dubbedLangContainer.style.display = this.checked ? "block" : "none";
-            });
-        }
 
         const enableAiCheckbox = document.getElementById("enable_ai_recommendations");
         const aiOptionsContainer = document.getElementById("ai-recommendations-options");
@@ -6664,9 +6655,6 @@
         const enableDubbedVal = document.getElementById('enable_dubbed_catalogs_val');
         if (enableDubbedCheckbox && enableDubbedVal) enableDubbedVal.value = enableDubbedCheckbox.checked ? 'true' : 'false';
 
-        const dubbedOnlyDiscoveryCheckbox = document.getElementById("dubbed_only_discovery");
-        const dubbedOnlyDiscoveryVal = document.getElementById('dubbed_only_discovery_val');
-        if (dubbedOnlyDiscoveryCheckbox && dubbedOnlyDiscoveryVal) dubbedOnlyDiscoveryVal.value = dubbedOnlyDiscoveryCheckbox.checked ? 'true' : 'false';
 
         const customSortCheckbox = document.getElementById("custom_sort_enabled");
         const customSortVal = document.getElementById('custom_sort_enabled_val');
@@ -7039,7 +7027,7 @@
             if (provider === 'rpdb' && rpdbKey && sample.imdb_id) {
                 const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
                 return `https://api.ratingposterdb.com/${encodeURIComponent(rpdbKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
-            } else if ((provider === 'top_poster' || provider === 'topposters') && topKey && sample.imdb_id) {
+            } else if (provider === 'top_poster' && topKey && sample.imdb_id) {
                 const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
                 return `https://api.top-posters.com/${encodeURIComponent(topKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
             } else if (provider === 'custom' && customPattern) {

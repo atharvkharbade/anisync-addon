@@ -7,6 +7,7 @@ def is_catalog_shuffle_enabled(user, catalog_id):
     if isinstance(cat_cfg, dict) and "shuffle" in cat_cfg:
         return bool(cat_cfg["shuffle"])
 
+    # Phase 2: remove after v1_6_legacy_settings has run on prod
     cat_shuffle = (user.get("catalog_shuffles") or {}).get(catalog_id)
     if cat_shuffle is not None:
         return bool(cat_shuffle)
@@ -20,8 +21,7 @@ def is_catalog_shuffle_enabled(user, catalog_id):
 def is_catalog_dubbed_enabled(user, catalog_id: str) -> bool:
     """
     Checks whether dub filtering is enabled for this catalog.
-    Checks per-catalog configuration (catalog_configs[catalog_id]['dubbed'] or audio == 'dubbed') first,
-    then falls back to legacy global discovery dubbed toggle (user.dubbed_only_discovery).
+    Checks per-catalog configuration (catalog_configs[catalog_id]['dubbed'] or audio == 'dubbed').
     """
     if not user or not catalog_id:
         return False
@@ -35,10 +35,6 @@ def is_catalog_dubbed_enabled(user, catalog_id: str) -> bool:
             return True
         if audio_val in ("all", "sub", "both"):
             return False
-
-    # Legacy fallback: user.dubbed_only_discovery applies to general discovery catalogs
-    if user.get("dubbed_only_discovery") and catalog_id.startswith("anisync_") and catalog_id not in ["anisync_search", "anisync_rec", "anisync_loved", "anisync_liked"]:
-        return True
 
     return False
 
@@ -109,6 +105,7 @@ def get_catalog_sorting(user, catalog_id, default_category_key=None, url_filters
                 return True, cfg_sort, cat_cfg.get("sort_order", "desc")
             return False, "default", "desc"
 
+    # Phase 2: remove after v1_6_legacy_settings has run on prod
     cat_sort = (user.get("catalog_sorts") or {}).get(catalog_id)
     if cat_sort and isinstance(cat_sort, dict) and cat_sort.get("by", "default") != "default":
         sort_by = cat_sort.get("by", "default")

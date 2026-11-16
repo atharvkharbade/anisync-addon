@@ -50,17 +50,7 @@ def get_user(user_id: str, for_manifest: bool = False) -> dict | None:
             user.setdefault("metadata_language", "eng")
             return user
 
-    # 4. Support adding prefixes (e.g., 6613976 -> al_6613976)
-    if user_id.isdigit():
-        for prefix in ["al_", "simkl_"]:
-            user = users_collection.find_one({"uid": f"{prefix}{user_id}"})
-            if user:
-                if for_manifest and user.get("manifest_token") and not user.get("allow_legacy_uid", False):
-                    return None
-                user.setdefault("metadata_language", "eng")
-                return user
-
-    # 5. Support guest user auto-provisioning
+    # 4. Support guest user auto-provisioning
     if user_id.startswith("guest_"):
         guest_user = {
             "uid": user_id,

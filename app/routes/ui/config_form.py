@@ -318,8 +318,6 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         from app.services.dub_service import normalize_dub_language
 
         user["dubbed_language"] = normalize_dub_language(form.get("dubbed_language"))
-    if "dubbed_only_discovery" in form:
-        user["dubbed_only_discovery"] = form.get("dubbed_only_discovery") == "true"
 
     if "poster_provider" in form:
         user["poster_provider"] = form.get("poster_provider", "none").strip()
@@ -467,7 +465,7 @@ async def handle_configure_form(user: dict, form) -> dict | None:
     validation_failed_msg = []
     if current_poster_provider == "rpdb" and rpdb_key and not user.get("rpdb_key_valid", False):
         validation_failed_msg.append("Invalid RPDB API key")
-    if current_poster_provider in ("top_poster", "topposters") and top_key and not user.get("top_key_valid", False):
+    if current_poster_provider == "top_poster" and top_key and not user.get("top_key_valid", False):
         validation_failed_msg.append("Invalid TOP Posters API key")
     if user.get("enable_recommendations") and ai_recs_active:
         active_ai = (user.get("ai_provider") or "gemini").lower()

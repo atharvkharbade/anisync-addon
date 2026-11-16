@@ -34,6 +34,7 @@ def normalize_backdrop_pref(val: str | None) -> str:
     - any unknown / empty value falls back to 'cinemeta'
     """
     cleaned = (val or "").strip().lower()
+    # Phase 2: remove after v1_6_legacy_settings has run on prod
     if cleaned == "anilist":
         return "tvdb"
     if cleaned == "fanart":
@@ -57,7 +58,6 @@ def get_effective_meta_providers(user: dict | None) -> dict:
     pref = (user.get("metadata_provider", "kitsu") or "kitsu").strip().lower() if user else "kitsu"
     language = get_effective_metadata_language(user)
     if pref == "custom":
-        legacy_artwork = (user.get("meta_artwork_provider") or "anilist").strip().lower()
         backdrop_val = normalize_backdrop_pref(user.get("meta_backdrop_provider"))
         return {
             "synopsis": _normalize_provider_choice(
@@ -71,7 +71,7 @@ def get_effective_meta_providers(user: dict | None) -> dict:
                 "anizp",
             ),
             "poster": _normalize_provider_choice(
-                user.get("meta_poster_provider") or legacy_artwork,
+                user.get("meta_poster_provider"),
                 ("anilist", "kitsu", "mal", "tvdb"),
                 "anilist",
             ),

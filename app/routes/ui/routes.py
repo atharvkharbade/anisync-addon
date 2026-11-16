@@ -101,7 +101,6 @@ async def guest_login():
         ],
         "enable_dubbed_catalogs": False,
         "dubbed_language": "english",
-        "dubbed_only_discovery": False,
         "created_at": datetime.now(UTC).replace(tzinfo=None),
     }
     store_user(guest_user)

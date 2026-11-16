@@ -98,12 +98,6 @@ def init_indexes():
         db.get_collection("id_fallback_misses").create_index("expires_at", expireAfterSeconds=0)
         db.get_collection("id_fallback_misses").create_index([("source", 1), ("source_id", 1)])
 
-        now = datetime.now(UTC).replace(tzinfo=None)
-        db.get_collection("id_cache").update_many(
-            {"expires_at": {"$exists": False}},
-            {"$set": {"expires_at": now + timedelta(days=7), "updated_at": now}},
-        )
-
         # Caching collections indexes
         db.get_collection("user_watchlist_cache").create_index([("uid", 1), ("tracker", 1), ("status", 1)])
         db.get_collection("user_watchlist_cache").create_index("expires_at", expireAfterSeconds=0)
@@ -132,6 +126,7 @@ def init_indexes():
         db.get_collection("tvdb_posters_cache").create_index([("kind", 1), ("ext_id", 1)], unique=True)
         db.get_collection("tvdb_episodes_cache").create_index([("tvdb_id", 1), ("lang", 1)], unique=True)
 
+        now = datetime.now(UTC).replace(tzinfo=None)
         for col_name in META_TTL_MIGRATION_COLLECTIONS:
             _migrate_collection_to_purge_at(db.get_collection(col_name), now)
 
@@ -147,12 +142,6 @@ def init_indexes():
 
         db.get_collection("recommendations_cache").create_index("uid", unique=True)
         db.get_collection("recommendations_cache").create_index("expires_at", expireAfterSeconds=0)
-
-        # Migrate legacy 'fanart' backdrop provider to 'cinemeta'
-        db.get_collection("users").update_many(
-            {"meta_backdrop_provider": "fanart"},
-            {"$set": {"meta_backdrop_provider": "cinemeta"}},
-        )
 
         db.get_collection("banner_ratios").create_index("url", unique=True)
     except Exception as e:

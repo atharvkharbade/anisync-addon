@@ -34,21 +34,10 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
     within the last 24 hours. Does an atomic swap to avoid query disruption.
     """
     now = datetime.now(UTC).replace(tzinfo=None)
-    force_rebuild = False
     try:
-        # Check if we need to force rebuild to upgrade old schema lacking external IDs
-        if db.fribb_mappings.count_documents({}) > 0:
-            if db.fribb_mappings.count_documents({"imdb_id": {"$exists": True}}) == 0:
-                logging.info("Forcing rebuild of Fribb mappings to upgrade schema (adding imdb_id, tmdb_id, tvdb_id)")
-                force_rebuild = True
-    except Exception as e:
-        logging.error("Failed to check Fribb mappings schema status: %s", e)
-
-    try:
-        if not force_rebuild:
-            meta = db.fribb_meta.find_one({"key": "last_updated"})
-            if meta and (now - meta["timestamp"]) < timedelta(hours=24):
-                return
+        meta = db.fribb_meta.find_one({"key": "last_updated"})
+        if meta and (now - meta["timestamp"]) < timedelta(hours=24):
+            return
     except Exception as e:
         logging.error("Failed to query Fribb metadata: %s", e)
 
