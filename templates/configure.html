@@ -1910,32 +1910,8 @@
                     value="{{ 'true' if user.get('show_airing_in_synopsis', False) else 'false' }}">
                 <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
                     value="{{ 'true' if user.get('combine_watchlists', False) else 'false' }}">
-                <input type="hidden" id="custom_sort_enabled_val" name="custom_sort_enabled"
-                    value="{{ 'true' if user.get('custom_sort_enabled', False) else 'false' }}">
-                <input type="hidden" id="custom_sort_watching_by_val" name="custom_sort_watching_by"
-                    value="{{ user.get('custom_sort_watching_by', 'default') }}">
-                <input type="hidden" id="custom_sort_watching_order_val" name="custom_sort_watching_order"
-                    value="{{ user.get('custom_sort_watching_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_planning_by_val" name="custom_sort_planning_by"
-                    value="{{ user.get('custom_sort_planning_by', 'default') }}">
-                <input type="hidden" id="custom_sort_planning_order_val" name="custom_sort_planning_order"
-                    value="{{ user.get('custom_sort_planning_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_completed_by_val" name="custom_sort_completed_by"
-                    value="{{ user.get('custom_sort_completed_by', 'default') }}">
-                <input type="hidden" id="custom_sort_completed_order_val" name="custom_sort_completed_order"
-                    value="{{ user.get('custom_sort_completed_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_on_hold_by_val" name="custom_sort_on_hold_by"
-                    value="{{ user.get('custom_sort_on_hold_by', 'default') }}">
-                <input type="hidden" id="custom_sort_on_hold_order_val" name="custom_sort_on_hold_order"
-                    value="{{ user.get('custom_sort_on_hold_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_dropped_by_val" name="custom_sort_dropped_by"
-                    value="{{ user.get('custom_sort_dropped_by', 'default') }}">
-                <input type="hidden" id="custom_sort_dropped_order_val" name="custom_sort_dropped_order"
-                    value="{{ user.get('custom_sort_dropped_order', 'desc') }}">
                 <input type="hidden" id="enable_discovery_catalogs_val" name="enable_discovery_catalogs"
                     value="{{ 'true' if user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) else 'false' }}">
-                <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
-                    value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
                 <input type="hidden" id="enable_dubbed_catalogs_val" name="enable_dubbed_catalogs"
                     value="{{ 'true' if user.get('enable_dubbed_catalogs', False) else 'false' }}">
                 <input type="hidden" id="catalog_configs_val" name="catalog_configs" value="">
@@ -5893,20 +5869,6 @@
         // Initialize sorting order string on load
         updateSortedInput();
 
-        // Handle dynamic show/hide for custom sorting settings
-        const customSortCheckbox = document.getElementById("custom_sort_enabled");
-        const customSortContainer = document.getElementById("custom-sorting-container");
-        function toggleCustomSorting() {
-            const enabled = customSortCheckbox && customSortCheckbox.checked;
-            if (customSortContainer) {
-                customSortContainer.style.display = enabled ? "block" : "none";
-            }
-        }
-        if (customSortCheckbox) {
-            customSortCheckbox.addEventListener("change", toggleCustomSorting);
-            toggleCustomSorting();
-        }
-
         // Handle dynamic show/hide for catalog-dependent settings
         const enableCatalogsCheckbox = document.getElementById("enable_catalogs");
         const watchlistOptionsContainer = document.getElementById("watchlist-options-container");
@@ -6647,18 +6609,9 @@
         const enableDiscoveryVal = document.getElementById('enable_discovery_catalogs_val');
         if (enableDiscoveryCheckbox && enableDiscoveryVal) enableDiscoveryVal.value = enableDiscoveryCheckbox.checked ? 'true' : 'false';
 
-        const shuffleDiscoveryCheckbox = document.getElementById("shuffle_discovery_catalogs");
-        const shuffleDiscoveryVal = document.getElementById('shuffle_discovery_catalogs_val');
-        if (shuffleDiscoveryCheckbox && shuffleDiscoveryVal) shuffleDiscoveryVal.value = shuffleDiscoveryCheckbox.checked ? 'true' : 'false';
-
         const enableDubbedCheckbox = document.getElementById("enable_dubbed_catalogs");
         const enableDubbedVal = document.getElementById('enable_dubbed_catalogs_val');
         if (enableDubbedCheckbox && enableDubbedVal) enableDubbedVal.value = enableDubbedCheckbox.checked ? 'true' : 'false';
-
-
-        const customSortCheckbox = document.getElementById("custom_sort_enabled");
-        const customSortVal = document.getElementById('custom_sort_enabled_val');
-        if (customSortCheckbox && customSortVal) customSortVal.value = customSortCheckbox.checked ? 'true' : 'false';
 
         // Ensure sorted list is accurate
         const list = document.getElementById("drag-drop-catalog-list");

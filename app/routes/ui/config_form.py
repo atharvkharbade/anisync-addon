@@ -134,29 +134,6 @@ async def handle_configure_form(user: dict, form) -> dict | None:
     if "show_airing_in_synopsis" in form:
         user["show_airing_in_synopsis"] = form.get("show_airing_in_synopsis") == "true"
 
-    if "custom_sort_enabled" in form:
-        user["custom_sort_enabled"] = form.get("custom_sort_enabled") == "true"
-    if "custom_sort_watching_by" in form:
-        user["custom_sort_watching_by"] = form.get("custom_sort_watching_by", "default")
-    if "custom_sort_watching_order" in form:
-        user["custom_sort_watching_order"] = form.get("custom_sort_watching_order", "desc")
-    if "custom_sort_planning_by" in form:
-        user["custom_sort_planning_by"] = form.get("custom_sort_planning_by", "default")
-    if "custom_sort_planning_order" in form:
-        user["custom_sort_planning_order"] = form.get("custom_sort_planning_order", "desc")
-    if "custom_sort_completed_by" in form:
-        user["custom_sort_completed_by"] = form.get("custom_sort_completed_by", "default")
-    if "custom_sort_completed_order" in form:
-        user["custom_sort_completed_order"] = form.get("custom_sort_completed_order", "desc")
-    if "custom_sort_on_hold_by" in form:
-        user["custom_sort_on_hold_by"] = form.get("custom_sort_on_hold_by", "default")
-    if "custom_sort_on_hold_order" in form:
-        user["custom_sort_on_hold_order"] = form.get("custom_sort_on_hold_order", "desc")
-    if "custom_sort_dropped_by" in form:
-        user["custom_sort_dropped_by"] = form.get("custom_sort_dropped_by", "default")
-    if "custom_sort_dropped_order" in form:
-        user["custom_sort_dropped_order"] = form.get("custom_sort_dropped_order", "desc")
-
     if "title_language" in form:
         user["title_language"] = form.get("title_language", "english")
 
@@ -215,12 +192,6 @@ async def handle_configure_form(user: dict, form) -> dict | None:
             user["enable_search"] = "anisync_search" in enabled_list
 
         # Save per-catalog custom configurations
-        catalog_shapes = user.get("catalog_shapes", {}) or {}
-        catalog_titles = user.get("catalog_titles", {}) or {}
-        catalog_placements = user.get("catalog_placements", {}) or {}
-        catalog_sorts = user.get("catalog_sorts", {}) or {}
-        catalog_shuffles = user.get("catalog_shuffles", {}) or {}
-        catalog_poster_arts = user.get("catalog_poster_arts", {}) or {}
         catalog_configs = user.get("catalog_configs", {}) or {}
 
         raw_configs_str = form.get("catalog_configs")
@@ -236,25 +207,20 @@ async def handle_configure_form(user: dict, form) -> dict | None:
                         catalog_configs[cat_id].update(cfg)
 
                         if "shape" in cfg and cfg["shape"] in ["poster", "landscape"]:
-                            catalog_shapes[cat_id] = cfg["shape"]
+                            catalog_configs[cat_id]["shape"] = cfg["shape"]
                         if "title" in cfg:
                             title_val = str(cfg["title"]).strip()
                             if title_val:
-                                catalog_titles[cat_id] = title_val
                                 catalog_configs[cat_id]["title"] = title_val
                             else:
-                                catalog_titles.pop(cat_id, None)
                                 catalog_configs[cat_id].pop("title", None)
                         if "placement" in cfg and cfg["placement"] in ["all", "discover_only"]:
-                            catalog_placements[cat_id] = cfg["placement"]
+                            catalog_configs[cat_id]["placement"] = cfg["placement"]
                         if "poster_art" in cfg:
                             art_val = cfg.get("poster_art")
                             if art_val is False or art_val == "false" or art_val == "off":
-                                catalog_poster_arts[cat_id] = False
                                 catalog_configs[cat_id]["poster_art"] = False
                             else:
-                                if cat_id in catalog_poster_arts:
-                                    del catalog_poster_arts[cat_id]
                                 catalog_configs[cat_id].pop("poster_art", None)
 
                         if "sort_by" in cfg:
@@ -262,15 +228,13 @@ async def handle_configure_form(user: dict, form) -> dict | None:
                             sort_order = cfg.get("sort_order", "desc")
                             allowed = get_allowed_sorts_for_catalog(cat_id)
                             if sort_by != "default" and sort_by in allowed:
-                                catalog_sorts[cat_id] = {"by": sort_by, "order": sort_order}
                                 catalog_configs[cat_id]["sort_by"] = sort_by
                                 catalog_configs[cat_id]["sort_order"] = sort_order
                             else:
-                                catalog_sorts.pop(cat_id, None)
                                 catalog_configs[cat_id].pop("sort_by", None)
                                 catalog_configs[cat_id].pop("sort_order", None)
                         if "shuffle" in cfg:
-                            catalog_shuffles[cat_id] = bool(cfg["shuffle"])
+                            catalog_configs[cat_id]["shuffle"] = bool(cfg["shuffle"])
                         if "dubbed" in cfg:
                             catalog_configs[cat_id]["dubbed"] = bool(cfg["dubbed"])
                         if "audio" in cfg:
@@ -289,17 +253,10 @@ async def handle_configure_form(user: dict, form) -> dict | None:
             if shape_val:
                 val = shape_val.strip().lower()
                 if val in ["landscape", "poster"]:
-                    catalog_shapes[cat] = val
                     if cat not in catalog_configs:
                         catalog_configs[cat] = {}
                     catalog_configs[cat]["shape"] = val
 
-        user["catalog_shapes"] = catalog_shapes
-        user["catalog_titles"] = catalog_titles
-        user["catalog_placements"] = catalog_placements
-        user["catalog_poster_arts"] = catalog_poster_arts
-        user["catalog_sorts"] = catalog_sorts
-        user["catalog_shuffles"] = catalog_shuffles
         user["catalog_configs"] = catalog_configs
 
     if "enable_recommendations" in form:
@@ -310,8 +267,6 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         user["enable_ai_recommendations"] = form.get("enable_ai_recommendations") in ("true", "on", "1")
     if "enable_discovery_catalogs" in form:
         user["enable_discovery_catalogs"] = form.get("enable_discovery_catalogs") == "true"
-    if "shuffle_discovery_catalogs" in form:
-        user["shuffle_discovery_catalogs"] = form.get("shuffle_discovery_catalogs") == "true"
     if "enable_dubbed_catalogs" in form:
         user["enable_dubbed_catalogs"] = form.get("enable_dubbed_catalogs") == "true"
     if "dubbed_language" in form:

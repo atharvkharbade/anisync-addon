@@ -38,6 +38,14 @@ def create_app() -> App:
 
         init_client()
 
+        # One-time database migration: convert legacy settings to catalog_configs
+        try:
+            from app.services.db.legacy_settings_migration import run_legacy_settings_migration
+
+            run_legacy_settings_migration()
+        except Exception as e:
+            logging.error("Failed to run legacy settings migration: %s", e)
+
         # Ensure Fribb mappings are populated and schema is up-to-date in the background
         import asyncio
 
