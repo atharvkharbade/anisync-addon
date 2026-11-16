@@ -300,6 +300,7 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
         return str(cached["kitsu_id"])
 
     client = get_client()
+    discovered_anilist_id = None
 
     # Try ARM API
     try:
@@ -313,6 +314,8 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
             if data:
                 kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
                 anilist_id = str(data["anilist"]) if data.get("anilist") else None
+                if anilist_id:
+                    discovered_anilist_id = anilist_id
                 if kitsu_id:
                     cache_ids(kitsu_id, mal_id, anilist_id)
                     return kitsu_id
@@ -325,7 +328,9 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
         doc = db.fribb_mappings.find_one({"mal_id": str(mal_id)})
         if doc:
             kitsu_id = str(doc["kitsu_id"]) if doc.get("kitsu_id") else None
-            anilist_id = doc.get("anilist_id")
+            anilist_id = str(doc["anilist_id"]) if doc.get("anilist_id") else None
+            if anilist_id:
+                discovered_anilist_id = anilist_id
             if kitsu_id:
                 cache_ids(kitsu_id, mal_id, anilist_id)
                 return kitsu_id
@@ -345,11 +350,22 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
                     kitsu_id = str(v["id"])
                     break
             anilist_id = str(data.get("anilistId")) if data.get("anilistId") else None
+            if anilist_id:
+                discovered_anilist_id = anilist_id
             if kitsu_id:
                 cache_ids(kitsu_id, mal_id, anilist_id)
                 return kitsu_id
     except Exception as e:
         logging.warning("MAL-Sync mal->kitsu failed for mal_id=%s: %s", mal_id, e)
+
+    # Try official Kitsu mappings endpoint before title fallback
+    k_id = await kitsu_id_from_kitsu_mappings("mal", mal_id, anilist_id=discovered_anilist_id)
+    if k_id:
+        return k_id
+    if discovered_anilist_id:
+        k_id = await kitsu_id_from_kitsu_mappings("anilist", discovered_anilist_id, mal_id=mal_id)
+        if k_id:
+            return k_id
 
     # Try Title-based fallback (skipped while a negative-cache entry is active)
     if is_fallback_miss("mal", mal_id):
@@ -381,6 +397,7 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
         return str(cached["kitsu_id"])
 
     client = get_client()
+    discovered_mal_id = None
 
     # Try ARM API
     try:
@@ -394,6 +411,8 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
             if data:
                 kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
                 mal_id = str(data["myanimelist"]) if data.get("myanimelist") else None
+                if mal_id:
+                    discovered_mal_id = mal_id
                 if kitsu_id:
                     cache_ids(kitsu_id, mal_id, anilist_id)
                     return kitsu_id
@@ -410,6 +429,8 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
             imdb_id = str(mappings.get("imdb_id")) if mappings.get("imdb_id") else None
             tmdb_id = str(mappings.get("themoviedb_id")) if mappings.get("themoviedb_id") else None
             tvdb_id = str(mappings.get("thetvdb_id")) if mappings.get("thetvdb_id") else None
+            if mal_id:
+                discovered_mal_id = mal_id
             if kitsu_id:
                 cache_ids(
                     kitsu_id=kitsu_id,
@@ -429,12 +450,23 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
         doc = db.fribb_mappings.find_one({"anilist_id": str(anilist_id)})
         if doc:
             kitsu_id = str(doc["kitsu_id"]) if doc.get("kitsu_id") else None
-            mal_id = doc.get("mal_id")
+            mal_id = str(doc["mal_id"]) if doc.get("mal_id") else None
+            if mal_id:
+                discovered_mal_id = mal_id
             if kitsu_id:
                 cache_ids(kitsu_id, mal_id, anilist_id)
                 return kitsu_id
     except Exception as e:
         logging.warning("Fribb anilist->kitsu failed for anilist_id=%s: %s", anilist_id, e)
+
+    # Try official Kitsu mappings endpoint before title fallback
+    k_id = await kitsu_id_from_kitsu_mappings("anilist", anilist_id, mal_id=discovered_mal_id)
+    if k_id:
+        return k_id
+    if discovered_mal_id:
+        k_id = await kitsu_id_from_kitsu_mappings("mal", discovered_mal_id, anilist_id=anilist_id)
+        if k_id:
+            return k_id
 
     # Try Title-based fallback (skipped while a negative-cache entry is active)
     if is_fallback_miss("anilist", anilist_id):
