@@ -16,7 +16,7 @@ from app.services.db import (
 )
 from app.services.http import get_client
 
-from .constants import ANIZP_API, ARM_API, MALSYNC_API, TIMEOUT
+from .constants import ANIZP_API, ARM_API, KITSU_MAPPINGS_API, MALSYNC_API, TIMEOUT
 from .fribb import ensure_fribb_mappings
 from .remote import (
     _try_anizp,
@@ -175,6 +175,119 @@ async def _verified_title_fallback(
     # Safe to cache as speculative fallback using insert-only protection (never overwrites existing).
     cache_fallback_ids(kitsu_id, mal_id, anilist_id, simkl_id=simkl_id)
     return kitsu_id
+
+
+_KITSU_MAPPINGS_SEMAPHORE = asyncio.Semaphore(4)
+_SITE_TO_EXTERNAL_SITE = {
+    "anilist": "anilist/anime",
+    "mal": "myanimelist/anime",
+}
+
+
+async def kitsu_id_from_kitsu_mappings(
+    site: str,
+    external_id: str,
+    mal_id: str | None = None,
+    anilist_id: str | None = None,
+) -> str | None:
+    """
+    Looks up a Kitsu anime ID directly from Kitsu's official mappings endpoint:
+    GET https://kitsu.io/api/edge/mappings?filter[externalSite]=<site>&filter[externalId]=<id>&include=item
+    Caches hits in id_cache via cache_ids.
+    Records 12-hour negative cache (record_fallback_miss) on confirmed misses (HTTP 200 with no mapping).
+    Transient failures (network error, timeout, 429/5xx) return None with no negative cache.
+    """
+    if site not in _SITE_TO_EXTERNAL_SITE:
+        return None
+    if not external_id or not isinstance(external_id, str):
+        return None
+    external_id = external_id.strip()
+    if not external_id.isdigit() or len(external_id) > 12:
+        return None
+
+    cache_key = f"kitsu_map_{site}"
+    if is_fallback_miss(cache_key, external_id):
+        return None
+
+    ext_site = _SITE_TO_EXTERNAL_SITE[site]
+    params = {
+        "filter[externalSite]": ext_site,
+        "filter[externalId]": external_id,
+        "include": "item",
+    }
+    headers = {
+        "Accept": "application/vnd.api+json",
+    }
+
+    client = get_client()
+    try:
+        async with _KITSU_MAPPINGS_SEMAPHORE:
+            resp = await client.get(
+                KITSU_MAPPINGS_API,
+                params=params,
+                headers=headers,
+                timeout=TIMEOUT,
+            )
+    except Exception as e:
+        logging.warning("Kitsu mappings request failed for %s:%s: %s", site, external_id, e)
+        return None
+
+    if resp.status_code != 200:
+        logging.warning(
+            "Kitsu mappings non-200 response for %s:%s (status %d)",
+            site,
+            external_id,
+            resp.status_code,
+        )
+        return None
+
+    try:
+        payload = resp.json()
+    except Exception as e:
+        logging.warning("Kitsu mappings JSON parse error for %s:%s: %s", site, external_id, e)
+        return None
+
+    data = payload.get("data")
+    if not isinstance(data, list) or not data:
+        record_fallback_miss(cache_key, external_id, "No Kitsu mapping", ttl_hours=12)
+        return None
+
+    anime_id = None
+    for mapping in data:
+        if not isinstance(mapping, dict):
+            continue
+        attrs = mapping.get("attributes") or {}
+        if attrs.get("externalSite") != ext_site or str(attrs.get("externalId")) != external_id:
+            continue
+        item_data = (mapping.get("relationships") or {}).get("item", {}).get("data") or {}
+        if item_data.get("type") == "anime" and item_data.get("id"):
+            candidate_id = str(item_data["id"])
+            included = payload.get("included")
+            if isinstance(included, list):
+                is_anime = any(
+                    isinstance(inc, dict) and inc.get("type") == "anime" and str(inc.get("id")) == candidate_id
+                    for inc in included
+                )
+                if is_anime:
+                    anime_id = candidate_id
+                    break
+            else:
+                anime_id = candidate_id
+                break
+
+    if not anime_id:
+        record_fallback_miss(cache_key, external_id, "No Kitsu mapping", ttl_hours=12)
+        return None
+
+    resolved_mal = external_id if site == "mal" else mal_id
+    resolved_al = external_id if site == "anilist" else anilist_id
+    try:
+        cache_ids(anime_id, resolved_mal, resolved_al)
+    except Exception as e:
+        logging.debug("cache_ids error in kitsu_id_from_kitsu_mappings: %s", e)
+
+    logging.info("Resolved Kitsu mapping: %s:%s → kitsu:%s", site, external_id, anime_id)
+    return anime_id
 
 
 async def resolve_mal_to_kitsu(mal_id: str) -> str | None:

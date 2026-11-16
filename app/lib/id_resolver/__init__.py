@@ -2,6 +2,7 @@ from .constants import (
     ANIZP_API,
     ARM_API,
     FRIBB_API,
+    KITSU_MAPPINGS_API,
     MALSYNC_API,
     TIMEOUT,
 )
@@ -13,6 +14,7 @@ from .remote import (
 )
 from .resolvers import (
     bulk_resolve_to_kitsu,
+    kitsu_id_from_kitsu_mappings,
     resolve,
     resolve_anilist_to_kitsu,
     resolve_mal_to_kitsu,
@@ -22,6 +24,7 @@ from .resolvers import (
 __all__ = [
     "ARM_API",
     "ANIZP_API",
+    "KITSU_MAPPINGS_API",
     "MALSYNC_API",
     "FRIBB_API",
     "TIMEOUT",
@@ -31,6 +34,7 @@ __all__ = [
     "resolve_anilist_to_kitsu",
     "resolve_simkl_to_kitsu",
     "bulk_resolve_to_kitsu",
+    "kitsu_id_from_kitsu_mappings",
     "search_kitsu_by_title",
     "fetch_anime_info_by_mal_id",
     "fetch_anime_info_by_anilist_id",
