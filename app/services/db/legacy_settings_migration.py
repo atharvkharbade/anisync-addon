@@ -45,45 +45,45 @@ POSSIBLE_CATS = [
     "anisync_most_popular",
 ]
 
-CATEGORY_CATALOGS = {
-    "watching": [
-        "mal_watching",
-        "anilist_watching",
-        "simkl_watching",
-        "comb_watching",
-        "anisync_search",
-        "anisync_seasonal",
-        "anisync_trending",
-        "anisync_top_airing",
-        "anisync_highest_rated",
-        "anisync_most_popular",
-        "anisync_spotlight",
-    ],
-    "planning": [
-        "mal_plan_to_watch",
-        "anilist_planning",
-        "simkl_plantowatch",
-        "comb_plan_to_watch",
-    ],
-    "completed": [
-        "mal_completed",
-        "anilist_completed",
-        "simkl_completed",
-        "comb_completed",
-    ],
-    "on_hold": [
-        "mal_on_hold",
-        "anilist_paused",
-        "simkl_hold",
-        "comb_paused_on_hold",
-    ],
-    "dropped": [
-        "mal_dropped",
-        "anilist_dropped",
-        "simkl_dropped",
-        "comb_dropped",
-    ],
+# Status suffix -> custom_sort category key, mirroring the watchlist handlers'
+# mal_map / anilist status mapping / simkl_map / comb_map (unknown statuses fall back to "watching").
+_STATUS_TO_CATEGORY = {
+    "watching": "watching",
+    "repeating": "watching",
+    "plan_to_watch": "planning",
+    "planning": "planning",
+    "plantowatch": "planning",
+    "completed": "completed",
+    "on_hold": "on_hold",
+    "paused": "on_hold",
+    "hold": "on_hold",
+    "paused_on_hold": "on_hold",
+    "dropped": "dropped",
 }
+_NO_CATEGORY = ("anisync_rec", "anisync_loved", "anisync_liked")
+
+
+def sort_category_for(cat: str) -> str | None:
+    """The default_category_key get_catalog_sorting receives for this catalog today.
+    Inherited quirk: discovery catalogs and search pass "watching", so they pick up the watching sort."""
+    if cat in _NO_CATEGORY:
+        return None
+    if cat.startswith("anisync_"):
+        return "watching"
+    for prefix in ("mal_", "anilist_", "simkl_", "comb_"):
+        if cat.startswith(prefix):
+            return _STATUS_TO_CATEGORY.get(cat[len(prefix):], "watching")
+    return None
+
+
+def _has_value(cfg: dict, key: str) -> bool:
+    """True when catalog_configs already decides this key (readers treat empty / "default" as unset)."""
+    val = cfg.get(key)
+    if key == "sort_by":
+        return bool(val) and val != "default"
+    if key in ("title", "placement"):
+        return bool(val)
+    return key in cfg
 
 
 def migrate_user_doc(user: dict) -> tuple[dict, dict]:
@@ -126,7 +126,7 @@ def migrate_user_doc(user: dict) -> tuple[dict, dict]:
                     continue
                 if isinstance(val, str) and val.strip():
                     c_cfg = cfgs.setdefault(cat, {})
-                    if "title" not in c_cfg:
+                    if not _has_value(c_cfg, "title"):
                         c_cfg["title"] = val.strip()
                         cfgs_modified = True
 
@@ -140,7 +140,7 @@ def migrate_user_doc(user: dict) -> tuple[dict, dict]:
                     continue
                 if val in ("all", "discover_only"):
                     c_cfg = cfgs.setdefault(cat, {})
-                    if "placement" not in c_cfg:
+                    if not _has_value(c_cfg, "placement"):
                         c_cfg["placement"] = val
                         cfgs_modified = True
 
@@ -169,10 +169,9 @@ def migrate_user_doc(user: dict) -> tuple[dict, dict]:
                 if isinstance(val, dict):
                     by = val.get("by")
                     order = val.get("order", "desc")
-                    allowed = get_allowed_sorts_for_catalog(cat)
-                    if by and by != "default" and by in allowed:
+                    if by and by != "default":
                         c_cfg = cfgs.setdefault(cat, {})
-                        if "sort_by" not in c_cfg:
+                        if not _has_value(c_cfg, "sort_by"):
                             c_cfg["sort_by"] = by
                             c_cfg["sort_order"] = order
                             cfgs_modified = True
@@ -185,15 +184,13 @@ def migrate_user_doc(user: dict) -> tuple[dict, dict]:
             for cat, val in arts.items():
                 if not isinstance(cat, str):
                     continue
+                if val is None:
+                    continue
+                # formatting.py reads catalog_poster_arts before catalog_configs, so the old value decides today
                 c_cfg = cfgs.setdefault(cat, {})
-                if val is False or str(val).lower() in ("false", "off", "clean", "none"):
-                    if c_cfg.get("poster_art") is not False:
-                        c_cfg["poster_art"] = False
-                        cfgs_modified = True
-                elif val is True or str(val).lower() in ("true", "on"):
-                    if "poster_art" not in c_cfg:
-                        c_cfg["poster_art"] = True
-                        cfgs_modified = True
+                if c_cfg.get("poster_art", object()) != val:
+                    c_cfg["poster_art"] = val
+                    cfgs_modified = True
 
     # 7. D1: shuffle_discovery_catalogs
     if "shuffle_discovery_catalogs" in user:
@@ -219,20 +216,20 @@ def migrate_user_doc(user: dict) -> tuple[dict, dict]:
     if "custom_sort_enabled" in user:
         unset_fields["custom_sort_enabled"] = ""
         if user.get("custom_sort_enabled") is True:
-            for cat_key, cat_list in CATEGORY_CATALOGS.items():
+            for cat in POSSIBLE_CATS:
+                cat_key = sort_category_for(cat)
+                if not cat_key:
+                    continue
                 sort_by = user.get(f"custom_sort_{cat_key}_by", "default")
                 sort_order = user.get(f"custom_sort_{cat_key}_order", "desc")
-                if sort_by and sort_by != "default":
-                    for cat in cat_list:
-                        c_cfg = cfgs.setdefault(cat, {})
-                        if c_cfg.get("shuffle") is True:
-                            continue
-                        if "sort_by" not in c_cfg:
-                            allowed = get_allowed_sorts_for_catalog(cat)
-                            if sort_by in allowed:
-                                c_cfg["sort_by"] = sort_by
-                                c_cfg["sort_order"] = sort_order
-                                cfgs_modified = True
+                if not sort_by or sort_by == "default" or sort_by not in get_allowed_sorts_for_catalog(cat):
+                    continue
+                c_cfg = cfgs.setdefault(cat, {})
+                if c_cfg.get("shuffle") is True or _has_value(c_cfg, "sort_by"):
+                    continue
+                c_cfg["sort_by"] = sort_by
+                c_cfg["sort_order"] = sort_order
+                cfgs_modified = True
 
     # 10. E1: meta_artwork_provider
     if "meta_artwork_provider" in user:
@@ -291,8 +288,10 @@ def run_legacy_settings_migration():
         claim = mig_col.find_one_and_update(
             {
                 "id": MIGRATION_ID,
-                "status": {"$ne": "done"},
-                "started_at": {"$lt": stale_threshold},
+                "$or": [
+                    {"status": "partial"},
+                    {"status": "running", "started_at": {"$lt": stale_threshold}},
+                ],
             },
             {"$set": {"status": "running", "started_at": now}},
             return_document=ReturnDocument.AFTER,
@@ -350,6 +349,11 @@ def run_legacy_settings_migration():
                 migrated_count,
             )
         else:
+            mig_col.update_one(
+                {"id": MIGRATION_ID},
+                {"$set": {"status": "partial", "error_count": error_count, "total_scanned": total_scanned,
+                          "migrated_count": migrated_count}},
+            )
             logging.error(
                 "Migration %s finished with %d errors (scanned=%d, migrated=%d)",
                 MIGRATION_ID,

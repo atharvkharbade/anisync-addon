@@ -1,5 +1,5 @@
 import secrets
-from app.services.db import db, get_user, invalidate_user_watchlist_cache
+from app.services.db import db, get_user
 
 
 def resolve_or_create_user(session_obj, tracker_id: str, find_by_tracker_func) -> tuple[str, dict]:
@@ -9,7 +9,6 @@ def resolve_or_create_user(session_obj, tracker_id: str, find_by_tracker_func) -
     - Preserving existing authenticated user session if present (account linking)
     - Deleting temporary guest user record if user was in guest mode
     - Finding user by tracker ID in the database
-    - Legacy UID prefix migration (stripping 'al_', 'simkl_', 'guest_')
     - Generating a unique 9-digit UID if no clean UID exists
     - Setting the session user cookie
     """

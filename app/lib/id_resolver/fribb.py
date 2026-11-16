@@ -95,10 +95,9 @@ async def ensure_fribb_mappings(client: httpx.AsyncClient):
     try:
         # Recheck last_updated after acquiring lock
         try:
-            if not force_rebuild:
-                meta = db.fribb_meta.find_one({"key": "last_updated"})
-                if meta and (datetime.now(UTC).replace(tzinfo=None) - meta["timestamp"]) < timedelta(hours=24):
-                    return
+            meta = db.fribb_meta.find_one({"key": "last_updated"})
+            if meta and (datetime.now(UTC).replace(tzinfo=None) - meta["timestamp"]) < timedelta(hours=24):
+                return
         except Exception:
             pass
 
