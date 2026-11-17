@@ -1,9 +1,11 @@
+import asyncio
 import datetime
 import logging
 import re
 
 import random
 
+from app.lib.id_resolver import kitsu_id_from_kitsu_mappings
 from app.routes.catalog.formatting import format_catalog_metas_async, get_anilist_title, get_kitsu_title
 from app.routes.catalog.sorting.dubs import apply_catalog_dub_filter
 from app.routes.catalog.sorting.preferences import get_catalog_sorting, is_catalog_shuffle_enabled, resolve_title_lang
@@ -286,6 +288,43 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                                     kitsu_map.setdefault(f"al:{doc['anilist_id']}", str(k_id))
                     except Exception as ex:
                         logging.error("Failed batch id_cache lookup for search fallback: %s", ex)
+
+                # Resolve up to 8 unmapped items via Kitsu mappings endpoint bounded by 2.5s budget
+                unmapped_search_items = []
+                for m in al_data:
+                    if (m.get("format") or "").upper() == "MUSIC":
+                        continue
+                    al_id = str(m.get("id"))
+                    mal_id = str(m["idMal"]) if m.get("idMal") else None
+                    k_id = (
+                        kitsu_map.get(f"mal:{mal_id}")
+                        or (kitsu_map.get(f"mal:{int(mal_id)}") if mal_id and mal_id.isdigit() else None)
+                        or kitsu_map.get(f"al:{al_id}")
+                        or (kitsu_map.get(f"al:{int(al_id)}") if al_id and al_id.isdigit() else None)
+                    )
+                    if not k_id and al_id:
+                        unmapped_search_items.append((al_id, mal_id))
+
+                unmapped_search_items = unmapped_search_items[:8]
+                if unmapped_search_items:
+                    async def _resolve_search_unmapped(a_id: str, m_id: str | None) -> tuple[str, str | None, str | None]:
+                        kid = await kitsu_id_from_kitsu_mappings("anilist", a_id, mal_id=m_id)
+                        if not kid and m_id:
+                            kid = await kitsu_id_from_kitsu_mappings("mal", m_id, anilist_id=a_id)
+                        return a_id, m_id, kid
+
+                    try:
+                        tasks = [_resolve_search_unmapped(a_id, m_id) for a_id, m_id in unmapped_search_items]
+                        search_results = await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=2.5)
+                        for r in search_results:
+                            if isinstance(r, tuple):
+                                a_id, m_id, kid = r
+                                if kid:
+                                    kitsu_map[f"al:{a_id}"] = kid
+                                    if m_id:
+                                        kitsu_map[f"mal:{m_id}"] = kid
+                    except Exception as ex:
+                        logging.warning("Failed Kitsu mappings resolution for search fallback: %s", ex)
 
                 existing_ids = {m["id"] for m in metas}
                 fallback_metas = []
