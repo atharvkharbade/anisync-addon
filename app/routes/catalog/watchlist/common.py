@@ -366,7 +366,7 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
 _watchlist_kitsu_bg_tasks: set[asyncio.Task] = set()
 
 
-def schedule_watchlist_kitsu_resolution(unresolved_items: list[tuple[str, str, str | None]]):
+def schedule_watchlist_kitsu_resolution(unresolved_items: list[tuple]):
     """
     Schedules background resolution of up to 10 unmapped items: (site, ext_id, fallback_ext_id)
     via kitsu_id_from_kitsu_mappings so their Kitsu IDs land in id_cache for next time.
@@ -379,16 +379,23 @@ def schedule_watchlist_kitsu_resolution(unresolved_items: list[tuple[str, str, s
 
     async def _runner():
         for item in items_to_resolve:
-            site, ext_id, fallback_id = item
+            # (site, ext_id, fallback_id) or (site, ext_id, fallback_id, simkl_id)
+            site, ext_id, fallback_id = item[0], item[1], item[2]
+            simkl_id = item[3] if len(item) > 3 else None
             try:
                 kid = await kitsu_id_from_kitsu_mappings(
                     site, ext_id, mal_id=fallback_id if site == "anilist" else None
                 )
                 if not kid and fallback_id:
                     fallback_site = "mal" if site == "anilist" else "anilist"
-                    await kitsu_id_from_kitsu_mappings(
+                    kid = await kitsu_id_from_kitsu_mappings(
                         fallback_site, fallback_id, anilist_id=ext_id if site == "anilist" else None
                     )
+                if kid and simkl_id:
+                    # Simkl watchlists look shows up by simkl_id; without this the lookup would repeat every load
+                    from app.services.db import attach_simkl_id
+
+                    attach_simkl_id(kid, simkl_id)
             except Exception as e:
                 logging.debug("Background kitsu resolution failed for %s:%s: %s", site, ext_id, e)
 

@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import logging
 import re
@@ -6,6 +5,7 @@ import re
 import random
 
 from app.lib.id_resolver import kitsu_id_from_kitsu_mappings
+from app.lib.id_resolver.resolvers import gather_within
 from app.routes.catalog.formatting import format_catalog_metas_async, get_anilist_title, get_kitsu_title
 from app.routes.catalog.sorting.dubs import apply_catalog_dub_filter
 from app.routes.catalog.sorting.preferences import get_catalog_sorting, is_catalog_shuffle_enabled, resolve_title_lang
@@ -315,7 +315,7 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
 
                     try:
                         tasks = [_resolve_search_unmapped(a_id, m_id) for a_id, m_id in unmapped_search_items]
-                        search_results = await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=2.5)
+                        search_results = await gather_within(tasks, timeout=2.5)
                         for r in search_results:
                             if isinstance(r, tuple):
                                 a_id, m_id, kid = r

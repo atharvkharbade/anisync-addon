@@ -178,6 +178,26 @@ async def _verified_title_fallback(
 
 
 _KITSU_MAPPINGS_SEMAPHORE = asyncio.Semaphore(4)
+# Below the 12 h discovery refresh (it runs every 11 h 55 min), so each refresh rechecks shows Kitsu lacked last time.
+KITSU_MAPPING_MISS_TTL_HOURS = 11
+_kitsu_lookup_bg_tasks: set = set()
+
+
+async def gather_within(coros: list, timeout: float) -> list:
+    """Run coros concurrently and return the results finished within `timeout` (exceptions dropped).
+    Unfinished lookups keep running in the background so their answers still get cached for next time."""
+    tasks = [asyncio.ensure_future(c) for c in coros]
+    if not tasks:
+        return []
+    done, pending = await asyncio.wait(tasks, timeout=timeout)
+    for t in pending:
+        _kitsu_lookup_bg_tasks.add(t)
+        t.add_done_callback(_kitsu_lookup_bg_tasks.discard)
+    out = []
+    for t in done:
+        if not t.cancelled() and t.exception() is None:
+            out.append(t.result())
+    return out
 _SITE_TO_EXTERNAL_SITE = {
     "anilist": "anilist/anime",
     "mal": "myanimelist/anime",
@@ -204,6 +224,13 @@ async def kitsu_id_from_kitsu_mappings(
     external_id = external_id.strip()
     if not external_id.isdigit() or len(external_id) > 12:
         return None
+
+    try:
+        cached = get_cached_ids_by_anilist(external_id) if site == "anilist" else get_cached_ids_by_mal(external_id)
+        if cached and cached.get("kitsu_id"):
+            return str(cached["kitsu_id"])
+    except Exception as e:
+        logging.debug("id_cache lookup failed in kitsu_id_from_kitsu_mappings: %s", e)
 
     cache_key = f"kitsu_map_{site}"
     if is_fallback_miss(cache_key, external_id):
@@ -249,10 +276,11 @@ async def kitsu_id_from_kitsu_mappings(
 
     data = payload.get("data")
     if not isinstance(data, list) or not data:
-        record_fallback_miss(cache_key, external_id, "No Kitsu mapping", ttl_hours=12)
+        record_fallback_miss(cache_key, external_id, "No Kitsu mapping", ttl_hours=KITSU_MAPPING_MISS_TTL_HOURS)
         return None
 
     anime_id = None
+    nsfw_hidden = False
     for mapping in data:
         if not isinstance(mapping, dict):
             continue
@@ -264,11 +292,18 @@ async def kitsu_id_from_kitsu_mappings(
             candidate_id = str(item_data["id"])
             included = payload.get("included")
             if isinstance(included, list):
-                is_anime = any(
-                    isinstance(inc, dict) and inc.get("type") == "anime" and str(inc.get("id")) == candidate_id
-                    for inc in included
+                item = next(
+                    (inc for inc in included
+                     if isinstance(inc, dict) and inc.get("type") == "anime" and str(inc.get("id")) == candidate_id),
+                    None,
                 )
-                if is_anime:
+                if item is not None:
+                    if (item.get("attributes") or {}).get("nsfw") is True:
+                        # Kitsu hides NSFW entries from anonymous requests (the anime endpoint 404s), so AniSync
+                        # could not load this page anyway: don't hand out an ID that opens to an empty page.
+                        logging.info("Kitsu mapping %s:%s points to NSFW-hidden kitsu:%s; ignoring", site, external_id, candidate_id)
+                        nsfw_hidden = True
+                        break
                     anime_id = candidate_id
                     break
             else:
@@ -276,7 +311,8 @@ async def kitsu_id_from_kitsu_mappings(
                 break
 
     if not anime_id:
-        record_fallback_miss(cache_key, external_id, "No Kitsu mapping", ttl_hours=12)
+        reason = "Kitsu entry is NSFW-hidden" if nsfw_hidden else "No Kitsu mapping"
+        record_fallback_miss(cache_key, external_id, reason, ttl_hours=KITSU_MAPPING_MISS_TTL_HOURS)
         return None
 
     resolved_mal = external_id if site == "mal" else mal_id

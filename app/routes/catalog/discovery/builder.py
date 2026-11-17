@@ -5,6 +5,7 @@ import re
 
 from app.api import anilist as anilist_api
 from app.lib.id_resolver import bulk_resolve_to_kitsu, kitsu_id_from_kitsu_mappings
+from app.lib.id_resolver.resolvers import gather_within
 from app.services.db import db
 
 from .constants import build_anilist_discovery_query
@@ -126,7 +127,7 @@ async def update_discovery_catalogs_cache() -> dict:
 
         try:
             tasks = [_resolve_unmapped(s, eid, f_eid) for s, eid, f_eid in unresolved_items]
-            results = await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=25.0)
+            results = await gather_within(tasks, timeout=25.0)
             for res in results:
                 if isinstance(res, tuple):
                     s, eid, f_eid, k_id = res

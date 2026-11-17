@@ -321,9 +321,9 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
                 al_id = str(ids.get("anilist") or "") if ids.get("anilist") else None
                 mal_id = str(ids.get("mal") or "") if ids.get("mal") else None
                 if al_id:
-                    unmapped_simkl.append(("anilist", al_id, mal_id))
+                    unmapped_simkl.append(("anilist", al_id, mal_id, simkl_id))
                 elif mal_id:
-                    unmapped_simkl.append(("mal", mal_id, None))
+                    unmapped_simkl.append(("mal", mal_id, None, simkl_id))
         schedule_watchlist_kitsu_resolution(unmapped_simkl)
 
         # If title language is not romaji, resolve missing titles for items on the current page in bulk
