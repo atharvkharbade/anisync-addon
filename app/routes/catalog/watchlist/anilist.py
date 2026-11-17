@@ -18,7 +18,10 @@ from app.routes.catalog.sorting import (
     extract_item_metadata_fields,
 )
 from app.lib.id_resolver import bulk_resolve_to_kitsu
-from app.routes.catalog.watchlist.common import get_cached_anilist_user_anime_list
+from app.routes.catalog.watchlist.common import (
+    get_cached_anilist_user_anime_list,
+    schedule_watchlist_kitsu_resolution,
+)
 
 
 async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filters, extras=""):
@@ -220,6 +223,17 @@ async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filter
         # Resolve Kitsu IDs in bulk
         anilist_ids = [str(entry["media"]["id"]) for entry in paged_entries if isinstance(entry, dict) and entry.get("media") and isinstance(entry["media"], dict) and entry["media"].get("id")]
         kitsu_mappings = await bulk_resolve_to_kitsu(anilist_ids=anilist_ids, skip_external=True)
+
+        # Collect unmapped items for background resolution (up to 10)
+        unmapped_al = []
+        for entry in paged_entries:
+            if not isinstance(entry, dict) or not entry.get("media") or not isinstance(entry["media"], dict):
+                continue
+            al_id = str(entry["media"].get("id") or "")
+            mal_id = str(entry["media"].get("idMal") or "") if entry["media"].get("idMal") else None
+            if al_id and not kitsu_mappings.get(f"anilist:{al_id}"):
+                unmapped_al.append(("anilist", al_id, mal_id))
+        schedule_watchlist_kitsu_resolution(unmapped_al)
 
         # Build meta items
         for entry in paged_entries:

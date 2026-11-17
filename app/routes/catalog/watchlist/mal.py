@@ -24,6 +24,7 @@ from config import Config
 from .common import (
     fetch_anilist_details_in_bulk,
     get_cached_mal_user_anime_list,
+    schedule_watchlist_kitsu_resolution,
 )
 
 
@@ -283,6 +284,18 @@ async def handle_mal_catalog(user, user_id, catalog_type, catalog_id, filters, e
             and item["node"].get("id")
         ]
         kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, skip_external=True)
+
+        # Collect unmapped items for background resolution (up to 10)
+        unmapped_mal = []
+        for item in paged_data_items:
+            if not isinstance(item, dict) or not item.get("node") or not isinstance(item["node"], dict):
+                continue
+            m_id = str(item["node"].get("id") or "")
+            if m_id and not kitsu_mappings.get(f"mal:{m_id}"):
+                al_media = bulk_details.get(m_id) or {}
+                al_id = str(al_media.get("id") or "") if al_media.get("id") else None
+                unmapped_mal.append(("mal", m_id, al_id))
+        schedule_watchlist_kitsu_resolution(unmapped_mal)
 
         # Build meta items
         for item in paged_data_items:

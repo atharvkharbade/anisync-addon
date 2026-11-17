@@ -24,6 +24,7 @@ from config import Config
 from .common import (
     fetch_anilist_details_in_bulk,
     get_cached_simkl_user_anime_list,
+    schedule_watchlist_kitsu_resolution,
 )
 
 
@@ -309,6 +310,21 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
             if simkl_id:
                 simkl_ids.append(simkl_id)
         kitsu_mappings = await bulk_resolve_to_kitsu(simkl_ids=simkl_ids, skip_external=True)
+
+        # Collect unmapped items for background resolution (up to 10)
+        unmapped_simkl = []
+        for item in paged_data_items:
+            show_obj = item.get("show") or item.get("anime") or item
+            ids = (show_obj.get("ids") or {}) if isinstance(show_obj, dict) else {}
+            simkl_id = str(ids.get("simkl") or "")
+            if simkl_id and not kitsu_mappings.get(f"simkl:{simkl_id}"):
+                al_id = str(ids.get("anilist") or "") if ids.get("anilist") else None
+                mal_id = str(ids.get("mal") or "") if ids.get("mal") else None
+                if al_id:
+                    unmapped_simkl.append(("anilist", al_id, mal_id))
+                elif mal_id:
+                    unmapped_simkl.append(("mal", mal_id, None))
+        schedule_watchlist_kitsu_resolution(unmapped_simkl)
 
         # If title language is not romaji, resolve missing titles for items on the current page in bulk
         if title_lang != "romaji":

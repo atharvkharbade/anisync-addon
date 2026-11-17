@@ -6,7 +6,7 @@ from app.routes.catalog.formatting import format_catalog_metas_async
 from app.routes.catalog.sorting import apply_catalog_dub_filter, get_catalog_sorting
 from app.routes.utils import respond_with
 
-from ..common import fetch_anilist_details_in_bulk
+from ..common import fetch_anilist_details_in_bulk, schedule_watchlist_kitsu_resolution
 from .airing import filter_airing_candidates
 from .fetcher import fetch_combined_tracker_lists
 from .formatter import format_combined_page_metas
@@ -116,6 +116,24 @@ async def handle_combined_catalog(user, user_id, catalog_type, catalog_id, filte
         kitsu_mappings = await bulk_resolve_to_kitsu(
             mal_ids=mal_ids, anilist_ids=anilist_ids, simkl_ids=simkl_ids, skip_external=True
         )
+
+        # Collect unmapped items for background resolution (up to 10)
+        unmapped_combined = []
+        for x in paged_items:
+            m_id = str(x["mal_id"]) if x.get("mal_id") else None
+            a_id = str(x["anilist_id"]) if x.get("anilist_id") else None
+            s_id = str(x["simkl_id"]) if x.get("simkl_id") else None
+            has_kitsu = (
+                (m_id and kitsu_mappings.get(f"mal:{m_id}"))
+                or (a_id and kitsu_mappings.get(f"anilist:{a_id}"))
+                or (s_id and kitsu_mappings.get(f"simkl:{s_id}"))
+            )
+            if not has_kitsu:
+                if a_id:
+                    unmapped_combined.append(("anilist", a_id, m_id))
+                elif m_id:
+                    unmapped_combined.append(("mal", m_id, None))
+        schedule_watchlist_kitsu_resolution(unmapped_combined)
 
         # If title language is not romaji, resolve missing titles for Simkl-exclusive items on the current page
         if title_lang != "romaji":
