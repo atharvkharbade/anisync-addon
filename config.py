@@ -60,6 +60,10 @@ class Config:
     SIMKL_CLIENT_ID = os.getenv("SIMKL_CLIENT_ID", "")
     SIMKL_CLIENT_SECRET = os.getenv("SIMKL_CLIENT_SECRET", "")
 
+    # Kitsu Authentication
+    KITSU_USERNAME = os.getenv("KITSU_USERNAME", "")
+    KITSU_PASSWORD = os.getenv("KITSU_PASSWORD", "")
+
     # API endpoints (Allows routing through Cloudflare Workers or proxies)
     CUSTOM_JIKAN_URL = os.getenv("CUSTOM_JIKAN_URL", os.getenv("JIKAN_API_URL", "")).strip()
     ANILIST_API_URL = os.getenv("ANILIST_API_URL", "https://graphql.anilist.co")
