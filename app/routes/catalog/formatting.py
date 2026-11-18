@@ -372,6 +372,50 @@ def is_nsfw_meta(m: dict) -> bool:
     return False
 
 
+def get_known_nsfw_kitsu_ids(metas_list: list) -> set[str]:
+    """Finds all Kitsu IDs in the given items that are flagged NSFW in id_cache or kitsu_meta_cache."""
+    kitsu_ids_int = []
+    kitsu_ids_str = []
+    for m in metas_list:
+        if not isinstance(m, dict):
+            continue
+        kid = None
+        if m.get("kitsu_id"):
+            kid = str(m["kitsu_id"]).strip()
+        else:
+            raw_id = str(m.get("id") or "").strip()
+            if raw_id.startswith("kitsu:"):
+                parts = raw_id.split(":")
+                kid = parts[1] if len(parts) > 1 else None
+            elif raw_id.isdigit():
+                kid = raw_id
+        if kid and kid.isdigit():
+            kitsu_ids_str.append(kid)
+            kitsu_ids_int.append(int(kid))
+
+    nsfw_set = set()
+    if not kitsu_ids_str:
+        return nsfw_set
+
+    try:
+        from app.services.db import db
+
+        for doc in db.get_collection("id_cache").find(
+            {"kitsu_id": {"$in": kitsu_ids_int}, "kitsu_nsfw": True},
+            {"kitsu_id": 1},
+        ):
+            nsfw_set.add(str(doc["kitsu_id"]))
+        for doc in db.get_collection("kitsu_meta_cache").find(
+            {"kitsu_id": {"$in": kitsu_ids_str}, "nsfw": True},
+            {"kitsu_id": 1},
+        ):
+            nsfw_set.add(str(doc["kitsu_id"]))
+    except Exception as e:
+        logging.warning("Failed to query known nsfw kitsu ids: %s", e)
+
+    return nsfw_set
+
+
 def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalog_id: str | None = None) -> list:
     custom_types_map = {
         "Watching": "anime",
@@ -398,10 +442,25 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         )
     )
     hide_nsfw = user.get("hide_nsfw", True) if user else True
+    nsfw_kitsu_ids = (
+        get_known_nsfw_kitsu_ids(metas_list)
+        if (hide_nsfw and not is_watchlist_catalog)
+        else set()
+    )
     formatted_metas = []
     for m in metas_list:
-        if hide_nsfw and not is_watchlist_catalog and is_nsfw_meta(m):
-            continue
+        if hide_nsfw and not is_watchlist_catalog:
+            raw_id = str(m.get("id") or "")
+            kid = str(m.get("kitsu_id") or "")
+            if not kid:
+                if raw_id.startswith("kitsu:"):
+                    parts = raw_id.split(":")
+                    kid = parts[1] if len(parts) > 1 else ""
+                elif raw_id.isdigit():
+                    kid = raw_id
+            if is_nsfw_meta(m) or (kid and kid in nsfw_kitsu_ids):
+                continue
+
         m_copy = m.copy()
         if "title_obj" in m_copy:
             t_obj = m_copy["title_obj"]

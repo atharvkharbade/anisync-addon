@@ -140,9 +140,24 @@ async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filt
     # Filter NSFW before slicing so the returned page length equals page_limit, preventing premature end-of-catalog
     hide_nsfw = user.get("hide_nsfw", True) if user else True
     if hide_nsfw:
-        from app.routes.catalog.formatting import is_nsfw_meta
+        from app.routes.catalog.formatting import get_known_nsfw_kitsu_ids, is_nsfw_meta
 
-        metas = [m for m in metas if not is_nsfw_meta(m)]
+        nsfw_kitsu_ids = get_known_nsfw_kitsu_ids(metas)
+
+        def _is_discovery_item_nsfw(m: dict) -> bool:
+            if is_nsfw_meta(m):
+                return True
+            raw_id = str(m.get("id") or "")
+            kid = str(m.get("kitsu_id") or "")
+            if not kid:
+                if raw_id.startswith("kitsu:"):
+                    parts = raw_id.split(":")
+                    kid = parts[1] if len(parts) > 1 else ""
+                elif raw_id.isdigit():
+                    kid = raw_id
+            return bool(kid and kid in nsfw_kitsu_ids)
+
+        metas = [m for m in metas if not _is_discovery_item_nsfw(m)]
 
     # Handle pagination skip
     try:
