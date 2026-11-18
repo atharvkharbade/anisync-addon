@@ -15,6 +15,8 @@ from app.services.db import (
     record_fallback_miss,
 )
 from app.services.http import get_client
+from config import kitsu_login_enabled
+
 
 from .constants import ANIZP_API, ARM_API, KITSU_MAPPINGS_API, MALSYNC_API, TIMEOUT
 from .fribb import ensure_fribb_mappings
@@ -281,6 +283,7 @@ async def kitsu_id_from_kitsu_mappings(
 
     anime_id = None
     nsfw_hidden = False
+    is_nsfw = False
     for mapping in data:
         if not isinstance(mapping, dict):
             continue
@@ -299,11 +302,13 @@ async def kitsu_id_from_kitsu_mappings(
                 )
                 if item is not None:
                     if (item.get("attributes") or {}).get("nsfw") is True:
-                        # Kitsu hides NSFW entries from anonymous requests (the anime endpoint 404s), so AniSync
-                        # could not load this page anyway: don't hand out an ID that opens to an empty page.
-                        logging.info("Kitsu mapping %s:%s points to NSFW-hidden kitsu:%s; ignoring", site, external_id, candidate_id)
-                        nsfw_hidden = True
-                        break
+                        if not kitsu_login_enabled():
+                            # Kitsu hides NSFW entries from anonymous requests (the anime endpoint 404s), so AniSync
+                            # could not load this page anyway: don't hand out an ID that opens to an empty page.
+                            logging.info("Kitsu mapping %s:%s points to NSFW-hidden kitsu:%s; ignoring", site, external_id, candidate_id)
+                            nsfw_hidden = True
+                            break
+                        is_nsfw = True
                     anime_id = candidate_id
                     break
             else:
@@ -322,8 +327,18 @@ async def kitsu_id_from_kitsu_mappings(
     except Exception as e:
         logging.debug("cache_ids error in kitsu_id_from_kitsu_mappings: %s", e)
 
-    logging.info("Resolved Kitsu mapping: %s:%s → kitsu:%s", site, external_id, anime_id)
+    if is_nsfw:
+        try:
+            id_cache_collection.update_one(
+                {"kitsu_id": int(anime_id)},
+                {"$set": {"kitsu_nsfw": True}},
+            )
+        except Exception as e:
+            logging.debug("Failed to set kitsu_nsfw on id_cache for %s: %s", anime_id, e)
+
+    logging.info("Resolved Kitsu mapping: %s:%s → kitsu:%s%s", site, external_id, anime_id, " (nsfw)" if is_nsfw else "")
     return anime_id
+
 
 
 async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
