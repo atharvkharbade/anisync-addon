@@ -4,6 +4,8 @@ import logging
 import re
 
 from app.services.http import get_client
+from config import kitsu_login_enabled
+
 
 KITSU_API_BASE = "https://kitsu.io/api/edge"
 TIMEOUT = 10
@@ -310,7 +312,7 @@ async def fetch_cinemeta_metadata(imdb_id: str, media_type: str, is_releasing: b
         return stale_data if stale_data is not None else {}
 
 
-async def fetch_kitsu_meta(kitsu_id: str) -> dict:
+async def fetch_kitsu_meta(kitsu_id: str, allow_nsfw: bool = False) -> dict:
     from app.services.db import db
 
     col = db.get_collection("kitsu_meta_cache")
@@ -319,9 +321,19 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
     exp = None
     purge = None
     stale_data = None
+    cached_is_nsfw = False
     try:
         cached = col.find_one({"kitsu_id": str(kitsu_id)})
         if cached:
+            cached_is_nsfw = cached.get("nsfw") is True
+            if not cached_is_nsfw and isinstance(cached.get("data"), dict):
+                k_data = cached["data"].get("data") or {}
+                if isinstance(k_data, dict) and (k_data.get("attributes") or {}).get("nsfw") is True:
+                    cached_is_nsfw = True
+
+            if cached_is_nsfw and not allow_nsfw:
+                return {}
+
             exp = _to_naive_utc(cached.get("expires_at"))
             purge = _to_naive_utc(cached.get("purge_at"))
             if purge is None and exp is not None:
@@ -333,7 +345,7 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
     except Exception as e:
         logging.error("Failed to read kitsu_meta_cache for %s: %s", kitsu_id, e)
 
-    key = ("kitsu", str(kitsu_id))
+    key = ("kitsu", str(kitsu_id), "nsfw" if allow_nsfw else "anon")
     url = f"{KITSU_API_BASE}/anime/{kitsu_id}"
     params = {"include": "episodes"}
     headers = {
@@ -345,8 +357,20 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
         client = get_client()
         try:
             resp = await client.get(url, params=params, headers=headers, timeout=TIMEOUT)
+            data = None
+            is_nsfw_entry = False
+
             if resp.status_code == 200:
                 data = resp.json()
+            elif resp.status_code == 404 and allow_nsfw and kitsu_login_enabled():
+                from app.services.kitsu_auth import kitsu_authed_get
+
+                authed_resp = await kitsu_authed_get(url, params=params, timeout=TIMEOUT)
+                if authed_resp is not None and authed_resp.status_code == 200:
+                    data = authed_resp.json()
+                    is_nsfw_entry = True
+
+            if data:
                 k_data = data.get("data") or {} if isinstance(data, dict) else {}
                 k_attrs = k_data.get("attributes") or {} if isinstance(k_data, dict) else {}
                 status = (k_attrs.get("status") or "").lower()
@@ -355,27 +379,35 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
                 else:
                     ttl = datetime.timedelta(days=7)
 
+                if k_attrs.get("nsfw") is True or is_nsfw_entry:
+                    is_nsfw_entry = True
+
                 write_now = _now_naive_utc()
                 expires_at = write_now + ttl
                 purge_at = expires_at + datetime.timedelta(days=30)
                 try:
+                    payload = {
+                        "kitsu_id": str(kitsu_id),
+                        "data": data,
+                        "status": status,
+                        "expires_at": expires_at,
+                        "purge_at": purge_at,
+                        "updated_at": write_now,
+                    }
+                    if is_nsfw_entry:
+                        payload["nsfw"] = True
                     col.update_one(
                         {"kitsu_id": str(kitsu_id)},
-                        {
-                            "$set": {
-                                "kitsu_id": str(kitsu_id),
-                                "data": data,
-                                "status": status,
-                                "expires_at": expires_at,
-                                "purge_at": purge_at,
-                                "updated_at": write_now,
-                            }
-                        },
+                        {"$set": payload},
                         upsert=True,
                     )
                 except Exception as ex:
                     logging.error("Failed to write kitsu_meta_cache for %s: %s", kitsu_id, ex)
+
+                if is_nsfw_entry and not allow_nsfw:
+                    return {}
                 return data
+
             if resp.status_code == 429 or resp.status_code >= 500:
                 logging.warning("Kitsu API returned %s for id %s, falling back to stale cache if present", resp.status_code, kitsu_id)
                 if stale_data is not None:
@@ -390,7 +422,12 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
             return {}
 
     if cached and stale_data is not None and exp is not None and exp <= now and (purge is None or now < purge):
-        _get_or_start_task(key, _do_fetch)
+        refresh_allow_nsfw = allow_nsfw or cached_is_nsfw
+        refresh_key = ("kitsu", str(kitsu_id), "nsfw" if refresh_allow_nsfw else "anon")
+        if refresh_allow_nsfw == allow_nsfw:
+            _get_or_start_task(key, _do_fetch)
+        else:
+            _get_or_start_task(refresh_key, lambda: fetch_kitsu_meta(kitsu_id, allow_nsfw=refresh_allow_nsfw))
         return stale_data
 
     task = _get_or_start_task(key, _do_fetch)
@@ -398,6 +435,7 @@ async def fetch_kitsu_meta(kitsu_id: str) -> dict:
         return await asyncio.wait_for(asyncio.shield(task), timeout=TIMEOUT + 1.0)
     except TimeoutError:
         return stale_data if stale_data is not None else {}
+
 
 
 async def fetch_provider_overrides(

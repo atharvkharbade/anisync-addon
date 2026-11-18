@@ -9,6 +9,8 @@ from app.lib.id_resolver import resolve, resolve_anilist_to_kitsu, resolve_mal_t
 from app.lib.meta_providers import get_effective_meta_providers
 from app.routes.utils import is_valid_user_id, rate_limit, respond_with
 from app.services.db import get_user
+from config import kitsu_login_enabled
+
 
 from .fetchers import (
     apply_metadata_provider_override,
@@ -126,8 +128,9 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
     if not anilist_id:
         anilist_id = resolved_anilist
 
+    allow_nsfw = kitsu_login_enabled() and not (user.get("hide_nsfw", True) if user else True)
     try:
-        tasks = [asyncio.wait_for(fetch_kitsu_meta(kitsu_id), timeout=_budget(2.5))]
+        tasks = [asyncio.wait_for(fetch_kitsu_meta(kitsu_id, allow_nsfw=allow_nsfw), timeout=_budget(2.5))]
         if anilist_id or mal_id:
             tasks.append(
                 _shielded(fetch_anizp_metadata(anilist_id=anilist_id, mal_id=mal_id), _budget(1.4))
