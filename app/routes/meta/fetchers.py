@@ -362,7 +362,10 @@ async def fetch_kitsu_meta(kitsu_id: str, allow_nsfw: bool = False) -> dict:
 
             if resp.status_code == 200:
                 data = resp.json()
-            elif resp.status_code == 404 and allow_nsfw and kitsu_login_enabled():
+            elif resp.status_code == 404 and kitsu_login_enabled():
+                # Kitsu 404s age-restricted entries for anonymous requests. Fetch with the login to tell a hidden
+                # R18 entry from a missing one: the page is cached flagged NSFW, and only callers that allow NSFW
+                # get it back (below). The flag also lets catalogs hide this show's cards from hide-NSFW users.
                 from app.services.kitsu_auth import kitsu_authed_get
 
                 authed_resp = await kitsu_authed_get(url, params=params, timeout=TIMEOUT)
@@ -422,12 +425,8 @@ async def fetch_kitsu_meta(kitsu_id: str, allow_nsfw: bool = False) -> dict:
             return {}
 
     if cached and stale_data is not None and exp is not None and exp <= now and (purge is None or now < purge):
-        refresh_allow_nsfw = allow_nsfw or cached_is_nsfw
-        refresh_key = ("kitsu", str(kitsu_id), "nsfw" if refresh_allow_nsfw else "anon")
-        if refresh_allow_nsfw == allow_nsfw:
-            _get_or_start_task(key, _do_fetch)
-        else:
-            _get_or_start_task(refresh_key, lambda: fetch_kitsu_meta(kitsu_id, allow_nsfw=refresh_allow_nsfw))
+        # NSFW cached pages never reach here for callers that don't allow NSFW (returned {} above).
+        _get_or_start_task(key, _do_fetch)
         return stale_data
 
     task = _get_or_start_task(key, _do_fetch)

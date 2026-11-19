@@ -4,6 +4,7 @@ import logging
 import time
 
 import httpx
+from pymongo.errors import DuplicateKeyError
 
 from config import Config, kitsu_login_enabled
 from app.services.http import get_client
@@ -122,9 +123,13 @@ async def get_kitsu_token(force_refresh: bool = False) -> str | None:
                 upsert=True,
             )
             lease_acquired = bool(res.matched_count or res.upserted_id)
+        except DuplicateKeyError:
+            # The doc exists and another worker's lease is still active: the filter didn't match, so the upsert
+            # tried to insert a second auth_token doc.
+            lease_acquired = False
         except Exception as e:
             logger.debug("Could not acquire kitsu_auth lease: %s", e)
-            lease_acquired = True  # Proceed anyway on Mongo glitch
+            lease_acquired = True  # Proceed anyway on a real Mongo glitch
 
         if not lease_acquired:
             # Another worker holds the lease; wait up to 8s and re-check
@@ -146,7 +151,12 @@ async def get_kitsu_token(force_refresh: bool = False) -> str | None:
                 except Exception:
                     break
 
-        # 5. Perform renewal or password login
+        # 5. Perform renewal or password login (re-read: another worker may have rotated the refresh token meanwhile)
+        if not lease_acquired:
+            try:
+                doc = col.find_one({"_id": "auth_token"}) or doc
+            except Exception:
+                pass
         client = get_client()
         refresh_token = doc.get("refresh_token") if doc else None
         token_data = None
