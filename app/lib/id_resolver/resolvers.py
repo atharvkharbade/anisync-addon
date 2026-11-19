@@ -71,6 +71,10 @@ async def resolve(kitsu_id: str) -> tuple[str | None, str | None]:
     # so retry with the AniSync Kitsu login when it's configured.
     try:
         mal_id, anilist_id, used_login = await _try_kitsu_own_mappings(client, kitsu_id)
+        if bool(mal_id) != bool(anilist_id):
+            # Kitsu often lists only one side (KAMUI has AniList but no MAL). Every tracker needs its own ID,
+            # so complete the pair from ARM.
+            mal_id, anilist_id = await _complete_mal_anilist_pair(client, mal_id, anilist_id)
         if mal_id or anilist_id:
             logging.info("Resolved via Kitsu mappings%s: kitsu=%s → mal=%s anilist=%s",
                          " (login)" if used_login else "", kitsu_id, mal_id, anilist_id)
@@ -83,6 +87,22 @@ async def resolve(kitsu_id: str) -> tuple[str | None, str | None]:
 
     logging.error("All resolvers failed for kitsu_id=%s", kitsu_id)
     return None, None
+
+
+async def _complete_mal_anilist_pair(client, mal_id: str | None, anilist_id: str | None) -> tuple[str | None, str | None]:
+    """Fill in whichever of MAL / AniList is missing via ARM. Returns the pair unchanged on any failure."""
+    try:
+        if anilist_id and not mal_id:
+            resp = await client.get(ARM_API, params={"source": "anilist", "id": anilist_id, "include": "myanimelist"}, timeout=TIMEOUT)
+            if resp.status_code == 200 and (resp.json() or {}).get("myanimelist"):
+                mal_id = str(resp.json()["myanimelist"])
+        elif mal_id and not anilist_id:
+            resp = await client.get(ARM_API, params={"source": "myanimelist", "id": mal_id, "include": "anilist"}, timeout=TIMEOUT)
+            if resp.status_code == 200 and (resp.json() or {}).get("anilist"):
+                anilist_id = str(resp.json()["anilist"])
+    except Exception as e:
+        logging.warning("Could not complete MAL/AniList pair (mal=%s anilist=%s): %s", mal_id, anilist_id, e)
+    return mal_id, anilist_id
 
 
 async def _try_kitsu_own_mappings(client, kitsu_id: str) -> tuple[str | None, str | None, bool]:
