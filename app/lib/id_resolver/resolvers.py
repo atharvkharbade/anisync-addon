@@ -67,8 +67,52 @@ async def resolve(kitsu_id: str) -> tuple[str | None, str | None]:
         except Exception as e:
             logging.warning("%s failed for kitsu_id=%s: %s, trying next", name, kitsu_id, e)
 
+    # Last resort: Kitsu's own mapping table. Age-restricted entries are hidden from anonymous requests,
+    # so retry with the AniSync Kitsu login when it's configured.
+    try:
+        mal_id, anilist_id, used_login = await _try_kitsu_own_mappings(client, kitsu_id)
+        if mal_id or anilist_id:
+            logging.info("Resolved via Kitsu mappings%s: kitsu=%s → mal=%s anilist=%s",
+                         " (login)" if used_login else "", kitsu_id, mal_id, anilist_id)
+            cache_ids(kitsu_id, mal_id, anilist_id)
+            if used_login and str(kitsu_id).isdigit():
+                id_cache_collection.update_one({"kitsu_id": int(kitsu_id)}, {"$set": {"kitsu_nsfw": True}})
+            return mal_id, anilist_id
+    except Exception as e:
+        logging.warning("Kitsu mappings failed for kitsu_id=%s: %s", kitsu_id, e)
+
     logging.error("All resolvers failed for kitsu_id=%s", kitsu_id)
     return None, None
+
+
+async def _try_kitsu_own_mappings(client, kitsu_id: str) -> tuple[str | None, str | None, bool]:
+    """(mal_id, anilist_id, used_login) from GET /anime/{id}/mappings on Kitsu."""
+    if not str(kitsu_id).isdigit() or len(str(kitsu_id)) > 12:
+        return None, None, False
+    url = f"https://kitsu.io/api/edge/anime/{kitsu_id}/mappings"
+    params = {"page[limit]": 20}
+    used_login = False
+    async with _KITSU_MAPPINGS_SEMAPHORE:
+        resp = await client.get(url, params=params, headers={"Accept": "application/vnd.api+json"}, timeout=TIMEOUT)
+        data = resp.json().get("data") if resp.status_code == 200 else None
+        if not data and kitsu_login_enabled():
+            from app.services.kitsu_auth import kitsu_authed_get
+
+            authed = await kitsu_authed_get(url, params=params, timeout=TIMEOUT)
+            if authed is not None and authed.status_code == 200:
+                data = authed.json().get("data")
+                used_login = bool(data)
+    mal_id = anilist_id = None
+    for m in data or []:
+        attrs = (m or {}).get("attributes") or {}
+        ext = str(attrs.get("externalId") or "")
+        if not ext.isdigit():
+            continue
+        if attrs.get("externalSite") == "myanimelist/anime" and not mal_id:
+            mal_id = ext
+        elif attrs.get("externalSite") == "anilist/anime" and not anilist_id:
+            anilist_id = ext
+    return mal_id, anilist_id, used_login
 
 
 async def _verified_title_fallback(
