@@ -150,11 +150,11 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
         except Exception:
             pass
 
-    tasks = []
+    tasks = {}
     if mal_sync and mal_id and user.get("mal_access_token"):
-        tasks.append(sync_mal(user, mal_id, episode, sync_unlisted))
+        tasks["mal"] = sync_mal(user, mal_id, episode, sync_unlisted)
     if anilist_sync and anilist_id and user.get("anilist_token"):
-        tasks.append(sync_anilist(user, anilist_id, episode, sync_unlisted))
+        tasks["anilist"] = sync_anilist(user, anilist_id, episode, sync_unlisted)
     if simkl_sync and user.get("simkl_access_token"):
         simkl_season = 1
         simkl_episode = episode
@@ -187,39 +187,38 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
             except Exception as e:
                 logging.debug("Could not resolve season from AniZip for Simkl: %s", e)
 
-        tasks.append(
-            sync_simkl(
-                user,
-                kitsu_id,
-                mal_id,
-                anilist_id,
-                simkl_episode,
-                content_type,
-                sync_unlisted,
-                simkl_id=simkl_id,
-                season=simkl_season,
-                total_episodes=anizp_total_episodes,
-            )
+        tasks["simkl"] = sync_simkl(
+            user,
+            kitsu_id,
+            mal_id,
+            anilist_id,
+            simkl_episode,
+            content_type,
+            sync_unlisted,
+            simkl_id=simkl_id,
+            season=simkl_season,
+            total_episodes=anizp_total_episodes,
         )
 
     if tasks:
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        any_updated = False
-        for r in results:
+        results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+        updated_trackers = set()
+        for tracker, r in zip(tasks, results):
             if isinstance(r, Exception):
                 logging.error("Sync task error: %s", r)
             else:
                 logging.info("Sync result: %s", r)
                 if getattr(r, "name", None) == "OK":
-                    any_updated = True
+                    updated_trackers.add(tracker)
 
-        if any_updated:
+        if updated_trackers:
             update_user_watchlist_cache_progress(
                 user_id=user_id,
                 episode=episode,
                 mal_id=mal_id,
                 anilist_id=anilist_id,
                 simkl_id=simkl_id,
+                trackers=updated_trackers,
             )
 
     return await respond_with({"subtitles": []})
