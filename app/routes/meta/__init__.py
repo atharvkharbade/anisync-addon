@@ -32,6 +32,9 @@ from .stremio import is_root_tvdb_entry, map_kitsu_to_stremio
 
 meta_bp = Blueprint("meta", __name__)
 
+_KITSU_ID_TIMEOUT = 4.0
+_KITSU_META_TIMEOUT = 8.0
+
 # Strong references for shielded upstream fetches that outlive a timed-out request
 _keep_alive: set[asyncio.Future] = set()
 
@@ -93,17 +96,17 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
             mal_id = meta_id[4:]
             if len(mal_id) > 12 or not mal_id.isdigit():
                 return await respond_with({"meta": {}})
-            kitsu_id = await _shielded(resolve_mal_to_kitsu(mal_id), _budget(2.0))
+            kitsu_id = await _shielded(resolve_mal_to_kitsu(mal_id), _KITSU_ID_TIMEOUT)
         elif meta_id.startswith(("anilist:", "anilist-", "anilist_")):
             anilist_id = meta_id[8:]
             if len(anilist_id) > 12 or not anilist_id.isdigit():
                 return await respond_with({"meta": {}})
-            kitsu_id = await _shielded(resolve_anilist_to_kitsu(anilist_id), _budget(2.0))
+            kitsu_id = await _shielded(resolve_anilist_to_kitsu(anilist_id), _KITSU_ID_TIMEOUT)
         elif meta_id.startswith(("simkl:", "simkl-", "simkl_")):
             simkl_id = meta_id[6:]
             if len(simkl_id) > 12 or not simkl_id.isdigit():
                 return await respond_with({"meta": {}})
-            kitsu_id = await _shielded(resolve_simkl_to_kitsu(simkl_id), _budget(2.0))
+            kitsu_id = await _shielded(resolve_simkl_to_kitsu(simkl_id), _KITSU_ID_TIMEOUT)
         elif meta_id.startswith(("kitsu:", "kitsu-", "kitsu_")):
             kitsu_id = meta_id[6:]
             if len(kitsu_id) > 12 or not kitsu_id.isdigit():
@@ -116,33 +119,46 @@ async def handle_meta(user_id: str, meta_type: str, meta_id: str):
         logging.warning("Could not map meta_id=%s to Kitsu ID", meta_id)
         return await respond_with({"meta": {}})
 
-    # Resolve mapped IDs using db cache or resolvers robustly
-    try:
-        resolved_mal, resolved_anilist = await _shielded(resolve(kitsu_id), _budget(1.5))
-    except TimeoutError:
-        logging.warning("Timed out resolving mapped IDs for kitsu_id=%s", kitsu_id)
-        resolved_mal, resolved_anilist = None, None
-        degraded = True
-    if not mal_id:
-        mal_id = resolved_mal
-    if not anilist_id:
-        anilist_id = resolved_anilist
+    async def fetch_mapped_metadata():
+        partial = False
+        try:
+            resolved_mal, resolved_anilist = await _shielded(resolve(kitsu_id), _budget(1.5))
+        except TimeoutError:
+            logging.warning("Timed out resolving mapped IDs for kitsu_id=%s", kitsu_id)
+            resolved_mal, resolved_anilist = None, None
+            partial = True
+        mapped_mal = mal_id or resolved_mal
+        mapped_anilist = anilist_id or resolved_anilist
+
+        anizp_data = {}
+        if mapped_anilist or mapped_mal:
+            try:
+                anizp_data = await _shielded(
+                    fetch_anizp_metadata(anilist_id=mapped_anilist, mal_id=mapped_mal), _budget(1.4)
+                )
+            except TimeoutError:
+                partial = True
+            except Exception:
+                logging.debug("Unable to fetch AniZip metadata for kitsu_id=%s", kitsu_id, exc_info=True)
+        return mapped_mal, mapped_anilist, anizp_data, partial
 
     allow_nsfw = kitsu_login_enabled() and not (user.get("hide_nsfw", True) if user else True)
     try:
-        tasks = [asyncio.wait_for(fetch_kitsu_meta(kitsu_id, allow_nsfw=allow_nsfw), timeout=_budget(2.5))]
-        if anilist_id or mal_id:
-            tasks.append(
-                _shielded(fetch_anizp_metadata(anilist_id=anilist_id, mal_id=mal_id), _budget(1.4))
-            )
-        else:
-            tasks.append(asyncio.sleep(0, {}))
-
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        if any(isinstance(r, TimeoutError) for r in results):
+        # The required Kitsu fetch may need an authenticated retry. Run enrichment alongside it
+        # and keep enrichment on its shorter budget so it cannot consume Kitsu's time.
+        kitsu_result, mapped_result = await asyncio.gather(
+            asyncio.wait_for(fetch_kitsu_meta(kitsu_id, allow_nsfw=allow_nsfw), timeout=_KITSU_META_TIMEOUT),
+            fetch_mapped_metadata(),
+            return_exceptions=True,
+        )
+        if isinstance(kitsu_result, TimeoutError):
+            logging.warning("Timed out fetching Kitsu metadata for kitsu_id=%s", kitsu_id)
+        kitsu_data = kitsu_result if not isinstance(kitsu_result, Exception) else {}
+        if isinstance(mapped_result, Exception):
+            anizp_data = {}
             degraded = True
-        kitsu_data = results[0] if not isinstance(results[0], Exception) else {}
-        anizp_data = results[1] if (len(results) > 1 and not isinstance(results[1], Exception)) else {}
+        else:
+            mal_id, anilist_id, anizp_data, degraded = mapped_result
 
         if not kitsu_data:
             return await respond_with({"meta": {}})
