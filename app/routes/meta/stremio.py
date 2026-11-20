@@ -203,8 +203,11 @@ def _match_tvdb_episode(
     by_id: dict[int, dict],
     by_se: dict[tuple[int, int], dict],
     by_abs: dict[int, dict],
+    *,
+    allow_season_one_fallback: bool,
+    episode_airdate: str | None,
 ) -> dict | None:
-    """Match a Kitsu/AniZip episode to its TVDB episode via tvdbId -> (season, ep) -> absoluteNumber."""
+    """Prefer explicit episode mappings and only infer season one when the series supports it."""
     if not by_id and not by_se and not by_abs:
         return None
     tvdb_ep_id = anizp_ep.get("tvdbId")
@@ -242,7 +245,17 @@ def _match_tvdb_episode(
         except (ValueError, TypeError):
             pass
     elif not is_likely_sequel and ep_season in (None, 1):
-        return by_abs.get(ep_num)
+        matched = by_abs.get(ep_num)
+        if matched is not None:
+            return matched
+
+        if allow_season_one_fallback and tvdb_ep_id is None and anizp_ep.get("seasonNumber") is None:
+            candidate = by_se.get((1, ep_num))
+            if candidate is not None:
+                expected = _parse_date(episode_airdate)
+                aired = _parse_date(candidate.get("aired"))
+                if expected is None or aired is None or abs((expected - aired).days) <= 1:
+                    return candidate
 
     return None
 
@@ -641,6 +654,14 @@ def map_kitsu_to_stremio(
             is_likely_sequel = True
 
         tvdb_by_id, tvdb_by_se, tvdb_by_abs = _index_tvdb_episodes(tvdb_episodes)
+        allow_season_one_fallback = False
+        if subtype == "tv" and detected_season is None and not is_likely_sequel:
+            tvdb_premiere = _parse_date(tvdb_by_se.get((1, 1), {}).get("aired"))
+            kitsu_premiere = _parse_date(start_date)
+            if tvdb_premiere is not None and kitsu_premiere is not None:
+                allow_season_one_fallback = abs((tvdb_premiere - kitsu_premiere).days) <= 1
+            else:
+                allow_season_one_fallback = {season for season, _ in tvdb_by_se} == {1}
 
         last_valid_ep_date = None
         for i in range(1, total_ep + 1):
@@ -701,6 +722,8 @@ def map_kitsu_to_stremio(
                 tvdb_by_id,
                 tvdb_by_se,
                 tvdb_by_abs,
+                allow_season_one_fallback=allow_season_one_fallback,
+                episode_airdate=attrs.get("airdate") or anizp_ep.get("airdate"),
             )
 
             # Match Cinemeta episode thumbnail and release date safely
