@@ -187,6 +187,16 @@ ANILIST_CLIENT_SECRET=your_anilist_client_secret
 SIMKL_CLIENT_ID=your_simkl_client_id
 SIMKL_CLIENT_SECRET=your_simkl_client_secret
 
+# ── Kitsu Authentication (Optional) ───────────────────────────────────────
+# Enables metadata and mappings for age-restricted (R18 / NSFW) titles when "Hide NSFW" is off.
+# Only standard Kitsu account email and password needed (client credentials default automatically).
+KITSU_USERNAME=
+KITSU_PASSWORD=
+# KITSU_CLIENT_ID=       # Optional override
+# KITSU_CLIENT_SECRET=   # Optional override
+
+
+
 # ── Optional Artwork & Metadata API Keys ──────────────────────────────────
 # Server-wide keys for high-resolution backdrops and artwork
 TVDB_API_KEY=
