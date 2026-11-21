@@ -6,15 +6,8 @@ __pycache__/
 dist/
 *.egg-info/
 .uv/
-flask_session/
-test_aiometadata/
 test_*.py
-trigger_test_*.py
 *.archive
 *.dump
 *.bak
 tests/
-scripts/
-.impeccable/
-DESIGN.md
-PRODUCT.md
