@@ -6,7 +6,7 @@ import urllib.parse
 from quart import request
 
 from app.routes.catalog.formatting import (
-    format_catalog_metas,
+    format_catalog_metas_async,
     get_mal_title,
     parse_iso_timestamp,
 )
@@ -24,6 +24,7 @@ from config import Config
 from .common import (
     fetch_anilist_details_in_bulk,
     get_cached_mal_user_anime_list,
+    schedule_watchlist_kitsu_resolution,
 )
 
 
@@ -48,7 +49,7 @@ async def handle_mal_catalog(user, user_id, catalog_type, catalog_id, filters, e
     try:
         from app.services.db import get_or_refresh_mal_token
 
-        mal_token = await get_or_refresh_mal_token(user_id)
+        mal_token = await get_or_refresh_mal_token(user.get("uid") or user_id)
         if not mal_token:
             return await respond_with({"metas": []})
         data_items = await get_cached_mal_user_anime_list(user_id, mal_token, mal_status)
@@ -284,6 +285,18 @@ async def handle_mal_catalog(user, user_id, catalog_type, catalog_id, filters, e
         ]
         kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=mal_ids, skip_external=True)
 
+        # Collect unmapped items for background resolution (up to 10)
+        unmapped_mal = []
+        for item in paged_data_items:
+            if not isinstance(item, dict) or not item.get("node") or not isinstance(item["node"], dict):
+                continue
+            m_id = str(item["node"].get("id") or "")
+            if m_id and not kitsu_mappings.get(f"mal:{m_id}"):
+                al_media = bulk_details.get(m_id) or {}
+                al_id = str(al_media.get("id") or "") if al_media.get("id") else None
+                unmapped_mal.append(("mal", m_id, al_id))
+        schedule_watchlist_kitsu_resolution(unmapped_mal)
+
         # Build meta items
         for item in paged_data_items:
             try:
@@ -348,8 +361,9 @@ async def handle_mal_catalog(user, user_id, catalog_type, catalog_id, filters, e
 
     metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
+    formatted_metas = await format_catalog_metas_async(metas, user, catalog_type, catalog_id)
     return await respond_with(
-        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+        {"metas": formatted_metas},
         max_age=300,
         stale_while_revalidate=600,
     )

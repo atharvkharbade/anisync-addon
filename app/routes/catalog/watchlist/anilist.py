@@ -7,7 +7,7 @@ from quart import request
 from config import Config
 from app.api import anilist as anilist_api
 from app.services.db import store_user, handle_invalid_anilist_token
-from app.routes.catalog.formatting import format_catalog_metas, get_anilist_title
+from app.routes.catalog.formatting import format_catalog_metas_async, get_anilist_title
 from app.routes.utils import respond_with
 from app.routes.catalog.sorting import (
     apply_catalog_dub_filter,
@@ -18,7 +18,10 @@ from app.routes.catalog.sorting import (
     extract_item_metadata_fields,
 )
 from app.lib.id_resolver import bulk_resolve_to_kitsu
-from app.routes.catalog.watchlist.common import get_cached_anilist_user_anime_list
+from app.routes.catalog.watchlist.common import (
+    get_cached_anilist_user_anime_list,
+    schedule_watchlist_kitsu_resolution,
+)
 
 
 async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filters, extras=""):
@@ -34,7 +37,9 @@ async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filter
             viewer = await anilist_api.get_viewer(user["anilist_token"])
             anilist_uid = int(viewer["id"])
             user["anilist_id"] = str(anilist_uid)
-            store_user(user)
+            from app.services.db import update_user_fields
+
+            update_user_fields(user.get("uid") or user_id, {"anilist_id": str(anilist_uid)})
         except anilist_api.AnilistTokenInvalidError as e:
             logging.warning("AniList token invalid during viewer retrieval for user %s: %s", user_id, e)
             handle_invalid_anilist_token(user_id)
@@ -219,6 +224,17 @@ async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filter
         anilist_ids = [str(entry["media"]["id"]) for entry in paged_entries if isinstance(entry, dict) and entry.get("media") and isinstance(entry["media"], dict) and entry["media"].get("id")]
         kitsu_mappings = await bulk_resolve_to_kitsu(anilist_ids=anilist_ids, skip_external=True)
 
+        # Collect unmapped items for background resolution (up to 10)
+        unmapped_al = []
+        for entry in paged_entries:
+            if not isinstance(entry, dict) or not entry.get("media") or not isinstance(entry["media"], dict):
+                continue
+            al_id = str(entry["media"].get("id") or "")
+            mal_id = str(entry["media"].get("idMal") or "") if entry["media"].get("idMal") else None
+            if al_id and not kitsu_mappings.get(f"anilist:{al_id}"):
+                unmapped_al.append(("anilist", al_id, mal_id))
+        schedule_watchlist_kitsu_resolution(unmapped_al)
+
         # Build meta items
         for entry in paged_entries:
             try:
@@ -285,8 +301,9 @@ async def handle_anilist_catalog(user, user_id, catalog_type, catalog_id, filter
 
     metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
+    formatted_metas = await format_catalog_metas_async(metas, user, catalog_type, catalog_id)
     return await respond_with(
-        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+        {"metas": formatted_metas},
         max_age=300,
         stale_while_revalidate=600,
     )

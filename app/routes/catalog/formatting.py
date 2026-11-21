@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import html
 import logging
 import re
 import urllib.parse
@@ -29,9 +30,18 @@ def parse_iso_timestamp(ts_str: str) -> int:
         return 0
 
 
-def get_anilist_title(title_obj: dict, title_lang: str) -> str:
+def _normalize_title_lang(title_lang: str | None) -> str:
+    """Normalize a title_language setting, defaulting empty/None values to 'english'."""
+    if isinstance(title_lang, str):
+        norm = title_lang.strip().lower()
+        return norm or "english"
+    return "english"
+
+
+def get_anilist_title(title_obj: dict, title_lang: str | None) -> str:
     if not title_obj:
         return "Unknown"
+    title_lang = _normalize_title_lang(title_lang)
     if title_lang == "english":
         return title_obj.get("english") or title_obj.get("userPreferred") or title_obj.get("romaji") or "Unknown"
     elif title_lang == "romaji":
@@ -42,9 +52,10 @@ def get_anilist_title(title_obj: dict, title_lang: str) -> str:
         return title_obj.get("userPreferred") or title_obj.get("english") or title_obj.get("romaji") or "Unknown"
 
 
-def get_kitsu_title(attrs: dict, title_lang: str) -> str:
+def get_kitsu_title(attrs: dict, title_lang: str | None) -> str:
     if not attrs:
         return "Unknown"
+    title_lang = _normalize_title_lang(title_lang)
     titles = attrs.get("titles", {})
     if title_lang == "english":
         return titles.get("en") or titles.get("en_us") or attrs.get("canonicalTitle") or titles.get("en_jp") or "Unknown"
@@ -56,9 +67,10 @@ def get_kitsu_title(attrs: dict, title_lang: str) -> str:
         return attrs.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown"
 
 
-def get_mal_title(node: dict, title_lang: str) -> str:
+def get_mal_title(node: dict, title_lang: str | None) -> str:
     if not node:
         return ""
+    title_lang = _normalize_title_lang(title_lang)
     alt_titles = node.get("alternative_titles", {})
     if title_lang == "english":
         return alt_titles.get("en") or node.get("title") or ""
@@ -68,9 +80,145 @@ def get_mal_title(node: dict, title_lang: str) -> str:
         return node.get("title") or ""
 
 
-def get_simkl_display_title(show_obj: dict, title_lang: str, bulk_details: dict | None = None) -> str:
+def prefetch_simkl_cache_titles(shows: list[dict], title_lang: str | None) -> dict[str, str]:
+    """
+    Bulk prefetch cached titles for a list of Simkl items using single $in queries
+    with strict field projections, replacing per-item N+1 queries.
+    Returns a dict mapping item identity (e.g. "al_{id}", "mal_{id}", "kitsu_{id}") -> localized title.
+    """
+    if not shows:
+        return {}
+    title_lang = _normalize_title_lang(title_lang)
+    if title_lang == "romaji":
+        return {}
+
+    try:
+        from app.services.db import db
+
+        mal_without_al = set()
+        al_ids = set()
+        kitsu_ids = set()
+
+        for s in shows:
+            if not isinstance(s, dict):
+                continue
+            ids = s.get("ids") or {}
+            if not ids and ("show" in s or "anime" in s):
+                inner = s.get("show") or s.get("anime") or {}
+                ids = inner.get("ids") or {}
+            aid = str(ids.get("anilist") or "").strip()
+            mid = str(ids.get("mal") or "").strip()
+            kid = str(ids.get("kitsu") or "").strip()
+
+            if aid and aid.isdigit():
+                al_ids.add(int(aid))
+            elif mid and mid.isdigit():
+                mal_without_al.add(str(mid))
+            if kid:
+                kitsu_ids.add(str(kid))
+
+        resolved_mal_to_al = {}
+        if mal_without_al:
+            clean_mids = [m for m in mal_without_al if len(m) <= 12]
+            q_vals = clean_mids + [int(m) for m in clean_mids]
+            docs = list(
+                db.get_collection("id_cache").find(
+                    {"mal_id": {"$in": q_vals}},
+                    {"mal_id": 1, "anilist_id": 1, "_id": 0},
+                )
+            )
+            for d in docs:
+                m = str(d.get("mal_id") or "")
+                a = str(d.get("anilist_id") or "")
+                if m and a and a.isdigit():
+                    resolved_mal_to_al[m] = a
+                    al_ids.add(int(a))
+
+        al_airing_map = {}
+        if al_ids:
+            for d in db.get_collection("anilist_airing_cache").find(
+                {"anilist_id": {"$in": list(al_ids)}},
+                {"anilist_id": 1, "title": 1, "_id": 0},
+            ):
+                aid = d.get("anilist_id")
+                if aid and d.get("title"):
+                    t = get_anilist_title(d["title"], title_lang)
+                    if t and t != "Unknown":
+                        al_airing_map[str(aid)] = t
+
+        al_meta_map = {}
+        needed_al_meta = [a for a in al_ids if str(a) not in al_airing_map]
+        if needed_al_meta:
+            for d in db.get_collection("anilist_meta_cache").find(
+                {"anilist_id": {"$in": needed_al_meta}},
+                {"anilist_id": 1, "data.title": 1, "_id": 0},
+            ):
+                aid = d.get("anilist_id")
+                if aid and d.get("data", {}).get("title"):
+                    t = get_anilist_title(d["data"]["title"], title_lang)
+                    if t and t != "Unknown":
+                        al_meta_map[str(aid)] = t
+
+        kitsu_map = {}
+        if kitsu_ids:
+            clean_kids = [k for k in kitsu_ids if len(k) <= 12]
+            k_q = clean_kids + [int(k) for k in clean_kids if k.isdigit()]
+            for d in db.get_collection("kitsu_meta_cache").find(
+                {"kitsu_id": {"$in": k_q}},
+                {"kitsu_id": 1, "data.attributes": 1, "data.data.attributes": 1, "_id": 0},
+            ):
+                kid = str(d.get("kitsu_id") or "")
+                data_obj = d.get("data") or {}
+                attrs = data_obj.get("attributes") or (data_obj.get("data") or {}).get("attributes")
+                if kid and attrs:
+                    t = get_kitsu_title(attrs, title_lang)
+                    if t and t != "Unknown":
+                        kitsu_map[kid] = t
+
+        results = {}
+        for s in shows:
+            if not isinstance(s, dict):
+                continue
+            ids = s.get("ids") or {}
+            if not ids and ("show" in s or "anime" in s):
+                inner = s.get("show") or s.get("anime") or {}
+                ids = inner.get("ids") or {}
+            aid = str(ids.get("anilist") or "").strip()
+            mid = str(ids.get("mal") or "").strip()
+            kid = str(ids.get("kitsu") or "").strip()
+            if not aid and mid in resolved_mal_to_al:
+                aid = resolved_mal_to_al[mid]
+
+            t = None
+            if aid and aid in al_airing_map:
+                t = al_airing_map[aid]
+            elif aid and aid in al_meta_map:
+                t = al_meta_map[aid]
+            elif kid and kid in kitsu_map:
+                t = kitsu_map[kid]
+
+            if t:
+                if aid:
+                    results[f"al_{aid}"] = t
+                if mid:
+                    results[f"mal_{mid}"] = t
+                if kid:
+                    results[f"kitsu_{kid}"] = t
+        return results
+    except Exception as e:
+        logging.error("Failed to bulk prefetch Simkl titles: %s", e)
+        return {}
+
+
+def get_simkl_display_title(
+    show_obj: dict,
+    title_lang: str | None,
+    bulk_details: dict | None = None,
+    prefetched_titles: dict | None = None,
+) -> str:
     if not show_obj or not isinstance(show_obj, dict):
         return ""
+    title_lang = _normalize_title_lang(title_lang)
 
     raw_title = show_obj.get("title") or (show_obj.get("show") or {}).get("title") or ""
     if title_lang == "romaji":
@@ -101,7 +249,16 @@ def get_simkl_display_title(show_obj: dict, title_lang: str, bulk_details: dict 
     if title_lang == "english" and show_obj.get("en_title"):
         return show_obj["en_title"]
 
-    # 3. Check local database caches (zero external network latency)
+    # 3. Check prefetched bulk cache lookup
+    if prefetched_titles:
+        if al_id and f"al_{al_id}" in prefetched_titles:
+            return prefetched_titles[f"al_{al_id}"]
+        if mal_id and f"mal_{mal_id}" in prefetched_titles:
+            return prefetched_titles[f"mal_{mal_id}"]
+        if kitsu_id and f"kitsu_{kitsu_id}" in prefetched_titles:
+            return prefetched_titles[f"kitsu_{kitsu_id}"]
+
+    # 4. Fallback to individual local database caches (zero external network latency)
     try:
         from app.services.db import db
 
@@ -215,6 +372,50 @@ def is_nsfw_meta(m: dict) -> bool:
     return False
 
 
+def get_known_nsfw_kitsu_ids(metas_list: list) -> set[str]:
+    """Finds all Kitsu IDs in the given items that are flagged NSFW in id_cache or kitsu_meta_cache."""
+    kitsu_ids_int = []
+    kitsu_ids_str = []
+    for m in metas_list:
+        if not isinstance(m, dict):
+            continue
+        kid = None
+        if m.get("kitsu_id"):
+            kid = str(m["kitsu_id"]).strip()
+        else:
+            raw_id = str(m.get("id") or "").strip()
+            if raw_id.startswith("kitsu:"):
+                parts = raw_id.split(":")
+                kid = parts[1] if len(parts) > 1 else None
+            elif raw_id.isdigit():
+                kid = raw_id
+        if kid and kid.isdigit():
+            kitsu_ids_str.append(kid)
+            kitsu_ids_int.append(int(kid))
+
+    nsfw_set = set()
+    if not kitsu_ids_str:
+        return nsfw_set
+
+    try:
+        from app.services.db import db
+
+        for doc in db.get_collection("id_cache").find(
+            {"kitsu_id": {"$in": kitsu_ids_int}, "kitsu_nsfw": True},
+            {"kitsu_id": 1},
+        ):
+            nsfw_set.add(str(doc["kitsu_id"]))
+        for doc in db.get_collection("kitsu_meta_cache").find(
+            {"kitsu_id": {"$in": kitsu_ids_str}, "nsfw": True},
+            {"kitsu_id": 1},
+        ):
+            nsfw_set.add(str(doc["kitsu_id"]))
+    except Exception as e:
+        logging.warning("Failed to query known nsfw kitsu ids: %s", e)
+
+    return nsfw_set
+
+
 def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalog_id: str | None = None) -> list:
     custom_types_map = {
         "Watching": "anime",
@@ -229,9 +430,10 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
 
     import urllib.parse
 
+    from app.routes.catalog.sorting.preferences import resolve_title_lang
     from app.services.poster import get_poster_url
 
-    title_lang = user.get("title_language", "english") if user else "english"
+    title_lang = _normalize_title_lang(resolve_title_lang(user))
     is_watchlist_catalog = bool(
         catalog_id
         and any(
@@ -240,10 +442,25 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
         )
     )
     hide_nsfw = user.get("hide_nsfw", True) if user else True
+    nsfw_kitsu_ids = (
+        get_known_nsfw_kitsu_ids(metas_list)
+        if (hide_nsfw and not is_watchlist_catalog)
+        else set()
+    )
     formatted_metas = []
     for m in metas_list:
-        if hide_nsfw and not is_watchlist_catalog and is_nsfw_meta(m):
-            continue
+        if hide_nsfw and not is_watchlist_catalog:
+            raw_id = str(m.get("id") or "")
+            kid = str(m.get("kitsu_id") or "")
+            if not kid:
+                if raw_id.startswith("kitsu:"):
+                    parts = raw_id.split(":")
+                    kid = parts[1] if len(parts) > 1 else ""
+                elif raw_id.isdigit():
+                    kid = raw_id
+            if is_nsfw_meta(m) or (kid and kid in nsfw_kitsu_ids):
+                continue
+
         m_copy = m.copy()
         if "title_obj" in m_copy:
             t_obj = m_copy["title_obj"]
@@ -491,4 +708,19 @@ def format_catalog_metas(metas_list: list, user: dict, catalog_type: str, catalo
             m["posterShape"] = "poster"
             m["poster"] = portrait_poster
 
+        # Unescape HTML entities in card text (e.g. &amp;, &#039;, &quot;)
+        if isinstance(m.get("name"), str) and "&" in m["name"]:
+            m["name"] = html.unescape(m["name"])
+        if isinstance(m.get("description"), str) and "&" in m["description"]:
+            m["description"] = html.unescape(m["description"])
+
     return formatted_metas
+
+
+async def format_catalog_metas_async(metas_list: list, user: dict, catalog_type: str, catalog_id: str | None = None) -> list:
+    """Runs format_catalog_metas in a worker thread (its Mongo reads are blocking) while letting it
+    schedule background warm-ups back on this event loop."""
+    from app.lib.meta_providers import BG_LOOP
+
+    BG_LOOP.set(asyncio.get_running_loop())
+    return await asyncio.to_thread(format_catalog_metas, metas_list, user, catalog_type, catalog_id)

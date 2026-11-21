@@ -52,35 +52,31 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
         parts = remainder.split(":")
         kitsu_id = parts[0].strip()
         if len(parts) > 1 and parts[1].isdigit():
-            episode = int(parts[1])
+            episode = int(parts[1]) if len(parts[1]) <= 6 else 1
     elif clean_id.startswith("mal:"):
         remainder = clean_id[len("mal:") :]
         parts = remainder.split(":")
         mal_id = parts[0].strip()
         if len(parts) > 1 and parts[1].isdigit():
-            episode = int(parts[1])
-        from app.lib.id_resolver import resolve_mal_to_kitsu
-
-        kitsu_id = await resolve_mal_to_kitsu(mal_id)
+            episode = int(parts[1]) if len(parts[1]) <= 6 else 1
     elif clean_id.startswith("anilist:"):
         remainder = clean_id[len("anilist:") :]
         parts = remainder.split(":")
         anilist_id = parts[0].strip()
         if len(parts) > 1 and parts[1].isdigit():
-            episode = int(parts[1])
-        from app.lib.id_resolver import resolve_anilist_to_kitsu
-
-        kitsu_id = await resolve_anilist_to_kitsu(anilist_id)
+            episode = int(parts[1]) if len(parts[1]) <= 6 else 1
     elif clean_id.startswith("simkl:"):
         remainder = clean_id[len("simkl:") :]
         parts = remainder.split(":")
         simkl_id = parts[0].strip()
         if len(parts) > 1 and parts[1].isdigit():
-            episode = int(parts[1])
-        from app.lib.id_resolver import resolve_simkl_to_kitsu
-
-        kitsu_id = await resolve_simkl_to_kitsu(simkl_id)
+            episode = int(parts[1]) if len(parts[1]) <= 6 else 1
     else:
+        return await respond_with({"subtitles": []})
+
+    # Validate ID length early to prevent BSON Int64 overflow and malformed queries
+    target_id = kitsu_id or mal_id or anilist_id or simkl_id
+    if not target_id or len(target_id) > 12 or not target_id.isdigit():
         return await respond_with({"subtitles": []})
 
     if not kitsu_id and not mal_id and not anilist_id and not simkl_id:
@@ -109,9 +105,27 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
     simkl_enabled = user.get("simkl_enabled", True) and bool(user.get("simkl_access_token"))
     sync_unlisted = user.get("sync_unlisted", True)
 
-    if not mal_enabled and not anilist_enabled and not simkl_enabled:
+    mal_sync = mal_enabled and user.get("mal_sync_progress", True)
+    anilist_sync = anilist_enabled and user.get("anilist_sync_progress", True)
+    simkl_sync = simkl_enabled and user.get("simkl_sync_progress", True)
+
+    if not mal_sync and not anilist_sync and not simkl_sync:
         _in_flight_scrobbles.pop(scrobble_key, None)
         return await respond_with({"subtitles": []})
+
+    if not kitsu_id:
+        if mal_id:
+            from app.lib.id_resolver import resolve_mal_to_kitsu
+
+            kitsu_id = await resolve_mal_to_kitsu(mal_id)
+        elif anilist_id:
+            from app.lib.id_resolver import resolve_anilist_to_kitsu
+
+            kitsu_id = await resolve_anilist_to_kitsu(anilist_id)
+        elif simkl_id:
+            from app.lib.id_resolver import resolve_simkl_to_kitsu
+
+            kitsu_id = await resolve_simkl_to_kitsu(simkl_id)
 
     if kitsu_id:
         resolved_mal, resolved_al = await resolve(kitsu_id)
@@ -122,8 +136,9 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
     from app.services.db import get_cached_ids, cache_ids, db, update_user_watchlist_cache_progress
     cached_ids = get_cached_ids(kitsu_id) if kitsu_id else None
     if cached_ids:
-        simkl_id = cached_ids.get("simkl_id")
-    if not simkl_id:
+        # Keep a Simkl ID that came with the request (simkl:<id>); only fill it from the cache when missing
+        simkl_id = simkl_id or cached_ids.get("simkl_id")
+    if not simkl_id and kitsu_id:
         try:
             fribb_doc = db.fribb_mappings.find_one({"kitsu_id": int(kitsu_id)})
             if fribb_doc and fribb_doc.get("simkl_id"):
@@ -135,12 +150,12 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
         except Exception:
             pass
 
-    tasks = []
-    if mal_enabled and mal_id and user.get("mal_access_token"):
-        tasks.append(sync_mal(user, mal_id, episode, sync_unlisted))
-    if anilist_enabled and anilist_id and user.get("anilist_token"):
-        tasks.append(sync_anilist(user, anilist_id, episode, sync_unlisted))
-    if simkl_enabled and user.get("simkl_access_token"):
+    tasks = {}
+    if mal_sync and mal_id and user.get("mal_access_token"):
+        tasks["mal"] = sync_mal(user, mal_id, episode, sync_unlisted)
+    if anilist_sync and anilist_id and user.get("anilist_token"):
+        tasks["anilist"] = sync_anilist(user, anilist_id, episode, sync_unlisted)
+    if simkl_sync and user.get("simkl_access_token"):
         simkl_season = 1
         simkl_episode = episode
         anizp_total_episodes = None
@@ -172,39 +187,38 @@ async def handle_subtitles(user_id: str, content_type: str, content_id: str):
             except Exception as e:
                 logging.debug("Could not resolve season from AniZip for Simkl: %s", e)
 
-        tasks.append(
-            sync_simkl(
-                user,
-                kitsu_id,
-                mal_id,
-                anilist_id,
-                simkl_episode,
-                content_type,
-                sync_unlisted,
-                simkl_id=simkl_id,
-                season=simkl_season,
-                total_episodes=anizp_total_episodes,
-            )
+        tasks["simkl"] = sync_simkl(
+            user,
+            kitsu_id,
+            mal_id,
+            anilist_id,
+            simkl_episode,
+            content_type,
+            sync_unlisted,
+            simkl_id=simkl_id,
+            season=simkl_season,
+            total_episodes=anizp_total_episodes,
         )
 
     if tasks:
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        any_updated = False
-        for r in results:
+        results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+        updated_trackers = set()
+        for tracker, r in zip(tasks, results):
             if isinstance(r, Exception):
                 logging.error("Sync task error: %s", r)
             else:
                 logging.info("Sync result: %s", r)
                 if getattr(r, "name", None) == "OK":
-                    any_updated = True
+                    updated_trackers.add(tracker)
 
-        if any_updated:
+        if updated_trackers:
             update_user_watchlist_cache_progress(
                 user_id=user_id,
                 episode=episode,
                 mal_id=mal_id,
                 anilist_id=anilist_id,
                 simkl_id=simkl_id,
+                trackers=updated_trackers,
             )
 
     return await respond_with({"subtitles": []})

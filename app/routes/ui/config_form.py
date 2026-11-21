@@ -16,6 +16,44 @@ def store_user(user):
         return ui_mod.store_user(user)
     return _db_store_user(user)
 
+
+# Token and profile state that background code (token refresh, auth error counters, profile sync) may
+# change while this form request is in flight; the form never edits these, so the full-document save must not roll them back.
+_TRACKER_AUTH_FIELDS = tuple(
+    f"{p}_{f}"
+    for p, fields in (
+        ("mal", ("access_token", "refresh_token", "expires_at")),
+        ("anilist", ("token", "id")),
+        ("simkl", ("access_token",)),
+    )
+    for f in fields
+) + tuple(
+    f"{p}_{f}"
+    for p in ("mal", "anilist", "simkl")
+    for f in ("token_expired", "expired_at", "consecutive_auth_errors", "last_auth_error_at")
+) + ("mal_refresh_lock_until",) + (
+    # Written by the background profile sync that the same configure request starts
+    "name", "picture", "mal_picture", "anilist_username", "anilist_picture",
+    "simkl_username", "simkl_avatar", "last_profile_sync",
+)
+
+
+def _keep_latest_tracker_auth_state(user: dict) -> None:
+    try:
+        from app.services.db import users_collection
+
+        latest = users_collection.find_one({"uid": str(user.get("uid"))}, {f: 1 for f in _TRACKER_AUTH_FIELDS})
+    except Exception as e:
+        logging.warning("Could not re-read tracker auth state before saving settings: %s", e)
+        return
+    if not latest:
+        return
+    for field in _TRACKER_AUTH_FIELDS:
+        if field in latest:
+            user[field] = latest[field]
+        else:
+            user.pop(field, None)
+
 from .validation import check_gemini_api_key_valid
 from app.routes.catalog.sorting import get_allowed_sorts_for_catalog
 
@@ -61,10 +99,16 @@ async def handle_configure_form(user: dict, form) -> dict | None:
 
     if "mal_enabled" in form:
         user["mal_enabled"] = form.get("mal_enabled") == "true"
+    if "mal_sync_progress" in form:
+        user["mal_sync_progress"] = form.get("mal_sync_progress") == "true"
     if "anilist_enabled" in form:
         user["anilist_enabled"] = form.get("anilist_enabled") == "true"
+    if "anilist_sync_progress" in form:
+        user["anilist_sync_progress"] = form.get("anilist_sync_progress") == "true"
     if "simkl_enabled" in form:
         user["simkl_enabled"] = form.get("simkl_enabled") == "true"
+    if "simkl_sync_progress" in form:
+        user["simkl_sync_progress"] = form.get("simkl_sync_progress") == "true"
     if "combine_watchlists" in form:
         user["combine_watchlists"] = form.get("combine_watchlists") == "true"
     if "sync_unlisted" in form:
@@ -90,43 +134,29 @@ async def handle_configure_form(user: dict, form) -> dict | None:
     if "show_airing_in_synopsis" in form:
         user["show_airing_in_synopsis"] = form.get("show_airing_in_synopsis") == "true"
 
-    if "custom_sort_enabled" in form:
-        user["custom_sort_enabled"] = form.get("custom_sort_enabled") == "true"
-    if "custom_sort_watching_by" in form:
-        user["custom_sort_watching_by"] = form.get("custom_sort_watching_by", "default")
-    if "custom_sort_watching_order" in form:
-        user["custom_sort_watching_order"] = form.get("custom_sort_watching_order", "desc")
-    if "custom_sort_planning_by" in form:
-        user["custom_sort_planning_by"] = form.get("custom_sort_planning_by", "default")
-    if "custom_sort_planning_order" in form:
-        user["custom_sort_planning_order"] = form.get("custom_sort_planning_order", "desc")
-    if "custom_sort_completed_by" in form:
-        user["custom_sort_completed_by"] = form.get("custom_sort_completed_by", "default")
-    if "custom_sort_completed_order" in form:
-        user["custom_sort_completed_order"] = form.get("custom_sort_completed_order", "desc")
-    if "custom_sort_on_hold_by" in form:
-        user["custom_sort_on_hold_by"] = form.get("custom_sort_on_hold_by", "default")
-    if "custom_sort_on_hold_order" in form:
-        user["custom_sort_on_hold_order"] = form.get("custom_sort_on_hold_order", "desc")
-    if "custom_sort_dropped_by" in form:
-        user["custom_sort_dropped_by"] = form.get("custom_sort_dropped_by", "default")
-    if "custom_sort_dropped_order" in form:
-        user["custom_sort_dropped_order"] = form.get("custom_sort_dropped_order", "desc")
-
     if "title_language" in form:
         user["title_language"] = form.get("title_language", "english")
 
+    if "metadata_language" in form:
+        from app.lib.languages import normalize_metadata_language
+
+        user["metadata_language"] = normalize_metadata_language(form.get("metadata_language"))
+
     if "metadata_provider" in form:
-        user["metadata_provider"] = form.get("metadata_provider", "kitsu").lower()
+        prov = (form.get("metadata_provider") or "kitsu").strip().lower()
+        user["metadata_provider"] = prov if prov in ("kitsu", "anilist", "mal", "tvdb", "custom") else "kitsu"
 
     if "meta_synopsis_provider" in form:
-        user["meta_synopsis_provider"] = form.get("meta_synopsis_provider", "kitsu").lower()
+        prov = (form.get("meta_synopsis_provider") or "kitsu").strip().lower()
+        user["meta_synopsis_provider"] = prov if prov in ("kitsu", "anilist", "mal", "tvdb") else "kitsu"
 
     if "meta_episodes_provider" in form:
-        user["meta_episodes_provider"] = form.get("meta_episodes_provider", "anizp").lower()
+        prov = (form.get("meta_episodes_provider") or "anizp").strip().lower()
+        user["meta_episodes_provider"] = prov if prov in ("anizp", "kitsu", "mal", "tvdb") else "anizp"
 
     if "meta_poster_provider" in form:
-        user["meta_poster_provider"] = form.get("meta_poster_provider", "anilist").lower()
+        prov = (form.get("meta_poster_provider") or "anilist").strip().lower()
+        user["meta_poster_provider"] = prov if prov in ("anilist", "kitsu", "mal", "tvdb") else "anilist"
 
     if "meta_backdrop_provider" in form:
         from app.lib.meta_providers import normalize_backdrop_pref
@@ -162,12 +192,6 @@ async def handle_configure_form(user: dict, form) -> dict | None:
             user["enable_search"] = "anisync_search" in enabled_list
 
         # Save per-catalog custom configurations
-        catalog_shapes = user.get("catalog_shapes", {}) or {}
-        catalog_titles = user.get("catalog_titles", {}) or {}
-        catalog_placements = user.get("catalog_placements", {}) or {}
-        catalog_sorts = user.get("catalog_sorts", {}) or {}
-        catalog_shuffles = user.get("catalog_shuffles", {}) or {}
-        catalog_poster_arts = user.get("catalog_poster_arts", {}) or {}
         catalog_configs = user.get("catalog_configs", {}) or {}
 
         raw_configs_str = form.get("catalog_configs")
@@ -183,25 +207,20 @@ async def handle_configure_form(user: dict, form) -> dict | None:
                         catalog_configs[cat_id].update(cfg)
 
                         if "shape" in cfg and cfg["shape"] in ["poster", "landscape"]:
-                            catalog_shapes[cat_id] = cfg["shape"]
+                            catalog_configs[cat_id]["shape"] = cfg["shape"]
                         if "title" in cfg:
                             title_val = str(cfg["title"]).strip()
                             if title_val:
-                                catalog_titles[cat_id] = title_val
                                 catalog_configs[cat_id]["title"] = title_val
                             else:
-                                catalog_titles.pop(cat_id, None)
                                 catalog_configs[cat_id].pop("title", None)
                         if "placement" in cfg and cfg["placement"] in ["all", "discover_only"]:
-                            catalog_placements[cat_id] = cfg["placement"]
+                            catalog_configs[cat_id]["placement"] = cfg["placement"]
                         if "poster_art" in cfg:
                             art_val = cfg.get("poster_art")
                             if art_val is False or art_val == "false" or art_val == "off":
-                                catalog_poster_arts[cat_id] = False
                                 catalog_configs[cat_id]["poster_art"] = False
                             else:
-                                if cat_id in catalog_poster_arts:
-                                    del catalog_poster_arts[cat_id]
                                 catalog_configs[cat_id].pop("poster_art", None)
 
                         if "sort_by" in cfg:
@@ -209,15 +228,13 @@ async def handle_configure_form(user: dict, form) -> dict | None:
                             sort_order = cfg.get("sort_order", "desc")
                             allowed = get_allowed_sorts_for_catalog(cat_id)
                             if sort_by != "default" and sort_by in allowed:
-                                catalog_sorts[cat_id] = {"by": sort_by, "order": sort_order}
                                 catalog_configs[cat_id]["sort_by"] = sort_by
                                 catalog_configs[cat_id]["sort_order"] = sort_order
                             else:
-                                catalog_sorts.pop(cat_id, None)
                                 catalog_configs[cat_id].pop("sort_by", None)
                                 catalog_configs[cat_id].pop("sort_order", None)
                         if "shuffle" in cfg:
-                            catalog_shuffles[cat_id] = bool(cfg["shuffle"])
+                            catalog_configs[cat_id]["shuffle"] = bool(cfg["shuffle"])
                         if "dubbed" in cfg:
                             catalog_configs[cat_id]["dubbed"] = bool(cfg["dubbed"])
                         if "audio" in cfg:
@@ -236,17 +253,10 @@ async def handle_configure_form(user: dict, form) -> dict | None:
             if shape_val:
                 val = shape_val.strip().lower()
                 if val in ["landscape", "poster"]:
-                    catalog_shapes[cat] = val
                     if cat not in catalog_configs:
                         catalog_configs[cat] = {}
                     catalog_configs[cat]["shape"] = val
 
-        user["catalog_shapes"] = catalog_shapes
-        user["catalog_titles"] = catalog_titles
-        user["catalog_placements"] = catalog_placements
-        user["catalog_poster_arts"] = catalog_poster_arts
-        user["catalog_sorts"] = catalog_sorts
-        user["catalog_shuffles"] = catalog_shuffles
         user["catalog_configs"] = catalog_configs
 
     if "enable_recommendations" in form:
@@ -257,16 +267,12 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         user["enable_ai_recommendations"] = form.get("enable_ai_recommendations") in ("true", "on", "1")
     if "enable_discovery_catalogs" in form:
         user["enable_discovery_catalogs"] = form.get("enable_discovery_catalogs") == "true"
-    if "shuffle_discovery_catalogs" in form:
-        user["shuffle_discovery_catalogs"] = form.get("shuffle_discovery_catalogs") == "true"
     if "enable_dubbed_catalogs" in form:
         user["enable_dubbed_catalogs"] = form.get("enable_dubbed_catalogs") == "true"
     if "dubbed_language" in form:
         from app.services.dub_service import normalize_dub_language
 
         user["dubbed_language"] = normalize_dub_language(form.get("dubbed_language"))
-    if "dubbed_only_discovery" in form:
-        user["dubbed_only_discovery"] = form.get("dubbed_only_discovery") == "true"
 
     if "poster_provider" in form:
         user["poster_provider"] = form.get("poster_provider", "none").strip()
@@ -394,6 +400,7 @@ async def handle_configure_form(user: dict, form) -> dict | None:
         user["allow_legacy_uid"] = False
         migrated = True
 
+    _keep_latest_tracker_auth_state(user)
     store_user(user)
     invalidate_user_watchlist_cache(uid)
 
@@ -413,7 +420,7 @@ async def handle_configure_form(user: dict, form) -> dict | None:
     validation_failed_msg = []
     if current_poster_provider == "rpdb" and rpdb_key and not user.get("rpdb_key_valid", False):
         validation_failed_msg.append("Invalid RPDB API key")
-    if current_poster_provider in ("top_poster", "topposters") and top_key and not user.get("top_key_valid", False):
+    if current_poster_provider == "top_poster" and top_key and not user.get("top_key_valid", False):
         validation_failed_msg.append("Invalid TOP Posters API key")
     if user.get("enable_recommendations") and ai_recs_active:
         active_ai = (user.get("ai_provider") or "gemini").lower()

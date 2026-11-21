@@ -2,7 +2,7 @@ import random
 
 from quart import request
 
-from app.routes.catalog.formatting import format_catalog_metas
+from app.routes.catalog.formatting import format_catalog_metas_async
 from app.routes.catalog.sorting import (
     apply_catalog_dub_filter,
     get_catalog_sorting,
@@ -70,8 +70,9 @@ async def handle_recommendations_catalog(user, user_id, catalog_type, catalog_id
         page_limit = 40
 
     metas = metas[offset : offset + page_limit]
+    formatted_metas = await format_catalog_metas_async(metas, user, catalog_type, catalog_id)
     return await respond_with(
-        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+        {"metas": formatted_metas},
         max_age=3600,
         stale_while_revalidate=7200,
     )

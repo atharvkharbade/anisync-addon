@@ -6,7 +6,7 @@ import urllib.parse
 from quart import request
 
 from app.routes.catalog.formatting import (
-    format_catalog_metas,
+    format_catalog_metas_async,
     get_simkl_display_title,
     parse_iso_timestamp,
 )
@@ -24,6 +24,7 @@ from config import Config
 from .common import (
     fetch_anilist_details_in_bulk,
     get_cached_simkl_user_anime_list,
+    schedule_watchlist_kitsu_resolution,
 )
 
 
@@ -310,6 +311,21 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
                 simkl_ids.append(simkl_id)
         kitsu_mappings = await bulk_resolve_to_kitsu(simkl_ids=simkl_ids, skip_external=True)
 
+        # Collect unmapped items for background resolution (up to 10)
+        unmapped_simkl = []
+        for item in paged_data_items:
+            show_obj = item.get("show") or item.get("anime") or item
+            ids = (show_obj.get("ids") or {}) if isinstance(show_obj, dict) else {}
+            simkl_id = str(ids.get("simkl") or "")
+            if simkl_id and not kitsu_mappings.get(f"simkl:{simkl_id}"):
+                al_id = str(ids.get("anilist") or "") if ids.get("anilist") else None
+                mal_id = str(ids.get("mal") or "") if ids.get("mal") else None
+                if al_id:
+                    unmapped_simkl.append(("anilist", al_id, mal_id, simkl_id))
+                elif mal_id:
+                    unmapped_simkl.append(("mal", mal_id, None, simkl_id))
+        schedule_watchlist_kitsu_resolution(unmapped_simkl)
+
         # If title language is not romaji, resolve missing titles for items on the current page in bulk
         if title_lang != "romaji":
             missing_simkl_al_ids = []
@@ -332,6 +348,13 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
                 bulk_details.update(page_titles_bulk)
 
         # Build meta items
+        from app.routes.catalog.formatting import prefetch_simkl_cache_titles
+
+        prefetched_titles = prefetch_simkl_cache_titles(
+            [it.get("show") or it.get("anime") or it for it in paged_data_items],
+            title_lang,
+        )
+
         for item in paged_data_items:
             try:
                 if "show" in item and isinstance(item["show"], dict):
@@ -355,7 +378,7 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
                     or item.get("total_episodes_count")
                     or "?"
                 )
-                name = get_simkl_display_title(show_obj, title_lang, bulk_details=bulk_details)
+                name = get_simkl_display_title(show_obj, title_lang, bulk_details=bulk_details, prefetched_titles=prefetched_titles)
                 poster = show_obj.get("poster") or show_obj.get("poster_image") or ""
                 if poster and not poster.startswith("http"):
                     poster = f"https://simkl.in/posters/{poster}_m.jpg"
@@ -430,8 +453,9 @@ async def handle_simkl_catalog(user, user_id, catalog_type, catalog_id, filters,
 
     metas = await apply_catalog_dub_filter(metas, user, catalog_id)
 
+    formatted_metas = await format_catalog_metas_async(metas, user, catalog_type, catalog_id)
     return await respond_with(
-        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+        {"metas": formatted_metas},
         max_age=300,
         stale_while_revalidate=600,
     )

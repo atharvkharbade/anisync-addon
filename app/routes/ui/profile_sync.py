@@ -65,5 +65,10 @@ async def sync_user_profiles_task(user_id: str):
             logging.error("Failed to sync Simkl profile in background: %s", e)
 
     if updated:
-        user["last_profile_sync"] = now
-        store_user(user)
+        from app.services.db import update_user_fields
+
+        profile_fields = {"last_profile_sync": now}
+        for k in ("name", "mal_picture", "picture", "anilist_username", "anilist_picture", "simkl_username", "simkl_avatar"):
+            if k in user:
+                profile_fields[k] = user[k]
+        update_user_fields(user.get("uid") or user_id, profile_fields)

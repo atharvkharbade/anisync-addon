@@ -4,12 +4,16 @@ import re
 
 import random
 
-from app.routes.catalog.formatting import format_catalog_metas, get_anilist_title, get_kitsu_title
+from app.lib.id_resolver import kitsu_id_from_kitsu_mappings
+from app.lib.id_resolver.resolvers import gather_within
+from app.routes.catalog.formatting import format_catalog_metas_async, get_anilist_title, get_kitsu_title
 from app.routes.catalog.sorting.dubs import apply_catalog_dub_filter
 from app.routes.catalog.sorting.preferences import get_catalog_sorting, is_catalog_shuffle_enabled, resolve_title_lang
 from app.routes.catalog.sorting.sorter import sort_watchlist_items
 from app.routes.utils import respond_with
 from app.services.http import get_client
+from config import kitsu_login_enabled
+
 
 
 async def _process_search_metas(raw_metas, user, catalog_id, filters):
@@ -37,6 +41,8 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
         offset = 0
 
     norm_search_query = search_query.strip().lower()
+    is_nsfw_search = bool(kitsu_login_enabled() and not (user.get("hide_nsfw", True) if user else True))
+    search_cache_query = {"query": norm_search_query, "offset": offset, "nsfw": is_nsfw_search}
 
     # Check search cache first (expires after 24 hours)
     from app.services.db import db
@@ -44,13 +50,14 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
     now = datetime.datetime.utcnow()
     cache_col = db.get_collection("kitsu_search_cache")
     try:
-        cached = cache_col.find_one({"query": norm_search_query, "offset": offset})
+        cached = cache_col.find_one(search_cache_query)
         if cached and cached.get("expires_at") > now:
             c_metas = cached.get("metas") or []
             if c_metas and all(m.get("date_val") is not None and m.get("score") is not None and m.get("year") is not None for m in c_metas):
                 processed_metas = await _process_search_metas(c_metas, user, catalog_id, filters)
+                formatted_metas = await format_catalog_metas_async(processed_metas, user, catalog_type, catalog_id)
                 return await respond_with(
-                    {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
+                    {"metas": formatted_metas},
                     max_age=60,
                     stale_while_revalidate=120,
                 )
@@ -74,9 +81,16 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
             "Accept": "application/vnd.api+json",
             "Content-Type": "application/vnd.api+json",
         }
-        client = get_client()
-        resp = await client.get(url, params=params, headers=headers, timeout=10)
+        resp = None
+        if is_nsfw_search:
+            from app.services.kitsu_auth import kitsu_authed_get
+
+            resp = await kitsu_authed_get(url, params=params, timeout=10)
+        if resp is None:
+            client = get_client()
+            resp = await client.get(url, params=params, headers=headers, timeout=10)
         if resp.status_code == 200:
+
             data = resp.json().get("data", [])
             for item in data:
                 attrs = item.get("attributes", {})
@@ -286,6 +300,43 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                     except Exception as ex:
                         logging.error("Failed batch id_cache lookup for search fallback: %s", ex)
 
+                # Resolve up to 8 unmapped items via Kitsu mappings endpoint bounded by 2.5s budget
+                unmapped_search_items = []
+                for m in al_data:
+                    if (m.get("format") or "").upper() == "MUSIC":
+                        continue
+                    al_id = str(m.get("id"))
+                    mal_id = str(m["idMal"]) if m.get("idMal") else None
+                    k_id = (
+                        kitsu_map.get(f"mal:{mal_id}")
+                        or (kitsu_map.get(f"mal:{int(mal_id)}") if mal_id and mal_id.isdigit() else None)
+                        or kitsu_map.get(f"al:{al_id}")
+                        or (kitsu_map.get(f"al:{int(al_id)}") if al_id and al_id.isdigit() else None)
+                    )
+                    if not k_id and al_id:
+                        unmapped_search_items.append((al_id, mal_id))
+
+                unmapped_search_items = unmapped_search_items[:8]
+                if unmapped_search_items:
+                    async def _resolve_search_unmapped(a_id: str, m_id: str | None) -> tuple[str, str | None, str | None]:
+                        kid = await kitsu_id_from_kitsu_mappings("anilist", a_id, mal_id=m_id)
+                        if not kid and m_id:
+                            kid = await kitsu_id_from_kitsu_mappings("mal", m_id, anilist_id=a_id)
+                        return a_id, m_id, kid
+
+                    try:
+                        tasks = [_resolve_search_unmapped(a_id, m_id) for a_id, m_id in unmapped_search_items]
+                        search_results = await gather_within(tasks, timeout=2.5)
+                        for r in search_results:
+                            if isinstance(r, tuple):
+                                a_id, m_id, kid = r
+                                if kid:
+                                    kitsu_map[f"al:{a_id}"] = kid
+                                    if m_id:
+                                        kitsu_map[f"mal:{m_id}"] = kid
+                    except Exception as ex:
+                        logging.warning("Failed Kitsu mappings resolution for search fallback: %s", ex)
+
                 existing_ids = {m["id"] for m in metas}
                 fallback_metas = []
                 for m in al_data:
@@ -301,7 +352,9 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
                         or kitsu_map.get(f"al:{al_id}")
                         or (kitsu_map.get(f"al:{int(al_id)}") if al_id and al_id.isdigit() else None)
                     )
-                    stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mal_id}" if mal_id else f"anilist:{al_id}")
+                    if not kitsu_id:
+                        continue
+                    stremio_id = f"kitsu:{kitsu_id}"
                     if stremio_id in existing_ids:
                         continue
 
@@ -360,11 +413,12 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
     if metas:
         try:
             cache_col.update_one(
-                {"query": norm_search_query, "offset": offset},
+                search_cache_query,
                 {
                     "$set": {
                         "query": norm_search_query,
                         "offset": offset,
+                        "nsfw": is_nsfw_search,
                         "metas": metas,
                         "expires_at": now + datetime.timedelta(hours=24),
                     }
@@ -373,18 +427,21 @@ async def handle_search_catalog(user, user_id, catalog_type, catalog_id, filters
             )
         except Exception as e:
             logging.error("Failed to write kitsu_search_cache: %s", e)
+
     elif cached:
         logging.warning("Search returned 0 results, returning expired cache for query '%s'", search_query)
         processed_metas = await _process_search_metas(cached["metas"], user, catalog_id, filters)
+        formatted_metas = await format_catalog_metas_async(processed_metas, user, catalog_type, catalog_id)
         return await respond_with(
-            {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
+            {"metas": formatted_metas},
             max_age=60,
             stale_while_revalidate=120,
         )
 
     processed_metas = await _process_search_metas(metas, user, catalog_id, filters)
+    formatted_metas = await format_catalog_metas_async(processed_metas, user, catalog_type, catalog_id)
     return await respond_with(
-        {"metas": format_catalog_metas(processed_metas, user, catalog_type, catalog_id)},
+        {"metas": formatted_metas},
         max_age=60,
         stale_while_revalidate=120,
     )

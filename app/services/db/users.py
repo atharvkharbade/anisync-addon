@@ -5,6 +5,15 @@ from datetime import UTC, datetime
 from .connection import users_collection
 
 
+def get_user_by_manifest_token(token: str) -> dict | None:
+    if not token or not isinstance(token, str):
+        return None
+    user = users_collection.find_one({"manifest_token": token})
+    if user:
+        user.setdefault("metadata_language", "eng")
+    return user
+
+
 def get_user(user_id: str, for_manifest: bool = False) -> dict | None:
     if not user_id:
         return None
@@ -12,6 +21,7 @@ def get_user(user_id: str, for_manifest: bool = False) -> dict | None:
     # 1. Try secure manifest_token match first (O(1) index lookup)
     user = users_collection.find_one({"manifest_token": user_id})
     if user:
+        user.setdefault("metadata_language", "eng")
         return user
 
     # 2. Try exact match on uid for legacy users
@@ -19,6 +29,7 @@ def get_user(user_id: str, for_manifest: bool = False) -> dict | None:
     if user:
         if for_manifest and user.get("manifest_token") and not user.get("allow_legacy_uid", False) and not user.get("is_guest"):
             return None
+        user.setdefault("metadata_language", "eng")
         return user
 
     # 3. Support stripping prefixes (e.g., al_6613976 -> 6613976)
@@ -28,6 +39,7 @@ def get_user(user_id: str, for_manifest: bool = False) -> dict | None:
         if user:
             if for_manifest and user.get("manifest_token") and not user.get("allow_legacy_uid", False):
                 return None
+            user.setdefault("metadata_language", "eng")
             return user
     elif user_id.startswith("simkl_"):
         stripped = user_id[6:]
@@ -35,18 +47,10 @@ def get_user(user_id: str, for_manifest: bool = False) -> dict | None:
         if user:
             if for_manifest and user.get("manifest_token") and not user.get("allow_legacy_uid", False):
                 return None
+            user.setdefault("metadata_language", "eng")
             return user
 
-    # 4. Support adding prefixes (e.g., 6613976 -> al_6613976)
-    if user_id.isdigit():
-        for prefix in ["al_", "simkl_"]:
-            user = users_collection.find_one({"uid": f"{prefix}{user_id}"})
-            if user:
-                if for_manifest and user.get("manifest_token") and not user.get("allow_legacy_uid", False):
-                    return None
-                return user
-
-    # 5. Support guest user auto-provisioning
+    # 4. Support guest user auto-provisioning
     if user_id.startswith("guest_"):
         guest_user = {
             "uid": user_id,
@@ -60,6 +64,7 @@ def get_user(user_id: str, for_manifest: bool = False) -> dict | None:
             "enable_search": True,
             "hide_nsfw": True,
             "title_language": "english",
+            "metadata_language": "eng",
             "metadata_provider": "kitsu",
             "meta_synopsis_provider": "kitsu",
             "meta_episodes_provider": "anizp",
@@ -101,6 +106,27 @@ def find_user_by_simkl_id(simkl_id: str) -> dict | None:
     return users_collection.find_one(
         {"$or": [{"uid": f"simkl_{simkl_id}"}, {"uid": str(simkl_id)}, {"simkl_id": str(simkl_id)}]}
     )
+
+
+def update_user_fields(uid: str, set_fields: dict | None = None, unset_fields: list[str] | None = None) -> bool:
+    """Atomically update specific fields on a user document using $set and $unset.
+    Prevents race conditions where full document replace_one clobbers concurrent updates.
+    """
+    if not uid:
+        return False
+    update_doc = {}
+    if set_fields:
+        update_doc["$set"] = set_fields
+    if unset_fields:
+        update_doc["$unset"] = {f: "" for f in unset_fields}
+    if not update_doc:
+        return True
+    try:
+        res = users_collection.update_one({"uid": str(uid)}, update_doc)
+        return bool(res.acknowledged)
+    except Exception as e:
+        logging.error("Failed to update user fields for %s: %s", uid, e)
+        return False
 
 
 def store_user(user_details: dict) -> bool:

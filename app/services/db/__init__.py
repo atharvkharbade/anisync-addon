@@ -43,7 +43,9 @@ from .users import (
     find_user_by_mal_id,
     find_user_by_simkl_id,
     get_user,
+    get_user_by_manifest_token,
     store_user,
+    update_user_fields,
 )
 from .watchlist import (
     get_user_anime_meta_status,
@@ -61,10 +63,12 @@ __all__ = [
     "jikan_cache_collection",
     "init_indexes",
     "get_user",
+    "get_user_by_manifest_token",
     "find_user_by_mal_id",
     "find_user_by_anilist_id",
     "find_user_by_simkl_id",
     "store_user",
+    "update_user_fields",
     "is_anilist_in_cooldown",
     "reset_anilist_error_counter",
     "handle_invalid_anilist_token",

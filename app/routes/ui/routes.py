@@ -8,6 +8,7 @@ from quart import flash, make_response, redirect, request, session, url_for
 
 from app.routes.utils import rate_limit
 from app.services.db import get_user as _db_get_user
+from app.services.db import get_user_by_manifest_token as _db_get_user_by_manifest_token
 from app.services.db import store_user as _db_store_user
 from config import Config
 
@@ -20,6 +21,13 @@ def get_user(uid):
     if ui_mod and hasattr(ui_mod, "get_user"):
         return ui_mod.get_user(uid)
     return _db_get_user(uid)
+
+
+def get_user_by_manifest_token(token: str):
+    ui_mod = sys.modules.get("app.routes.ui")
+    if ui_mod and hasattr(ui_mod, "get_user_by_manifest_token"):
+        return ui_mod.get_user_by_manifest_token(token)
+    return _db_get_user_by_manifest_token(token)
 
 
 def store_user(user):
@@ -73,6 +81,7 @@ async def guest_login():
         "enable_search": True,
         "hide_nsfw": True,
         "title_language": "english",
+        "metadata_language": "eng",
         "metadata_provider": "kitsu",
         "meta_synopsis_provider": "kitsu",
         "meta_episodes_provider": "anizp",
@@ -92,7 +101,6 @@ async def guest_login():
         ],
         "enable_dubbed_catalogs": False,
         "dubbed_language": "english",
-        "dubbed_only_discovery": False,
         "created_at": datetime.now(UTC).replace(tzinfo=None),
     }
     store_user(guest_user)
@@ -106,7 +114,8 @@ async def guest_login():
 @rate_limit(limit=30, period_seconds=60)
 async def configure(user_id: str = ""):
     if user_id:
-        existing_user = get_user(user_id)
+        # a. Secure manifest_token match (O(1) index lookup)
+        existing_user = get_user_by_manifest_token(user_id)
         if existing_user:
             session["user"] = {
                 "uid": existing_user["uid"],
@@ -114,17 +123,39 @@ async def configure(user_id: str = ""):
                 "is_guest": existing_user.get("is_guest", False),
             }
             user_session = session["user"]
+        # b. Legitimate guest: only accept if already existing in DB (prevent arbitrary guest auto-creation)
+        elif user_id.startswith("guest_"):
+            from app.services.db import users_collection
+
+            existing_guest = users_collection.find_one({"uid": user_id, "is_guest": True})
+            if existing_guest:
+                session["user"] = {
+                    "uid": existing_guest["uid"],
+                    "username": existing_guest.get("username") or "Guest User",
+                    "is_guest": True,
+                }
+                user_session = session["user"]
+            else:
+                await flash("Please log in again to open your settings.", "info")
+                return redirect(url_for("ui.index"))
         else:
-            return redirect(url_for("ui.index"))
+            # c. Legacy UID match only permitted if the browser session already owns this account
+            existing_user = get_user(user_id)
+            if existing_user and session.get("user", {}).get("uid") == existing_user.get("uid"):
+                user_session = session["user"]
+            else:
+                # d. Unauthenticated access using raw UID: never write session, redirect to index
+                await flash("Please log in again to open your settings.", "info")
+                return redirect(url_for("ui.index"))
     else:
         user_session = session.get("user")
 
-    # Fallback for AJAX / POST if session cookie wasn't provided or expired
+    # Fallback for AJAX / POST if session cookie wasn't provided or expired: strictly accept manifest_token
     if not user_session and request.method == "POST":
         form_data = await request.form
-        fallback_id = form_data.get("user_id") or form_data.get("manifest_token")
-        if fallback_id:
-            existing_user = get_user(fallback_id)
+        manifest_token = form_data.get("manifest_token")
+        if manifest_token:
+            existing_user = get_user_by_manifest_token(manifest_token)
             if existing_user:
                 session["user"] = {
                     "uid": existing_user["uid"],
@@ -165,6 +196,7 @@ async def configure(user_id: str = ""):
         if json_res:
             return json_res
 
+    from app.lib.languages import SUPPORTED_METADATA_LANGUAGES, normalize_metadata_language
     from app.services.dub_service import SUPPORTED_DUB_LANGUAGES
 
     resp = await make_response(
@@ -175,6 +207,8 @@ async def configure(user_id: str = ""):
             manifest_magnet=manifest_magnet,
             anime_genres=ANIME_GENRES,
             supported_dub_languages=SUPPORTED_DUB_LANGUAGES,
+            supported_metadata_languages=SUPPORTED_METADATA_LANGUAGES,
+            cur_metadata_language=normalize_metadata_language(user.get("metadata_language")),
         )
     )
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
@@ -184,30 +218,27 @@ async def configure(user_id: str = ""):
 @ui_bp.route("/delete-account", methods=["POST"])
 @rate_limit(limit=10, period_seconds=60)
 async def delete_account():
-    form_data = await request.form
-    user_session = session.get("user") or {}
-
-    uid = form_data.get("user_id") or user_session.get("uid")
-    manifest_token = form_data.get("manifest_token")
-
-    if not uid and not manifest_token:
+    user_session = session.get("user")
+    if not user_session or not user_session.get("uid"):
+        await flash("You must be logged in to delete an account.", "danger")
         return redirect(url_for("ui.index"))
+
+    uid = str(user_session["uid"])
 
     try:
         from app.services.db import db, users_collection
 
-        # 1. Locate all records matching this user session, uid, or manifest_token
-        query_conditions = []
-        if uid:
-            query_conditions.extend([{"uid": str(uid)}, {"_id": str(uid)}])
+        # 1. Locate authenticated user document and their manifest token
+        user_doc = get_user(uid)
+        manifest_token = user_doc.get("manifest_token") if user_doc else None
+
+        query_conditions = [{"uid": uid}, {"_id": uid}]
         if manifest_token:
             query_conditions.append({"manifest_token": str(manifest_token)})
 
         matched_users = list(users_collection.find({"$or": query_conditions}))
 
-        uids_to_delete = set()
-        if uid:
-            uids_to_delete.add(str(uid))
+        uids_to_delete = {uid}
 
         tracker_query_or = []
         for u in matched_users:

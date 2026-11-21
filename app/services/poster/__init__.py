@@ -49,7 +49,7 @@ def get_poster_url(
     if provider_override:
         if provider_override in ["clean", "none"]:
             return fallback_poster
-        elif provider_override in ["topposters", "top_poster"]:
+        elif provider_override == "top_poster":
             provider = "top_poster"
         elif provider_override in ["rpdb", "btttr", "custom"]:
             provider = provider_override
@@ -58,9 +58,10 @@ def get_poster_url(
     else:
         provider = user.get("poster_provider")
         if not provider:
+            # Phase 2: remove after v1_6_legacy_settings has run on prod
             provider = "rpdb" if user.get("rpdb_api_key") else "none"
 
-    if provider in ["topposters", "top_poster"]:
+    if provider == "top_poster":
         provider = "top_poster"
 
     if provider in ["none", "clean"] and resolved_ids is None:

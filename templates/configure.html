@@ -1870,10 +1870,16 @@
                 <input type="hidden" name="manifest_token" value="{{ user.get('manifest_token', '') }}">
                 <input type="hidden" id="mal_enabled_val" name="mal_enabled"
                     value="{{ 'true' if user.get('mal_enabled', True) else 'false' }}">
+                <input type="hidden" id="mal_sync_progress_val" name="mal_sync_progress"
+                    value="{{ 'true' if user.get('mal_sync_progress', True) else 'false' }}">
                 <input type="hidden" id="anilist_enabled_val" name="anilist_enabled"
                     value="{{ 'true' if user.get('anilist_enabled', True) else 'false' }}">
+                <input type="hidden" id="anilist_sync_progress_val" name="anilist_sync_progress"
+                    value="{{ 'true' if user.get('anilist_sync_progress', True) else 'false' }}">
                 <input type="hidden" id="simkl_enabled_val" name="simkl_enabled"
                     value="{{ 'true' if user.get('simkl_enabled', True) else 'false' }}">
+                <input type="hidden" id="simkl_sync_progress_val" name="simkl_sync_progress"
+                    value="{{ 'true' if user.get('simkl_sync_progress', True) else 'false' }}">
                 <input type="hidden" id="sync_unlisted_val" name="sync_unlisted"
                     value="{{ 'true' if user.get('sync_unlisted', True) else 'false' }}">
                 <input type="hidden" id="enable_new_episodes_badge_val" name="enable_new_episodes_badge"
@@ -1904,36 +1910,10 @@
                     value="{{ 'true' if user.get('show_airing_in_synopsis', False) else 'false' }}">
                 <input type="hidden" id="combine_watchlists_val" name="combine_watchlists"
                     value="{{ 'true' if user.get('combine_watchlists', False) else 'false' }}">
-                <input type="hidden" id="custom_sort_enabled_val" name="custom_sort_enabled"
-                    value="{{ 'true' if user.get('custom_sort_enabled', False) else 'false' }}">
-                <input type="hidden" id="custom_sort_watching_by_val" name="custom_sort_watching_by"
-                    value="{{ user.get('custom_sort_watching_by', 'default') }}">
-                <input type="hidden" id="custom_sort_watching_order_val" name="custom_sort_watching_order"
-                    value="{{ user.get('custom_sort_watching_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_planning_by_val" name="custom_sort_planning_by"
-                    value="{{ user.get('custom_sort_planning_by', 'default') }}">
-                <input type="hidden" id="custom_sort_planning_order_val" name="custom_sort_planning_order"
-                    value="{{ user.get('custom_sort_planning_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_completed_by_val" name="custom_sort_completed_by"
-                    value="{{ user.get('custom_sort_completed_by', 'default') }}">
-                <input type="hidden" id="custom_sort_completed_order_val" name="custom_sort_completed_order"
-                    value="{{ user.get('custom_sort_completed_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_on_hold_by_val" name="custom_sort_on_hold_by"
-                    value="{{ user.get('custom_sort_on_hold_by', 'default') }}">
-                <input type="hidden" id="custom_sort_on_hold_order_val" name="custom_sort_on_hold_order"
-                    value="{{ user.get('custom_sort_on_hold_order', 'desc') }}">
-                <input type="hidden" id="custom_sort_dropped_by_val" name="custom_sort_dropped_by"
-                    value="{{ user.get('custom_sort_dropped_by', 'default') }}">
-                <input type="hidden" id="custom_sort_dropped_order_val" name="custom_sort_dropped_order"
-                    value="{{ user.get('custom_sort_dropped_order', 'desc') }}">
                 <input type="hidden" id="enable_discovery_catalogs_val" name="enable_discovery_catalogs"
                     value="{{ 'true' if user.get('enable_discovery_catalogs', True if user.get('is_guest') else False) else 'false' }}">
-                <input type="hidden" id="shuffle_discovery_catalogs_val" name="shuffle_discovery_catalogs"
-                    value="{{ 'true' if user.get('shuffle_discovery_catalogs', False) else 'false' }}">
                 <input type="hidden" id="enable_dubbed_catalogs_val" name="enable_dubbed_catalogs"
                     value="{{ 'true' if user.get('enable_dubbed_catalogs', False) else 'false' }}">
-                <input type="hidden" id="dubbed_only_discovery_val" name="dubbed_only_discovery"
-                    value="{{ 'true' if user.get('dubbed_only_discovery', False) else 'false' }}">
                 <input type="hidden" id="catalog_configs_val" name="catalog_configs" value="">
 
                 <!-- TAB 1: Trackers & Account -->
@@ -2108,11 +2088,61 @@
             {% if not user.get('is_guest') %}
             <!-- Sync Preferences Card -->
             <div class="card-dark p-3 p-sm-4 mb-3">
-                <h6 class="fw-semibold mb-2"><i class="fa-solid fa-rotate text-info me-2"></i>Sync Preferences</h6>
+                <h6 class="fw-semibold mb-3"><i class="fa-solid fa-rotate text-info me-2"></i>Sync Preferences</h6>
                 <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                    Manage how your watch progress automatically updates across your connected services.
+                    Turn off progress sync for a tracker to keep its catalogs without sending watch updates.
                 </p>
-                <div class="form-check form-switch mb-0">
+
+                {% if user.get('mal_access_token') %}
+                <div class="form-check form-switch mb-3" id="mal_sync_progress_wrap" style="transition: opacity 0.2s ease;">
+                    <input class="form-check-input" type="checkbox" role="switch" id="mal_sync_progress" {% if user.get('mal_sync_progress', True) %}checked{% endif %} {% if not user.get('mal_enabled', True) or user.get('mal_token_expired') %}disabled{% endif %}>
+                    <label class="form-check-label ms-1" for="mal_sync_progress">
+                        <span class="fw-medium d-block d-flex align-items-center gap-2">
+                            <img src="/assets/mal_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                            Sync to MyAnimeList
+                        </span>
+                        <span class="text-secondary small d-block">
+                            Automatically updates episode progress and status on MyAnimeList.
+                        </span>
+                    </label>
+                </div>
+                {% endif %}
+
+                {% if user.get('anilist_token') %}
+                <div class="form-check form-switch mb-3" id="anilist_sync_progress_wrap" style="transition: opacity 0.2s ease;">
+                    <input class="form-check-input" type="checkbox" role="switch" id="anilist_sync_progress" {% if user.get('anilist_sync_progress', True) %}checked{% endif %} {% if not user.get('anilist_enabled', True) or user.get('anilist_token_expired') %}disabled{% endif %}>
+                    <label class="form-check-label ms-1" for="anilist_sync_progress">
+                        <span class="fw-medium d-block d-flex align-items-center gap-2">
+                            <img src="/assets/anilist_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                            Sync to AniList
+                        </span>
+                        <span class="text-secondary small d-block">
+                            Automatically updates episode progress and status on AniList.
+                        </span>
+                    </label>
+                </div>
+                {% endif %}
+
+                {% if user.get('simkl_access_token') %}
+                <div class="form-check form-switch mb-3" id="simkl_sync_progress_wrap" style="transition: opacity 0.2s ease;">
+                    <input class="form-check-input" type="checkbox" role="switch" id="simkl_sync_progress" {% if user.get('simkl_sync_progress', True) %}checked{% endif %} {% if not user.get('simkl_enabled', True) or user.get('simkl_token_expired') %}disabled{% endif %}>
+                    <label class="form-check-label ms-1" for="simkl_sync_progress">
+                        <span class="fw-medium d-block d-flex align-items-center gap-2">
+                            <img src="/assets/simkl_logo.png" width="20" height="20" class="rounded" style="vertical-align: middle;">
+                            Sync to Simkl
+                        </span>
+                        <span class="text-secondary small d-block">
+                            Automatically updates episode progress and status on Simkl.
+                        </span>
+                    </label>
+                </div>
+                {% endif %}
+
+                {% if user.get('mal_access_token') or user.get('anilist_token') or user.get('simkl_access_token') %}
+                <div class="my-3 border-top border-secondary border-opacity-10"></div>
+                {% endif %}
+
+                <div class="form-check form-switch mb-0" id="sync_unlisted_wrap" style="transition: opacity 0.2s ease;">
                     <input class="form-check-input" type="checkbox" role="switch" id="sync_unlisted" {% if user.get('sync_unlisted', True) %}checked{% endif %}>
                     <label class="form-check-label ms-1" for="sync_unlisted">
                         <span class="fw-medium d-block">Sync unlisted anime</span>
@@ -2194,7 +2224,7 @@
                                         <img src="/assets/rpdb_logo.png" width="18" height="18" class="me-2 flex-shrink-0"
                                             style="border-radius: 4px; vertical-align: middle; object-fit: contain;">Rating
                                         Poster DB (RPDB)
-                                        {% elif current_provider == 'top_poster' or current_provider == 'topposters' %}
+                                        {% elif current_provider == 'top_poster' %}
                                         <img src="/assets/topposters_logo.png" width="18" height="18"
                                             class="me-2 flex-shrink-0"
                                             style="border-radius: 4px; vertical-align: middle; object-fit: contain;">TOP
@@ -2947,7 +2977,7 @@
             <div class="card-dark p-3 p-sm-4 mb-3">
                 <h6 class="fw-semibold mb-3"><i class="fa-solid fa-database me-2" style="color: #38bdf8;"></i>Metadata Preferences</h6>
                 <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                    Select your preferred metadata provider (Kitsu, MAL, AniList) and catalog title language (English, Romaji, Native).
+                    Select your preferred metadata provider (Kitsu, MAL, AniList, TheTVDB), catalog title language, and metadata localization language.
                 </p>
 
                 <!-- Metadata Provider Option -->
@@ -2962,6 +2992,8 @@
                                         <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">MyAnimeList
                                     {% elif user.get('metadata_provider', 'kitsu') == 'anilist' %}
                                         <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">AniList
+                                    {% elif user.get('metadata_provider', 'kitsu') == 'tvdb' %}
+                                        <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">TheTVDB
                                     {% elif user.get('metadata_provider', 'kitsu') == 'custom' %}
                                         <span class="d-inline-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius:4px; margin-right: 10px;"><i class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
                                     {% else %}
@@ -2979,6 +3011,9 @@
                                 </div>
                                 <div class="custom-option-item d-flex align-items-center" data-value="mal">
                                     <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">MyAnimeList
+                                </div>
+                                <div class="custom-option-item d-flex align-items-center" data-value="tvdb">
+                                    <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; vertical-align: middle; margin-right: 10px;">TheTVDB
                                 </div>
                                 <div class="custom-option-item d-flex align-items-center" data-value="custom">
                                     <span class="d-inline-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius:4px; margin-right: 10px;"><i class="fa-solid fa-sliders" style="font-size:9px;"></i></span>Custom
@@ -3009,6 +3044,8 @@
                                                 <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
                                             {% elif user.get('meta_synopsis_provider', 'kitsu') == 'anilist' %}
                                                 <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
+                                            {% elif user.get('meta_synopsis_provider', 'kitsu') == 'tvdb' %}
+                                                <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                             {% else %}
                                                 <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
                                             {% endif %}
@@ -3024,6 +3061,9 @@
                                         </div>
                                         <div class="custom-option-item d-flex align-items-center" data-value="mal">
                                             <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="tvdb">
+                                            <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                         </div>
                                     </div>
                                 </div>
@@ -3045,6 +3085,8 @@
                                                 <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
                                             {% elif user.get('meta_episodes_provider', 'anizp') == 'mal' %}
                                                 <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                            {% elif user.get('meta_episodes_provider', 'anizp') == 'tvdb' %}
+                                                <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                             {% else %}
                                                 <img src="/assets/anizip_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniZip
                                             {% endif %}
@@ -3061,6 +3103,9 @@
                                         <div class="custom-option-item d-flex align-items-center" data-value="mal">
                                             <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
                                         </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="tvdb">
+                                            <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
+                                        </div>
                                     </div>
                                 </div>
                                 <p class="text-secondary small mb-0" style="font-size: 0.73rem; line-height: 1.35; padding-left: 0.25rem;">
@@ -3073,15 +3118,17 @@
                                 <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
                                     <i class="fa-solid fa-image text-info me-2" style="font-size: 0.82rem; width: 14px; text-align: center;"></i>Cover Posters
                                 </label>
-                                <input type="hidden" id="meta_poster_provider" name="meta_poster_provider" value="{{ user.get('meta_poster_provider', user.get('meta_artwork_provider', 'anilist')) }}">
+                                <input type="hidden" id="meta_poster_provider" name="meta_poster_provider" value="{{ user.get('meta_poster_provider', 'anilist') }}">
                                 <div class="custom-select-wrapper mb-1" data-input-id="meta_poster_provider">
                                     <div class="custom-select">
                                         <span class="custom-select-text d-flex align-items-center">
-                                            {% set cur_poster = user.get('meta_poster_provider', user.get('meta_artwork_provider', 'anilist')) %}
+                                            {% set cur_poster = user.get('meta_poster_provider', 'anilist') %}
                                             {% if cur_poster == 'kitsu' %}
                                                 <img src="/assets/kitsu_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">Kitsu
                                             {% elif cur_poster == 'mal' %}
                                                 <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                            {% elif cur_poster == 'tvdb' %}
+                                                <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                             {% else %}
                                                 <img src="/assets/anilist_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">AniList
                                             {% endif %}
@@ -3097,6 +3144,9 @@
                                         </div>
                                         <div class="custom-option-item d-flex align-items-center" data-value="mal">
                                             <img src="/assets/mal_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">MyAnimeList
+                                        </div>
+                                        <div class="custom-option-item d-flex align-items-center" data-value="tvdb">
+                                            <img src="/assets/tvdb_logo.png" width="18" height="18" style="border-radius: 4px; margin-right: 10px;">TheTVDB
                                         </div>
                                     </div>
                                 </div>
@@ -3262,6 +3312,65 @@
                             </div>
                         </div>
                         <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.75) !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to Romaji/Canonical if English or Japanese is missing.</p>
+                    </div>
+                </div>
+
+                <!-- Metadata Language Option -->
+                {% set cur_meta_lang = (cur_metadata_language|default(user.get('metadata_language', 'eng')) or 'eng')|lower %}
+                {% set meta_lang_badges = {
+                    'eng': ('EN', '#2563eb'),
+                    'fra': ('FR', '#0ea5e9'),
+                    'spa': ('ES', '#eab308'),
+                    'deu': ('DE', '#f97316'),
+                    'ita': ('IT', '#10b981'),
+                    'pt': ('BR', '#22c55e'),
+                    'por': ('PT', '#14b8a6'),
+                    'rus': ('RU', '#ef4444'),
+                    'kor': ('KO', '#6366f1'),
+                    'zho': ('ZH', '#f43f5e'),
+                    'jpn': ('JA', '#dc2626')
+                } %}
+                {% set meta_lang_list = supported_metadata_languages if supported_metadata_languages is defined else {
+                    'eng': {'label': 'English'},
+                    'fra': {'label': 'French (Français)'},
+                    'spa': {'label': 'Spanish (Español)'},
+                    'deu': {'label': 'German (Deutsch)'},
+                    'ita': {'label': 'Italian (Italiano)'},
+                    'pt': {'label': 'Portuguese - Brazil (Português BR)'},
+                    'por': {'label': 'Portuguese - Portugal (Português)'},
+                    'rus': {'label': 'Russian (Русский)'},
+                    'kor': {'label': 'Korean (한국어)'},
+                    'zho': {'label': 'Chinese - Simplified (简体中文)'},
+                    'jpn': {'label': 'Japanese (日本語)'}
+                } %}
+                {% if cur_meta_lang not in meta_lang_list %}{% set cur_meta_lang = 'eng' %}{% endif %}
+                {% set cur_badge = meta_lang_badges.get(cur_meta_lang, ('EN', '#2563eb')) %}
+                <div class="pt-3 mt-3 border-top border-secondary border-opacity-10">
+                    <label class="form-label small fw-semibold text-light mb-1 d-flex align-items-center">
+                        <span>Metadata Language</span>
+                    </label>
+                    <p class="text-secondary small mb-2" style="font-size: 0.78rem; line-height: 1.4;">
+                        Configure your preferred language for series titles, synopses, and episode summaries on Stremio detail pages.
+                    </p>
+                    <input type="hidden" id="metadata_language" name="metadata_language" value="{{ cur_meta_lang }}">
+                    <div style="max-width: 400px;">
+                        <div class="custom-select-wrapper mb-2" data-input-id="metadata_language">
+                            <div class="custom-select">
+                                <span class="custom-select-text d-flex align-items-center">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:{{ cur_badge[1] }}; border-radius:4px; font-size:9px;">{{ cur_badge[0] }}</span>{{ meta_lang_list[cur_meta_lang]['label'] }}
+                                </span>
+                                <i class="fa-solid fa-chevron-down ms-auto text-secondary small"></i>
+                            </div>
+                            <div class="custom-options-menu">
+                                {% for lang_code, lang_info in meta_lang_list.items() %}
+                                {% set opt_badge = meta_lang_badges.get(lang_code, (lang_code[:2]|upper, '#64748b')) %}
+                                <div class="custom-option-item d-flex align-items-center" data-value="{{ lang_code }}">
+                                    <span class="d-inline-flex align-items-center justify-content-center me-2 text-white fw-bold flex-shrink-0" style="width:18px; height:18px; background:{{ opt_badge[1] }}; border-radius:4px; font-size:9px;">{{ opt_badge[0] }}</span>{{ lang_info['label'] }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <p class="text-secondary small mt-1 mb-0" style="padding-left: 0.85rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.75) !important; line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i>Falls back to English when a translation is missing.</p>
                     </div>
                 </div>
             
@@ -4406,7 +4515,7 @@
                 const keyEl = document.getElementById("rpdb_api_key");
                 return Boolean(keyEl && keyEl.value.trim().length > 0);
             }
-            if (prov === "top_poster" || prov === "topposters") {
+            if (prov === "top_poster") {
                 const keyEl = document.getElementById("top_poster_key");
                 return Boolean(keyEl && keyEl.value.trim().length > 0);
             }
@@ -5392,7 +5501,7 @@
                         if (curProvider === 'rpdb' && rpdbKey) {
                             return `https://api.ratingposterdb.com/${encodeURIComponent(rpdbKey)}/imdb/poster-default/${encodeURIComponent(item.imdb_id)}.jpg?fallback=true`;
                         }
-                        if ((curProvider === 'top_poster' || curProvider === 'topposters') && topKey) {
+                        if (curProvider === 'top_poster' && topKey) {
                             return `https://top-posters.com/${encodeURIComponent(topKey)}/imdb/poster-default/${encodeURIComponent(item.imdb_id)}.jpg`;
                         }
                         if (curProvider === 'custom' && customPattern) {
@@ -5760,20 +5869,6 @@
         // Initialize sorting order string on load
         updateSortedInput();
 
-        // Handle dynamic show/hide for custom sorting settings
-        const customSortCheckbox = document.getElementById("custom_sort_enabled");
-        const customSortContainer = document.getElementById("custom-sorting-container");
-        function toggleCustomSorting() {
-            const enabled = customSortCheckbox && customSortCheckbox.checked;
-            if (customSortContainer) {
-                customSortContainer.style.display = enabled ? "block" : "none";
-            }
-        }
-        if (customSortCheckbox) {
-            customSortCheckbox.addEventListener("change", toggleCustomSorting);
-            toggleCustomSorting();
-        }
-
         // Handle dynamic show/hide for catalog-dependent settings
         const enableCatalogsCheckbox = document.getElementById("enable_catalogs");
         const watchlistOptionsContainer = document.getElementById("watchlist-options-container");
@@ -5939,13 +6034,6 @@
             enableDiscoveryCheckbox.addEventListener("change", () => syncCatalogManagement(false));
         }
 
-        const dubbedOnlyCheckbox = document.getElementById("dubbed_only_discovery");
-        const dubbedLangContainer = document.getElementById("dubbed_language_container");
-        if (dubbedOnlyCheckbox && dubbedLangContainer) {
-            dubbedOnlyCheckbox.addEventListener("change", function() {
-                dubbedLangContainer.style.display = this.checked ? "block" : "none";
-            });
-        }
 
         const enableAiCheckbox = document.getElementById("enable_ai_recommendations");
         const aiOptionsContainer = document.getElementById("ai-recommendations-options");
@@ -6006,6 +6094,81 @@
                 }
             }
         }
+
+        function syncTrackerProgressSwitches() {
+            const malToken = "{{ 'true' if user.get('mal_access_token') else 'false' }}" === "true";
+            const alToken = "{{ 'true' if user.get('anilist_token') else 'false' }}" === "true";
+            const simklToken = "{{ 'true' if user.get('simkl_access_token') else 'false' }}" === "true";
+
+            const malExpired = "{{ 'true' if user.get('mal_token_expired') else 'false' }}" === "true";
+            const alExpired = "{{ 'true' if user.get('anilist_token_expired') else 'false' }}" === "true";
+            const simklExpired = "{{ 'true' if user.get('simkl_token_expired') else 'false' }}" === "true";
+
+            const malEnabledCheckbox = document.getElementById("mal_enabled");
+            const alEnabledCheckbox = document.getElementById("anilist_enabled");
+            const simklEnabledCheckbox = document.getElementById("simkl_enabled");
+
+            const malSyncCheckbox = document.getElementById("mal_sync_progress");
+            const alSyncCheckbox = document.getElementById("anilist_sync_progress");
+            const simklSyncCheckbox = document.getElementById("simkl_sync_progress");
+
+            const syncUnlistedCheckbox = document.getElementById("sync_unlisted");
+
+            if (malSyncCheckbox) {
+                const malDisabled = !malToken || malExpired || (malEnabledCheckbox && !malEnabledCheckbox.checked);
+                malSyncCheckbox.disabled = malDisabled;
+                const malWrap = document.getElementById("mal_sync_progress_wrap");
+                if (malWrap) malWrap.style.opacity = malDisabled ? "0.45" : "1";
+            }
+            if (alSyncCheckbox) {
+                const alDisabled = !alToken || alExpired || (alEnabledCheckbox && !alEnabledCheckbox.checked);
+                alSyncCheckbox.disabled = alDisabled;
+                const alWrap = document.getElementById("anilist_sync_progress_wrap");
+                if (alWrap) alWrap.style.opacity = alDisabled ? "0.45" : "1";
+            }
+            if (simklSyncCheckbox) {
+                const simklDisabled = !simklToken || simklExpired || (simklEnabledCheckbox && !simklEnabledCheckbox.checked);
+                simklSyncCheckbox.disabled = simklDisabled;
+                const simklWrap = document.getElementById("simkl_sync_progress_wrap");
+                if (simklWrap) simklWrap.style.opacity = simklDisabled ? "0.45" : "1";
+            }
+
+            // Sync unlisted anime only matters if at least one connected tracker has active progress sync
+            let anySyncActive = false;
+            if (malToken && !malExpired && (!malEnabledCheckbox || malEnabledCheckbox.checked) && (!malSyncCheckbox || malSyncCheckbox.checked)) {
+                anySyncActive = true;
+            }
+            if (alToken && !alExpired && (!alEnabledCheckbox || alEnabledCheckbox.checked) && (!alSyncCheckbox || alSyncCheckbox.checked)) {
+                anySyncActive = true;
+            }
+            if (simklToken && !simklExpired && (!simklEnabledCheckbox || simklEnabledCheckbox.checked) && (!simklSyncCheckbox || simklSyncCheckbox.checked)) {
+                anySyncActive = true;
+            }
+
+            if (syncUnlistedCheckbox) {
+                syncUnlistedCheckbox.disabled = !anySyncActive;
+                const syncUnlistedParent = syncUnlistedCheckbox.closest('.form-check');
+                if (syncUnlistedParent) syncUnlistedParent.style.opacity = !anySyncActive ? "0.45" : "1";
+            }
+        }
+
+        const malTrackerEnabled = document.getElementById("mal_enabled");
+        const alTrackerEnabled = document.getElementById("anilist_enabled");
+        const simklTrackerEnabled = document.getElementById("simkl_enabled");
+
+        const malTrackerSync = document.getElementById("mal_sync_progress");
+        const alTrackerSync = document.getElementById("anilist_sync_progress");
+        const simklTrackerSync = document.getElementById("simkl_sync_progress");
+
+        if (malTrackerEnabled) malTrackerEnabled.addEventListener("change", syncTrackerProgressSwitches);
+        if (alTrackerEnabled) alTrackerEnabled.addEventListener("change", syncTrackerProgressSwitches);
+        if (simklTrackerEnabled) simklTrackerEnabled.addEventListener("change", syncTrackerProgressSwitches);
+
+        if (malTrackerSync) malTrackerSync.addEventListener("change", syncTrackerProgressSwitches);
+        if (alTrackerSync) alTrackerSync.addEventListener("change", syncTrackerProgressSwitches);
+        if (simklTrackerSync) simklTrackerSync.addEventListener("change", syncTrackerProgressSwitches);
+
+        syncTrackerProgressSwitches();
 
         if (combineCheckbox) {
             combineCheckbox.addEventListener("change", () => syncCatalogManagement(false));
@@ -6406,9 +6569,17 @@
         const malEnabledVal = document.getElementById('mal_enabled_val');
         if (malEnabledCheckbox && malEnabledVal) malEnabledVal.value = malEnabledCheckbox.checked ? 'true' : 'false';
 
+        const malSyncCheckbox = document.getElementById('mal_sync_progress');
+        const malSyncVal = document.getElementById('mal_sync_progress_val');
+        if (malSyncCheckbox && malSyncVal) malSyncVal.value = malSyncCheckbox.checked ? 'true' : 'false';
+
         const anilistEnabledCheckbox = document.getElementById('anilist_enabled');
         const anilistEnabledVal = document.getElementById('anilist_enabled_val');
         if (anilistEnabledCheckbox && anilistEnabledVal) anilistEnabledVal.value = anilistEnabledCheckbox.checked ? 'true' : 'false';
+
+        const anilistSyncCheckbox = document.getElementById('anilist_sync_progress');
+        const anilistSyncVal = document.getElementById('anilist_sync_progress_val');
+        if (anilistSyncCheckbox && anilistSyncVal) anilistSyncVal.value = anilistSyncCheckbox.checked ? 'true' : 'false';
 
         const combineWatchlistsCheckbox = document.getElementById('combine_watchlists');
         const combineWatchlistsVal = document.getElementById('combine_watchlists_val');
@@ -6417,6 +6588,10 @@
         const simklEnabledCheckbox = document.getElementById('simkl_enabled');
         const simklEnabledVal = document.getElementById('simkl_enabled_val');
         if (simklEnabledCheckbox && simklEnabledVal) simklEnabledVal.value = simklEnabledCheckbox.checked ? 'true' : 'false';
+
+        const simklSyncCheckbox = document.getElementById('simkl_sync_progress');
+        const simklSyncVal = document.getElementById('simkl_sync_progress_val');
+        if (simklSyncCheckbox && simklSyncVal) simklSyncVal.value = simklSyncCheckbox.checked ? 'true' : 'false';
 
         const enableRecsCheckbox = document.getElementById("enable_recommendations");
         const enableRecsVal = document.getElementById('enable_recommendations_val');
@@ -6434,21 +6609,9 @@
         const enableDiscoveryVal = document.getElementById('enable_discovery_catalogs_val');
         if (enableDiscoveryCheckbox && enableDiscoveryVal) enableDiscoveryVal.value = enableDiscoveryCheckbox.checked ? 'true' : 'false';
 
-        const shuffleDiscoveryCheckbox = document.getElementById("shuffle_discovery_catalogs");
-        const shuffleDiscoveryVal = document.getElementById('shuffle_discovery_catalogs_val');
-        if (shuffleDiscoveryCheckbox && shuffleDiscoveryVal) shuffleDiscoveryVal.value = shuffleDiscoveryCheckbox.checked ? 'true' : 'false';
-
         const enableDubbedCheckbox = document.getElementById("enable_dubbed_catalogs");
         const enableDubbedVal = document.getElementById('enable_dubbed_catalogs_val');
         if (enableDubbedCheckbox && enableDubbedVal) enableDubbedVal.value = enableDubbedCheckbox.checked ? 'true' : 'false';
-
-        const dubbedOnlyDiscoveryCheckbox = document.getElementById("dubbed_only_discovery");
-        const dubbedOnlyDiscoveryVal = document.getElementById('dubbed_only_discovery_val');
-        if (dubbedOnlyDiscoveryCheckbox && dubbedOnlyDiscoveryVal) dubbedOnlyDiscoveryVal.value = dubbedOnlyDiscoveryCheckbox.checked ? 'true' : 'false';
-
-        const customSortCheckbox = document.getElementById("custom_sort_enabled");
-        const customSortVal = document.getElementById('custom_sort_enabled_val');
-        if (customSortCheckbox && customSortVal) customSortVal.value = customSortCheckbox.checked ? 'true' : 'false';
 
         // Ensure sorted list is accurate
         const list = document.getElementById("drag-drop-catalog-list");
@@ -6817,7 +6980,7 @@
             if (provider === 'rpdb' && rpdbKey && sample.imdb_id) {
                 const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
                 return `https://api.ratingposterdb.com/${encodeURIComponent(rpdbKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
-            } else if ((provider === 'top_poster' || provider === 'topposters') && topKey && sample.imdb_id) {
+            } else if (provider === 'top_poster' && topKey && sample.imdb_id) {
                 const endpoint = isLandscape ? 'backdrop-default' : 'poster-default';
                 return `https://api.top-posters.com/${encodeURIComponent(topKey)}/imdb/${endpoint}/${sample.imdb_id}.jpg`;
             } else if (provider === 'custom' && customPattern) {

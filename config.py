@@ -60,6 +60,18 @@ class Config:
     SIMKL_CLIENT_ID = os.getenv("SIMKL_CLIENT_ID", "")
     SIMKL_CLIENT_SECRET = os.getenv("SIMKL_CLIENT_SECRET", "")
 
+    # Kitsu Authentication
+    KITSU_USERNAME = os.getenv("KITSU_USERNAME", "")
+    KITSU_PASSWORD = os.getenv("KITSU_PASSWORD", "")
+    KITSU_CLIENT_ID = os.getenv(
+        "KITSU_CLIENT_ID",
+        "dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd",
+    )
+    KITSU_CLIENT_SECRET = os.getenv(
+        "KITSU_CLIENT_SECRET",
+        "54d7307928f63414defd96399fc31ba847961ceaecef3a5fd93144e960c0e151",
+    )
+
     # API endpoints (Allows routing through Cloudflare Workers or proxies)
     CUSTOM_JIKAN_URL = os.getenv("CUSTOM_JIKAN_URL", os.getenv("JIKAN_API_URL", "")).strip()
     ANILIST_API_URL = os.getenv("ANILIST_API_URL", "https://graphql.anilist.co")
@@ -75,3 +87,9 @@ class Config:
 
 
 KITSU_ID_PREFIX = "kitsu:"
+
+
+def kitsu_login_enabled() -> bool:
+    """Returns True only when both Kitsu username and password are set."""
+    return bool(Config.KITSU_USERNAME and Config.KITSU_PASSWORD)
+

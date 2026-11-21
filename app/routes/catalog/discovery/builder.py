@@ -4,7 +4,8 @@ import logging
 import re
 
 from app.api import anilist as anilist_api
-from app.lib.id_resolver import bulk_resolve_to_kitsu
+from app.lib.id_resolver import bulk_resolve_to_kitsu, kitsu_id_from_kitsu_mappings
+from app.lib.id_resolver.resolvers import gather_within
 from app.services.db import db
 
 from .constants import build_anilist_discovery_query
@@ -95,6 +96,49 @@ async def update_discovery_catalogs_cache() -> dict:
 
     kitsu_mappings = await bulk_resolve_to_kitsu(mal_ids=list(all_mal_ids), anilist_ids=list(all_al_ids), skip_external=True)
 
+    # Collect items that still have no Kitsu ID and attempt direct Kitsu mappings lookup (max 60 items, 25s budget)
+    unresolved_items: list[tuple[str, str, str | None]] = []
+    seen_unresolved = set()
+
+    for cat_key, (page_name, jikan_list, _) in cat_map.items():
+        media_list = (data.get(page_name) or {}).get("media") or []
+        for m in media_list:
+            al_id = str(m.get("id") or "")
+            mal_id = str(m.get("idMal") or "") if m.get("idMal") else None
+            has_kitsu = (mal_id and kitsu_mappings.get(f"mal:{mal_id}")) or (al_id and kitsu_mappings.get(f"anilist:{al_id}"))
+            if not has_kitsu and al_id and al_id not in seen_unresolved:
+                seen_unresolved.add(al_id)
+                unresolved_items.append(("anilist", al_id, mal_id))
+
+        for j_item in jikan_list:
+            j_id = str(j_item.get("mal_id") or "")
+            if j_id and not kitsu_mappings.get(f"mal:{j_id}") and j_id not in seen_unresolved:
+                seen_unresolved.add(j_id)
+                unresolved_items.append(("mal", j_id, None))
+
+    unresolved_items = unresolved_items[:60]
+    if unresolved_items:
+        async def _resolve_unmapped(site: str, ext_id: str, fallback_ext_id: str | None) -> tuple[str, str, str | None, str | None]:
+            k_id = await kitsu_id_from_kitsu_mappings(site, ext_id, mal_id=fallback_ext_id if site == "anilist" else None)
+            if not k_id and fallback_ext_id:
+                fallback_site = "mal" if site == "anilist" else "anilist"
+                k_id = await kitsu_id_from_kitsu_mappings(fallback_site, fallback_ext_id, anilist_id=ext_id if site == "anilist" else None)
+            return site, ext_id, fallback_ext_id, k_id
+
+        try:
+            tasks = [_resolve_unmapped(s, eid, f_eid) for s, eid, f_eid in unresolved_items]
+            results = await gather_within(tasks, timeout=25.0)
+            for res in results:
+                if isinstance(res, tuple):
+                    s, eid, f_eid, k_id = res
+                    if k_id:
+                        kitsu_mappings[f"{s}:{eid}"] = k_id
+                        if f_eid:
+                            f_site = "mal" if s == "anilist" else "anilist"
+                            kitsu_mappings[f"{f_site}:{f_eid}"] = k_id
+        except Exception as e:
+            logging.warning("Discovery Kitsu mappings batch resolution timed out or failed: %s", e)
+
     result_metas = {}
 
     for cat_key, (page_name, jikan_list, kitsu_list) in cat_map.items():
@@ -106,7 +150,9 @@ async def update_discovery_catalogs_cache() -> dict:
             al_id = str(m["id"])
             mal_id = str(m.get("idMal") or "")
             kitsu_id = kitsu_mappings.get(f"mal:{mal_id}") or kitsu_mappings.get(f"anilist:{al_id}")
-            stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else (f"mal:{mal_id}" if mal_id else f"anilist:{al_id}")
+            if not kitsu_id:
+                continue
+            stremio_id = f"kitsu:{kitsu_id}"
 
             if stremio_id in seen_stremio_ids:
                 continue
@@ -176,7 +222,9 @@ async def update_discovery_catalogs_cache() -> dict:
             if not mal_id:
                 continue
             kitsu_id = kitsu_mappings.get(f"mal:{mal_id}")
-            stremio_id = f"kitsu:{kitsu_id}" if kitsu_id else f"mal:{mal_id}"
+            if not kitsu_id:
+                continue
+            stremio_id = f"kitsu:{kitsu_id}"
 
             if stremio_id in seen_stremio_ids:
                 continue

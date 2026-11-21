@@ -8,15 +8,19 @@ def get_cached_ids(kitsu_id: str) -> dict | None:
     try:
         if isinstance(kitsu_id, str):
             kitsu_id = kitsu_id.replace("kitsu:", "").strip()
+        if not kitsu_id or len(kitsu_id) > 12:
+            return None
         return id_cache_collection.find_one({"kitsu_id": int(kitsu_id)})
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return None
 
 
 def get_cached_ids_by_mal(mal_id: str) -> dict | None:
     try:
+        if not mal_id or len(str(mal_id)) > 12:
+            return None
         return id_cache_collection.find_one({"mal_id": str(mal_id)})
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return None
 
 
@@ -25,8 +29,8 @@ def get_cached_ids_by_mal_bulk(mal_ids: list[str]) -> dict[str, dict]:
     if not mal_ids:
         return {}
     try:
-        clean_ids = [str(m) for m in mal_ids if m]
-        query_vals = clean_ids + [int(m) for m in clean_ids if str(m).isdigit()]
+        clean_ids = [str(m) for m in mal_ids if m and len(str(m)) <= 12]
+        query_vals = clean_ids + [int(m) for m in clean_ids if str(m).isdigit() and len(str(m)) <= 12]
         docs = list(id_cache_collection.find({"mal_id": {"$in": query_vals}}))
         result = {}
         for d in docs:
@@ -41,15 +45,19 @@ def get_cached_ids_by_mal_bulk(mal_ids: list[str]) -> dict[str, dict]:
 
 def get_cached_ids_by_anilist(anilist_id: str) -> dict | None:
     try:
+        if not anilist_id or len(str(anilist_id)) > 12:
+            return None
         return id_cache_collection.find_one({"anilist_id": str(anilist_id)})
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return None
 
 
 def get_cached_ids_by_simkl(simkl_id: str) -> dict | None:
     try:
+        if not simkl_id or len(str(simkl_id)) > 12:
+            return None
         query = {"$or": [{"simkl_id": str(simkl_id)}]}
-        if str(simkl_id).isdigit():
+        if str(simkl_id).isdigit() and len(str(simkl_id)) <= 12:
             query["$or"].append({"simkl_id": int(simkl_id)})
             query["$or"].append({"simkl": int(simkl_id)})
         return id_cache_collection.find_one(query)
@@ -67,6 +75,8 @@ def cache_ids(
     tvdb_id: str | None = None,
 ):
     try:
+        if kitsu_id and len(str(kitsu_id)) > 12:
+            return
         now = datetime.now(UTC).replace(tzinfo=None)
         doc = {
             "kitsu_id": int(kitsu_id) if kitsu_id else None,
@@ -104,7 +114,7 @@ def attach_simkl_id(kitsu_id: str, simkl_id: str):
     Never upserts, and never replaces a different simkl_id already stored on the doc.
     """
     try:
-        if not kitsu_id or not simkl_id:
+        if not kitsu_id or not simkl_id or len(str(kitsu_id)) > 12:
             return
         id_cache_collection.update_one(
             {
@@ -130,6 +140,8 @@ def cache_fallback_ids(
     Expires quickly (3 days) to allow authoritative sources to backfill.
     """
     try:
+        if not kitsu_id or len(str(kitsu_id)) > 12:
+            return
         kid = int(kitsu_id) if kitsu_id else None
         if not kid:
             return

@@ -1,7 +1,9 @@
 import asyncio
+import html
 import re
 from datetime import UTC, date, datetime
 
+from app.lib.languages import get_anizp_language_key, normalize_metadata_language
 from app.lib.meta_providers import pick_backdrop
 
 from .fetchers import clean_imdb_id
@@ -13,6 +15,48 @@ _ROMAN_SEASONS = {"ii": 2, "iii": 3, "iv": 4, "vi": 6, "vii": 7, "viii": 8, "ix"
 # Max distance between the anime premiere and a Cinemeta season's Episode 1 air date
 # (absorbs JP vs US release-day differences and simulcast delays).
 _SEASON_PREMIERE_TOLERANCE_DAYS = 60
+
+
+_RE_YEAR = re.compile(r"^(\d{4})$")
+_RE_YEAR_MONTH = re.compile(r"^(\d{4})[-/](\d{1,2})$")
+_RE_YMD = re.compile(r"^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$")
+_RE_ISO_MS_Z = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z$")
+
+
+def _normalize_iso_released(val) -> str | None:
+    """Normalize a date/timestamp string into strict ISO-8601 UTC format for Stremio."""
+    if not val or not isinstance(val, str):
+        return None
+    s = val.strip()
+    if not s:
+        return None
+    if _RE_ISO_MS_Z.match(s):
+        try:
+            datetime.fromisoformat(s[:-1] + "+00:00")
+            return s
+        except ValueError:
+            return None
+    if m := _RE_YEAR.match(s):
+        year = int(m.group(1))
+        return f"{year:04d}-01-01T00:00:00Z" if 1 <= year <= 9999 else None
+    if m := _RE_YEAR_MONTH.match(s):
+        try:
+            return datetime(int(m.group(1)), int(m.group(2)), 1).strftime("%Y-%m-%dT00:00:00Z")
+        except ValueError:
+            return None
+    if m := _RE_YMD.match(s):
+        try:
+            return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3))).strftime("%Y-%m-%dT00:00:00Z")
+        except ValueError:
+            return None
+    normalized = re.sub(r"^(\d{4})/(\d{2})/(\d{2})(?=[T\s])", r"\1-\2-\3", s)
+    try:
+        dt = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(UTC)
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _parse_date(value) -> date | None:
@@ -111,6 +155,246 @@ def detect_anime_season(
     return title_seasons[0] if title_seasons else None
 
 
+def _index_tvdb_episodes(
+    tvdb_episodes: list[dict] | None,
+) -> tuple[dict[int, dict], dict[tuple[int, int], dict], dict[int, dict]]:
+    """Build O(1) TVDB episode lookups: by_id, by_(season, ep) (S>0 only), and by_abs (S>0 only)."""
+    by_id: dict[int, dict] = {}
+    by_se: dict[tuple[int, int], dict] = {}
+    by_abs: dict[int, dict] = {}
+    for tep in tvdb_episodes or []:
+        if not isinstance(tep, dict):
+            continue
+        tid = tep.get("id")
+        if tid is not None:
+            try:
+                by_id[int(tid)] = tep
+            except (ValueError, TypeError):
+                pass
+        try:
+            s_num = int(tep.get("seasonNumber") or 0)
+        except (ValueError, TypeError):
+            s_num = 0
+        if s_num <= 0:
+            continue
+        try:
+            e_num = int(tep.get("number") or 0)
+        except (ValueError, TypeError):
+            e_num = 0
+        if e_num > 0:
+            by_se.setdefault((s_num, e_num), tep)
+        raw_abs = tep.get("absoluteNumber")
+        if raw_abs is None:
+            raw_abs = tep.get("absoluteEpisodeNumber")
+        try:
+            abs_num = int(raw_abs or 0)
+        except (ValueError, TypeError):
+            abs_num = 0
+        if abs_num > 0:
+            by_abs.setdefault(abs_num, tep)
+    return by_id, by_se, by_abs
+
+
+def _match_tvdb_episode(
+    anizp_ep: dict,
+    ep_num: int,
+    ep_season: int | None,
+    is_likely_sequel: bool,
+    by_id: dict[int, dict],
+    by_se: dict[tuple[int, int], dict],
+    by_abs: dict[int, dict],
+    *,
+    allow_season_one_fallback: bool,
+    episode_airdate: str | None,
+) -> dict | None:
+    """Prefer explicit episode mappings and only infer season one when the series supports it."""
+    if not by_id and not by_se and not by_abs:
+        return None
+    tvdb_ep_id = anizp_ep.get("tvdbId")
+    if tvdb_ep_id is not None:
+        try:
+            matched = by_id.get(int(tvdb_ep_id))
+            if matched is not None:
+                return matched
+        except (ValueError, TypeError):
+            pass
+
+    if ep_season is not None and ep_season > 0:
+        anizp_ep_num = anizp_ep.get("episodeNumber")
+        if anizp_ep_num is not None:
+            try:
+                anizp_ep_int = int(anizp_ep_num)
+                if anizp_ep_int > 0:
+                    matched = by_se.get((ep_season, anizp_ep_int))
+                    if matched is not None:
+                        return matched
+            except (ValueError, TypeError):
+                pass
+        matched = by_se.get((ep_season, ep_num))
+        if matched is not None:
+            return matched
+
+    abs_ep_num = anizp_ep.get("absoluteEpisodeNumber")
+    if abs_ep_num is not None:
+        try:
+            abs_int = int(abs_ep_num)
+            if abs_int > 0:
+                matched = by_abs.get(abs_int)
+                if matched is not None:
+                    return matched
+        except (ValueError, TypeError):
+            pass
+    elif not is_likely_sequel and ep_season in (None, 1):
+        matched = by_abs.get(ep_num)
+        if matched is not None:
+            return matched
+
+        if allow_season_one_fallback and tvdb_ep_id is None and anizp_ep.get("seasonNumber") is None:
+            candidate = by_se.get((1, ep_num))
+            if candidate is not None:
+                expected = _parse_date(episode_airdate)
+                aired = _parse_date(candidate.get("aired"))
+                if expected is None or aired is None or abs((expected - aired).days) <= 1:
+                    return candidate
+
+    return None
+
+
+def _resolve_single_tvdb_season(
+    subtype: str,
+    anizp_episodes: dict,
+    attributes: dict,
+    cinemeta_data: dict | None,
+) -> int | None:
+    """Return a single TVDB season (> 0) for split-cour/single-season entries, or None for multi-season/movies."""
+    if subtype == "movie":
+        return None
+    anizp_seasons: set[int] = set()
+    if isinstance(anizp_episodes, dict):
+        for ep in anizp_episodes.values():
+            if isinstance(ep, dict) and ep.get("seasonNumber") is not None:
+                try:
+                    s_val = int(ep["seasonNumber"])
+                    if s_val > 0:
+                        anizp_seasons.add(s_val)
+                except (ValueError, TypeError):
+                    pass
+    if len(anizp_seasons) == 1:
+        return next(iter(anizp_seasons))
+    if len(anizp_seasons) > 1:
+        return None
+    cin_videos = cinemeta_data.get("videos") if cinemeta_data and isinstance(cinemeta_data.get("videos"), list) else []
+    detected = detect_anime_season(
+        attributes.get("canonicalTitle") or "",
+        attributes.get("titles") or {},
+        anizp_episodes,
+        cin_videos,
+        attributes.get("startDate"),
+    )
+    return detected if (detected and detected > 0) else None
+
+
+
+def unescape_meta_text(meta: dict) -> dict:
+    """Decode HTML entities that sources leave in plain text (Kitsu synopses carry "&amp;", "&#39;", ...)."""
+    if not isinstance(meta, dict):
+        return meta
+
+    def _u(val):
+        return html.unescape(val) if isinstance(val, str) and "&" in val else val
+
+    for key in ("name", "description"):
+        if key in meta:
+            meta[key] = _u(meta[key])
+    for video in meta.get("videos") or []:
+        if isinstance(video, dict):
+            for key in ("title", "name", "overview"):
+                if key in video:
+                    video[key] = _u(video[key])
+    return meta
+
+
+def is_root_tvdb_entry(
+    subtype: str,
+    anizp_episodes: dict | None,
+    attributes: dict,
+    cinemeta_data: dict | None = None,
+) -> bool:
+    """
+    True when a Kitsu entry starts its TVDB series (S1E1), so TVDB's show-level title and synopsis describe it.
+    Sequels and split cours (e.g. Bleach TYBW Part 2 = TVDB S17E14+, AoT S3) share one TVDB series, and its
+    translation would rename them to the parent show ("Bleach") and show the parent premise as synopsis.
+    """
+    if (subtype or "").lower() == "movie":
+        return True
+    # Look at where all of this entry's regular episodes land, not only episode 1: TVDB sometimes orders a season
+    # differently (Cowboy Bebop's episode 1 is TVDB S1E14), but the entry that starts the show always contains S1E1,
+    # while a split cour / sequel (S1E13+, S2+) never does.
+    positions: list[tuple[int, int]] = []
+    saw_specials_only = False
+    if isinstance(anizp_episodes, dict):
+        for key, ep in anizp_episodes.items():
+            if not str(key).isdigit() or not isinstance(ep, dict) or ep.get("seasonNumber") is None:
+                continue
+            try:
+                season = int(ep["seasonNumber"])
+                ep_in_season = int(ep.get("episodeNumber") or 1)
+            except (ValueError, TypeError):
+                continue
+            if season >= 1:
+                positions.append((season, ep_in_season))
+            elif season == 0:
+                saw_specials_only = True
+    if positions:
+        season, ep_in_season = min(positions)
+        return season == 1 and ep_in_season <= 1
+    if saw_specials_only:
+        # Mapped only to TVDB specials (S0): usually an OVA filed under a parent show, so its title would be wrong
+        return False
+    single = _resolve_single_tvdb_season(subtype, anizp_episodes or {}, attributes, cinemeta_data)
+    return single in (None, 1)
+
+
+def _resolve_localized_episode_text(
+    norm_lang: str,
+    anizp_code: str,
+    base_ep_title: str,
+    base_overview: str,
+    anizp_ep: dict,
+    tvdb_ep: dict | None,
+    episodes_provider: str,
+    title_language: str,
+) -> tuple[str, str]:
+    """Apply TVDB localized/provider episode title and overview with English fallbacks."""
+    tvdb_name = (tvdb_ep.get("name") or "").strip() if tvdb_ep else ""
+    tvdb_ov = (tvdb_ep.get("overview") or "").strip() if tvdb_ep else ""
+
+    if norm_lang != "eng":
+        anizp_titles = anizp_ep.get("title") if isinstance(anizp_ep.get("title"), dict) else {}
+        anizp_en = (anizp_titles.get("en") or "").strip()
+        anizp_loc = (anizp_titles.get(anizp_code) or "").strip() if anizp_code else ""
+        tvdb_matches_en = bool(tvdb_name and anizp_en and tvdb_name.casefold() == anizp_en.casefold())
+
+        if tvdb_name and not tvdb_matches_en:
+            ep_title = tvdb_name
+        elif anizp_loc:
+            ep_title = anizp_loc
+        elif tvdb_name:
+            ep_title = tvdb_name
+        else:
+            ep_title = base_ep_title
+
+        overview = tvdb_ov if tvdb_ov else base_overview
+        return ep_title, overview
+
+    if episodes_provider == "tvdb" and tvdb_ep:
+        ep_title = tvdb_name if (tvdb_name and title_language == "english") else base_ep_title
+        overview = tvdb_ov if tvdb_ov else base_overview
+        return ep_title, overview
+
+    return base_ep_title, base_overview
+
+
 def map_kitsu_to_stremio(
     kitsu_data: dict,
     meta_id: str,
@@ -128,15 +412,24 @@ def map_kitsu_to_stremio(
     episodes_provider: str = "anizp",
     backdrop_provider: str = "cinemeta",
     poster_provider: str = "anilist",
+    metadata_language: str = "eng",
+    tvdb_translation: dict | None = None,
+    tvdb_posters: dict | None = None,
+    tvdb_episodes: list[dict] | None = None,
 ) -> dict:
     data = kitsu_data.get("data", {})
     if not data:
         return {}
 
+    norm_lang = normalize_metadata_language(metadata_language)
+    anizp_code = get_anizp_language_key(norm_lang)
+
     video_base = f"kitsu:{data.get('id')}"
 
     attributes = data.get("attributes", {})
     titles = attributes.get("titles", {})
+    subtype = (attributes.get("subtype") or "tv").lower()
+    anizp_episodes = anizp_data.get("episodes", {}) if anizp_data else {}
 
     if title_language == "english":
         title = titles.get("en") or titles.get("en_us") or attributes.get("canonicalTitle") or titles.get("en_jp") or "Unknown Title"
@@ -147,6 +440,15 @@ def map_kitsu_to_stremio(
     else:  # default / canonical
         title = attributes.get("canonicalTitle") or titles.get("en") or titles.get("en_jp") or "Unknown Title"
     synopsis = attributes.get("synopsis", "")
+
+    if isinstance(tvdb_translation, dict) and tvdb_translation:
+        tvdb_title = (tvdb_translation.get("name") or "").strip()
+        tvdb_overview = (tvdb_translation.get("overview") or "").strip()
+        if norm_lang != "eng" and tvdb_title:
+            title = tvdb_title
+        if tvdb_overview:
+            synopsis = tvdb_overview
+
     anizp_images = anizp_data.get("images", []) if anizp_data else []
     tvdb_fanart = None
     anizp_poster = None
@@ -164,10 +466,13 @@ def map_kitsu_to_stremio(
 
     poster_data = attributes.get("posterImage") or {}
     kitsu_poster = poster_data.get("original") or poster_data.get("large") or poster_data.get("medium") or ""
-    if poster_provider == "kitsu":
-        poster = kitsu_poster or anizp_poster or ""
-    else:
-        poster = anizp_poster or kitsu_poster or ""
+    tvdb_poster = None
+    if poster_provider == "tvdb" and tvdb_posters:
+        from app.services.tvdb import pick_tvdb_poster
+
+        single_season = _resolve_single_tvdb_season(subtype, anizp_episodes, attributes, cinemeta_data)
+        tvdb_poster = pick_tvdb_poster(tvdb_posters, lang=norm_lang, season_number=single_season)
+    poster = tvdb_poster or kitsu_poster or anizp_poster or ""
     cover_data = attributes.get("coverImage") or {}
     kitsu_cover = cover_data.get("original") or cover_data.get("large") or cover_data.get("medium")
 
@@ -208,16 +513,17 @@ def map_kitsu_to_stremio(
     # Release info (Year)
     start_date = attributes.get("startDate")
     end_date = attributes.get("endDate")
-    release_info = ""
+    release_info = None
     if start_date:
         release_info = start_date[:4]
         if end_date:
-            release_info += f"-{end_date[:4]}"
-        else:
+            # One year for movies and shows that started and ended in the same year ("2026", not "2026-2026")
+            if end_date[:4] != start_date[:4]:
+                release_info += f"-{end_date[:4]}"
+        elif subtype != "movie":
             release_info += "-"
 
     # Media Type
-    subtype = (attributes.get("subtype") or "tv").lower()
     media_type = "movie" if subtype == "movie" else "series"
     anime_status = (attributes.get("status") or "").lower()
 
@@ -231,8 +537,6 @@ def map_kitsu_to_stremio(
         if item.get("type") == "episodes":
             episodes_data.append(item)
 
-    anizp_episodes = anizp_data.get("episodes", {}) if anizp_data else {}
-
     if subtype == "movie":
         videos.append(
             {
@@ -240,7 +544,7 @@ def map_kitsu_to_stremio(
                 "title": title,
                 "episode": 1,
                 "season": 1,
-                "released": start_date + "T00:00:00Z" if start_date else None,
+                "released": _normalize_iso_released(start_date),
                 "overview": synopsis,
                 "thumbnail": background or poster,
             }
@@ -349,6 +653,16 @@ def map_kitsu_to_stremio(
         elif anime_start_year and cin_s1_year and (anime_start_year - cin_s1_year >= 2):
             is_likely_sequel = True
 
+        tvdb_by_id, tvdb_by_se, tvdb_by_abs = _index_tvdb_episodes(tvdb_episodes)
+        allow_season_one_fallback = False
+        if subtype == "tv" and detected_season is None and not is_likely_sequel:
+            tvdb_premiere = _parse_date(tvdb_by_se.get((1, 1), {}).get("aired"))
+            kitsu_premiere = _parse_date(start_date)
+            if tvdb_premiere is not None and kitsu_premiere is not None:
+                allow_season_one_fallback = abs((tvdb_premiere - kitsu_premiere).days) <= 1
+            else:
+                allow_season_one_fallback = {season for season, _ in tvdb_by_se} == {1}
+
         last_valid_ep_date = None
         for i in range(1, total_ep + 1):
             ep_num = i
@@ -357,33 +671,34 @@ def map_kitsu_to_stremio(
 
             # Extract attributes from Kitsu episode if available
             attrs = kitsu_ep.get("attributes", {}) if kitsu_ep else {}
+            anizp_ep_titles = anizp_ep.get("title") if isinstance(anizp_ep.get("title"), dict) else {}
 
             if title_language == "english":
-                ep_title = (
-                    anizp_ep.get("title", {}).get("en")
+                base_ep_title = (
+                    anizp_ep_titles.get("en")
                     or attrs.get("canonicalTitle")
-                    or anizp_ep.get("title", {}).get("x-jat")
+                    or anizp_ep_titles.get("x-jat")
                     or f"Episode {ep_num}"
                 )
             elif title_language == "romaji":
-                ep_title = (
-                    anizp_ep.get("title", {}).get("x-jat")
+                base_ep_title = (
+                    anizp_ep_titles.get("x-jat")
                     or attrs.get("canonicalTitle")
-                    or anizp_ep.get("title", {}).get("en")
+                    or anizp_ep_titles.get("en")
                     or f"Episode {ep_num}"
                 )
             elif title_language == "japanese":
-                ep_title = (
-                    anizp_ep.get("title", {}).get("ja")
-                    or anizp_ep.get("title", {}).get("x-jat")
+                base_ep_title = (
+                    anizp_ep_titles.get("ja")
+                    or anizp_ep_titles.get("x-jat")
                     or attrs.get("canonicalTitle")
                     or f"Episode {ep_num}"
                 )
             else:  # default / canonical
-                ep_title = (
+                base_ep_title = (
                     attrs.get("canonicalTitle")
-                    or anizp_ep.get("title", {}).get("en")
-                    or anizp_ep.get("title", {}).get("x-jat")
+                    or anizp_ep_titles.get("en")
+                    or anizp_ep_titles.get("x-jat")
                     or f"Episode {ep_num}"
                 )
 
@@ -398,6 +713,18 @@ def map_kitsu_to_stremio(
                     pass
             if ep_season is None:
                 ep_season = detected_season
+
+            tvdb_ep = _match_tvdb_episode(
+                anizp_ep,
+                ep_num,
+                ep_season,
+                is_likely_sequel,
+                tvdb_by_id,
+                tvdb_by_se,
+                tvdb_by_abs,
+                allow_season_one_fallback=allow_season_one_fallback,
+                episode_airdate=attrs.get("airdate") or anizp_ep.get("airdate"),
+            )
 
             # Match Cinemeta episode thumbnail and release date safely
             cinemeta_thumb = None
@@ -416,32 +743,28 @@ def map_kitsu_to_stremio(
 
             # Validate episode release date against anime start date and chronological ordering
             released = None
-            if candidate_released:
-                try:
-                    date_str = str(candidate_released).strip()[:10].replace("/", "-")
-                    ep_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-                    is_date_valid = True
+            normalized_released = _normalize_iso_released(candidate_released)
+            if normalized_released:
+                ep_date = datetime.strptime(normalized_released[:10], "%Y-%m-%d").date()
+                is_date_valid = True
 
-                    # 1. Episode air date cannot precede the anime premiere year
-                    if anime_start_year and ep_date.year < anime_start_year:
+                # 1. Episode air date cannot precede the anime premiere year
+                if anime_start_year and ep_date.year < anime_start_year:
+                    is_date_valid = False
+
+                # 2. Monotonicity: episode N cannot air prior to episode N-1
+                if last_valid_ep_date and ep_date < last_valid_ep_date:
+                    is_date_valid = False
+
+                # 3. Unreleased anime status check: cannot have episodes in the past
+                if anime_status in ["unreleased", "not_yet_released"]:
+                    now_date = datetime.now(UTC).date()
+                    if ep_date < now_date:
                         is_date_valid = False
 
-                    # 2. Monotonicity: episode N cannot air prior to episode N-1
-                    if last_valid_ep_date and ep_date < last_valid_ep_date:
-                        is_date_valid = False
-
-                    # 3. Unreleased anime status check: cannot have episodes in the past
-                    if anime_status in ["unreleased", "not_yet_released"]:
-                        now_date = datetime.now(UTC).date()
-                        if ep_date < now_date:
-                            is_date_valid = False
-
-                    if is_date_valid:
-                        # Keep the original value: Cinemeta timestamps carry the actual air time
-                        released = str(candidate_released).strip()
-                        last_valid_ep_date = ep_date
-                except (ValueError, TypeError):
-                    pass
+                if is_date_valid:
+                    released = normalized_released
+                    last_valid_ep_date = ep_date
 
             # If the anime or episode is unreleased (air date in future), Cinemeta's Metahub
             # thumbnail link is pre-computed and guaranteed to 404 on Metahub/TMDB.
@@ -450,19 +773,15 @@ def map_kitsu_to_stremio(
                 if anime_status in ["unreleased", "not_yet_released"]:
                     cinemeta_thumb = None
                 elif released:
-                    try:
-                        date_str = str(released).strip()[:10].replace("/", "-")
-                        ep_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-                        now_date = datetime.now(UTC).date()
-                        if ep_date > now_date:
-                            cinemeta_thumb = None
-                    except (ValueError, TypeError):
-                        pass
+                    ep_date = datetime.strptime(released[:10], "%Y-%m-%d").date()
+                    now_date = datetime.now(UTC).date()
+                    if ep_date > now_date:
+                        cinemeta_thumb = None
                 elif not released and is_likely_sequel:
                     cinemeta_thumb = None
 
             if episodes_provider == "kitsu":
-                overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
+                base_overview = attrs.get("synopsis") or anizp_ep.get("overview") or anizp_ep.get("summary") or ""
                 thumbnail = (
                     (attrs.get("thumbnail") or {}).get("original")
                     or (attrs.get("thumbnail") or {}).get("large")
@@ -471,7 +790,7 @@ def map_kitsu_to_stremio(
                     or background
                 )
             else:  # anizp, mal, or default
-                overview = anizp_ep.get("overview") or anizp_ep.get("summary") or attrs.get("synopsis") or ""
+                base_overview = anizp_ep.get("overview") or anizp_ep.get("summary") or attrs.get("synopsis") or ""
                 thumbnail = (
                     anizp_ep.get("image")
                     or (attrs.get("thumbnail") or {}).get("original")
@@ -479,6 +798,17 @@ def map_kitsu_to_stremio(
                     or cinemeta_thumb
                     or background
                 )
+
+            ep_title, overview = _resolve_localized_episode_text(
+                norm_lang,
+                anizp_code,
+                base_ep_title,
+                base_overview,
+                anizp_ep,
+                tvdb_ep,
+                episodes_provider,
+                title_language,
+            )
 
             # Check filler status
             is_filler = False
@@ -507,21 +837,13 @@ def map_kitsu_to_stremio(
             if show_watched_tags and ep_num <= watched_progress:
                 ep_title = f"[Watched] {ep_title}"
 
-            released_str = None
-            if released and isinstance(released, str) and released.strip():
-                released = released.strip()
-                if "T" not in released:
-                    released_str = released + "T00:00:00Z"
-                else:
-                    released_str = released
-
             videos.append(
                 {
                     "id": f"{video_base}:{ep_num}",
                     "title": ep_title,
                     "episode": ep_num,
                     "season": 1,
-                    "released": released_str,
+                    "released": released,
                     "overview": overview,
                     "thumbnail": thumbnail,
                 }
@@ -546,12 +868,13 @@ def map_kitsu_to_stremio(
         "poster": poster,
         "background": background,
         "imdbRating": rating,
-        "releaseInfo": release_info,
         "description": synopsis,
         "videos": videos,
         "genres": genres,
         "links": links,
     }
+    if release_info:
+        meta_obj["releaseInfo"] = release_info
     if logo:
         meta_obj["logo"] = logo
 

@@ -1,0 +1,151 @@
+"""Metadata localization language definitions and normalization helpers."""
+
+SUPPORTED_METADATA_LANGUAGES: dict[str, dict[str, str | None]] = {
+    "eng": {
+        "label": "English",
+        "tvdb": "eng",
+        "tvdb_fallback": None,
+        "anizp": "en",
+    },
+    "fra": {
+        "label": "French (Français)",
+        "tvdb": "fra",
+        "tvdb_fallback": None,
+        "anizp": "fr",
+    },
+    "spa": {
+        "label": "Spanish (Español)",
+        "tvdb": "spa",
+        "tvdb_fallback": None,
+        "anizp": "es",
+    },
+    "deu": {
+        "label": "German (Deutsch)",
+        "tvdb": "deu",
+        "tvdb_fallback": None,
+        "anizp": "de",
+    },
+    "ita": {
+        "label": "Italian (Italiano)",
+        "tvdb": "ita",
+        "tvdb_fallback": None,
+        "anizp": "it",
+    },
+    # TheTVDB codes: "pt" is Portuguese - Brazil, "por" is Portuguese - Portugal (see /v4/languages)
+    "pt": {
+        "label": "Portuguese - Brazil (Português BR)",
+        "tvdb": "pt",
+        "tvdb_fallback": "por",
+        "anizp": "pt-BR",
+    },
+    "por": {
+        "label": "Portuguese - Portugal (Português)",
+        "tvdb": "por",
+        "tvdb_fallback": "pt",
+        "anizp": "pt",
+    },
+    "rus": {
+        "label": "Russian (Русский)",
+        "tvdb": "rus",
+        "tvdb_fallback": None,
+        "anizp": "ru",
+    },
+    "kor": {
+        "label": "Korean (한국어)",
+        "tvdb": "kor",
+        "tvdb_fallback": None,
+        "anizp": "ko",
+    },
+    "zho": {
+        "label": "Chinese - Simplified (简体中文)",
+        "tvdb": "zho",
+        "tvdb_fallback": None,
+        "anizp": "zh-Hans",
+    },
+    "jpn": {
+        "label": "Japanese (日本語)",
+        "tvdb": "jpn",
+        "tvdb_fallback": None,
+        "anizp": "ja",
+    },
+}
+
+_LANGUAGE_ALIASES: dict[str, str] = {
+    "en": "eng",
+    "eng": "eng",
+    "english": "eng",
+    "fr": "fra",
+    "fra": "fra",
+    "fre": "fra",
+    "french": "fra",
+    "français": "fra",
+    "es": "spa",
+    "esp": "spa",
+    "spa": "spa",
+    "spanish": "spa",
+    "español": "spa",
+    "de": "deu",
+    "deu": "deu",
+    "ger": "deu",
+    "german": "deu",
+    "deutsch": "deu",
+    "it": "ita",
+    "ita": "ita",
+    "italian": "ita",
+    "italiano": "ita",
+    "pt": "pt",
+    "pt-br": "pt",
+    "pt_br": "pt",
+    "br": "pt",
+    "por": "por",
+    "pt-pt": "por",
+    "pt_pt": "por",
+    "portuguese": "pt",
+    "português": "pt",
+    "ru": "rus",
+    "rus": "rus",
+    "russian": "rus",
+    "русский": "rus",
+    "ko": "kor",
+    "kr": "kor",
+    "kor": "kor",
+    "korean": "kor",
+    "한국어": "kor",
+    "zh": "zho",
+    "zho": "zho",
+    "chi": "zho",
+    "zh-cn": "zho",
+    "zh_cn": "zho",
+    "zh-hans": "zho",
+    "zh_hans": "zho",
+    "chinese": "zho",
+    "中文": "zho",
+    "简体中文": "zho",
+    "ja": "jpn",
+    "jp": "jpn",
+    "jpn": "jpn",
+    "japanese": "jpn",
+}
+
+
+def normalize_metadata_language(val: str | None) -> str:
+    """Normalize a metadata language setting to a supported canonical key (defaults to 'eng')."""
+    if not val:
+        return "eng"
+    cleaned = str(val).strip().lower()
+    if cleaned in SUPPORTED_METADATA_LANGUAGES:
+        return cleaned
+    return _LANGUAGE_ALIASES.get(cleaned, "eng")
+
+
+def get_tvdb_language_codes(val: str | None) -> tuple[str, str | None]:
+    """Return (primary_tvdb_code, fallback_tvdb_code) for the normalized metadata language."""
+    lang = normalize_metadata_language(val)
+    cfg = SUPPORTED_METADATA_LANGUAGES[lang]
+    return str(cfg["tvdb"]), cfg["tvdb_fallback"]
+
+
+def get_anizp_language_key(val: str | None) -> str:
+    """Return the AniZip episode title language key for the normalized metadata language."""
+    lang = normalize_metadata_language(val)
+    return str(SUPPORTED_METADATA_LANGUAGES[lang]["anizp"])

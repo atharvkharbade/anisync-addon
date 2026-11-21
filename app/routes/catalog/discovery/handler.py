@@ -5,7 +5,7 @@ import random
 
 from quart import request
 
-from app.routes.catalog.formatting import format_catalog_metas
+from app.routes.catalog.formatting import format_catalog_metas_async
 from app.routes.catalog.sorting import (
     apply_catalog_dub_filter,
     get_catalog_sorting,
@@ -34,14 +34,33 @@ async def discovery_catalogs_loop():
         await asyncio.sleep(12 * 3600 - 300)
 
 
+async def fribb_mappings_loop():
+    """Background loop to periodically verify and refresh Fribb ID mappings daily."""
+    await asyncio.sleep(10)
+    while True:
+        try:
+            from app.lib.id_resolver.fribb import ensure_fribb_mappings
+            from app.services.http import get_client
+
+            await ensure_fribb_mappings(get_client())
+        except Exception as e:
+            logging.error("Error in fribb mappings refresh loop: %s", e)
+        # Check every 6 h: ensure_fribb_mappings only downloads once the data is over 24 h old.
+        # Sleeping exactly 24 h would land just inside that window and stretch refreshes to ~48 h.
+        await asyncio.sleep(6 * 3600)
+
+
 _discovery_prefetch_task = None
+_fribb_refresh_task = None
 
 
 def trigger_discovery_catalogs_prefetch():
-    """Start the background discovery catalogs prefetch loop if not already running."""
-    global _discovery_prefetch_task
+    """Start background discovery catalogs prefetch and daily Fribb mappings loops if not already running."""
+    global _discovery_prefetch_task, _fribb_refresh_task
     if _discovery_prefetch_task is None or _discovery_prefetch_task.done():
         _discovery_prefetch_task = asyncio.create_task(discovery_catalogs_loop())
+    if _fribb_refresh_task is None or _fribb_refresh_task.done():
+        _fribb_refresh_task = asyncio.create_task(fribb_mappings_loop())
 
 
 async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filters, extras=""):
@@ -121,9 +140,24 @@ async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filt
     # Filter NSFW before slicing so the returned page length equals page_limit, preventing premature end-of-catalog
     hide_nsfw = user.get("hide_nsfw", True) if user else True
     if hide_nsfw:
-        from app.routes.catalog.formatting import is_nsfw_meta
+        from app.routes.catalog.formatting import get_known_nsfw_kitsu_ids, is_nsfw_meta
 
-        metas = [m for m in metas if not is_nsfw_meta(m)]
+        nsfw_kitsu_ids = get_known_nsfw_kitsu_ids(metas)
+
+        def _is_discovery_item_nsfw(m: dict) -> bool:
+            if is_nsfw_meta(m):
+                return True
+            raw_id = str(m.get("id") or "")
+            kid = str(m.get("kitsu_id") or "")
+            if not kid:
+                if raw_id.startswith("kitsu:"):
+                    parts = raw_id.split(":")
+                    kid = parts[1] if len(parts) > 1 else ""
+                elif raw_id.isdigit():
+                    kid = raw_id
+            return bool(kid and kid in nsfw_kitsu_ids)
+
+        metas = [m for m in metas if not _is_discovery_item_nsfw(m)]
 
     # Handle pagination skip
     try:
@@ -137,8 +171,9 @@ async def handle_discovery_catalog(user, user_id, catalog_type, catalog_id, filt
         page_limit = 40
 
     metas = metas[offset : offset + page_limit]
+    formatted_metas = await format_catalog_metas_async(metas, user, catalog_type, catalog_id)
     return await respond_with(
-        {"metas": format_catalog_metas(metas, user, catalog_type, catalog_id)},
+        {"metas": formatted_metas},
         max_age=3600,
         stale_while_revalidate=7200,
     )

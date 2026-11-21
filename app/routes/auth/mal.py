@@ -7,7 +7,7 @@ from app.api import mal as mal_api
 from app.routes.auth.blueprint import auth_bp
 from app.routes.auth.helpers import resolve_or_create_user
 from app.routes.utils import log_error, rate_limit
-from app.services.db import find_user_by_mal_id, get_user, invalidate_user_watchlist_cache, store_user
+from app.services.db import find_user_by_mal_id, get_or_refresh_mal_token, get_user, invalidate_user_watchlist_cache, store_user
 
 
 @auth_bp.route("/authorization")
@@ -104,21 +104,10 @@ async def refresh_mal():
         await flash("No MAL session to refresh.", "danger")
         return redirect(url_for("ui.index"))
 
-    try:
-        token_data = await mal_api.refresh_token(user["mal_refresh_token"])
-        user.update(
-            {
-                "mal_access_token": token_data["access_token"],
-                "mal_refresh_token": token_data["refresh_token"],
-                "mal_expires_at": datetime.utcnow() + timedelta(seconds=token_data["expires_in"]),
-            }
-        )
-        user.pop("mal_token_expired", None)
-        user.pop("mal_expired_at", None)
-        store_user(user)
+    token = await get_or_refresh_mal_token(user_session["uid"], force=True)
+    if token:
         await flash("MAL session refreshed.", "success")
-    except Exception as e:
-        log_error("MAL_REFRESH", str(e))
+    else:
         await flash("Failed to refresh MAL session.", "danger")
 
     return redirect(url_for("ui.configure"))

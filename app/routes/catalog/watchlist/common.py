@@ -5,6 +5,7 @@ import logging
 from app.api import anilist as anilist_api
 from app.api import mal as mal_api
 from app.api import simkl as simkl_api
+from app.lib.id_resolver import kitsu_id_from_kitsu_mappings
 
 
 async def get_cached_mal_user_anime_list(user_id: str, token: str, status: str) -> list:
@@ -360,3 +361,49 @@ async def fetch_anilist_details_in_bulk(mal_ids: list[str] | None = None, anilis
         if aid in cached_details:
             result_details[str(aid)] = cached_details[aid]
     return result_details
+
+
+_watchlist_kitsu_bg_tasks: set[asyncio.Task] = set()
+
+
+def schedule_watchlist_kitsu_resolution(unresolved_items: list[tuple]):
+    """
+    Schedules background resolution of up to 10 unmapped items: (site, ext_id, fallback_ext_id)
+    via kitsu_id_from_kitsu_mappings so their Kitsu IDs land in id_cache for next time.
+    Does not block the page response.
+    Retains the background task in _watchlist_kitsu_bg_tasks to prevent garbage collection.
+    """
+    if not unresolved_items:
+        return
+    items_to_resolve = unresolved_items[:10]
+
+    async def _runner():
+        for item in items_to_resolve:
+            # (site, ext_id, fallback_id) or (site, ext_id, fallback_id, simkl_id)
+            site, ext_id, fallback_id = item[0], item[1], item[2]
+            simkl_id = item[3] if len(item) > 3 else None
+            try:
+                kid = await kitsu_id_from_kitsu_mappings(
+                    site, ext_id, mal_id=fallback_id if site == "anilist" else None
+                )
+                if not kid and fallback_id:
+                    fallback_site = "mal" if site == "anilist" else "anilist"
+                    kid = await kitsu_id_from_kitsu_mappings(
+                        fallback_site, fallback_id, anilist_id=ext_id if site == "anilist" else None
+                    )
+                if kid and simkl_id:
+                    # Simkl watchlists look shows up by simkl_id; without this the lookup would repeat every load
+                    from app.services.db import attach_simkl_id
+
+                    attach_simkl_id(kid, simkl_id)
+            except Exception as e:
+                logging.debug("Background kitsu resolution failed for %s:%s: %s", site, ext_id, e)
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+
+    task = loop.create_task(_runner())
+    _watchlist_kitsu_bg_tasks.add(task)
+    task.add_done_callback(_watchlist_kitsu_bg_tasks.discard)

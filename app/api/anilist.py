@@ -110,10 +110,13 @@ async def _gql(
             
             # Handle rate limiting (HTTP 429 Too Many Requests)
             if resp.status_code == 429:
+                retry_after = resp.headers.get("Retry-After")
+                raw_wait = int(retry_after) if (retry_after and retry_after.isdigit()) else 1.0
+                if raw_wait > 5 and attempt == retries - 1:
+                    resp.raise_for_status()
                 if attempt == retries - 1:
                     resp.raise_for_status()
-                retry_after = resp.headers.get("Retry-After")
-                wait_time = int(retry_after) if (retry_after and retry_after.isdigit()) else 1.0
+                wait_time = min(raw_wait, 5.0)
                 logging.warning(
                     "AniList 429 rate limit hit. Retrying in %s seconds (attempt %s/%s)...",
                     wait_time,

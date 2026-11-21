@@ -15,8 +15,10 @@ from app.services.db import (
     record_fallback_miss,
 )
 from app.services.http import get_client
+from config import kitsu_login_enabled
 
-from .constants import ANIZP_API, ARM_API, MALSYNC_API, TIMEOUT
+
+from .constants import ANIZP_API, ARM_API, KITSU_MAPPINGS_API, MALSYNC_API, TIMEOUT
 from .fribb import ensure_fribb_mappings
 from .remote import (
     _try_anizp,
@@ -65,8 +67,72 @@ async def resolve(kitsu_id: str) -> tuple[str | None, str | None]:
         except Exception as e:
             logging.warning("%s failed for kitsu_id=%s: %s, trying next", name, kitsu_id, e)
 
+    # Last resort: Kitsu's own mapping table. Age-restricted entries are hidden from anonymous requests,
+    # so retry with the AniSync Kitsu login when it's configured.
+    try:
+        mal_id, anilist_id, used_login = await _try_kitsu_own_mappings(client, kitsu_id)
+        if bool(mal_id) != bool(anilist_id):
+            # Kitsu often lists only one side (KAMUI has AniList but no MAL). Every tracker needs its own ID,
+            # so complete the pair from ARM.
+            mal_id, anilist_id = await _complete_mal_anilist_pair(client, mal_id, anilist_id)
+        if mal_id or anilist_id:
+            logging.info("Resolved via Kitsu mappings%s: kitsu=%s → mal=%s anilist=%s",
+                         " (login)" if used_login else "", kitsu_id, mal_id, anilist_id)
+            cache_ids(kitsu_id, mal_id, anilist_id)
+            if used_login and str(kitsu_id).isdigit():
+                id_cache_collection.update_one({"kitsu_id": int(kitsu_id)}, {"$set": {"kitsu_nsfw": True}})
+            return mal_id, anilist_id
+    except Exception as e:
+        logging.warning("Kitsu mappings failed for kitsu_id=%s: %s", kitsu_id, e)
+
     logging.error("All resolvers failed for kitsu_id=%s", kitsu_id)
     return None, None
+
+
+async def _complete_mal_anilist_pair(client, mal_id: str | None, anilist_id: str | None) -> tuple[str | None, str | None]:
+    """Fill in whichever of MAL / AniList is missing via ARM. Returns the pair unchanged on any failure."""
+    try:
+        if anilist_id and not mal_id:
+            resp = await client.get(ARM_API, params={"source": "anilist", "id": anilist_id, "include": "myanimelist"}, timeout=TIMEOUT)
+            if resp.status_code == 200 and (resp.json() or {}).get("myanimelist"):
+                mal_id = str(resp.json()["myanimelist"])
+        elif mal_id and not anilist_id:
+            resp = await client.get(ARM_API, params={"source": "myanimelist", "id": mal_id, "include": "anilist"}, timeout=TIMEOUT)
+            if resp.status_code == 200 and (resp.json() or {}).get("anilist"):
+                anilist_id = str(resp.json()["anilist"])
+    except Exception as e:
+        logging.warning("Could not complete MAL/AniList pair (mal=%s anilist=%s): %s", mal_id, anilist_id, e)
+    return mal_id, anilist_id
+
+
+async def _try_kitsu_own_mappings(client, kitsu_id: str) -> tuple[str | None, str | None, bool]:
+    """(mal_id, anilist_id, used_login) from GET /anime/{id}/mappings on Kitsu."""
+    if not str(kitsu_id).isdigit() or len(str(kitsu_id)) > 12:
+        return None, None, False
+    url = f"https://kitsu.io/api/edge/anime/{kitsu_id}/mappings"
+    params = {"page[limit]": 20}
+    used_login = False
+    async with _KITSU_MAPPINGS_SEMAPHORE:
+        resp = await client.get(url, params=params, headers={"Accept": "application/vnd.api+json"}, timeout=TIMEOUT)
+        data = resp.json().get("data") if resp.status_code == 200 else None
+        if not data and kitsu_login_enabled():
+            from app.services.kitsu_auth import kitsu_authed_get
+
+            authed = await kitsu_authed_get(url, params=params, timeout=TIMEOUT)
+            if authed is not None and authed.status_code == 200:
+                data = authed.json().get("data")
+                used_login = bool(data)
+    mal_id = anilist_id = None
+    for m in data or []:
+        attrs = (m or {}).get("attributes") or {}
+        ext = str(attrs.get("externalId") or "")
+        if not ext.isdigit():
+            continue
+        if attrs.get("externalSite") == "myanimelist/anime" and not mal_id:
+            mal_id = ext
+        elif attrs.get("externalSite") == "anilist/anime" and not anilist_id:
+            anilist_id = ext
+    return mal_id, anilist_id, used_login
 
 
 async def _verified_title_fallback(
@@ -177,6 +243,168 @@ async def _verified_title_fallback(
     return kitsu_id
 
 
+_KITSU_MAPPINGS_SEMAPHORE = asyncio.Semaphore(4)
+# Below the 12 h discovery refresh (it runs every 11 h 55 min), so each refresh rechecks shows Kitsu lacked last time.
+KITSU_MAPPING_MISS_TTL_HOURS = 11
+_kitsu_lookup_bg_tasks: set = set()
+
+
+async def gather_within(coros: list, timeout: float) -> list:
+    """Run coros concurrently and return the results finished within `timeout` (exceptions dropped).
+    Unfinished lookups keep running in the background so their answers still get cached for next time."""
+    tasks = [asyncio.ensure_future(c) for c in coros]
+    if not tasks:
+        return []
+    done, pending = await asyncio.wait(tasks, timeout=timeout)
+    for t in pending:
+        _kitsu_lookup_bg_tasks.add(t)
+        t.add_done_callback(_kitsu_lookup_bg_tasks.discard)
+    out = []
+    for t in done:
+        if not t.cancelled() and t.exception() is None:
+            out.append(t.result())
+    return out
+_SITE_TO_EXTERNAL_SITE = {
+    "anilist": "anilist/anime",
+    "mal": "myanimelist/anime",
+}
+
+
+async def kitsu_id_from_kitsu_mappings(
+    site: str,
+    external_id: str,
+    mal_id: str | None = None,
+    anilist_id: str | None = None,
+) -> str | None:
+    """
+    Looks up a Kitsu anime ID directly from Kitsu's official mappings endpoint:
+    GET https://kitsu.io/api/edge/mappings?filter[externalSite]=<site>&filter[externalId]=<id>&include=item
+    Caches hits in id_cache via cache_ids.
+    Records 12-hour negative cache (record_fallback_miss) on confirmed misses (HTTP 200 with no mapping).
+    Transient failures (network error, timeout, 429/5xx) return None with no negative cache.
+    """
+    if site not in _SITE_TO_EXTERNAL_SITE:
+        return None
+    if not external_id or not isinstance(external_id, str):
+        return None
+    external_id = external_id.strip()
+    if not external_id.isdigit() or len(external_id) > 12:
+        return None
+
+    try:
+        cached = get_cached_ids_by_anilist(external_id) if site == "anilist" else get_cached_ids_by_mal(external_id)
+        if cached and cached.get("kitsu_id"):
+            return str(cached["kitsu_id"])
+    except Exception as e:
+        logging.debug("id_cache lookup failed in kitsu_id_from_kitsu_mappings: %s", e)
+
+    cache_key = f"kitsu_map_{site}"
+    if is_fallback_miss(cache_key, external_id):
+        return None
+
+    ext_site = _SITE_TO_EXTERNAL_SITE[site]
+    params = {
+        "filter[externalSite]": ext_site,
+        "filter[externalId]": external_id,
+        "include": "item",
+    }
+    headers = {
+        "Accept": "application/vnd.api+json",
+    }
+
+    client = get_client()
+    try:
+        async with _KITSU_MAPPINGS_SEMAPHORE:
+            resp = await client.get(
+                KITSU_MAPPINGS_API,
+                params=params,
+                headers=headers,
+                timeout=TIMEOUT,
+            )
+    except Exception as e:
+        logging.warning("Kitsu mappings request failed for %s:%s: %s", site, external_id, e)
+        return None
+
+    if resp.status_code != 200:
+        logging.warning(
+            "Kitsu mappings non-200 response for %s:%s (status %d)",
+            site,
+            external_id,
+            resp.status_code,
+        )
+        return None
+
+    try:
+        payload = resp.json()
+    except Exception as e:
+        logging.warning("Kitsu mappings JSON parse error for %s:%s: %s", site, external_id, e)
+        return None
+
+    data = payload.get("data")
+    if not isinstance(data, list) or not data:
+        record_fallback_miss(cache_key, external_id, "No Kitsu mapping", ttl_hours=KITSU_MAPPING_MISS_TTL_HOURS)
+        return None
+
+    anime_id = None
+    nsfw_hidden = False
+    is_nsfw = False
+    for mapping in data:
+        if not isinstance(mapping, dict):
+            continue
+        attrs = mapping.get("attributes") or {}
+        if attrs.get("externalSite") != ext_site or str(attrs.get("externalId")) != external_id:
+            continue
+        item_data = (mapping.get("relationships") or {}).get("item", {}).get("data") or {}
+        if item_data.get("type") == "anime" and item_data.get("id"):
+            candidate_id = str(item_data["id"])
+            included = payload.get("included")
+            if isinstance(included, list):
+                item = next(
+                    (inc for inc in included
+                     if isinstance(inc, dict) and inc.get("type") == "anime" and str(inc.get("id")) == candidate_id),
+                    None,
+                )
+                if item is not None:
+                    if (item.get("attributes") or {}).get("nsfw") is True:
+                        if not kitsu_login_enabled():
+                            # Kitsu hides NSFW entries from anonymous requests (the anime endpoint 404s), so AniSync
+                            # could not load this page anyway: don't hand out an ID that opens to an empty page.
+                            logging.info("Kitsu mapping %s:%s points to NSFW-hidden kitsu:%s; ignoring", site, external_id, candidate_id)
+                            nsfw_hidden = True
+                            break
+                        is_nsfw = True
+                    anime_id = candidate_id
+                    break
+            else:
+                anime_id = candidate_id
+                break
+
+    if not anime_id:
+        reason = "Kitsu entry is NSFW-hidden" if nsfw_hidden else "No Kitsu mapping"
+        record_fallback_miss(cache_key, external_id, reason, ttl_hours=KITSU_MAPPING_MISS_TTL_HOURS)
+        return None
+
+    resolved_mal = external_id if site == "mal" else mal_id
+    resolved_al = external_id if site == "anilist" else anilist_id
+    try:
+        cache_ids(anime_id, resolved_mal, resolved_al)
+    except Exception as e:
+        logging.debug("cache_ids error in kitsu_id_from_kitsu_mappings: %s", e)
+
+    if is_nsfw:
+        try:
+            id_cache_collection.update_one(
+                {"kitsu_id": int(anime_id)},
+                {"$set": {"kitsu_nsfw": True}},
+            )
+        except Exception as e:
+            logging.debug("Failed to set kitsu_nsfw on id_cache for %s: %s", anime_id, e)
+
+    logging.info("Resolved Kitsu mapping: %s:%s → kitsu:%s%s", site, external_id, anime_id, " (nsfw)" if is_nsfw else "")
+    return anime_id
+
+
+
 async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
     if not mal_id:
         return None
@@ -187,6 +415,7 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
         return str(cached["kitsu_id"])
 
     client = get_client()
+    discovered_anilist_id = None
 
     # Try ARM API
     try:
@@ -200,6 +429,8 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
             if data:
                 kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
                 anilist_id = str(data["anilist"]) if data.get("anilist") else None
+                if anilist_id:
+                    discovered_anilist_id = anilist_id
                 if kitsu_id:
                     cache_ids(kitsu_id, mal_id, anilist_id)
                     return kitsu_id
@@ -212,7 +443,9 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
         doc = db.fribb_mappings.find_one({"mal_id": str(mal_id)})
         if doc:
             kitsu_id = str(doc["kitsu_id"]) if doc.get("kitsu_id") else None
-            anilist_id = doc.get("anilist_id")
+            anilist_id = str(doc["anilist_id"]) if doc.get("anilist_id") else None
+            if anilist_id:
+                discovered_anilist_id = anilist_id
             if kitsu_id:
                 cache_ids(kitsu_id, mal_id, anilist_id)
                 return kitsu_id
@@ -232,11 +465,22 @@ async def resolve_mal_to_kitsu(mal_id: str) -> str | None:
                     kitsu_id = str(v["id"])
                     break
             anilist_id = str(data.get("anilistId")) if data.get("anilistId") else None
+            if anilist_id:
+                discovered_anilist_id = anilist_id
             if kitsu_id:
                 cache_ids(kitsu_id, mal_id, anilist_id)
                 return kitsu_id
     except Exception as e:
         logging.warning("MAL-Sync mal->kitsu failed for mal_id=%s: %s", mal_id, e)
+
+    # Try official Kitsu mappings endpoint before title fallback
+    k_id = await kitsu_id_from_kitsu_mappings("mal", mal_id, anilist_id=discovered_anilist_id)
+    if k_id:
+        return k_id
+    if discovered_anilist_id:
+        k_id = await kitsu_id_from_kitsu_mappings("anilist", discovered_anilist_id, mal_id=mal_id)
+        if k_id:
+            return k_id
 
     # Try Title-based fallback (skipped while a negative-cache entry is active)
     if is_fallback_miss("mal", mal_id):
@@ -268,6 +512,7 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
         return str(cached["kitsu_id"])
 
     client = get_client()
+    discovered_mal_id = None
 
     # Try ARM API
     try:
@@ -281,6 +526,8 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
             if data:
                 kitsu_id = str(data["kitsu"]) if data.get("kitsu") else None
                 mal_id = str(data["myanimelist"]) if data.get("myanimelist") else None
+                if mal_id:
+                    discovered_mal_id = mal_id
                 if kitsu_id:
                     cache_ids(kitsu_id, mal_id, anilist_id)
                     return kitsu_id
@@ -297,6 +544,8 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
             imdb_id = str(mappings.get("imdb_id")) if mappings.get("imdb_id") else None
             tmdb_id = str(mappings.get("themoviedb_id")) if mappings.get("themoviedb_id") else None
             tvdb_id = str(mappings.get("thetvdb_id")) if mappings.get("thetvdb_id") else None
+            if mal_id:
+                discovered_mal_id = mal_id
             if kitsu_id:
                 cache_ids(
                     kitsu_id=kitsu_id,
@@ -316,12 +565,23 @@ async def resolve_anilist_to_kitsu(anilist_id: str) -> str | None:
         doc = db.fribb_mappings.find_one({"anilist_id": str(anilist_id)})
         if doc:
             kitsu_id = str(doc["kitsu_id"]) if doc.get("kitsu_id") else None
-            mal_id = doc.get("mal_id")
+            mal_id = str(doc["mal_id"]) if doc.get("mal_id") else None
+            if mal_id:
+                discovered_mal_id = mal_id
             if kitsu_id:
                 cache_ids(kitsu_id, mal_id, anilist_id)
                 return kitsu_id
     except Exception as e:
         logging.warning("Fribb anilist->kitsu failed for anilist_id=%s: %s", anilist_id, e)
+
+    # Try official Kitsu mappings endpoint before title fallback
+    k_id = await kitsu_id_from_kitsu_mappings("anilist", anilist_id, mal_id=discovered_mal_id)
+    if k_id:
+        return k_id
+    if discovered_mal_id:
+        k_id = await kitsu_id_from_kitsu_mappings("mal", discovered_mal_id, anilist_id=anilist_id)
+        if k_id:
+            return k_id
 
     # Try Title-based fallback (skipped while a negative-cache entry is active)
     if is_fallback_miss("anilist", anilist_id):

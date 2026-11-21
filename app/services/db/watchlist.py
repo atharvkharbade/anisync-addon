@@ -341,16 +341,19 @@ def update_user_watchlist_cache_progress(
     mal_id: str | None = None,
     anilist_id: str | None = None,
     simkl_id: str | None = None,
+    *,
+    trackers: set[str] | None = None,
 ):
-    """Update watch progress in-place in the cache database to keep it accurate after a scrobble."""
+    """Update cached progress after a scrobble, scoped to the supplied trackers when present."""
     uids = _resolve_user_cache_uids(user_id)
     if not uids:
         return
     try:
+        cache_query = {"uid": {"$in": uids}}
+        if trackers is not None:
+            cache_query["tracker"] = {"$in": sorted(trackers)}
         cache_col = db.get_collection("user_watchlist_cache")
-        docs = list(cache_col.find({"uid": {"$in": uids}}))
-        if not docs:
-            return
+        docs = list(cache_col.find(cache_query))
 
         mal_str = str(mal_id) if mal_id else None
         anilist_str = str(anilist_id) if anilist_id else None
@@ -461,7 +464,7 @@ def update_user_watchlist_cache_progress(
         if meta_subquery:
             db.get_collection("user_anime_status_cache").update_many(
                 {
-                    "uid": {"$in": uids},
+                    **cache_query,
                     "$or": meta_subquery,
                     "status": {"$nin": ["completed", "dropped"]},
                 },

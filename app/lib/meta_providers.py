@@ -1,3 +1,30 @@
+import asyncio
+import contextvars
+
+from app.lib.languages import normalize_metadata_language
+
+# Event loop to schedule background warm-ups on when the enrichment runs in a worker thread (asyncio.to_thread).
+BG_LOOP: contextvars.ContextVar = contextvars.ContextVar("anisync_bg_loop", default=None)
+_bg_tasks: set = set()
+
+
+def _schedule_bg(make_coro) -> None:
+    """Start make_coro() as a background task, from the event loop thread or from a worker thread."""
+    def _start(loop):
+        task = loop.create_task(make_coro())
+        _bg_tasks.add(task)
+        task.add_done_callback(_bg_tasks.discard)
+
+    try:
+        _start(asyncio.get_running_loop())
+        return
+    except RuntimeError:
+        pass
+    loop = BG_LOOP.get()
+    if loop is not None and loop.is_running() and not loop.is_closed():
+        loop.call_soon_threadsafe(_start, loop)
+
+
 def normalize_backdrop_pref(val: str | None) -> str:
     """
     Normalizes backdrop preference strings.
@@ -7,6 +34,7 @@ def normalize_backdrop_pref(val: str | None) -> str:
     - any unknown / empty value falls back to 'cinemeta'
     """
     cleaned = (val or "").strip().lower()
+    # Phase 2: remove after v1_6_legacy_settings has run on prod
     if cleaned == "anilist":
         return "tvdb"
     if cleaned == "fanart":
@@ -16,17 +44,44 @@ def normalize_backdrop_pref(val: str | None) -> str:
     return "cinemeta"
 
 
+def _normalize_provider_choice(val: str | None, allowed: tuple[str, ...], default: str) -> str:
+    cleaned = (val or "").strip().lower()
+    return cleaned if cleaned in allowed else default
+
+
+def get_effective_metadata_language(user: dict | None) -> str:
+    """Return the normalized metadata localization language for a user (defaults to 'eng')."""
+    return normalize_metadata_language(user.get("metadata_language") if user else None)
+
+
 def get_effective_meta_providers(user: dict | None) -> dict:
-    pref = (user.get("metadata_provider", "kitsu") or "kitsu").lower() if user else "kitsu"
+    pref = (user.get("metadata_provider", "kitsu") or "kitsu").strip().lower() if user else "kitsu"
+    language = get_effective_metadata_language(user)
     if pref == "custom":
-        legacy_artwork = (user.get("meta_artwork_provider") or "anilist").lower()
         backdrop_val = normalize_backdrop_pref(user.get("meta_backdrop_provider"))
         return {
-            "synopsis": (user.get("meta_synopsis_provider") or "kitsu").lower(),
-            "episodes": (user.get("meta_episodes_provider") or "anizp").lower(),
-            "poster": (user.get("meta_poster_provider") or legacy_artwork).lower(),
+            "synopsis": _normalize_provider_choice(
+                user.get("meta_synopsis_provider"),
+                ("kitsu", "mal", "anilist", "tvdb"),
+                "kitsu",
+            ),
+            "episodes": _normalize_provider_choice(
+                user.get("meta_episodes_provider"),
+                ("anizp", "kitsu", "mal", "tvdb"),
+                "anizp",
+            ),
+            "poster": _normalize_provider_choice(
+                user.get("meta_poster_provider"),
+                ("anilist", "kitsu", "mal", "tvdb"),
+                "anilist",
+            ),
             "backdrop": backdrop_val,
-            "airing": (user.get("meta_airing_provider") or "anilist").lower(),
+            "airing": _normalize_provider_choice(
+                user.get("meta_airing_provider"),
+                ("anilist", "mal", "kitsu"),
+                "anilist",
+            ),
+            "language": language,
         }
     elif pref == "mal":
         return {
@@ -35,6 +90,7 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "poster": "mal",
             "backdrop": "cinemeta",
             "airing": "mal",
+            "language": language,
         }
     elif pref == "anilist":
         return {
@@ -43,6 +99,16 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "poster": "anilist",
             "backdrop": "cinemeta",
             "airing": "anilist",
+            "language": language,
+        }
+    elif pref == "tvdb":
+        return {
+            "synopsis": "tvdb",
+            "episodes": "tvdb",
+            "poster": "tvdb",
+            "backdrop": "tvdb",
+            "airing": "anilist",
+            "language": language,
         }
     else:  # kitsu
         return {
@@ -51,6 +117,7 @@ def get_effective_meta_providers(user: dict | None) -> dict:
             "poster": "kitsu",
             "backdrop": "cinemeta",
             "airing": "anilist",
+            "language": language,
         }
 
 
@@ -294,8 +361,9 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
     anizp_keys = [f"al_{a}" for a in known_al if a] + [f"mal_{m}" for m in known_mal if m]
     if anizp_keys:
         try:
-            for doc in db.anizp_meta_cache.find({"key": {"$in": anizp_keys}}):
-                if doc.get("key") and doc.get("data"):
+            anizp_proj = {"key": 1, "data.images": 1, "data.mappings.thetvdb_id": 1, "data.mappings.imdb_id": 1, "_id": 0}
+            for doc in db.anizp_meta_cache.find({"key": {"$in": anizp_keys}}, anizp_proj):
+                if doc.get("key") and doc.get("data") is not None:
                     anizp_by_key[doc["key"]] = doc["data"]
         except Exception as e:
             logging.error("enrich_catalog_metas_artwork: anizp_meta_cache query failed: %s", e)
@@ -327,7 +395,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                 fanart_or.append({"kind": "movies", "ext_id": str(im_id)})
         if fanart_or:
             try:
-                for doc in db.fanart_meta_cache.find({"$or": fanart_or}):
+                fanart_proj = {"kind": 1, "ext_id": 1, "data": 1, "_id": 0}
+                for doc in db.fanart_meta_cache.find({"$or": fanart_or}, fanart_proj):
                     k_kind = doc.get("kind")
                     k_ext = doc.get("ext_id")
                     # Cached misses ({}) count as cached so they are not re-queued for warming every request
@@ -363,7 +432,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
                 tvdb_or.append({"kind": "movies", "ext_id": str(im_id)})
         if tvdb_or:
             try:
-                for doc in db.tvdb_meta_cache.find({"$or": tvdb_or}):
+                tvdb_proj = {"kind": 1, "ext_id": 1, "data": 1, "_id": 0}
+                for doc in db.tvdb_meta_cache.find({"$or": tvdb_or}, tvdb_proj):
                     k_kind = doc.get("kind")
                     k_ext = doc.get("ext_id")
                     # Cached misses ([]) count as cached so they are not re-queued for warming every request
@@ -375,7 +445,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
     cinemeta_by_imdb = {}
     if known_imdb:
         try:
-            for doc in db.cinemeta_meta_cache.find({"imdb_id": {"$in": list(known_imdb)}}):
+            cinemeta_proj = {"imdb_id": 1, "data.background": 1, "data.logo": 1, "_id": 0}
+            for doc in db.cinemeta_meta_cache.find({"imdb_id": {"$in": list(known_imdb)}}, cinemeta_proj):
                 if doc.get("imdb_id") and doc.get("data"):
                     cinemeta_by_imdb[doc["imdb_id"]] = doc["data"]
         except Exception as e:
@@ -384,7 +455,8 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
     kitsu_by_id = {}
     if known_kitsu:
         try:
-            for doc in db.kitsu_meta_cache.find({"kitsu_id": {"$in": [str(k) for k in known_kitsu]}}):
+            kitsu_proj = {"kitsu_id": 1, "data.data.attributes.coverImage": 1, "_id": 0}
+            for doc in db.kitsu_meta_cache.find({"kitsu_id": {"$in": [str(k) for k in known_kitsu]}}, kitsu_proj):
                 if doc.get("kitsu_id") and doc.get("data"):
                     kitsu_by_id[doc["kitsu_id"]] = doc["data"]
         except Exception as e:
@@ -532,29 +604,26 @@ def enrich_catalog_metas_artwork(metas: list[dict], user: dict | None = None) ->
 
     if missing_for_anizp:
         try:
-            import asyncio
-            loop = asyncio.get_running_loop()
-            loop.create_task(bg_warm_anizip(missing_for_anizp[:25]))
+            batch = missing_for_anizp[:25]
+            _schedule_bg(lambda: bg_warm_anizip(batch))
         except (RuntimeError, Exception):
             pass
 
     if missing_for_fanart:
         try:
-            import asyncio
             from app.services.fanart import bg_warm_fanart
             unique_missing = list({(k, e): (k, e, ck) for (k, e, ck) in missing_for_fanart}.values())
-            loop = asyncio.get_running_loop()
-            loop.create_task(bg_warm_fanart(unique_missing[:25]))
+            batch = unique_missing[:25]
+            _schedule_bg(lambda: bg_warm_fanart(batch))
         except (RuntimeError, Exception):
             pass
 
     if missing_for_tvdb:
         try:
-            import asyncio
             from app.services.tvdb import bg_warm_tvdb
             unique_tvdb = list(dict.fromkeys(missing_for_tvdb))
-            loop = asyncio.get_running_loop()
-            loop.create_task(bg_warm_tvdb(unique_tvdb[:25]))
+            batch = unique_tvdb[:25]
+            _schedule_bg(lambda: bg_warm_tvdb(batch))
         except (RuntimeError, Exception):
             pass
 
